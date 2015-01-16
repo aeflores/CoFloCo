@@ -33,7 +33,13 @@ This module prints the results of the analysis
 		  print_closed_results/2,
 		  print_stats/0]).
 
-:- use_module('../db',[eq_refined/2,loop_ph/4,eq_ph/7,upper_bound/4,closed_upper_bound/4,non_terminating_chain/2]).
+:- use_module('../db',[ground_equation_header/1,
+						eq_refined/2,
+						loop_ph/4,
+						eq_ph/7,
+						upper_bound/4,
+						closed_upper_bound/4,
+						non_terminating_chain/2]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
 
@@ -88,13 +94,13 @@ print_phase_termination_argument(Head,Phase,Term_argument,no):-
 	get_param(v,[X]),X > 2,
 	Phase=[_|_],
 	copy_term((Head,Term_argument),(Head2,Term_argument2)),
-	numbervars(Head2,0,_),
+	ground_header(Head2),
     format('~p: Phase ~p might not terminate:: ~p~n',[Head2,Phase,Term_argument2]).
 print_phase_termination_argument(Head,Phase,Term_argument,yes):-
 	get_param(v,[X]),X > 2,
 	Phase=[_|_],
 	copy_term((Head,Term_argument),(Head2,Term_argument2)),
-	numbervars(Head2,0,_),
+	ground_header(Head2),
     format('~p: Phase ~p termination argument: ~p~n',[Head2,Phase,Term_argument2]).
 
 print_phase_termination_argument(_Head,_Phase,_Term_argument,_).
@@ -109,7 +115,7 @@ print_chains(Ref_phase):-
 
 print_chains_1(Ref_phase):-
 	chain(Entry,Ref_phase,Pattern),
-	numbervars(Entry,0,_),
+	ground_header(Entry),
 	print_chain(Entry,Pattern),nl,
 	fail.
 print_chains_1(_).
@@ -140,7 +146,7 @@ print_chain(Entry,Pattern):-
 % print the inferred chains in SCC Entry in the refinement phase RefCnt
 print_chains_entry(Entry,RefCnt):-
 	get_param(v,[X]),X > 2,
-	numbervars(Entry,0,_),
+	ground_header(Entry),
 	format('Resulting Chains of ~p ~n',[Entry]),
 	print_chains_entry_1(RefCnt,Entry).
 print_chains_entry(_,_).
@@ -166,7 +172,7 @@ print_chain_simple(Pattern):-
 %! print_results(+Entry:term,+RefCnt:int) is det
 % print the chains, invariants and uppuer bounds of SCC Entry in the refinement phase RefCnt
 print_results(Entry,RefCnt):-
-	numbervars(Entry,0,_),
+	ground_header(Entry),
 	ansi_format([underline,bold],'Inferred cost of ~p: ~n',[Entry]),
 	print_results_1(Entry,RefCnt).
 print_results_1(Entry,RefCnt):-
@@ -184,7 +190,7 @@ print_results_1(_Entry,_).
 %! print_closed_results(+Entry:term,+RefCnt:int) is det
 % print the chains, invariants and closed upper bounds of SCC Entry in the refinement phase RefCnt	
 print_closed_results(Entry,RefCnt):-
-	numbervars(Entry,0,_),
+	ground_header(Entry),
 	ansi_format([underline,bold],'Solved cost expressions of ~p: ~n',[Entry]),
 	(get_param(prolog_format,_)->
 	  print_closed_results_prolog_format(Entry,RefCnt)
@@ -217,7 +223,7 @@ print_closed_results_prolog_format(_Entry,_).
 print_single_closed_result(Entry,Expr):-
 	copy_term((Entry,Expr),(Entry2,Expr2)),
 	get_asymptotic_class_name(Expr,Asym_class),
-	numbervars(Entry2,0,_),
+	ground_header(Entry2),
 	ansi_format([underline,bold],'Maximum cost of ~p: ',[Entry2]),
 	format('~p ~n',[Expr2]),
 	format('Asymptotic class: ~p ~n',[Asym_class]).
@@ -256,6 +262,12 @@ print_norm(norm(Its,E)):-
 
 it_var_name(It_var,N):-
 	atom_concat(it,N,It_var).
+	
+	
+ground_header(Head):-
+   ground_equation_header(Head),!.
+ ground_header(Head):- 
+    numbervars(Head,0,_).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_help is det

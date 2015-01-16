@@ -31,10 +31,12 @@ This module acts as a database that stores:
 	   add_loop_ph/5,
 	   add_phase_loop/5,
 	   add_eq_ph/3,
+	   add_ground_equation_header/2,
 		  
 	   eq_refined/2,
 	   input_eq/5,	 
 	   entry_eq/2,   
+	   ground_equation_header/1,
 	   eq_ph/7,
        loop_ph/4,
 	   phase_loop/5,
@@ -67,6 +69,11 @@ This module acts as a database that stores:
 % @arg Head is the entry point of the program
 % @arg Cs is a precondition on the input variables
 :- dynamic entry_eq/2. 
+
+%! ground_equation_header(Head:term)
+% A ground version of the cost equation header that records the original names of the variables in the input file.
+% it is used to print the results according to those names
+:- dynamic ground_equation_header/1. 
 
 /**  eq_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Cost:cost_expression,-Non_rec_Calls:list(term),-Rec_Calls:list(term),-Calls:list(term),-Cs:polyhedron)
 
@@ -119,6 +126,7 @@ This module acts as a database that stores:
 init_db:-
 	retractall(input_eq(_,_,_,_,_)),
 	retractall(entry_eq(_,_)),
+	retractall(ground_eq_header(_)),
 	retractall(eq_ph(_,_,_,_,_,_,_)),
 	retractall(loop_ph(_,_,_,_)),
 	
@@ -162,6 +170,15 @@ init_timers:-
 cofloco_aux_entry_name('$cofloco_aux_entry$').
 
 
+%! add_ground_equation_header(+Non_ground:term,+Ground:term) is det
+% store the ground term Ground if there is no ground_eq_header that can be unified with Non_ground.
+% that is, we store on ground_eq_header per cost equation header
+add_ground_equation_header(Non_ground,_Ground):-
+	copy_term(Non_ground,Non_ground2),
+	ground_equation_header(Non_ground2),!.
+	
+add_ground_equation_header(_Non_ground,Ground):-
+	assert(ground_equation_header(Ground)).
 
 %! add_eq_ph(+Cost_equation:cost_equation,+Term_flag:flag) is det
 % stores the cost equation Cost_equation in the database

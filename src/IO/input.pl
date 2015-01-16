@@ -23,7 +23,10 @@ This module reads cost equations and stores them in the database after normalizi
 
 
 :- module(input,[read_cost_equations/1,store_cost_equations/1]).
-:- use_module('../db',[input_eq/5,entry_eq/2,cofloco_aux_entry_name/1]).
+:- use_module('../db',[input_eq/5,
+					entry_eq/2,
+					cofloco_aux_entry_name/1,
+					add_ground_equation_header/2]).
 :- use_module('../utils/cofloco_utils',[normalize_constraint/2]).
 :- use_module('../utils/cost_expressions',[is_linear_exp/1,parse_cost_expression/2]).
 :- use_module('../utils/polyhedra_optimizations',[slice_relevant_constraints/4]).
@@ -38,7 +41,7 @@ read_cost_equations(File) :-
 	read_crs(File,Eqs),
 	store_cost_equations(Eqs).
 
-%! store_cost_equations(+Eqs:list(cost_equation)) is det
+%! store_cost_equations(+Eqs:list(cost_equation/(cost_equation,var_binding))) is det
 %  * store the given equations in the database
 %  * declare the first one as the main entry
 %  * remove the calls to equations that are not defined (and show a warning)	
@@ -69,7 +72,7 @@ declare_entry:-
 	
 
 
-%! read_crs(+File:filename,-EQs:list(cost_equation)) is det
+%! read_crs(+File:filename,-EQs:list(cost_equation/(entry,variable_bindings))) is det
 % read from the file Filename and returns a list of cost equations
 
 read_crs(File,EQs) :-
@@ -84,19 +87,30 @@ read_crs(CRs,_EQs) :-
 
 
 read_crs_from_file(S,EQs) :-
-	catch(read(S,Term),_,fail),
+	catch(read_term(S,Term,[variable_names(Bindings)]),_,fail),
 	( 
 	  Term == end_of_file -> 
 	    EQs = []
 	;
-	    EQs = [Term|EQs_aux],
+	    EQs = [(Term,Bindings)|EQs_aux],
 	    read_crs_from_file(S,EQs_aux)
 	).
 
-	
 %! add_equation(+Cost_equation:cost_equation) is det
 % @throws failed_to_add_equation 
 % normalize the cost equation and add it to the database
+add_equation((Eq,Var_binding)):-!,
+   get_eq_head(Eq,Header),
+   get_ground_term(Header,Var_binding,Ground_header),
+   add_ground_equation_header(Header,Ground_header),
+   add_equation(Eq).
+
+	
+add_equation(eq(Name,Vars,Exp,Body_Calls,Size_Rel)) :-	
+     Head=..[Name|Vars],
+     add_equation(eq(Head,Exp,Body_Calls,Size_Rel)).
+     
+
 add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-
 	normalize_input_equation(eq(Head,Exp,Body_Calls,Size_Rel), eq(NHead,NExp,NCalls,NSize_Rel)), % Normalize the equation
 	term_variables((NHead,NExp,NCalls),Relevant_Vars),
@@ -116,7 +130,7 @@ add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-
 	),			% add the equation to db
 	!.
 	
-
+	
 add_equation(entry(Term:Size_Rel)):-!,
 	(entry_eq(_,_)->
 	  format('WARNING: more than one entry declared, ignoring ~p~n',[entry(Term:Size_Rel)])
@@ -128,6 +142,22 @@ add_equation(entry(Term:Size_Rel)):-!,
 % throw an exception on failure
 add_equation(Eq) :-
 	throw(cofloco_err(failed_to_add_equation,add_equation/1,[eq=Eq])).
+
+%! get_eq_head(+Eq:cost_equation,-Head:term) is det
+% get the head of the different types of input cost equations
+get_eq_head(entry(Head:_),Head).
+get_eq_head(eq(Name,Vars,_Exp,_Body_Calls,_Size_Rel),Head) :-	
+     Head=..[Name|Vars].
+get_eq_head(eq(Head,_Exp,_Body_Calls,_Size_Rel),Head).
+
+%! get_ground_term(+Term:term,+Bindings:list(atom=var),-Ground_term:term) is det
+% apply the bindings of Bindings to Term
+get_ground_term(Term,Bindings,Ground_term):-
+	copy_term((Term,Bindings),(Ground_term,Bindings2)),
+	maplist(unify_eq,Bindings2).
+	
+unify_eq(X=X).
+
 
 
 %! remove_undefined_calls is det
