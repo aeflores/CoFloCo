@@ -69,7 +69,7 @@ Specific "data types" of this module:
 					      is_linear_exp/1]).
 :- use_module('../utils/cost_structures',[simplify_or_cost_structure/6]).					      
 
-:- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).
+:- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(list_map),[lookup_lm/3]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3,

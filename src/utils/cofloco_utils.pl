@@ -33,6 +33,8 @@ of CoFloCo.
 		    repeat_n_times/3,
 		    bagof_no_fail/3,
 		    foldr/4,
+		    sort_with/3,
+		    write_sum/2,
 		    norm_contains_vars/2,
 		    normalize_constraint_wrt_var/3]).
 
@@ -101,6 +103,21 @@ foldr(Pred,[X|Xs], Base, T):-
     call(Pred,Base,X,Base1),
 	foldr(Pred,Xs,Base1,T).
 	
+:-meta_predicate sort_with(+,2,-).	
+%! sort_with(+Xs_uns:list(A),+Bigger:predicate,-Xs:list(A)) is det
+% sort a list Xs_uns into Xs according to the predicate Bigger
+sort_with(Xs_uns,Bigger,Xs) :-
+        qs(Xs_uns,Bigger,Xs,[]),
+	!.
+
+qs([],_Smaller, T, T).
+qs([X | Xs],Smaller, S, T) :- pt(Xs, X,Smaller, L, G), qs(L,Smaller, S, [X | M]), qs(G,Smaller, M, T).
+
+pt([], _,_, [], []).
+pt([X | Xs], M,Smaller, L, [X | G]) :- 
+	 call(Smaller,X,M),!,
+    pt(Xs, M,Smaller, L, G).
+pt([X | Xs], M,Smaller, [X | L], G) :- pt(Xs, M,Smaller, L, G).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! normalize_constraint(+C:linear_constraint,-CN:linear_constraint) is det
@@ -136,6 +153,9 @@ coeffs_rep_to_constraint(coeff_rep(Coeffs,Op,B), Constraint) :-
 	write_sum(Coeffs,Exp),
 	Constraint =.. [ Op, Exp, B]. 
 
+%! write_sum(Xs:list(A),Sum:sum(A)) is det
+% create a term that is the sum of the elements of the list
+% with right associativity
 write_sum([],0).
 write_sum([X|Xs],Sum):-
 	foldr(zip_with_op('+'),Xs,X,Sum).

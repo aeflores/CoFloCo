@@ -38,6 +38,7 @@ Specific "data types" of this module:
 :- use_module('../utils/cofloco_utils',[
 		     zip_with_op/4,
 			 tuple/3,
+			 sort_with/3,
 			 get_it_vars_in_loop/2,
 			 assign_right_vars/3]).
 :- use_module('../utils/cost_expressions',[
@@ -361,22 +362,6 @@ keep_it_vars([norm(Vars,Exp)|Norms],Vs,Norms1):-
 
 order_norms_heuristically(Norms,Ordered_norms):-
 	sort_with(Norms,bigger_heuristic,Ordered_norms).
-	
-%! sort_with(+Xs_uns:list(A),+Bigger:predicate,-Xs:list(A)) is det
-% sort a list Xs_uns into Xs according to the predicate Bigger
-sort_with(Xs_uns,Bigger,Xs) :-
-        qs(Xs_uns,Bigger,Xs,[]),
-	!.
-
-qs([],_Smaller, T, T).
-qs([X | Xs],Smaller, S, T) :- pt(Xs, X,Smaller, L, G), qs(L,Smaller, S, [X | M]), qs(G,Smaller, M, T).
-
-pt([], _,_, [], []).
-pt([X | Xs], M,Smaller, L, [X | G]) :- 
-	 Call=..[Smaller,X,M],
-	 call(Call),!,
-    pt(Xs, M,Smaller, L, G).
-pt([X | Xs], M,Smaller, [X | L], G) :- pt(Xs, M,Smaller, L, G).
 
 %! bigger_heuristic(+Norm1:norm,+Norm2:norm) is semidet
 % define an heuristic criteron to sort norms according to:

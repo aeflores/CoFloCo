@@ -58,28 +58,20 @@ parameter_dictionary('-stats','stats',[]).
 parameter_dictionary('-s','stats',[]).
 parameter_dictionary('-v','v',[number]).
 parameter_dictionary('-verbosity','v',[number]).
+
 parameter_dictionary('-debug','debug',[bool]).
 
-
-parameter_dictionary('-break_chains','break_chains',[bool]).
-%parameter_dictionary('-visual','visual',[]).
-%parameter_dictionary('-ranking_functions','ranking_functions',[yes]).
 parameter_dictionary('-assume_sequential','assume_sequential',[bool]).
 parameter_dictionary('-n_rankings','n_rankings',[number]).
 
-
-%parameter_dictionary('-solve_precise','solve_precise',[number]).
 parameter_dictionary('-maximize_fast','maximize_fast',[number]).
 
-parameter_dictionary('-no_compression','no_compression',[bool]).
-parameter_dictionary('-slicing','slicing',[bool]).
-parameter_dictionary('-merge_chains','merge_chains',[bool]).
+parameter_dictionary('-no_compression','no_compression',[bool]).%TODO
+
 parameter_dictionary('-only_termination','only_termination',[bool]).
 parameter_dictionary('-prolog_format','prolog_format',[bool]).
-% -ranking_functions linear
-% -ranking_functions no_fractions
-% -ranking_functions all
 
+parameter_dictionary('-conditional_ubs','conditional_ubs',[]).
 %% clean_params is det
 % erase all the stored parameters
 clean_params:-

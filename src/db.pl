@@ -47,7 +47,9 @@ This module acts as a database that stores:
 	   add_upper_bound/3,
 	   closed_upper_bound/4,
 	   add_closed_upper_bound/3,
-	   	  
+	   conditional_upper_bound/3,	  
+	   add_conditional_upper_bound/3,
+	  
        cofloco_aux_entry_name/1
        
 ]).
@@ -108,6 +110,13 @@ This module acts as a database that stores:
 % an cost expression that represents an upper bound of the chain Chain that belongs to the SCC Head.  
 % Hash is the hash of part of the cost structure and can be used to compress similar cost structures
 :- dynamic closed_upper_bound/4.
+
+%! conditional_upper_bound(?Head:term,-Cost_expression:cost_expression,-Preconditions:list(polyhedra))
+% Cost_expression is a valid upper bound for any execution of Head that satisfies one of the preconditions in Preconditions
+% for all possible chains.
+%
+% conditional upper bound's preconditions are mutually exclusive among each other and with any other conditional upper bound
+:- dynamic conditional_upper_bound/3.
 
 %! non_terminating_stub(?Head:term,?Id:equation_id)
 % It indicates that the cost equation Id is non-terminating
@@ -230,4 +239,7 @@ add_closed_upper_bound(Head,Chain,CExpr) :-
 	  assertz(closed_upper_bound(Head,Chain,Hash,CExpr))
 	),!.
 
-
+%! add_conditional_upper_bound(+Head:term,+Cost_expression:cost_expression,+Preconditions:list(polyhedron)) is det
+% stores the conditional upper bound determined by the cost Cost_expression and the precondition Precondition
+add_conditional_upper_bound(Head,CExpr,Preconditions) :-	
+	  assertz(conditional_upper_bound(Head,CExpr,Preconditions)).

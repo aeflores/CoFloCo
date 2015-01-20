@@ -30,6 +30,7 @@ This module prints the results of the analysis
 		  print_equations_refinement/2,
 		  print_phase_termination_argument/4,
 		  print_single_closed_result/2,
+		  print_conditional_upper_bounds/1,
 		  print_closed_results/2,
 		  print_stats/0]).
 
@@ -39,11 +40,13 @@ This module prints the results of the analysis
 						eq_ph/7,
 						upper_bound/4,
 						closed_upper_bound/4,
+						conditional_upper_bound/3,
 						non_terminating_chain/2]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
 
 :- use_module('../utils/cost_expressions',[cexpr_add_list/2,get_asymptotic_class_name/2]).
+:- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2]).
 
 :- use_module('../IO/params',[parameter_dictionary/3,get_param/2,
 		      param_description/2]).
@@ -228,6 +231,26 @@ print_single_closed_result(Entry,Expr):-
 	format('~p ~n',[Expr2]),
 	format('Asymptotic class: ~p ~n',[Asym_class]).
 
+%! print_conditional_upper_bounds(+Head:term) is det
+% print the conditional upper bounds
+print_conditional_upper_bounds(Head):-
+	copy_term(Head,Head2),
+	ground_header(Head2),
+	ansi_format([underline,bold],'Partitioned cost of ~p: ~n',[Head2]),
+	print_conditional_upper_bound(Head).
+
+print_conditional_upper_bound(Head):-
+	conditional_upper_bound(Head,Cost,[Cond1|Conditions]),
+	maplist(maplist(pretty_print_constr),[Cond1|Conditions],[Cond1_pretty|Conditions_pretty]),
+	ground_header(Head),
+	format('~p ~n if ~p~n',[Cost,Cond1_pretty]),
+	maplist(print_partition_condition,Conditions_pretty),
+	fail.
+print_conditional_upper_bound(_).	
+
+print_partition_condition(Cond):-
+	format(' or ~p~n',[Cond]).
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 print_cost_structure(cost(Exp,Loops,Conditions)):-
@@ -268,6 +291,10 @@ ground_header(Head):-
    ground_equation_header(Head),!.
  ground_header(Head):- 
     numbervars(Head,0,_).
+    
+
+
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_help is det
@@ -330,3 +357,37 @@ print_stats:-
 		format("Compressed invariants: ~p ~n",[N_compressed_invs]).
 
 print_stats.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! pretty_print_constr(+Constr:linear_constraint,-Simple_constr:linear_constraint) is det
+% format a linear constraint so it is easily readable
+pretty_print_constr(Constr,Simple_constr):-
+	constraint_to_coeffs_rep(Constr, coeff_rep(Coeffs,Rel,B)),
+	partition(is_negative_coeff,Coeffs,Neg,Pos),
+	maplist(make_positive,Neg,Neg1),
+	maplist(simplify_multipliers,Pos,Pos1),
+	maplist(simplify_multipliers,Neg1,Neg2),
+	(B=0->
+	  Pos2=Pos1,
+	  Neg3=Neg2
+	;
+	(B<0->
+	 B1 is 0-B,
+	 append(Pos1,[B1],Pos2),
+	 Neg3=Neg2
+	;
+	 append(Neg2,[B],Neg3),
+	 Pos2=Pos1
+	)
+	),
+	write_sum(Pos2,Left),
+	write_sum(Neg3,Right),
+	Simple_constr=..[Rel,Left,Right].
+
+is_negative_coeff(X*_Var):-
+	number(X),X<0.
+make_positive(X*Var,X1*Var):-
+	X1 is 0-X.
+simplify_multipliers(1*Var,Var):-!.
+simplify_multipliers(X,X).

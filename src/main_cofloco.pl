@@ -134,6 +134,8 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('upper_bounds/upper_bounds',[compute_upper_bound_for_scc/2,
 				  compute_closed_bound/1,
 				  compute_single_closed_bound/2]).
+:- use_module('upper_bounds/conditional_upper_bounds',[compute_conditional_upper_bounds/1]).
+				  
 :- use_module('upper_bounds/phase_solver',[init_phase_solver/0]).
 :- use_module('upper_bounds/cost_equation_solver',[init_cost_equation_solver/0]).    
 
@@ -144,6 +146,7 @@ The main "data types" used in CoFloCo are the following:
 		      print_chains/1,
 		      print_chains_entry/2,
 		      print_single_closed_result/2,
+		      print_conditional_upper_bounds/1,
 		      print_stats/0,
 		      print_help/0]).
 :- use_module('IO/input',[read_cost_equations/1,store_cost_equations/1]).
@@ -378,12 +381,17 @@ compute_closed_bound_scc(Head) :-
 	copy_term(Head,Head_aux),
 	profiling_start_timer(solver),
 	compute_closed_bound(Head),
-	compute_single_closed_bound(Head_aux,Exp),
 	profiling_stop_timer_acum(solver,_),
 	conditional_call((get_param(v,[N]),N>0),	
 		 print_closed_results(Head,2)
 		),
-	print_single_closed_result(Head_aux,Exp).
+	(get_param(conditional_ubs,[])->
+	   compute_conditional_upper_bounds(Head_aux),
+	   print_conditional_upper_bounds(Head_aux)
+	   ;
+	   compute_single_closed_bound(Head_aux,Exp),
+	   print_single_closed_result(Head_aux,Exp)
+	).
 	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
