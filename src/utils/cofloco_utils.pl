@@ -132,14 +132,24 @@ normalize_constraint(C,CN):-
 % given a linear constraint, it generates a coefficient representation.
 %
 % Coeffs=[C1*X1, C2*X2,..., CN*XN] Rel='>=' and B=C0.
-constraint_to_coeffs_rep(Constr, coeff_rep(Coeffs,Rel,B)) :-
+constraint_to_coeffs_rep(Constr, coeff_rep(Coeffs_sorted,Rel1,B)) :-
     Constr =.. [ Rel, L, R],
     is_relational(Rel),
+   
     parse_le( L-R, Le_x),
     integrate_le(  Le_x, _Den, Coeffs_x + NegB), 
     maplist(tuple, Vars, Fracs,Coeffs_x),
-    maplist(zip_with_op( '*'), Fracs, Vars, Coeffs), 
-    negate_fr( NegB, B).
+     (Rel= '=<'->
+        maplist(negate_fr,Fracs,Fracs1),
+        NegB=B,
+        Rel1= '>='
+        ;
+        Fracs=Fracs1,
+        negate_fr( NegB, B),
+        Rel1= Rel      
+    ),
+    maplist(zip_with_op( '*'), Fracs1, Vars, Coeffs),
+    from_list_sl(Coeffs,Coeffs_sorted).
 
 
 is_relational( =<).
