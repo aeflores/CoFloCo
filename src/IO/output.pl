@@ -180,11 +180,12 @@ print_results(Entry,RefCnt):-
 	print_results_1(Entry,RefCnt).
 print_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
+	maplist(pretty_print_constr,EPat,EPat_pretty),
  	upper_bound(Entry,Chain,_,CExp),
 	print_chain(Entry,Chain),
 	format(': ',[]),
 	print_cost_structure(CExp),
-	format(' when ~p ~n',[EPat]),
+	format('~n  with precondition: ~p ~n~n',[EPat_pretty]),
  	fail.
 print_results_1(_Entry,_).
 
@@ -203,9 +204,10 @@ print_closed_results(Entry,RefCnt):-
 
 print_closed_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
+	maplist(pretty_print_constr,EPat,EPat_pretty),
  	closed_upper_bound(Entry,Chain,_,CExp),
 	print_chain(Entry,Chain),
-	format(': ~p  when ~p ~n',[CExp,EPat]),
+	format(': ~p  with precondition: ~p ~n',[CExp,EPat_pretty]),
  	fail.
 print_closed_results_1(_Entry,_).
 
@@ -255,25 +257,31 @@ print_partition_condition(Cond):-
 
 print_cost_structure(cost(Exp,Loops,Conditions)):-
 	print(Exp),
-	print_cs_loops(Loops,1,_),nl,
-	print_cs_conditions(Conditions).
+	print_cs_loops(Loops,[Conditions],1,_,All_conditions),
+	reverse(All_conditions,All_conditions_rev),
+	print_all_cs_conditions(All_conditions_rev).
 
-print_cs_loops([],N,N).
-print_cs_loops([loop(It_var,Exp,InternalLoops,Conds)|Loops],N,Nout):-
+print_cs_loops([],Accum_conditions,N,N,Accum_conditions).
+print_cs_loops([loop(It_var,Exp,InternalLoops,Conds)|Loops],Accum_conditions,N,Nout,All_conditions):-
 	it_var_name(It_var,N),
 	N2 is N+1,
 	format('+~p*(~p',[It_var,Exp]),
-	print_cs_loops(InternalLoops,N2,N3),
+	print_cs_loops(InternalLoops,[Conds|Accum_conditions],N2,N3,Accum_conditions1),
 	format(')',[]),
-	print_cs_conditions(Conds),
-	print_cs_loops(Loops,N3,Nout).
+	print_cs_loops(Loops,Accum_conditions1,N3,Nout,All_conditions).
 
-print_cs_conditions([]).
-print_cs_conditions([C|Conditions]):-
-	format(' such that ',[]),
-	print_cs_conditions_1([C|Conditions]),
-	nl.
-print_cs_conditions_1([]).
+print_all_cs_conditions([[]]):-!.
+print_all_cs_conditions([First|All_conditions]):-
+	format('~n  Such that:~12|',[]),
+	print_cs_conditions_1(First),
+	maplist(print_cs_conditions,All_conditions).
+
+print_cs_conditions([]):-!.
+print_cs_conditions(Conditions):-
+	format('~n~12|',[]),
+	print_cs_conditions_1(Conditions).
+
+print_cs_conditions_1([C]):-!,print_norm(C).
 print_cs_conditions_1([C|Cs]):-
 	print_norm(C),
 	format(',',[]),
