@@ -53,7 +53,7 @@ This module prints the results of the analysis
 
 :- use_module(stdlib(profiling),[profiling_get_info/3]).
 :- use_module(stdlib(counters),[counter_get_value/2]).
-
+:- use_module(stdlib(utils),[ut_flat_list/2]).
 
 
 %! print_equations_refinement(+Head:term,+RefCnt:int) is det
@@ -259,7 +259,12 @@ print_cost_structure(cost(Exp,Loops,Conditions)):-
 	print(Exp),
 	print_cs_loops(Loops,[Conditions],1,_,All_conditions),
 	reverse(All_conditions,All_conditions_rev),
-	print_all_cs_conditions(All_conditions_rev).
+	ut_flat_list(All_conditions_rev,All_conditions_flat),
+	(All_conditions_flat=[]->
+	   true
+	   ;
+	   print_all_cs_conditions(All_conditions_rev)
+	 ).
 
 print_cs_loops([],Accum_conditions,N,N,Accum_conditions).
 print_cs_loops([loop(It_var,Exp,InternalLoops,Conds)|Loops],Accum_conditions,N,Nout,All_conditions):-
@@ -270,10 +275,14 @@ print_cs_loops([loop(It_var,Exp,InternalLoops,Conds)|Loops],Accum_conditions,N,N
 	format(')',[]),
 	print_cs_loops(Loops,Accum_conditions1,N3,Nout,All_conditions).
 
-print_all_cs_conditions([[]]):-!.
+
 print_all_cs_conditions([First|All_conditions]):-
 	format('~n  Such that:~12|',[]),
-	print_cs_conditions_1(First),
+	(First=[]->
+	    true
+	    ;
+	    print_cs_conditions_1(First)
+	),
 	maplist(print_cs_conditions,All_conditions).
 
 print_cs_conditions([]):-!.
