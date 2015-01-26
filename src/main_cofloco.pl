@@ -102,7 +102,7 @@ The main "data types" used in CoFloCo are the following:
 */
 
 
-:- module(main_cofloco,[cofloco_shell_main/0,cofloco_query/2]).
+:- module(main_cofloco,[cofloco_shell_main/0,cofloco_query/2,cofloco_query/1]).
 
 :-include('search_paths.pl').
 
@@ -165,10 +165,8 @@ The main "data types" used in CoFloCo are the following:
 % it performs the complete analysis
 cofloco_shell_main:-
         current_prolog_flag(argv, Args),
-           set_default_params,
 	   (Args=[_|_]->
-	    catch(parse_params(Args),E,(print_message(error, E), halt)),
-	    catch(main,E,(print_message(error, E),halt))
+	    catch(cofloco_query(Args),E,(print_message(error, E),halt))
 	   ;
 	    print_help
 	   ),
@@ -188,6 +186,7 @@ save_executable:-
 %! cofloco_query(+Eqs:list(cost_equation),+Params:list(atom)) is det
 % perform the main analysis on the equations Eqs with the parameters Params
 cofloco_query(Eqs,Params):-
+	set_default_params,
 	parse_params(Params),
     ppl_my_initialize,
 	init_timers,
@@ -197,33 +196,38 @@ cofloco_query(Eqs,Params):-
 	refinement,
 	upper_bounds.
 
-
 	
-%! main is det
+%! cofloco_query(+Params:list(atom)) is det
 % Obtains the input file, read the cost equations, preprocess the cost equations,
 % perform the main analysis and print results
-main:-
+cofloco_query(Params):-
+	set_default_params,
+	parse_params(Params),
     ppl_my_initialize,
 	init_timers,
 	init_database,
 	profiling_start_timer(analysis),
-	get_param(input,[File]),!,
-	read_cost_equations(File),
-	preprocess_cost_equations,
-	refinement,
-	(get_param(only_termination,[])->
-		true
+	(get_param(input,[File])->
+		read_cost_equations(File),
+		preprocess_cost_equations,
+		refinement,
+		(get_param(only_termination,[])->
+			true
+			;
+			upper_bounds
+		),	
+		profiling_stop_timer(analysis,T_analysis),
+		ansi_format([underline,bold],'Time statistics:~p~n',[' ']),
+		conditional_call(get_param(stats,[]),print_stats),		
+		format("Total analysis performed in ~0f ms.~n~n",[T_analysis])  
+	;
+		(get_param(help,[])->
+		   print_help
 		;
-		upper_bounds
-	),
-	
-	profiling_stop_timer(analysis,T_analysis),
-	ansi_format([underline,bold],'Time statistics:~p~n',[' ']),
-	conditional_call(get_param(stats,[]),print_stats),		
-	format("Total analysis performed in ~0f ms.~n~n",[T_analysis]).
+		   throw(error('No input file given'))
+		)
+	).
 
-main:-
-	print_help.
 
 %! init_database is det
 % erase all the information from previous analyses	
