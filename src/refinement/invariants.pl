@@ -40,6 +40,7 @@ This module computes different kinds of invariants for the chains:
 :- module(invariants,[compute_invariants_for_scc/2,
 		      compute_forward_invariants/2,
 		      clean_invariants/0,
+		      add_backward_invariant/3,
 		      backward_invariant/4,
 		      forward_invariant/4,
 		      scc_forward_invariant/3,
@@ -52,7 +53,7 @@ This module computes different kinds of invariants for the chains:
 :- use_module(chains,[chain/3]).
 
 
-:- use_module('../utils/cofloco_utils',[assign_right_vars/3]).
+:- use_module('../utils/cofloco_utils',[assign_right_vars/3,add_equality_constraints/4]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,nad_consistent_constraints_group_aux/1,nad_is_bottom/1]).
 
 
@@ -709,12 +710,4 @@ get_phase_star(Head,Call,Phase,Cs_star):-
 	assert(phase_transitive_star_closure(Phase,RefCnt,Head,Call,Cs_star)).
 
 
-%! add_equality_constraints(+Vs_1:list(var),+Vs_2:list(var),+Cs_1:polyhedron,-Cs_2:polyhedron) is det
-%
-%  Vs_1 and Vs_2 are list of the same length, Cs_2 includes Cs_1 and
-%  equality constraints between the corresponding elements of Vs_1 and
-%  Vs_2.
-%
-add_equality_constraints([], [], Cs, Cs).
-add_equality_constraints([X|Xs], [Y|Ys], Init_Cs, [X=Y|Cs]) :-
-	add_equality_constraints(Xs, Ys, Init_Cs, Cs).
+

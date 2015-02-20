@@ -30,6 +30,11 @@
 :- use_module(cost_expressions,[cexpr_simplify/3]).		
 :- use_module(stdlib(set_list)).
 	
+%! compress_cost_structures(+Cs_list:list(cost_structure),-Cost_structure:cost_structure) is det
+% obtain a cost structure that is a safe approximation of the disjuntion of the cost
+% structures in Cs_list
+compress_cost_structures(Cs_list,Cost_structure).	
+	
 %! cost_structure_simplify(+Cost_structure:cost_structure,+Ctx:polyhedron,-Cost_structure:cost_structure) is det
 % simplify the cost structure Cost_structure.
 % Simplify the base expressions and the loops. If some loops can be eliminated, remove the corresponding

@@ -135,6 +135,7 @@ The main "data types" used in CoFloCo are the following:
 				  compute_closed_bound/1,
 				  compute_single_closed_bound/2]).
 :- use_module('upper_bounds/conditional_upper_bounds',[compute_conditional_upper_bounds/1]).
+:- use_module('upper_bounds/compress_upper_bounds',[compress_chain_upper_bounds/1]).
 				  
 :- use_module('upper_bounds/phase_solver',[init_phase_solver/0]).
 :- use_module('upper_bounds/cost_equation_solver',[init_cost_equation_solver/0]).    
@@ -343,7 +344,8 @@ bottom_up_refinement_scc(Head) :-
 	compute_forward_invariants(Head,2),	
 	compute_invariants_for_scc(Head,2),
 	profiling_stop_timer_acum(inv,_),
-	
+	%FIXME
+%	compress_chain_upper_bounds(Head),
 	print_chains_entry(Head_aux,2).
 	
 

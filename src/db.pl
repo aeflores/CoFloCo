@@ -45,6 +45,8 @@ This module acts as a database that stores:
 
 	   upper_bound/4,
 	   add_upper_bound/3,
+	   external_upper_bound/3,
+	   add_external_upper_bound/3,
 	   closed_upper_bound/4,
 	   add_closed_upper_bound/3,
 	   conditional_upper_bound/3,	  
@@ -106,6 +108,12 @@ This module acts as a database that stores:
 % Hash is the hash of part of the cost structure and can be used to compress similar cost structures
 :- dynamic upper_bound/4.
 
+%! external_upper_bound(?Head:term,?Precondition_id:int,-Cost_structure:cost_structure)
+% an cost structure that represents an upper bound of a call to Head with the precondition
+% Precondition_id. 
+% Hash is the hash of part of the cost structure and can be used to compress similar cost structures
+:- dynamic external_upper_bound/3.
+
 %! closed_upper_bound(?Head:term,?Chain:chain,-Hash:int,-Cost_expression:cost_expression)
 % an cost expression that represents an upper bound of the chain Chain that belongs to the SCC Head.  
 % Hash is the hash of part of the cost structure and can be used to compress similar cost structures
@@ -141,6 +149,7 @@ init_db:-
 	
 	retractall(phase_loop(_,_,_,_,_)),
 	retractall(upper_bound(_,_,_,_)),
+	retractall(external_upper_bound(_,_,_)),
 	retractall(closed_upper_bound(_,_,_,_)),
 	
 	retractall(non_terminating_stub(_,_)),
@@ -227,6 +236,16 @@ add_upper_bound(Head,Chain,CExpr) :-
 	  term_hash((Loops,Constr),Hash),
 	  assertz(upper_bound(Head,Chain,Hash,CExpr))
 	),!.
+	
+%! add_external_upper_bound(+Head:term,+Precondition_id:int,+Cost_structure:cost_structure) is det
+% stores the upper bound for the precondition Precondition_id.
+add_external_upper_bound(Head,Precondition_id,CExpr) :-	
+	(external_upper_bound(Head,Precondition_id,CExpr)->
+	 true
+	;
+	  assertz(external_upper_bound(Head,Precondition_id,CExpr))
+	),!.	
+	
 %! add_closed_upper_bound(+Head:term,+Chain:chain,+Cost_expression:cost_expression) is det
 % stores the closed upper bound of chain Chain. It computes the hash of the cost expression
 add_closed_upper_bound(Head,Chain,CExpr) :-	

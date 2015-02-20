@@ -63,7 +63,7 @@ The specific "data types" used in this module are the following:
 						tuple/3,
 						sort_with/3]).
 :- use_module('../IO/params',[get_param/2]).						
-:- use_module('../db',[closed_upper_bound/4,add_conditional_upper_bound/3]).
+:- use_module('../db',[closed_upper_bound/4,upper_bound/4,add_conditional_upper_bound/3]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 
 :- use_module(stdlib(set_list)).
@@ -107,7 +107,6 @@ compute_conditional_upper_bounds(Head):-
 save_conditional_upper_bound(Head,(Cost,Precondition)):-
 	add_conditional_upper_bound(Head,Cost,Precondition).
 	
-		
 	
 %! create_initial_execution_patterns(+Ex_patterns:list(execution_pattern(cost_expression,polyhedron)),+Id:int,-Ex_patterns1:list(execution_pattern)) is det
 % Create the inital set of execution patterns:
