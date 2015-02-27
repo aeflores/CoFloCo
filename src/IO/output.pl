@@ -339,6 +339,8 @@ print_parameters_list.
 print_stats:-
 	profiling_get_info(pe,T_pe,_),
 	profiling_get_info(inv,T_inv,_),
+	profiling_get_info(inv_back,T_inv_back,_),
+	profiling_get_info(inv_transitive,T_inv_transitive,_),
 	profiling_get_info(unfold,T_unfold,_),
 	profiling_get_info(ubs,T_ubs,_),
 
@@ -358,6 +360,8 @@ print_stats:-
 	counter_get_value(compressed_chains,N_compressed_chains),
 	format("Partial evaluation computed in ~0f ms.~n",[T_pe]),
 	format("Invariants computed in ~0f ms.~n",[T_inv]),
+	format("----Backward Invariants ~0f ms.~n",[T_inv_back]),
+	format("----Transitive Invariants ~0f ms.~n",[T_inv_transitive]),
 	format("Refinement performed in ~0f ms.~n",[T_unfold]),
 	format("Termination proved in ~0f ms.~n",[T_termination]),
 	format("Upper bounds computed in ~0f ms.~n",[T_ubs]),

@@ -53,14 +53,19 @@ This module computes different kinds of invariants for the chains:
 :- use_module(chains,[chain/3]).
 
 
-:- use_module('../utils/cofloco_utils',[assign_right_vars/3,add_equality_constraints/4]).
-:- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,nad_consistent_constraints_group_aux/1,nad_is_bottom/1]).
-
-
+:- use_module('../utils/cofloco_utils',[assign_right_vars/3,add_equality_constraints/4,
+normalize_constraint/2]).
+:- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,
+					nad_consistent_constraints_group_aux/1,
+					nad_is_bottom/1,
+					group_relevant_vars/4,
+					nad_normalize_polyhedron/2]).
+:- use_module('../utils/polyhedra_optimizations',[]).	
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(counters),[counter_increase/3]).
 :- use_module(stdlib(numeric_abstract_domains),[
 	nad_glb/3,nad_list_glb/2,nad_project/3, nad_entails/3, nad_lub/6,nad_list_lub/2, nad_widen/5,
+	nad_normalize/2,
 	nad_false/1,nad_consistent_constraints/1]).
 :- use_module(stdlib(utils),[ut_append/3,ut_flat_list/2, ut_member/2, ut_list_to_dlist/2,ut_split_at_pos/4]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_stop_timer_acum/2]).
@@ -159,18 +164,20 @@ add_backward_invariant(Head,(Chain,RefCnt),Inv):-
 add_forward_invariant(Head,(Chain,RefCnt),_):-
 	forward_invariant(Head,(Chain,RefCnt),_,_),!.
 add_forward_invariant(Head,(Chain,RefCnt),Inv):-
-	copy_term((Head,Inv),(E,IPat)),
+	nad_normalize_polyhedron(Inv,Inv_normalized),
+	copy_term((Head,Inv_normalized),(E,IPat)),
 	numbervars(E,0,_),
 	term_hash(IPat,Hash),
 %	format('~p~n',forward_invariant(E,(Chain,RefCnt),Hash,IPat)),
-	assertz(forward_invariant(Head,(Chain,RefCnt),Hash,Inv)).
+	assertz(forward_invariant(Head,(Chain,RefCnt),Hash,Inv_normalized)).
 
 %! add_scc_forward_invariant(+Phase:phase,+RefCnt:int,+Inv:polyhedron)
 %  store the invariant if it does not already exits
 add_scc_forward_invariant(Head,RefCnt,_) :-
 	scc_forward_invariant(Head,RefCnt,_),!.
 add_scc_forward_invariant(Head,RefCnt,Inv) :-
-	assertz(scc_forward_invariant(Head,RefCnt,Inv)).
+	nad_normalize_polyhedron(Inv,Inv_normalized),
+	assertz(scc_forward_invariant(Head,RefCnt,Inv_normalized)).
 	
 %! add_relation2entry_invariant(+Phase:phase,+Chain_RefCnt:(chain,int),+Inv:polyhedron)
 %  store the invariant if it does not already exits
@@ -203,8 +210,12 @@ add_phase_transitive_closure(Phase,RefCnt,Head,Call,Inv) :-
 % 
 %  @throws invariants_failed This means there is a bug in the implementation
 compute_invariants_for_scc(Head,RefCnt) :-
+	profiling_start_timer(inv_back),
 	compute_backward_invariants(Head,RefCnt),
+	profiling_stop_timer_acum(inv_back,_),
+	profiling_start_timer(inv_transitive),
 	compute_loops_transitive_closures(Head,RefCnt),
+	profiling_stop_timer_acum(inv_transitive,_),
 	compute_relation2entry_invariants(Head,RefCnt),
 	!. 
 
@@ -261,19 +272,20 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-%
 
 % the base case of the chain, the backward invariant is the cost equation definition
 % and the corresponding forward invariant
-compute_backward_invariant([Base_case],Prev_chain,Head,RefCnt,Entry_pattern):-!,
+compute_backward_invariant([Base_case],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-!,
     eq_ph(Head,(Base_case,RefCnt),_,_,_,_,Cs_1),
     forward_invariant(Head,([Base_case|Prev_chain],RefCnt),_Hash,Inv),
    % append(Cs_1,Inv,Cs),
     nad_glb(Cs_1,Inv,Cs),
     Head=..[_|Vars],
     nad_project_group(Vars,Cs,Entry_pattern),
-	\+nad_is_bottom(Entry_pattern).
+	\+nad_is_bottom(Entry_pattern),
+	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized).
  
  % We have a phase that is not iterative (Ph is a number).
  % The backward invariant is obtained by applying the loop definition once to the
  % backward invariant of the rest of the chain
-compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-
+compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-
 	number(Ph),!,
 	copy_term(Head,Call),
 	compute_backward_invariant(Chain,[Ph|Prev_chain],Call,RefCnt,Initial_inv),
@@ -284,17 +296,18 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-
 	nad_list_glb([Local_inv,Cs,Initial_inv],Cs_2),
 	nad_project_group(EVars,Cs_2,Entry_pattern),
 	%even if the invariant is unfeasible, we store to save time when computing invariants with the same suffix
-	(nad_is_bottom(Entry_pattern)->
+	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
+	(nad_is_bottom(Entry_pattern_normalized)->
 	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1])),
 	  fail
 	;
-	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern))
+	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
 	  ).
 
 % We have an iterative phase.
 % we apply the loops of the phase to the backward invariant of the rest of the chain
 % a number of times until we reach a fixpoint
-compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-
+compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-
 	compute_backward_invariant(Chain,[Ph|Prev_chain],Head,RefCnt,Initial_inv),
 	phase_loop(Ph,RefCnt,Head,_,Cs),
 	forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
@@ -312,11 +325,12 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-
 	nad_project_group(EVars,Cs,Extra_conds),
 	nad_glb(Extra_conds,It_pattern,Entry_pattern),
 	Head=Head_loop,
-	(nad_is_bottom(Entry_pattern)->
+	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
+	(nad_is_bottom(Entry_pattern_normalized)->
 	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1])),
 	fail
 	;
-	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern))
+	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
 	).
 
 %first mandatory iteration
@@ -328,7 +342,10 @@ backward_invariant_fixpoint_1(inv(Head_inv,Inv),Loops,inv(Head_out,Inv_out)):-!,
 	nad_list_lub(Cs_list,NewInv),
 %	nad_lubs_group(Cs_list,NewInv),
 	backward_invariant_fixpoint(0,inv(Head_new,NewInv),Loops,inv(Head_out,Inv_out)).
+
 	
+
+
 %subsequent optional iterations
 % given the initial invariant inv(Head_inv,Inv) we apply each of the loops and 
 % obtain the convex hull of the results.

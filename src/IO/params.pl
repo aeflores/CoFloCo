@@ -66,7 +66,7 @@ parameter_dictionary('-n_rankings','n_rankings',[number]).
 
 parameter_dictionary('-maximize_fast','maximize_fast',[number]).
 
-parameter_dictionary('-no_compression','no_compression',[bool]).%TODO
+parameter_dictionary('-compress_chains','compress_chains',[]).
 
 parameter_dictionary('-only_termination','only_termination',[bool]).
 parameter_dictionary('-prolog_format','prolog_format',[bool]).
@@ -117,7 +117,7 @@ process_args([bool|More],[Value|Vs],[Processed_value|Pvs],Rest):-
 process_args([bool|More],Vs,[yes|Pvs],Rest):-
 	process_args(More,Vs,Pvs,Rest).
 	
-process_args([yes|More],[Value|Vs],[Processed_value|Pvs],Rest):-
+process_args([atom|More],[Value|Vs],[Processed_value|Pvs],Rest):-
 	term_to_atom(Processed_value,Value),!,
 	process_args(More,Vs,Pvs,Rest).
 

@@ -31,7 +31,8 @@ the input variables and the variables of the recursive call (if there is one)
 
 :- use_module('../db',[eq_ph/7,
 			     loop_ph/4,
-			     upper_bound/4]).
+			     upper_bound/4,
+			     external_upper_bound/3]).
 
 :- use_module('../utils/cofloco_utils',[
 			get_it_vars_in_loop/2,
@@ -94,8 +95,10 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Eq_id,Cost):-
 
 
 
-substitute_call((Call,Chain),Base_cost,Loops,Constraints) :-
+substitute_call((Call,chain(Chain)),Base_cost,Loops,Constraints) :-
     upper_bound(Call,Chain,_Hash,cost(Base_cost,Loops,Constraints)).
+substitute_call((Call,external_pattern(Id)),Base_cost,Loops,Constraints) :-
+	external_upper_bound(Call,Id,cost(Base_cost,Loops,Constraints)).
 
 
 

@@ -43,6 +43,9 @@ This module acts as a database that stores:
 	   non_terminating_stub/2,
 	   non_terminating_chain/2,	   
 
+	   external_call_pattern/5,
+	   add_external_call_pattern/5,
+	   
 	   upper_bound/4,
 	   add_upper_bound/3,
 	   external_upper_bound/3,
@@ -103,6 +106,11 @@ This module acts as a database that stores:
 % a summary of all the loops of a phase (Phase) of the cost equation Head
 :- dynamic  phase_loop/5.
 
+%! external_call_pattern(Head:term,Id_RefCnt:(int,int),Terminating:flag,Components:list(Chain),Inv:polyhedron)
+% a call pattern of Head defined by Inv that comprises possible calls to the
+% chains in Components
+:- dynamic external_call_pattern/5.
+
 %! upper_bound(?Head:term,?Chain:chain,-Hash:int,-Cost_structure:cost_structure)
 % an cost structure that represents an upper bound of the chain Chain that belongs to the SCC Head.  
 % Hash is the hash of part of the cost structure and can be used to compress similar cost structures
@@ -148,6 +156,7 @@ init_db:-
 	retractall(loop_ph(_,_,_,_)),
 	
 	retractall(phase_loop(_,_,_,_,_)),
+	retractall(external_call_pattern(_,_,_,_,_)),
 	retractall(upper_bound(_,_,_,_)),
 	retractall(external_upper_bound(_,_,_)),
 	retractall(closed_upper_bound(_,_,_,_)),
@@ -223,6 +232,12 @@ add_loop_ph(Head,RefCnt,Call,Cs, Id) :-
 % stores the summary loop corresponding to the phase Phase in the database	
 add_phase_loop(Phase,RefCnt,Head,Call,Cs):-
 		assertz(phase_loop(Phase,RefCnt,Head,Call,Cs)).
+
+%! add_external_call_pattern(+Head:term,+Id_RefCnt:(int,int),+Terminating:flag,+Components:list(chain),+Inv:polyhedron) is det
+% store a external call pattern
+add_external_call_pattern(Head,Id_RefCnt,Terminating,Components,Inv) :-	
+	  assertz(external_call_pattern(Head,Id_RefCnt,Terminating,Components,Inv)).
+
 
 %! add_upper_bound(+Head:term,+Chain:chain,+Cost_structure:cost_structure) is det
 % stores the upper bound of chain Chain. It computes the hash of the iterative components of the cost structure

@@ -34,25 +34,23 @@ that can be passed on to the callers.
 :- use_module(chain_solver,[compute_chain_cost/3]).
 :- use_module(ub_solver,[solve_system/3]).
 
-:- use_module('../db',[add_upper_bound/3,
+:- use_module('../db',[
+		  external_call_pattern/5,
+		  add_upper_bound/3,
 		  upper_bound/4,
 		  add_external_upper_bound/3,
 		  add_closed_upper_bound/3,
 		  non_terminating_chain/2,
 		  closed_upper_bound/4]).
 
-:-use_module('../refinement/invariants',[backward_invariant/4]).
-
+:- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
-
-:- use_module('../IO/params',[get_param/2]).
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3,cexpr_max/2]).
-:- use_module('../utils/cost_structures',[cost_structure_simplify/3,compress_cost_structures/2]).
-					 					 
-:- use_module(stdlib(utils),[ut_member/2,ut_sort_rdup/2,ut_split_at_pos/4]).
-:- use_module(stdlib(numeric_abstract_domains),[nad_project/3]).
-:- use_module(stdlib(polyhedra_ppl),[ppl_my_initialize/0]).
+:- use_module('../utils/cost_structures',[
+				cost_structure_simplify/3,
+				compress_cost_structures/4]).
+
 
 %! compute_upper_bound_for_scc(+Head:term,+RefCnt:int) is det
 % compute an upper bound for each chain
@@ -62,7 +60,7 @@ compute_upper_bound_for_scc(Head,RefCnt):-
 	chain(Head,RefCnt,Chain),
 	compute_chain_upper_bound(Head,Chain),
 	fail.
-compute_upper_bound_for_scc(_,_).
+
 compute_upper_bound_for_scc(Head,RefCnt):-
 	compress_upper_bounds_for_external_calls(Head,RefCnt).
 
@@ -89,13 +87,6 @@ compute_closed_bound(Head):-
 	fail.
 compute_closed_bound(_Head).
 
-%! compute_single_closed_bound(+Head:term,-SimpleExp:cost_expression) is det
-% compute a closed bound that is the maximum of all the closed bounds of all the chains in a SCC Head
-compute_single_closed_bound(Head,SimpleExp):-
-	bagof_no_fail(CExp,
-		Chain^E1^closed_upper_bound(Head,Chain,E1,CExp),CExps),
-	cexpr_max(CExps,Max),
-	cexpr_simplify(Max,[],SimpleExp),!.
 	
 %! compress_upper_bounds_for_external_calls(+Head:term,+RefCnt:int) is det
 % For each external call pattern, it computes an upper bound and store it
@@ -105,13 +96,22 @@ compute_single_closed_bound(Head,SimpleExp):-
 % Each call pattern contains a set of chains. The upper bound (cost structure)
 % is obtained by compressing the upper bound of these chains into one.
 compress_upper_bounds_for_external_calls(Head,RefCnt):-
-	external_call_pattern(Head,(Precondition_id,RefCnt),Components,_Inv),
+	external_call_pattern(Head,(Precondition_id,RefCnt),_Terminating,Components,Inv),
 	bagof_no_fail(Cost_structure,Chain^E1^(
 		    member(Chain,Components),
 	        upper_bound(Head,Chain,E1,Cost_structure)
 	        ),Cost_structures),       
-	compress_cost_structures(Cost_structures,Final_cost_structure),
+	compress_cost_structures(Cost_structures,Head,Inv,Final_cost_structure),
 	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),
 	fail.
 compress_upper_bounds_for_external_calls(_,_).	
+
+%! compute_single_closed_bound(+Head:term,-SimpleExp:cost_expression) is det
+% compute a closed bound that is the maximum of all the closed bounds of all the chains in a SCC Head
+compute_single_closed_bound(Head,SimpleExp):-
+	bagof_no_fail(CExp,
+		Chain^E1^closed_upper_bound(Head,Chain,E1,CExp),CExps),
+	cexpr_max(CExps,Max),
+	cexpr_simplify(Max,[],SimpleExp),!.
+	
 

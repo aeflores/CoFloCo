@@ -39,36 +39,38 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 
 :- module(unfolding,[reinforce_equations_with_forward_invs/2,
 			   unfold_calls/2,
-			   remove_terminating_non_terminating_chains/2]).
+			   remove_terminating_non_terminating_chains/2,
+			   compress_chains_execution_patterns/2]).
 
 :- use_module(chains,[chain/3]).
 :- use_module(invariants,[backward_invariant/4,
 			 scc_forward_invariant/3,
 			 forward_invariant/4
 			 ]).
-			 		
+		 		
 :- use_module('../db',[eq_ph/7,
 		  loop_ph/4,
 		  add_eq_ph/3,
-		  add_upper_bound/3,	
+		  add_external_call_pattern/5,
+		  external_call_pattern/5,
 		  upper_bound/4,
 		  non_terminating_stub/2,
 		  non_terminating_chain/2]).
 :-use_module('../termination_checker',[termination_argument/4]).
-				 
-
+		 
 			 
 :- use_module('../IO/output',[print_chain/2]).
 :- use_module('../IO/params',[get_param/2]).	
-:- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
+:- use_module('../utils/cofloco_utils',[bagof_no_fail/3,assign_right_vars/3]).
 :- use_module('../utils/polyhedra_optimizations',[
 	nad_consistent_constraints_group_aux/1,
 	slice_relevant_constraints_and_vars/5]).
 
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_lub/6,
+			            nad_normalize/2,
 						nad_list_lub/2,nad_glb/3,nad_project/3]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
-
+:- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 %! reinforce_equations_with_forward_invs(Head:term,RefCnt:int) is det
 %  adds the information inferred from the forward invariants to the cost equations' definition
 %  of a SCC. At the same time, it computes the scc_forward_invariant of the  SCCs that are called from the target SCC.
@@ -180,24 +182,35 @@ unfold_calls_aux_b([R_Call|More],B_Calls,Head,RefCnt,Cost,Rec_Calls,New_B_Calls,
 
 unfold_calls_aux_b([Base_Call|More],[Base_Call|MoreB],Head,RefCnt,Cost,R_Calls,New_B_Calls,New_T_Calls,Cs,Term_flag,Id):-
 	\+unifiable(Base_Call,Head,_),
-	backward_invariant(Base_Call,(Chain,RefCnt),_Hash_inv,Head_Pattern),
+	(external_call_pattern(Base_Call,_,_,_,_)->
+	   external_call_pattern(Base_Call,(External_pattern_id,RefCnt),Terminating,_,Head_Pattern),
+	   Id_call=external_pattern(External_pattern_id)
+	   ;  
+	   backward_invariant(Base_Call,(Chain,RefCnt),_Hash_inv,Head_Pattern),
+	   Id_call=chain(Chain),
+	   (non_terminating_chain(Base_Call,Chain)->
+	      Terminating=non_terminating
+	      ;
+	      Terminating=terminating
+	      )
+	),
 	append(Head_Pattern,Cs,Total_Cons),
 	term_variables(Head_Pattern,Relevant_vars_ini),
 	slice_relevant_constraints_and_vars(Relevant_vars_ini,[],Total_Cons,_,Relevant_Cons),
 	nad_consistent_constraints_group_aux(Relevant_Cons),
 	%if the calls are sequential and one does not terminate, we can eliminate further calls
-	(non_terminating_chain(Base_Call,Chain) ->
+	(Terminating=non_terminating->
 	   (get_param(assume_sequential,[])->
-	         unfold_calls_aux_b([],[],Head,RefCnt,Cost,[],[(Base_Call,Chain)|New_B_Calls],
-			    [(Base_Call,Chain)|New_T_Calls],Total_Cons,non_terminating,Id)
+	         unfold_calls_aux_b([],[],Head,RefCnt,Cost,[],[(Base_Call,Id_call)|New_B_Calls],
+			    [(Base_Call,Id_call)|New_T_Calls],Total_Cons,non_terminating,Id)
 	   ;
-	         unfold_calls_aux_b(More,MoreB,Head,RefCnt,Cost,R_Calls,[(Base_Call,Chain)|New_B_Calls],
-			    [(Base_Call,Chain)|New_T_Calls],Total_Cons,non_terminating,Id)
+	         unfold_calls_aux_b(More,MoreB,Head,RefCnt,Cost,R_Calls,[(Base_Call,Id_call)|New_B_Calls],
+			    [(Base_Call,Id_call)|New_T_Calls],Total_Cons,non_terminating,Id)
 	    
 	    )
 	;
-	   unfold_calls_aux_b(More,MoreB,Head,RefCnt,Cost,R_Calls,[(Base_Call,Chain)|New_B_Calls],
-			    [(Base_Call,Chain)|New_T_Calls],Total_Cons,Term_flag,Id)
+	   unfold_calls_aux_b(More,MoreB,Head,RefCnt,Cost,R_Calls,[(Base_Call,Id_call)|New_B_Calls],
+			    [(Base_Call,Id_call)|New_T_Calls],Total_Cons,Term_flag,Id)
 	).
 %! unfold_calls_aux_a(+Total_calls:list(term),+Base_calls:list(term),+Head:term,+RefCnt:int,+Cost:cost_expression,+R_Calls:list(term),+New_B_Calls:list(term),+New_T_Calls:list(term),+Cs:polyhedron,+Term_flag:flag,+Id:int) is failure
 % Unfold calls after the recursive call.
@@ -218,13 +231,19 @@ unfold_calls_aux_a([],[],Head,New_RefCnt,Cost,R_Calls,New_B_Calls,New_T_Calls,Cs
 	fail.
 
 unfold_calls_aux_a([Base_Call|More],[Base_Call|MoreB],Head,RefCnt,Cost,R_Calls,New_B_Calls,New_T_Calls,Cs,Term_flag,Id):-
-	backward_invariant(Base_Call,(Chain,RefCnt),_Hash_inv,Head_Pattern),
+	(external_call_pattern(Base_Call,_,_,_,_)->
+	   external_call_pattern(Base_Call,(External_pattern_id,RefCnt),_,_,Head_Pattern),
+	   Id_call=external_pattern(External_pattern_id)
+	   ;  
+	   backward_invariant(Base_Call,(Chain,RefCnt),_Hash_inv,Head_Pattern),
+	   Id_call=chain(Chain)
+	),
 	append(Head_Pattern,Cs,Total_Cons),
 	term_variables(Head_Pattern,Relevant_vars_ini),
 	slice_relevant_constraints_and_vars(Relevant_vars_ini,[],Total_Cons,_,Relevant_Cons),
 	nad_consistent_constraints_group_aux(Relevant_Cons),
-	unfold_calls_aux_b(More,MoreB,Head,RefCnt,Cost,R_Calls,[(Base_Call,Chain)|New_B_Calls],
-			    [(Base_Call,Chain)|New_T_Calls],Total_Cons,Term_flag,Id),
+	unfold_calls_aux_b(More,MoreB,Head,RefCnt,Cost,R_Calls,[(Base_Call,Id_call)|New_B_Calls],
+			    [(Base_Call,Id_call)|New_T_Calls],Total_Cons,Term_flag,Id),
 	fail.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -259,4 +278,47 @@ remove_terminating_non_terminating_chains_1(Head,RefCnt):-
 	 true),
 	fail.
 remove_terminating_non_terminating_chains_1(_,_).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+compress_chains_execution_patterns(Head,RefCnt):-	
+	findall((Head,(Condition,Chain)),
+		(
+		backward_invariant(Head,(Chain,RefCnt),_,Condition),
+		\+non_terminating_chain(Head,Chain)
+		)
+		,Ex_pats),
+	length(Ex_pats,N1),
+	assign_right_vars(Ex_pats,Head,Ex_pats1),
+	% group the partitions according to the chains
+	from_pair_list_mm(Ex_pats1,Multimap_simplified),
+	length(Multimap_simplified,N2),
+	
+	findall((Head,(Condition,Chain)),
+		(
+		backward_invariant(Head,(Chain,RefCnt),_,Condition),
+		non_terminating_chain(Head,Chain)
+		)
+		,Ex_pats_non_terminating),
+	
+	assign_right_vars(Ex_pats_non_terminating,Head,Ex_pats_non_terminating1),
+	
+	% group the partitions according to the chains
+	from_pair_list_mm(Ex_pats_non_terminating1,Multimap_simplified_non_terminating),
+	
+	length(Ex_pats_non_terminating,N1_non_terminating),	
+	length(Multimap_simplified_non_terminating,N2_non_terminating),
+	format('~p go to ~p ~n',[N1,N2]),
+	format('~p go to ~p ~n',[N1_non_terminating,N2_non_terminating]),
+	
+	foldl(save_external_execution_patterns(Head,RefCnt,terminating),Multimap_simplified,1,Id_N1),
+	foldl(save_external_execution_patterns(Head,RefCnt,non_terminating),Multimap_simplified_non_terminating,Id_N1,_).
+
+
+save_external_execution_patterns(Head,RefCnt,Terminating,(Precondition,Chains),N,N1):-
+	add_external_call_pattern(Head,(N,RefCnt),Terminating,Chains,Precondition),
+	N1 is N+1.
+
 

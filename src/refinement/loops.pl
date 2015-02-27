@@ -31,9 +31,8 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 :- use_module(chains,[phase/3]).
 
 
-:- use_module(stdlib(numeric_abstract_domains),[nad_lub/6,nad_project/3, nad_consistent_constraints/1]).
-:- use_module(stdlib(utils),[ut_list_to_dlist/2,ut_sort_rdup/2,ut_member/2]).
-
+:- use_module(stdlib(numeric_abstract_domains),[nad_lub/6]).
+:- use_module('../utils/polyhedra_optimizations',[nad_project_group/3]).
 	
 %! compute_loops(Head:term,RefCnt:int) is det
 % compute a loop for each cost equation that has a recursive call
@@ -42,7 +41,7 @@ compute_loops(Head,RefCnt) :-
 	Head =.. [F|Vs1],
 	Rec_Call=..[F|Vs2],
 	append(Vs1,Vs2,Vs),
-	nad_project(Vs,Cs,Cs_aux),
+	nad_project_group(Vs,Cs,Cs_aux),
 	add_loop_ph(Head,RefCnt,Rec_Call,Cs_aux, Eq_Id),
 	fail.
 compute_loops(_Head,_RefCnt).
@@ -70,3 +69,5 @@ join_loops([loop(Head,Call,Cs)],Head,Call,Cs,Vars):-!,
 join_loops([loop(Head,Call,Cs)|Loops],Head,Call,Cs_out,Vars):-
 	join_loops(Loops,Head,Call,Cs_aux,Vars),
 	nad_lub(Vars,Cs,Vars,Cs_aux,Vars,Cs_out).
+	
+	

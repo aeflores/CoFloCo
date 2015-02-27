@@ -53,7 +53,7 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 :- use_module(stdlib(list_map)).
 :- use_module(stdlib(multimap)).
 :- use_module(stdlib(numeric_abstract_domains),[
-						nad_project/3,nad_entails/3,
+						nad_project/3,nad_entails/3,nad_normalize/2,
 						nad_consistent_constraints/1]).
 										
 						

@@ -123,7 +123,8 @@ The main "data types" used in CoFloCo are the following:
 			  ]).
 :- use_module('refinement/unfolding',[unfold_calls/2,
 			 reinforce_equations_with_forward_invs/2,
-			 remove_terminating_non_terminating_chains/2]). 
+			 remove_terminating_non_terminating_chains/2,
+			 compress_chains_execution_patterns/2]). 
 :- use_module('refinement/chains',[compute_chains/2,chain/3,init_chains/0]).
 :- use_module('refinement/loops',[compute_loops/2,compute_phase_loops/2]).
 
@@ -134,9 +135,8 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('upper_bounds/upper_bounds',[compute_upper_bound_for_scc/2,
 				  compute_closed_bound/1,
 				  compute_single_closed_bound/2]).
-:- use_module('upper_bounds/conditional_upper_bounds',[compute_conditional_upper_bounds/1]).
-:- use_module('upper_bounds/compress_upper_bounds',[compress_chain_upper_bounds/1]).
-				  
+:- use_module('upper_bounds/conditional_upper_bounds',[
+				  compute_conditional_upper_bounds/1]).			  
 :- use_module('upper_bounds/phase_solver',[init_phase_solver/0]).
 :- use_module('upper_bounds/cost_equation_solver',[init_cost_equation_solver/0]).    
 
@@ -344,8 +344,9 @@ bottom_up_refinement_scc(Head) :-
 	compute_forward_invariants(Head,2),	
 	compute_invariants_for_scc(Head,2),
 	profiling_stop_timer_acum(inv,_),
-	%FIXME
-%	compress_chain_upper_bounds(Head),
+	conditional_call(get_param(compress_chains,[]),
+		  compress_chains_execution_patterns(Head,2)
+		 ),
 	print_chains_entry(Head_aux,2).
 	
 
