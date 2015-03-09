@@ -181,7 +181,6 @@ solve_constr_group(It_pairs,EntryVars,it_group(Vars,Norms_all),Cost):-
 	%(get_param(solve_precise,[N_extra])->
 	%constraint_selection(it_group(Vars,Norms_all),N_extra,it_group(Vars,Norms))
 	%;
-	
 	% this greedy constraint selection makes all the constraints independent from each other
 	% this guarantees that the constraints can be maximized one by one
 	aggresive_constraint_selection(it_group(Vars,Norms_all),it_group(Vars,Norms))
@@ -342,7 +341,6 @@ take_norms_agressive([norm(Vars,Exp)|Norms],Rest_vars,[norm(Vars,Exp)| Taken_nor
 	;
 	       keep_it_vars(Norms,Rest_vars1,Norms1),
 	       order_norms_heuristically(Norms1,Ordered_norms),
-	       Ordered_norms=Norms1,
 	       take_norms_agressive(Ordered_norms,Rest_vars1, Taken_norms)
 	 ).
 
