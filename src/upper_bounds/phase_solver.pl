@@ -41,8 +41,8 @@ Specific "data types" of this module:
 				maximize_linear_expression_all/4]).
 :- use_module(cost_equation_solver,[get_equation_cost/5]).
 			      
-:- use_module('../db',[phase_loop/5,eq_ph/7,
-		       loop_ph/4]).
+:- use_module('../db',[phase_loop/5,
+		       loop_ph/6]).
 :-use_module('../refinement/invariants',[backward_invariant/4,
 			      phase_transitive_closure/5,
 			      relation2entry_invariant/3,get_phase_star/4,
@@ -118,10 +118,10 @@ compute_phases_cost([Phase|More],Chain,Head,Call,[Cost1|Costs]):-
 	relation2entry_invariant(Head_total,([Phase|More],_),inv(Head_total,Head,Inv_cs)),
 	forward_invariant(Head,([Phase|More],_),Forward_inv_hash,Forward_inv),
 		
-	(loop_ph(Head,(Phase,_),Call,Phi)
+	(
+	loop_ph(Head,(Phase,_),none,Phi,_,_)
 	;
-	 eq_ph(Head,(Phase,_),_, _,[],_,Phi_total),Head=..[_|Vars],
-	 nad_project_group(Vars,Phi_total,Phi)
+	(loop_ph(Head,(Phase,_),Call,Phi,_,_),Call\==none)
 	;
 	phase_loop(Phase,_,Head,Call,Phi)
 	 ),!,
@@ -191,7 +191,7 @@ compute_phase_cost(Phase,Chain,Head,Call,Forward_inv_hash,cost(0,Elems2,Constrs3
 compute_phase_loop_cost(Head,Call,Forward_inv_hash,Cs_star_trans,Cs_transitive,Eq_id,(It_var,Loops_out),External_constrs2):-
 	profiling_start_timer(equation_cost),
 	get_equation_cost(Head,Call,Forward_inv_hash,Eq_id,Cost),
-	loop_ph(Head,(Eq_id,_),Call,Phi),
+	loop_ph(Head,(Eq_id,_),Call,Phi,_,_),
 	profiling_stop_timer_acum(equation_cost,_),
 	put_in_loop(Cost,Loop,It_var),
 	profiling_start_timer(flatten_loops),
@@ -502,7 +502,7 @@ find_resets([],_,_Phase_info,[],[]).
 
 find_resets([Dep|Deps],Rf,(Head,Phase,Chain),[Dep|Removed_deps],[Reset|Resets]):-	
 	get_phase_star(Head,Call,Phase,Cs_star),
-	loop_ph(Call,(Dep,_),Call2,Cs),
+	loop_ph(Call,(Dep,_),Call2,Cs,_,_),
     nad_glb(Cs,Cs_star,Cs_total),
 	Head=..[_|EVars],
 	copy_term((Head,Rf),(Call2,Rf_instance)),

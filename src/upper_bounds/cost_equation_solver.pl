@@ -29,14 +29,16 @@ the input variables and the variables of the recursive call (if there is one)
 			compress_sets_constraints/4,
 			maximize_loop/4]).
 
-:- use_module('../db',[eq_ph/7,
-			     loop_ph/4,
+:- use_module('../db',[eq_ph/8,
+			     loop_ph/6,
 			     upper_bound/4,
 			     external_upper_bound/3]).
 
 :- use_module('../utils/cofloco_utils',[
 			get_it_vars_in_loop/2,
 			tuple/3]).
+:- use_module('../utils/cost_structures',[
+					      compress_cost_structures/4]).
 :- use_module('../utils/cost_expressions',[
 					      cexpr_add_list/2,
 					      cexpr_maximize/4,
@@ -65,19 +67,24 @@ init_cost_equation_solver:-
 %  * the base costs are added and then expressed in terms of the variables of Head
 %  * the loops bodies are put together and expressed in terms of the variables of Head
 %  * the constraints are compressed and expressed in terms of the variables of Head.
-get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Eq_id,Cost):-
-	equation_cost(Head,Call,(Forward_inv_hash,Forward_inv2),Eq_id,Cost),
+get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Cost):-
+	equation_cost(Head,Call,(Forward_inv_hash,Forward_inv2),Loop_id,Cost),
 	Forward_inv==Forward_inv2,!.
 
-get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Eq_id,Cost):-
-
-	(
-	 loop_ph(Head,(Eq_id,_),Call,_),
-	 eq_ph(Head,(Eq_id,_),C, Base_Calls,[Call],_,Phi)
-	;
-	 eq_ph(Head,(Eq_id,_),C, Base_Calls,[],_,Phi),
-	Call=none
-	),
+get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
+    loop_ph(Head,(Loop_id,_),Call,Inv,Eqs,_),
+    maplist(get_equation_cost_1(Head,Call,Forward_inv),Eqs,Costs),
+    nad_glb(Forward_inv,Inv,Inv1),
+    compress_cost_structures(Costs,(Head,Call),Inv1,Final_cost),
+    assert(equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost)).
+    
+    
+ get_equation_cost_1(Head,Call,Forward_inv,Eq_id,Cost):-
+     (Call==none->   
+       eq_ph(Head,(Eq_id,_),C, Base_Calls,[],_,Phi,_)
+       ;
+       eq_ph(Head,(Eq_id,_),C, Base_Calls,[Call],_,Phi,_)
+       ),
 	nad_glb(Forward_inv,Phi,Phi1),
 	maplist(substitute_call,Base_Calls,Base_costs,Loops,Constraints),
     term_variables((Head,Call),TVars),
@@ -90,9 +97,7 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Eq_id,Cost):-
 	maplist(maximize_loop(EVars,Phi1),Loops_flat,Loops_out),
 	%loop constraints
 	compress_sets_constraints(Constraints,TVars,Phi1,Constraints_out),
-	Cost=cost(Base_cost_out,Loops_out,Constraints_out),
-	assert(equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Eq_id,Cost)).
-
+	Cost=cost(Base_cost_out,Loops_out,Constraints_out).
 
 
 substitute_call((Call,chain(Chain)),Base_cost,Loops,Constraints) :-

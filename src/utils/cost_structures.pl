@@ -30,19 +30,20 @@
 
 :- use_module('../upper_bounds/constraints_maximization',[
 				  compress_or_constraints/4]).	
-:- use_module(cost_expressions,[cexpr_simplify/3]).		
+:- use_module(cost_expressions,[cexpr_simplify/3]).	
+:- use_module('../utils/cost_expressions',[cexpr_simplify/3,cexpr_max/2]).	
 :- use_module(stdlib(set_list)).
 	
 %! compress_cost_structures(+Cs_list:list(cost_structure),+Inv:polyhedron,-Cost_structure:cost_structure) is det
 % obtain a cost structure that is a safe approximation of the disjuntion of the cost
 % structures in Cs_list
-compress_cost_structures(Cs_list,_Head,Inv,cost(Exp1,Loops1,Norms3)):-
+compress_cost_structures(Cs_list,Head,Inv,cost(Exp1,Loops1,Norms3)):-
     maplist(get_cost_structure_components,Cs_list,Exps,Loops,Norms),
     cexpr_simplify(max(Exps),Inv,Exp1),
     maplist(maplist(normalize_norm),Norms,Norms1),
     maplist(from_list_sl,Norms1,Norms2),
-    unions_sl(Norms2,Norms3),
-   %compress_or_constraints(Norms2,Head,none,Norms3),
+ %   unions_sl(Norms2,Norms3),
+   compress_or_constraints(Norms2,Head,none,Norms3),
     append(Loops,Loops1).
 
 normalize_norm(norm(Its,Exp),norm(Its1,Exp)):-

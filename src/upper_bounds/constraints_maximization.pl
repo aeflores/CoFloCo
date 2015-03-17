@@ -279,7 +279,8 @@ generate_new_norms([],_,_,[]).
 generate_new_norms([Expr|Expressions],_Var,Multimaps,Norms):-
 	get_norms_lists_with_expr(Multimaps,Expr,Multimaps2,Norms_lists),
 	term_variables(Norms_lists,Vars),
-	bagof(Norm,get_norm_combination(Norms_lists,Norm),New_norms),
+	%bagof(Norm,get_norm_combination(Norms_lists,Norm),New_norms),
+	get_norm_combinations_greedy(Norms_lists,New_norms),
 	generate_new_norms(Expressions,Vars,Multimaps2,Norms_aux),
 	union_sl(New_norms,Norms_aux,Norms).
 
@@ -301,6 +302,22 @@ get_norm_combination([Norm_list|Norms_lists],norm(Its,Exp)):-
 	get_norm_combination(Norms_lists,norm(Its1,Exp)),
 	union_sl(Its1,Its2,Its).
 	
+get_norm_combinations_greedy(Norms,Gen_norms_set):-
+	exclude(empty_list,Norms,Norms1),
+	get_norm_combinations_greedy_1(Norms1,Gen_norms),
+	from_list_sl(Gen_norms,Gen_norms_set).
+
+get_norm_combinations_greedy_1([],[]).	
+get_norm_combinations_greedy_1(Norms,[norm(Its,Exp)|Gen_norms]):-
+	maplist(head_tail,Norms,[norm(Its_0,Exp)|Heads],Tails),
+	exclude(empty_list,Tails,Tails1),
+	foldl(accum_norm,Heads,norm(Its_0,Exp),norm(Its,Exp)),
+	get_norm_combinations_greedy_1(Tails1,Gen_norms).
+
+empty_list([]).
+head_tail([H|T],H,T).
+accum_norm(norm(Its_1,Exp),norm(Its_0,Exp),norm(Its,Exp)):-
+	union_sl(Its_0,Its_1,Its).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! maximize_linear_expression_all(+Linear_Expr_to_Maximize:linear_expression,+Vars_of_Interest:list(var),+Context:polyhedron, -Maxs:list(linear_expression)) is det

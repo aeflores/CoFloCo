@@ -31,7 +31,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 :- module(partial_evaluation,[partial_evaluation/0]).
 
 :- use_module('SCCs',[crs_btc/2,ignored_scc/1]).
-:- use_module('../db',[entry_eq/2,eq_ph/7,non_terminating_stub/2, input_eq/5 ,add_eq_ph/3,cofloco_aux_entry_name/1]).
+:- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
 
 
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2,nad_project_group/3]).
@@ -60,19 +60,10 @@ partial_evaluation :-
 	        ,Ignored),
 	(Ignored\=[]->
 	   format('Warning: the following predicates are never called:~p~n',[Ignored]);true),
-	 maplist(add_ignored_scc,Ignored),       
-	add_non_terminating_stubs.
+	 maplist(add_ignored_scc,Ignored).
 
 add_ignored_scc(X):-
 	assert(ignored_scc(X)).
-	
-% for SCCs that have recursive calls, add an auxiliary empty equation that will serve to simulate non-terminating chains	
-add_non_terminating_stubs:-
-	eq_ph(Head,(_,0),_,_,[_|_],_,_),
-	\+non_terminating_stub(Head,_),
-	add_eq_ph(eq_ph(Head,0,0,[],[],[],[]),non_terminating,none),
-	fail.
-add_non_terminating_stubs.
 
 pe_aux(Entry):-
 	partially_evaluate_cost_rel([Entry]),
@@ -197,7 +188,7 @@ replace_cost_relations:-
 	(nad_consistent_constraints_group(Vars,Size) ->	    
 	    nad_project_group(Vars,Size,P_Size),
 	  % nad_project(Vars,Size,P_Size),
-	    add_eq_ph(eq_ph(Head,0,Exp,NR_Calls,R_Calls,Calls,P_Size),terminating,none)
+	    add_eq_ph(eq_ph(Head,0,Exp,NR_Calls,R_Calls,Calls,P_Size,terminating),none)
 	;
 	    true
 	),

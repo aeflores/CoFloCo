@@ -3,6 +3,7 @@
 This module acts as a database that stores:
 
   * the set of cost equations in different stages of refinement
+  * the external call patterns, that summarize the possible call patterns to a refined SCC
   * the loops (which are fragments of cost equations)
   * the generated upper bounds
 
@@ -28,19 +29,18 @@ This module acts as a database that stores:
 :- module(db,[
        init_db/0,
        init_timers/0,
-	   add_loop_ph/5,
+	   add_loop_ph/6,
 	   add_phase_loop/5,
-	   add_eq_ph/3,
+	   add_eq_ph/2,
 	   add_ground_equation_header/2,
 		  
 	   eq_refined/2,
 	   input_eq/5,	 
 	   entry_eq/2,   
 	   ground_equation_header/1,
-	   eq_ph/7,
-       loop_ph/4,
+	   eq_ph/8,
+       loop_ph/6,
 	   phase_loop/5,
-	   non_terminating_stub/2,
 	   non_terminating_chain/2,	   
 
 	   external_call_pattern/5,
@@ -82,25 +82,29 @@ This module acts as a database that stores:
 % it is used to print the results according to those names
 :- dynamic ground_equation_header/1. 
 
-/**  eq_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Cost:cost_expression,-Non_rec_Calls:list(term),-Rec_Calls:list(term),-Calls:list(term),-Cs:polyhedron)
+/**  eq_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Cost:cost_expression,-Non_rec_Calls:list(term),-Rec_Calls:list(term),-Calls:list(term),-Cs:polyhedron,Term_flag:flag)
 
  stores a cost equation after the preprocessing. 
  The calls are separated into non-recursive and recursive. Calls has all the calls together in the original order
  
  @arg Id_RefCnt represent the 'RefCnt' and the 'id' of the cost equation
  the refinement takes place in phases. 'RefCnt' indicates to which refinement phase the cost equation belongs
+ 
+ Term_flag can be 'terminating' or 'non_terminating'
 
 */
-:- dynamic  eq_ph/7.
+:- dynamic  eq_ph/8.
 
 %! eq_refined(Original:equation_id,Refined:equation_id)
 % record the fact that Refined is a refined version of Original
 % this is recorded in order to trace the behavior back to the original representation.
 :- dynamic eq_refined/2.
 
-%! loop_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Rec_Call:term,-Cs:polyhedron)
+%! loop_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Rec_Call:term,-Cs:polyhedron,Ids:list(equation_id),Term_flag:flag)
 % for each recursive equation loop_ph/4 stores the relation between the head and the recursive call (abstracting the cost and the other calls away)
-:- dynamic  loop_ph/4.
+% Ids is the list of cost equations that correspond to the loop.
+%Term_flag can be 'terminating' or 'non_terminating'
+:- dynamic  loop_ph/6.
 
 %! phase_loop(?Phase:phase,?RefCnt:int,-Head:term,-Call:term,-Cs:polyhedron)
 % a summary of all the loops of a phase (Phase) of the cost equation Head
@@ -134,10 +138,6 @@ This module acts as a database that stores:
 % conditional upper bound's preconditions are mutually exclusive among each other and with any other conditional upper bound
 :- dynamic conditional_upper_bound/3.
 
-%! non_terminating_stub(?Head:term,?Id:equation_id)
-% It indicates that the cost equation Id is non-terminating
-:-dynamic non_terminating_stub/2.
-
 %! non_terminating_chain(?Head:term,?Chain:chain)
 % It indicates that the chain Chain is non-terminating
 % a chain whose first element is a non_terminating_stub is non-terminating
@@ -152,8 +152,8 @@ init_db:-
 	retractall(input_eq(_,_,_,_,_)),
 	retractall(entry_eq(_,_)),
 	retractall(ground_eq_header(_)),
-	retractall(eq_ph(_,_,_,_,_,_,_)),
-	retractall(loop_ph(_,_,_,_)),
+	retractall(eq_ph(_,_,_,_,_,_,_,_)),
+	retractall(loop_ph(_,_,_,_,_,_)),
 	
 	retractall(phase_loop(_,_,_,_,_)),
 	retractall(external_call_pattern(_,_,_,_,_)),
@@ -163,7 +163,10 @@ init_db:-
 	
 	retractall(non_terminating_stub(_,_)),
 	retractall(non_terminating_chain(_,_)),
-	assert(non_terminating_chain(Head,[First|_]):-non_terminating_stub(Head,First) ),
+	assert((non_terminating_chain(Head,Chain):-
+	            non_terminating_chain_1(Head,Chain),
+	            asserta(non_terminating_chain(Head,Chain))
+	            ) ),
 	counter_initialize(input_eqs,0),
 	
 	
@@ -197,6 +200,18 @@ init_timers:-
 cofloco_aux_entry_name('$cofloco_aux_entry$').
 
 
+
+non_terminating_chain_1(Head,[X|_Chain]):-
+	number(X),
+	loop_ph(Head,(X,_),_Call,_Cs,_Ids,non_terminating),!.
+
+non_terminating_chain_1(Head,[X|_Chain]):-
+	\+number(X),
+	non_terminating_chain_1(Head,X),!.
+non_terminating_chain_1(Head,[_|Chain]):-
+	non_terminating_chain_1(Head,Chain).
+	
+
 %! add_ground_equation_header(+Non_ground:term,+Ground:term) is det
 % store the ground term Ground if there is no ground_eq_header that can be unified with Non_ground.
 % that is, we store on ground_eq_header per cost equation header
@@ -207,26 +222,23 @@ add_ground_equation_header(Non_ground,_Ground):-
 add_ground_equation_header(_Non_ground,Ground):-
 	assert(ground_equation_header(Ground)).
 
-%! add_eq_ph(+Cost_equation:cost_equation,+Term_flag:flag) is det
+%! add_eq_ph(+Cost_equation:cost_equation,Previous_eqs:list(equation_id)) is det
 % stores the cost equation Cost_equation in the database
-%
-% @arg Term_flag indicates if the cost equation is terminating or not (it can be 'terminating' or 'non_terminating')
-add_eq_ph(eq_ph(Head,RefCnt,E_Exp,NR_Calls,R_Calls,Calls,P_Size),Term_flag,Previous_eqs) :-
+% Previous_eqs are the cost equation ids that originated this new cost equation
+add_eq_ph(eq_ph(Head,RefCnt,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_eqs) :-
 	counter_increase(eq_ph,1,Id),
-	assertz(eq_ph(Head,(Id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size)),
-	assertz(eq_refined(Previous_eqs,Id)),	
+	assertz(eq_ph(Head,(Id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)),
+	assertz(eq_refined(Previous_eqs,Id)).	
 %	copy_term(eq_ph(Head,(Id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size),Eq_print),
 %	numbervars(Eq_print,0,_),
 %	writeln(Eq_print),
-	(Term_flag=non_terminating->
-	 	assertz(non_terminating_stub(Head,Id))
-	;
-	  true).
+
 	  
-%! add_loop_ph(+Head:term,+RefCnt:int,+Call:term,+Cs:polyhedron,+Id:equation_id) is det
-% stores the loop corresponding to the cost equation Id in the database
-add_loop_ph(Head,RefCnt,Call,Cs, Id) :-
-	assertz(loop_ph(Head,(Id,RefCnt),Call,Cs)).
+%! add_loop_ph(+Head:term,+RefCnt:int,+Call:term,+Cs:polyhedron,+Ids:list(equation_id),Term_flag:flag) is det
+% stores the loop corresponding to the cost equations Ids in the database
+add_loop_ph(Head,RefCnt,Call,Cs, Ids,Term_flag) :-
+	counter_increase(loop_ph,1,Id),
+	assertz(loop_ph(Head,(Id,RefCnt),Call,Cs,Ids,Term_flag)).
 	
 %! add_phase_loop(+Phase:phase,+RefCnt:int,+Head:term,+Call:term,+Cs:polyhedron) is det
 % stores the summary loop corresponding to the phase Phase in the database	

@@ -91,12 +91,12 @@ compute_sccs_and_btcs:-
 	init_sccs,
 	compute_crs_sccs,
 	compute_btcs.
-	%catch(compute_btcs
-	%,error(no_cover_point,[scc=SCC_N]),
-	%    (
-	%    try_loop_extraction(SCC_N),
-	%    compute_sccs_and_btcs)
-	%   ).
+%	catch(compute_btcs
+%	,error(no_cover_point,[scc=SCC_N]),
+%	    (
+%	    try_loop_extraction(SCC_N),
+%	    compute_sccs_and_btcs)
+%	   ).
 	
 
 init_sccs:-

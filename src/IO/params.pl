@@ -34,7 +34,6 @@ The module also takes care of parsing the input parameters and storing them.
 		  parameter_dictionary/3,
 		  param_description/2]).
 
-:- use_module(stdlib(utils),[ut_number_to_atom/2]).
 
 %% param(+Param:atom,-Values:list) is nondet
 % @arg Param is the name of the parameter

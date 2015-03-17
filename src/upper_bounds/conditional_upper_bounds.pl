@@ -1,37 +1,25 @@
 /** <module> compress_execution_patterns
 
-This module receives a set of execution patterns execution_pattern(Cost,Precondition)
-and computes a new set of execution patterns in which each new precondition has a list
-of the previous execution pattern identifiers (New_Precondition,list(Cost)).
+This module computes conditional upper bounds using the upper bounds of all the chains.
+The conditions to execute different chains do not have to be mutually exclusive.
+Given an input value, there might be several feasible chains and to obtain an upper bound
+we should consider the maximum of all of them.
 
-Depending on the options, the new set of preconditions can be mutually exclusive
-(for conditional upper bounds) or simpler that the original set of preconditions
-for compressing the behavior of a SCC.
-The guarantee given in any case is that if we have a set of values that satisfy
-the precondition of an initial execution pattern execution_pattern(Id1,Precondition1),
-there exist a new execution pattern (New_precondition1,ListIds) whose precondition is satisfied
-and Id1 is in ListIds.
+On the other hand, the set of conditional upper bounds computed in this module are mutually exclusive.
+That is, if we have an input, at most one conditional upper bound's precondition can be satisfied
+and the upper bound of that conditional upper bound is valid.
 
-This module has two main uses. 
- * It is used to compute conditional upper bounds using the upper bounds of all the chains.
-   The set of conditional upper bounds computed in this module are mutually exclusive.
-   That is, if we have an input, at most one conditional upper bound's precondition can be satisfied
-   and the upper bound of that conditional upper bound is valid.
- * It is used to compress the preconditions of the a set of chains that represent a SCC.
-   This compressed set of preconditions will be then used to refine other cost equations
-   that call such SCC.
-   For this use case, we want to be able to choose how much compression is made.
+In order to compute conditional upper bounds, we partition the input space using the
+constraints that appear in the chain upper bounds. We split the input space until no more
+distinctions can be made. Finally, we try to simplify the conditions of each conditional
+upper bound.
 
-In order to compute new precoditions, we partition the input space using the
-constraints that appear in the execution patterns. We split the input space until no more
-distinctions can be made. Finally, we try to simplify some of the conditions.
 
 The specific "data types" used in this module are the following:
-	* execution_pattern: execution_pattern(int,original_id,list_set(linear_constraint),list_set(linear_constraint))
-	  An execution pattern has the form execution_pattern(Id,Original_id,Original_conds,Conds)
+	* execution_pattern: execution_pattern(int,cost_expression,list_set(linear_constraint),list_set(linear_constraint))
+	  An execution pattern has the form execution_pattern(Id,Cost_expression,Original_conds,Conds)
 	   * Id:an integer id
-	   * Original_id: something that identifies the original execution patterns
-	     It is polimorphic 
+	   * Cost_expression: the cost expression for each execution pattern
 	   * Original_conds:a set of constraints to be used to partition
 	   * Conds: a set of constraints that define its (possibly refined) precondition
 	  initially Original_conds and Conds are the same. In the process of partitioning
@@ -74,7 +62,6 @@ The specific "data types" used in this module are the following:
 		  upper_bound/4,
 		  add_external_upper_bound/3,
 		  add_closed_upper_bound/3,
-		  non_terminating_chain/2,
 		  closed_upper_bound/4,
 		  add_conditional_upper_bound/3]).
 
@@ -84,7 +71,7 @@ The specific "data types" used in this module are the following:
 						tuple/3,
 						sort_with/3,
 						assign_right_vars/3]).
-
+:- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
 :- use_module('../utils/polyhedra_optimizations',[group_relevant_vars/4]).	
 :- use_module('../IO/params',[get_param/2]).					
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).	
@@ -107,7 +94,7 @@ compute_conditional_upper_bounds(Head):-
 		)
 		,Ex_pats),
 	assign_right_vars(Ex_pats,Head,Ex_pats1),
-    compress_execution_patterns(Ex_pats1,exclusive,List_pairs),
+    compress_execution_patterns(Ex_pats1,List_pairs),
     maplist(simplify_cost_of_pair,List_pairs,List_pairs1),
 	% group the partitions according to the cost expression
 	from_pair_list_mm(List_pairs1,Multimap),
@@ -132,13 +119,13 @@ save_conditional_upper_bound(Head,(Cost,Precondition)):-
 
 
 	
-compress_execution_patterns(Execution_patterns,Flag,New_execution_patterns):-
+compress_execution_patterns(Execution_patterns,New_execution_patterns):-
 	create_initial_execution_patterns(Execution_patterns,1,Ex_pats2),
 	%use the Original_conds to partition the input space
     maplist(get_execution_pattern_original_conds,Ex_pats2,Conditions),
 	unions_sl(Conditions,Conditions_set),
 	% partition the input space
-	make_exclusive_classification(Conditions_set,Flag,Ex_pats2,New_execution_patterns).
+	make_exclusive_classification(Conditions_set,Ex_pats2,New_execution_patterns).
 
 	
 
@@ -159,26 +146,26 @@ create_initial_execution_patterns([execution_pattern(Cost,Condition)|Ex_patterns
 % partition the execution patterns Ex_pats according to the conditions Conditions_set to the limit
 % and generate a list of partition elements which are pairs (cost_expression,polyhedron) such that all polyhedra
 % in the generated list are mutually exclusive.
-make_exclusive_classification(Conditions_set,Flag,Ex_pats,Classified_list):-
+make_exclusive_classification(Conditions_set,Ex_pats,Classified_list):-
 	remove_redundant(Conditions_set,Conditions_set2),
 	% generate the initial classifiers. (see classifiers in module header)
 	maplist(generate_initial_classifier(Ex_pats),Conditions_set2,Possible_classifiers),
 	% we sort the classifiers according to their effectiveness in discriminating execution patterns
 	sort_with(Possible_classifiers,smaller_heuristic,Sorted_classifiers),
-	make_exclusive_classification_1(Sorted_classifiers,Flag,Ex_pats,[],Classified_list).
+	make_exclusive_classification_1(Sorted_classifiers,Ex_pats,[],Classified_list).
 	
 %! make_exclusive_classification_1(+Sorted_classifiers:sorted_list(classifier),+Ex_pats:list(execution_pattern),+Accum:list(partition_element),-Classified_list:list(partition_element)) is det
 % partition the execution patterns Ex_pats according to the classifiers Sorted_classifiers
 
 % if there are no execution pattern in the current partition, do nothing	
-make_exclusive_classification_1(_,_,[],Accum,Accum):-!.
+make_exclusive_classification_1(_,[],Accum,Accum):-!.
 
 % if there is a single execution pattern, generate a partition element with its cost and conditions
-make_exclusive_classification_1(_,_,[execution_pattern(_,Ub_simple,_,Conds)],Accum,[([Ub_simple],Minimal_conds)|Accum]):-!,
+make_exclusive_classification_1(_,[execution_pattern(_,Ub_simple,_,Conds)],Accum,[([Ub_simple],Minimal_conds)|Accum]):-!,
 	nad_normalize(Conds,Minimal_conds).
 % if there are several execution patterns but all have the same cost we can take upper bound of their 
 % preconditions and generate a partition element	
-make_exclusive_classification_1(_,_,Ex_pats,Accum,[([Ub_simple],Minimal_conds)|Accum]):-
+make_exclusive_classification_1(_,Ex_pats,Accum,[([Ub_simple],Minimal_conds)|Accum]):-
 	maplist(get_execution_pattern_cost,Ex_pats,Extracted_Ubs),
 	from_list_sl(Extracted_Ubs,[Ub_simple]),!,
 	maplist(get_execution_pattern_conds,Ex_pats,Conds),
@@ -187,25 +174,16 @@ make_exclusive_classification_1(_,_,Ex_pats,Accum,[([Ub_simple],Minimal_conds)|A
 
 % in the worst case, if we have several execution patterns but no classifiers to discriminate them
 % we create a partition element with the cost of all of them	
-make_exclusive_classification_1([],_,Ex_pats,Accum,[(Extracted_Ubs,Minimal_conds)|Accum]):-!,
+make_exclusive_classification_1([],Ex_pats,Accum,[(Extracted_Ubs,Minimal_conds)|Accum]):-!,
 	maplist(get_execution_pattern_conds,Ex_pats,Conds),
 	maplist(get_execution_pattern_cost,Ex_pats,Extracted_Ubs),
 	unions_sl(Conds,Joined_conds),
 	nad_normalize(Joined_conds,Minimal_conds).
 
-make_exclusive_classification_1([classifier(_Cond,_Yes,_No,_None,_,0)|_Sorted_classifiers],reduced,Ex_pats,Accum,Accum2):-!,
-	maplist(get_execution_pattern_conds,Ex_pats,Conds),
-	maplist(get_execution_pattern_cost,Ex_pats,Extracted_Ubs),
-	foldl(add_and_normalize,Extracted_Ubs,Conds,Accum,Accum2).
-
-make_exclusive_classification_1([classifier(_Cond,_Yes,_No,_None,_,0)|_Sorted_classifiers],super_reduced,Ex_pats,Accum,[(Extracted_Ubs,Cond_simpl)|Accum]):-!,
-	maplist(get_execution_pattern_conds,Ex_pats,Conds),
-	maplist(get_execution_pattern_cost,Ex_pats,Extracted_Ubs),
-	nad_list_lub(Conds,Cond_simpl).
 
 	
 % use the first classifier
-make_exclusive_classification_1([classifier(Cond,Yes,No,None,_,_)|Sorted_classifiers],Flag,Ex_pats,Accum,Classified_list):-
+make_exclusive_classification_1([classifier(Cond,Yes,No,None,_,_)|Sorted_classifiers],Ex_pats,Accum,Classified_list):-
 	negate_condition(Cond,NegCond),
 	%the patterns that are feasible if the condition is true
 	union_sl(Yes,None,YesNone), 
@@ -213,17 +191,17 @@ make_exclusive_classification_1([classifier(Cond,Yes,No,None,_,_)|Sorted_classif
 	union_sl(No,None,NoNone),
     % update the classifiers so they only contain the element of YeNone or NoNone
 	filter_selected_execution_patterns(YesNone,Ex_pats,Sorted_classifiers,Cond,YesNone_pats,Sorted_classifiersYes),
-	make_exclusive_classification_1(Sorted_classifiersYes,Flag,YesNone_pats,Accum,Accum1),
+	make_exclusive_classification_1(Sorted_classifiersYes,YesNone_pats,Accum,Accum1),
 	% if Cond is an equality, the negation is a disjuntion
 	(NegCond=or(Neg1,Neg2)->
 	   filter_selected_execution_patterns(NoNone,Ex_pats,Sorted_classifiers,Neg1,NoNone_pats1,Sorted_classifiersNo1),
-	   make_exclusive_classification_1(Sorted_classifiersNo1,Flag,NoNone_pats1,Accum1,Accum2),
+	   make_exclusive_classification_1(Sorted_classifiersNo1,NoNone_pats1,Accum1,Accum2),
 	   
 	   filter_selected_execution_patterns(NoNone,Ex_pats,Sorted_classifiers,Neg2,NoNone_pats2,Sorted_classifiersNo2),
-	   make_exclusive_classification_1(Sorted_classifiersNo2,Flag,NoNone_pats2,Accum2,Classified_list)
+	   make_exclusive_classification_1(Sorted_classifiersNo2,NoNone_pats2,Accum2,Classified_list)
 	;
 	   filter_selected_execution_patterns(NoNone,Ex_pats,Sorted_classifiers,NegCond,NoNone_pats1,Sorted_classifiersNo1),
-	   make_exclusive_classification_1(Sorted_classifiersNo1,Flag,NoNone_pats1,Accum1,Classified_list)
+	   make_exclusive_classification_1(Sorted_classifiersNo1,NoNone_pats1,Accum1,Classified_list)
 	).
 
 

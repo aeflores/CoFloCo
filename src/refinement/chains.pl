@@ -17,7 +17,7 @@ The cycles are grouped in phases and  all the possible sequences of phases are g
 The edges of the graph are computed lazily.
 
 We force every chain to end up in a base case (a cost equation without recursive calls). 
-However, for each SCC there is a special base case (non_terminating_stub/2) that will allow us to represent non-terminating executions
+However, for each SCC there is a special base case that will allow us to represent non-terminating executions
 
 
 @author Antonio Flores Montoya
@@ -43,7 +43,7 @@ However, for each SCC there is a special base case (non_terminating_stub/2) that
 :- module(chains,[compute_chains/2,chain/3,phase/3,init_chains/0]).
 
 
-:- use_module('../db',[eq_ph/7,loop_ph/4,non_terminating_stub/2]).
+:- use_module('../db',[loop_ph/6]).
 
 :- use_module('../utils/cofloco_utils',[assign_right_vars/3]).
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2]).
@@ -129,18 +129,19 @@ clean_graph:-
 	 retractall(phases_edge(_,_)),
 	 retractall(not_phases_edge(_,_)).
 
+
 add_nodes(Head,RefCnt):-	 
-	eq_ph(Head,(Id,RefCnt),_,_,[],_,_),
-	assert(node(Id,final)),
-	fail.
-add_nodes(Head,RefCnt):-	 
-	loop_ph(Head,(Id_Loop,RefCnt),_,_),
-	assert(node(Id_Loop,loop)),
+	loop_ph(Head,(Id_Loop,RefCnt),Call,_,_,_),
+	(Call==none->
+	  assert(node(Id_Loop,final))
+	  ;
+	  assert(node(Id_Loop,loop))
+	  ),
 	fail.
 add_nodes(_,_).	
 
 %! remove_impossible_non_terminating_chains(+Head:term,+RefCnt:int) is det
-% A non_terminating_stub is an empty cost equation used to generate chains that represent non-terminating executions.
+% A non_terminating_stub is an empty loop used to generate chains that represent non-terminating executions.
 % If X is a non_terminating_stub a chain [X,P1,P2...PN] represents an execution where P1 goes on forever.
 %
 % this predicate remove chains that do not make sense such as [X] and [X,PI...] where PI is not an iterative phase.
@@ -153,12 +154,10 @@ remove_impossible_non_terminating_chains(_,_).
 
 
 is_impossible_non_terminating(Head,[X]):-
-	non_terminating_stub(Head,X),
-	eq_ph(Head,(X,_),_,[],[],[],_).%it is really a stub, not a non-terminating call
+	loop_ph(Head,(X,_RefCnt),_,_,[],non_terminating).%it is really a stub, not a non-terminating call
 is_impossible_non_terminating(Head,[X,Y|_]):-
-	non_terminating_stub(Head,X),
-	number(Y),
-	eq_ph(Head,(X,_),_,[],[],[],_).%it is really a stub, not a non-terminating call
+	loop_ph(Head,(X,_RefCnt),_,_,[],non_terminating),
+	number(Y).
 
 
 %! get_phases_edge(?C1:phase,?C2:phase) is semidet    
@@ -280,15 +279,11 @@ get_edge(O,D):-
 
 get_edge(O,D):-
    node(O,loop),
-   node(D,Flag),
+   node(D,_),
     \+edge(O,D),
    \+not_edge(O,D),
-   loop_ph(_Head,(O,RefCnt),Head2,Phi),
-   (Flag=final->
-      eq_ph(Head2,(D,RefCnt),_,_,[],_,Phi2)
-      ;
-      loop_ph(Head2,(D,RefCnt),_,Phi2)
-      ),
+   loop_ph(_Head,(O,RefCnt),Head2,Phi,_,_),
+   loop_ph(Head2,(D,RefCnt),_,Phi2,_,_),
     append(Phi,Phi2,Composed_cons),
 	Head2=..[_|Relevant_vars],
 	(nad_consistent_constraints_group(Relevant_vars,Composed_cons)->

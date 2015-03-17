@@ -49,7 +49,7 @@ This module computes different kinds of invariants for the chains:
 		      phase_transitive_closure/5,
 		      add_scc_forward_invariant/3]).
 
-:- use_module('../db',[loop_ph/4,phase_loop/5,eq_ph/7]).
+:- use_module('../db',[loop_ph/6,phase_loop/5]).
 :- use_module(chains,[chain/3]).
 
 
@@ -273,12 +273,10 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-%
 % the base case of the chain, the backward invariant is the cost equation definition
 % and the corresponding forward invariant
 compute_backward_invariant([Base_case],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-!,
-    eq_ph(Head,(Base_case,RefCnt),_,_,_,_,Cs_1),
+    loop_ph(Head,(Base_case,RefCnt),none,Cs_1,_,_),
     forward_invariant(Head,([Base_case|Prev_chain],RefCnt),_Hash,Inv),
    % append(Cs_1,Inv,Cs),
-    nad_glb(Cs_1,Inv,Cs),
-    Head=..[_|Vars],
-    nad_project_group(Vars,Cs,Entry_pattern),
+    nad_glb(Cs_1,Inv,Entry_pattern),
 	\+nad_is_bottom(Entry_pattern),
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized).
  
@@ -289,7 +287,7 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	number(Ph),!,
 	copy_term(Head,Call),
 	compute_backward_invariant(Chain,[Ph|Prev_chain],Call,RefCnt,Initial_inv),
-	loop_ph(Head,(Ph,RefCnt),Call,Cs),
+	loop_ph(Head,(Ph,RefCnt),Call,Cs,_,_),
 	forward_invariant(Head,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
 	Head=..[_|EVars],
 	%ut_flat_list([Local_inv,Cs,Initial_inv],Cs_2),
@@ -314,7 +312,7 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	findall((Head_loop,Call_loop,Cs_1),
 	    (
 	    member(Loop,Ph),
-	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop),
+	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop,_,_),
 	    nad_glb(Local_inv,Cs_loop,Cs_1)
 	    ),Loops),
 	
@@ -409,7 +407,7 @@ compute_relation2entry_invariant(Chain,RefCnt,Entry_Call,inv(Entry_Call_out,Call
 % the returned invariant is obtained by applying the loop once.
 compute_relation2entry_invariant([Entry_phase],RefCnt,Head,inv(Head,Call, Inv_aux)):-
     number(Entry_phase),
-    loop_ph(Head,(Entry_phase,RefCnt),Call,Inv_aux),
+    loop_ph(Head,(Entry_phase,RefCnt),Call,Inv_aux,_,_),Call\==none,
     !,
     Head=..[_|Vars_head],
     Call=..[_|Vars_call],
@@ -447,7 +445,7 @@ compute_relation2entry_invariant([Entry_phase],RefCnt,Entry_Call,inv(Head,Call, 
 % we store that invariant and apply the loop once to obtain the return invariant
 compute_relation2entry_invariant([Non_loop|Chain],RefCnt,Entry_Call,inv(Entry_Call_out,Call, Inv_aux)):-
     number(Non_loop),
-    loop_ph(Head,(Non_loop,RefCnt),Call,Cs),!,
+    loop_ph(Head,(Non_loop,RefCnt),Call,Cs,_,_),!,
     compute_relation2entry_invariant(Chain,RefCnt,Entry_Call,inv(Entry_Call_out,Head, Inv)),
   
     Entry_Call_out=..[_|Vars1],
@@ -570,7 +568,7 @@ compute_forward_invariant(Chain,RefCnt,Entry_Call,Inv):-
 % then we apply the loop of the phase once and return that one
 compute_forward_invariant([Entry_phase],RefCnt,Head, Inv_out):-
     number(Entry_phase),
-    loop_ph(Head,(Entry_phase,RefCnt),Call,Cs),   !,
+    loop_ph(Head,(Entry_phase,RefCnt),Call,Cs,_,_),Call\==none,  !,
     Call=..[_|Vars2],
     scc_forward_invariant(Head,_,Inv),
     nad_glb(Inv,Cs,Cs_1),
@@ -600,7 +598,7 @@ compute_forward_invariant([Entry_phase],RefCnt,Entry_Call, Inv_out):-!,
     findall((Head_loop,Call_loop,Cs_loop),
 	    (
 	    member(Loop,Entry_phase),
-	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop)
+	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop,_,_)
 	    ),Loops),
     forward_invariant_fixpoint(0,inv(Entry_Call,Inv_0),Loops,inv(Entry_Call,Inv_aux)),
         apply_loops_external(Loops,inv(Entry_Call,Inv_aux),Entry_call2,Cs_list),
@@ -618,7 +616,7 @@ compute_forward_invariant([Entry_phase],RefCnt,Entry_Call, Inv_out):-!,
 % and apply the loops once to obtain the return invariant
 compute_forward_invariant([Non_loop|Chain],RefCnt,Entry_Call,Inv_out):-
     number(Non_loop),
-    loop_ph(Entry_Call,(Non_loop,RefCnt),Call,Cs),!,
+    loop_ph(Entry_Call,(Non_loop,RefCnt),Call,Cs,_,_),Call\==none,!,
     compute_forward_invariant(Chain,RefCnt,Entry_Call,Inv_aux), 
     Call=..[_|Vars],
     nad_glb(Inv_aux,Cs,Cs_1),
@@ -646,7 +644,7 @@ compute_forward_invariant([Phase|Chain],RefCnt,Entry_Call, Inv_out):-!,
       findall((Head_loop,Call_loop,Cs_loop),
 	    (
 	    member(Loop,Phase),
-	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop)
+	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop,_,_)
 	    ),Loops),
     forward_invariant_fixpoint(0,inv(Entry_Call,Inv_0),Loops, inv(Entry_Call, Inv_aux)),
     apply_loops_external(Loops,inv(Entry_Call,Inv_aux),Entry_call2,Cs_list),
@@ -706,7 +704,7 @@ compute_phase_transitive_closure(Phase,RefCnt):-
         findall((Head_loop,Call_loop,Cs_loop),
 	    (
 	    member(Loop,Phase),
-	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop)
+	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop,_,_)
 	    ),Loops),
         relation2entry_invariant_fixpoint(0,inv(Head,Call,Inv_0),Loops,inv(Entry_out,Call_out, Trans_closure)),
         add_phase_transitive_closure(Phase,RefCnt,Entry_out,Call_out,Trans_closure).
