@@ -106,7 +106,7 @@ The main "data types" used in CoFloCo are the following:
 
 :-include('search_paths.pl').
 
-:- use_module(db,[eq_ph/7,entry_eq/2,init_db/0,init_timers/0]).
+:- use_module(db,[entry_eq/2,init_db/0,init_timers/0]).
 :- use_module('pre_processing/SCCs',[compute_sccs_and_btcs/0,
 				ignored_scc/1,
 				crs_residual_scc/2,
@@ -123,7 +123,8 @@ The main "data types" used in CoFloCo are the following:
 			  ]).
 :- use_module('refinement/unfolding',[unfold_calls/2,
 			 reinforce_equations_with_forward_invs/2,
-			 remove_terminating_non_terminating_chains/2]). 
+			 remove_terminating_non_terminating_chains/2,
+			 compress_chains_execution_patterns/2]). 
 :- use_module('refinement/chains',[compute_chains/2,chain/3,init_chains/0]).
 :- use_module('refinement/loops',[compute_loops/2,compute_phase_loops/2]).
 
@@ -134,13 +135,15 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('upper_bounds/upper_bounds',[compute_upper_bound_for_scc/2,
 				  compute_closed_bound/1,
 				  compute_single_closed_bound/2]).
-:- use_module('upper_bounds/conditional_upper_bounds',[compute_conditional_upper_bounds/1]).
-				  
+:- use_module('upper_bounds/conditional_upper_bounds',[
+				  compute_conditional_upper_bounds/1]).			  
 :- use_module('upper_bounds/phase_solver',[init_phase_solver/0]).
 :- use_module('upper_bounds/cost_equation_solver',[init_cost_equation_solver/0]).    
 
 :- use_module('IO/output',[print_results/2,
 	          print_equations_refinement/2,
+	          print_loops_refinement/2,
+	          print_external_pattern_refinement/2,
 		      print_help/0,
 		      print_closed_results/2,
 		      print_chains/1,
@@ -327,6 +330,7 @@ bottom_up_refinement_scc(Head) :-
 	print_equations_refinement(Head_aux,1),
 		  
 	compute_loops(Head,2),
+	print_loops_refinement(Head_aux,2),
 	compute_chains(Head,2),
 	compute_phase_loops(Head,2),
 	profiling_stop_timer_acum(unfold,_),
@@ -343,8 +347,13 @@ bottom_up_refinement_scc(Head) :-
 	compute_forward_invariants(Head,2),	
 	compute_invariants_for_scc(Head,2),
 	profiling_stop_timer_acum(inv,_),
-	
-	print_chains_entry(Head_aux,2).
+	print_chains_entry(Head_aux,2),
+	conditional_call(get_param(compress_chains,[]),
+	    (
+		  compress_chains_execution_patterns(Head,2),
+		  print_external_pattern_refinement(Head,2)
+		  )
+		 ).
 	
 
 %! upper_bounds is det
@@ -366,7 +375,6 @@ bottom_up_upper_bounds(SCC_N, Max_SCC_N) :-
 	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
 	functor(Head,F,A),
 	Next_SCC_N is SCC_N+1,
-
 	compute_upper_bound_for_scc(Head,2),
 	copy_term(Head,Head_aux),
 	conditional_call((get_param(v,[N]),N>1),

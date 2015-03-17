@@ -24,6 +24,7 @@ of CoFloCo.
 
 
 :- module(cofloco_utils,[
+			add_equality_constraints/4,
 		    get_it_vars_in_loop/2,
 		    zip_with_op/4,
 		    tuple/3,
@@ -47,6 +48,16 @@ of CoFloCo.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! add_equality_constraints(+Vs_1:list(var),+Vs_2:list(var),+Cs_1:polyhedron,-Cs_2:polyhedron) is det
+%
+%  Vs_1 and Vs_2 are list of the same length, Cs_2 includes Cs_1 and
+%  equality constraints between the corresponding elements of Vs_1 and
+%  Vs_2.
+%
+add_equality_constraints([], [], Cs, Cs).
+add_equality_constraints([X|Xs], [Y|Ys], Init_Cs, [X=Y|Cs]) :-
+	add_equality_constraints(Xs, Ys, Init_Cs, Cs).
 
 
 %! norm_contains_vars(+Vars:list_set(var),+Norm:norm) is semidet

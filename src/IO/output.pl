@@ -28,6 +28,8 @@ This module prints the results of the analysis
 		  print_chains_entry/2,
 		  print_results/2,
 		  print_equations_refinement/2,
+		  print_loops_refinement/2,
+		  print_external_pattern_refinement/2,
 		  print_phase_termination_argument/4,
 		  print_single_closed_result/2,
 		  print_conditional_upper_bounds/1,
@@ -36,8 +38,9 @@ This module prints the results of the analysis
 
 :- use_module('../db',[ground_equation_header/1,
 						eq_refined/2,
-						loop_ph/4,
-						eq_ph/7,
+						eq_ph/8,
+						loop_ph/6,
+						external_call_pattern/5,
 						upper_bound/4,
 						closed_upper_bound/4,
 						conditional_upper_bound/3,
@@ -67,7 +70,7 @@ print_equations_refinement(Head,RefCnt):-
 print_equations_refinement(_,_).
 	
 print_equations_refinement_1(Head,RefCnt):-
-	eq_ph(Head,(Eq_id,RefCnt),_,_,_,_,_),
+	eq_ph(Head,(Eq_id,RefCnt),_,_,_,_,_,_),
 	findall(Refined,
 	        eq_refined(Eq_id,Refined),
 	        Refined_list),
@@ -85,10 +88,45 @@ print_specialized(E):-
     format('    --> ~p ~n',[E]).
     	 
 get_non_rec_calls(Id,Id:Calls):-
-	eq_ph(_,(Id,_),_,NR_Calls,_,_,_),
+	eq_ph(_,(Id,_),_,NR_Calls,_,_,_,_),
 	maplist(get_functor_call,NR_Calls,Calls).
 get_functor_call((Call,Chain),(F/A,Chain)):-
 	functor(Call,F,A).
+	
+	
+%! print_loops_refinement(+Head:term,+RefCnt:int) is det
+% print the correspondence between loops and cost equations from the SCC Head in the refinement phase RefCnt
+% if the verbosity is high enough
+print_loops_refinement(Head,RefCnt):-
+	get_param(v,[X]),X > 2,!,
+	functor(Head,Name,Arity),
+	format('Cost equations --> Loop of ~p ~n',[Name/Arity]),
+	print_loops_refinement_1(Head,RefCnt).
+print_loops_refinement(_,_).
+	
+print_loops_refinement_1(Head,RefCnt):-
+	loop_ph(Head,(Id,RefCnt),_,_,Eqs,_),
+	format('~p --> ~p ~n',[Eqs,Id]),
+	fail.
+print_loops_refinement_1(_,_):-nl.
+	 
+%! print_external_pattern_refinement(+Head:term,+RefCnt:int) is det
+% print the correspondence between external patterns and chains from the SCC Head in the refinement phase RefCnt
+% if the verbosity is high enough
+print_external_pattern_refinement(Head,RefCnt):-
+	get_param(v,[X]),X > 2,!,
+	functor(Head,Name,Arity),
+	format('Chains --> External pattern of ~p ~n',[Name/Arity]),
+	print_external_pattern_refinement_1(Head,RefCnt).
+print_external_pattern_refinement(_,_).
+	
+print_external_pattern_refinement_1(Head,RefCnt):-
+	external_call_pattern(Head,(Id,RefCnt),_,Components,_),
+	maplist(reverse,Components,Components_rev),
+	format('~p --> ~p ~n',[Components_rev,Id]),
+	fail.
+print_external_pattern_refinement_1(_,_):-nl.
+	
 	
 %! print_phase_termination_argument(+Head:term,+Phase:phase,+Term_argument:termination_argument,+YesNo:flag) is det
 % print the termination argument of Phase if Phase is an iterative phase and the verbosity
@@ -339,6 +377,8 @@ print_parameters_list.
 print_stats:-
 	profiling_get_info(pe,T_pe,_),
 	profiling_get_info(inv,T_inv,_),
+	profiling_get_info(inv_back,T_inv_back,_),
+	profiling_get_info(inv_transitive,T_inv_transitive,_),
 	profiling_get_info(unfold,T_unfold,_),
 	profiling_get_info(ubs,T_ubs,_),
 
@@ -358,6 +398,8 @@ print_stats:-
 	counter_get_value(compressed_chains,N_compressed_chains),
 	format("Partial evaluation computed in ~0f ms.~n",[T_pe]),
 	format("Invariants computed in ~0f ms.~n",[T_inv]),
+	format("----Backward Invariants ~0f ms.~n",[T_inv_back]),
+	format("----Transitive Invariants ~0f ms.~n",[T_inv_transitive]),
 	format("Refinement performed in ~0f ms.~n",[T_unfold]),
 	format("Termination proved in ~0f ms.~n",[T_termination]),
 	format("Upper bounds computed in ~0f ms.~n",[T_ubs]),

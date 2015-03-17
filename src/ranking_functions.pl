@@ -29,7 +29,7 @@ mutual dependencies in order to obtain lexicographic ranking functions
 			     partial_ranking_function/7
 			     ]).
 
-:- use_module(db,[loop_ph/4,phase_loop/5,eq_ph/7]).
+:- use_module(db,[loop_ph/6,phase_loop/5]).
 :- use_module('refinement/chains',[chain/3]).		  
 
 :- use_module('IO/params',[get_param/2]).
@@ -137,7 +137,7 @@ compute_phase_partial_rfs(Head,Chain,Phase,Inv):-
 
 
 compute_1_loop_rfs(Head,Call,Inv,Loop,Map_in,Map_out):-
-	loop_ph(Head,(Loop,_),Call,Cs_loop),
+	loop_ph(Head,(Loop,_),Call,Cs_loop,_,_),
 	nad_glb(Cs_loop,Inv,Cs_loop1),
 	compute_iterations_ubs_without_fractions( Head, Call, Cs_loop1, Rfs),
 	foldl(add_rf_2_map(Loop),Rfs,Map_in,Map_out).
@@ -165,7 +165,7 @@ add_partial_ranking_function_aux(Head,Chain,Phase,(Rf,Covered),Deps,Type_deps):-
 % Type_deps_out is a list of flags that can be an integer or unknown
 check_lexicographic_deps([],_Head,_Call,_Rf,[],[]).
 check_lexicographic_deps([Loop|Loops],Head,Call,Rf,Deps_out,Type_deps_out):-
-	loop_ph(Head,(Loop,_),Call,Cs_loop),
+	loop_ph(Head,(Loop,_),Call,Cs_loop,_,_),
 	check_increment(Head,Call,Cs_loop,Rf,Inc),
 	( Inc =< 0 ->
 	    Deps_out=Deps_out_aux,

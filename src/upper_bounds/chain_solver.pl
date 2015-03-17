@@ -36,7 +36,7 @@ For the constraints, this is done at the same time of the compression.
     maximize_constraints_set/4,
 	compress_sets_constraints/4]).
 
-:-use_module('../db',[phase_loop/5,eq_ph/7,loop_ph/4]).
+:-use_module('../db',[phase_loop/5,loop_ph/6]).
 :-use_module('../refinement/invariants',[backward_invariant/4,
 			      phase_transitive_closure/5,
 			      forward_invariant/4]).
@@ -150,7 +150,7 @@ substitute_norm_expression(Vars1,Vars2,norm(Its,E),norm(Its,E2)):-
 %  obtain the base case definition and the forward invariant
 %  and put them together
 get_all_base_case_information(Head,[Lg|More],Phi):-
-	eq_ph(Head,(Lg,_),_,_,_,_,Cs_base),
+	loop_ph(Head,(Lg,_),none,Cs_base,_,_),
 	forward_invariant(Head,([Lg|More],_),_,Local_inv),
 	ut_flat_list([Local_inv,Cs_base],Phi). %cheap glb
 
@@ -168,7 +168,7 @@ get_all_phase_information(Head,Call,[Lg|More],Phi_list):-
 	(
 	phase_transitive_closure(Lg,_,Head,Call,Cs_transitive)
 	 ;
-	loop_ph(Head,(Lg,_),Call,Cs_transitive)
+	loop_ph(Head,(Lg,_),Call,Cs_transitive,_,_)
 	),
 	(phase_loop(Lg,_,Head,_,Cs_extra) ; Cs_extra=[]),!,
 	get_next_phase_predicate(More,Head,Cs_carried),
@@ -178,7 +178,7 @@ get_all_phase_information(Head,Call,[Lg|More],Phi_list):-
 get_next_phase_predicate([],_,[]).
 get_next_phase_predicate([Lg_next|_],Head,Cs_carried):-
 	number(Lg_next),!,
-	loop_ph(_,(Lg_next,_),Head,Cs_carried).
+	loop_ph(_,(Lg_next,_),Head,Cs_carried,_,_).
 get_next_phase_predicate([Lg_next|_],Head,Cs_carried):-
 	phase_loop(Lg_next,_,_,Head,Cs_carried).
 

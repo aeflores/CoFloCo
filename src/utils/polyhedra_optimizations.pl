@@ -41,19 +41,21 @@
 		    nad_consistent_constraints_group/2,
 		    nad_consistent_constraints_group_aux/1,
 		    nad_entails_aux/3,
+		    nad_normalize_polyhedron/2,
 		    nad_project_group/3,
-		    nad_is_bottom/1
+		    nad_is_bottom/1,
+		    group_relevant_vars/4
 	]).
 	
-:- use_module(cofloco_utils,[normalize_constraint/2]).
+:- use_module(cofloco_utils,[normalize_constraint/2,constraint_to_coeffs_rep/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_normalize/2,nad_project/3,nad_entails/3,nad_consistent_constraints/1,nad_lub/6,nad_list_lub/2]).
 :- use_module(stdlib(set_list)).	
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_var_member/2]).
-
+:- use_module('../IO/params',[get_param/2]).
 
 %! nad_is_bottom(+Cs:polyhedron) is semidet
 % succeeds if Cs is inconsistent (unsatisfiable) using cartesian decomposition incrementally.
-nad_is_bottom([0=1]):-!.
+nad_is_bottom([X=Y]):-X==0,Y==1,!.
 nad_is_bottom(Cs):-
 	\+nad_consistent_constraints_group_aux(Cs).
 	
@@ -65,6 +67,11 @@ nad_entails_aux(Vars,Cs,Cons):-
 	slice_relevant_constraints_and_vars(Relevant_vars,Vars,Cs,Selected_vars,Selected_Cs),
     nad_entails(Selected_vars,Selected_Cs,Cons_norm).
 
+
+nad_normalize_polyhedron(Cs,Cs4):-
+	nad_normalize(Cs,Cs2),
+	maplist(normalize_constraint,Cs2,Cs3),
+	from_list_sl(Cs3,Cs4).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -98,7 +105,19 @@ nad_consistent_constraints_group_1([V|Vars],Cs):-
 
 %! nad_project_group(+Vars:list(var),+Cs:polyhedron,-Cs2:polyhedron) is det
 % project Cs onto Vars using cartesian decomposition (group_relevant_vars/4)
-nad_project_group(Vars,Cs,Cs2):-
+nad_project_group(Vars,Cs,Cs4):-
+	copy_term((Vars,Cs),(Vars2,Cs2)),
+	partition(equality,Cs2,_Equalities,Rest),
+	term_variables(Vars2,Vars3),
+	(Rest=[]->
+	   Cs3=[]
+	   ;
+	nad_project_group1(Vars3,Rest,Cs3)
+	),
+	equate(Vars,Vars2,[],[],Cs3,Cs4).
+	
+	
+nad_project_group1(Vars,Cs,Cs2):-
 	from_list_sl(Vars,Vars_set),
 	from_list_sl(Cs,Cs_set),
 	group_relevant_vars(Vars_set,Cs_set,Groups,Rest),
@@ -114,8 +133,25 @@ nad_project_group(Vars,Cs,Cs2):-
 	    )
 	    ).
 
+	
 project_group((Vars,Cs),Cs2):-
 	nad_project(Vars,Cs,Cs2).
+
+
+equate([],[],_,Unify_list,Accum,Accum):-
+	maplist(unify_elem,Unify_list).
+equate([V|Vs],[V2|Vs2],Present,Unify_list,Accum,Cs):-
+	(contains_sl(Present,V2)->
+	   equate(Vs,Vs2,Present,Unify_list,[V2=V|Accum],Cs)
+	   ;
+	   insert_sl(Present,V2,Present2),
+	   equate(Vs,Vs2,Present2,[V=V2|Unify_list],Accum,Cs)
+	   ).
+	
+unify_elem(A=A).
+equality(Constr):-
+    constraint_to_coeffs_rep(Constr, coeff_rep([-1*A,1*A],=,0)).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! group_relevant_vars(+Vars:set_list(var),+Cs:polyhedron,-Groups:list(set_list(var),polyhedron),-Rest:polyhedron) is det

@@ -41,6 +41,7 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 ]).
 
 :- use_module('../db',[input_eq/5]).
+:- use_module(recursion_loop_extraction,[try_loop_extraction/1]).
 
 :- use_module(stdlib(scc),[compute_sccs/2]).
 :- use_module(stdlib(minimal_feedback_set),[compute_mfbs_shamir/3]).
@@ -90,6 +91,13 @@ compute_sccs_and_btcs:-
 	init_sccs,
 	compute_crs_sccs,
 	compute_btcs.
+%	catch(compute_btcs
+%	,error(no_cover_point,[scc=SCC_N]),
+%	    (
+%	    try_loop_extraction(SCC_N),
+%	    compute_sccs_and_btcs)
+%	   ).
+	
 
 init_sccs:-
 	retractall(crs_btc(_,_)),
@@ -127,7 +135,6 @@ compute_cover_point_for_scc(SCC_N) :-
 		add_to_btc([Cover_Point]),
 		declare_residual_scc(SCC_N,Cover_Point)
 	;
-	    
 	    throw(error(no_cover_point,[scc=SCC_N]))
 	    
 	).
