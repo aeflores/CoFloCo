@@ -40,6 +40,7 @@ that can be passed on to the callers.
 		  upper_bound/4,
 		  add_external_upper_bound/3,
 		  add_closed_upper_bound/3,
+		  add_single_closed_upper_bound/2,
 		  non_terminating_chain/2,
 		  closed_upper_bound/4]).
 
@@ -112,6 +113,7 @@ compute_single_closed_bound(Head,SimpleExp):-
 	bagof_no_fail(CExp,
 		Chain^E1^closed_upper_bound(Head,Chain,E1,CExp),CExps),
 	cexpr_max(CExps,Max),
-	cexpr_simplify(Max,[],SimpleExp),!.
+	cexpr_simplify(Max,[],SimpleExp),!,
+	add_single_closed_upper_bound(Head,SimpleExp).
 	
 

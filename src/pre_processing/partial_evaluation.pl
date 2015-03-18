@@ -30,7 +30,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 */
 :- module(partial_evaluation,[partial_evaluation/0]).
 
-:- use_module('SCCs',[crs_btc/2,ignored_scc/1]).
+:- use_module('SCCs',[crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
 :- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
 
 
@@ -53,14 +53,25 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 % for SCCs that have recursive calls, add an auxiliary empty equation that will serve to simulate non-terminating chains
 partial_evaluation :-
 	retractall(pe_eq(_,_,_,_)),
-	entry_eq(Call,_),
+	cofloco_aux_entry_name(Call),
 	pe_aux(Call),%FIXME take the entry condition into account
-	findall(F/A,
-	        (crs_btc(F,A),functor(Head,F,A),\+pe_atom(Head),\+cofloco_aux_entry_name(F))
+	findall(F1/A1,
+	        (
+	        input_eq(Head,_,_,_,_),
+	        functor(Head,F1,A1),
+	        \+cofloco_aux_entry_name(F1),
+	        (crs_node_scc(F1,A1,SCC_N)->   
+	          crs_residual_scc(SCC_N,BTC/BTC_a),
+	          functor(BTC_head,BTC,BTC_a),\+pe_atom(BTC_head)
+	          ;
+	           true
+	          )
+	        )
 	        ,Ignored),
-	(Ignored\=[]->
-	   format('Warning: the following predicates are never called:~p~n',[Ignored]);true),
-	 maplist(add_ignored_scc,Ignored).
+	 from_list_sl(Ignored,Ignored_set),
+	(Ignored_set\=[]->
+	   format('Warning: the following predicates are never called:~p~n',[Ignored_set]);true),
+	 maplist(add_ignored_scc,Ignored_set).
 
 add_ignored_scc(X):-
 	assert(ignored_scc(X)).

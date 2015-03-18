@@ -106,9 +106,7 @@
 % SOME PROLOG DISTRIBUTIONS initialize PPL automatically when it's loaded, 
 % but in other you have to call it explicitly.
 %
-ppl_my_initialize :-
-	%load_foreign_library(foreign('libppl_swiprolog.so')),	
-	ppl_initialize.
+ppl_my_initialize :- ppl_initialize.
 
 /*
 ppl_project(+PPLType,+Xs,+Cxs,-ProjectCxs): 
