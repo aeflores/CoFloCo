@@ -44,7 +44,7 @@ This module prints the results of the analysis
 						upper_bound/4,
 						closed_upper_bound/4,
 						conditional_upper_bound/3,
-						non_terminating_chain/2]).
+						non_terminating_chain/3]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
 
@@ -166,7 +166,7 @@ print_chains_1(_).
 print_chain(Entry,Fusion):-
 	Fusion=..[fusion|Chain_list],!,
 	maplist(reverse,Chain_list,Chain_list_inv),
-	(non_terminating_chain(Entry,Fusion)->
+	(non_terminating_chain(Entry,_,Fusion)->
 	   %Pattern=[_|Pattern1],
 	   ansi_format([fg(red)],'~p:~p...',[Entry,fusion(Chain_list_inv)])
 	 ;
@@ -174,7 +174,7 @@ print_chain(Entry,Fusion):-
 	).
 print_chain(Entry,Pattern):-
 	reverse(Pattern,Pattern_inv),
-	(non_terminating_chain(Entry,Pattern)->
+	(non_terminating_chain(Entry,_,Pattern)->
 	   %Pattern=[_|Pattern1],
 	   ansi_format([fg(red)],'~p:~p...',[Entry,Pattern_inv])
 	 ;
@@ -201,7 +201,7 @@ print_chains_entry_1(_,_):-nl.
 
 print_chain_simple(Pattern):-
 	reverse(Pattern,Pattern_inv),
-	(non_terminating_chain(_,Pattern)->
+	(non_terminating_chain(_,_,Pattern)->
 	   %Pattern=[_|Pattern1],
 	   ansi_format([fg(red)],'~p...',[Pattern_inv])
 	 ;

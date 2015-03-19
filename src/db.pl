@@ -41,7 +41,7 @@ This module acts as a database that stores:
 	   eq_ph/8,
        loop_ph/6,
 	   phase_loop/5,
-	   non_terminating_chain/2,	   
+	   non_terminating_chain/3,	   
 
 	   external_call_pattern/5,
 	   add_external_call_pattern/5,
@@ -62,6 +62,7 @@ This module acts as a database that stores:
 ]).
 :- use_module('IO/params',[get_param/2]).
 :- use_module('utils/cofloco_utils',[assign_right_vars/3]).
+:- use_module('refinement/chains',[chain/3]).
 
 :- use_module(stdlib(utils),[ut_var_member/2]).
 :- use_module(stdlib(counters),[counter_initialize/2,counter_increase/3,counter_get_value/2]).
@@ -144,10 +145,10 @@ This module acts as a database that stores:
 % conditional upper bound's preconditions are mutually exclusive among each other and with any other conditional upper bound
 :- dynamic conditional_upper_bound/3.
 
-%! non_terminating_chain(?Head:term,?Chain:chain)
+%! non_terminating_chain(?Head:term,RefCnt:int,?Chain:chain)
 % It indicates that the chain Chain is non-terminating
 % a chain whose first element is a non_terminating_stub is non-terminating
-:-dynamic non_terminating_chain/2.
+:-dynamic non_terminating_chain/3.
 
 %non_terminating_chain(Head,[First|_]):-
 %	non_terminating_stub(Head,First).
@@ -168,10 +169,10 @@ init_db:-
 	retractall(closed_upper_bound(_,_,_,_)),
 	retractall(single_closed_upper_bound(_,_)),
 	retractall(non_terminating_stub(_,_)),
-	retractall(non_terminating_chain(_,_)),
-	assert((non_terminating_chain(Head,Chain):-
-	            non_terminating_chain_1(Head,Chain),
-	            asserta(non_terminating_chain(Head,Chain))
+	retractall(non_terminating_chain(_,_,_)),
+	assert((non_terminating_chain(Head,RefCnt,Chain):-
+	            non_terminating_chain_1(Head,RefCnt,Chain),
+	            asserta(non_terminating_chain(Head,RefCnt,Chain))
 	            ) ),
 	counter_initialize(input_eqs,0),
 	
@@ -206,16 +207,19 @@ init_timers:-
 cofloco_aux_entry_name('$cofloco_aux_entry$').
 
 
-
-non_terminating_chain_1(Head,[X|_Chain]):-
+non_terminating_chain_1(Head,RefCnt,Chain):-
+	chain(Head,RefCnt,Chain),
+	non_terminating_chain_2(Head,Chain).
+	
+non_terminating_chain_2(Head,[X|_Chain]):-
 	number(X),
 	loop_ph(Head,(X,_),_Call,_Cs,_Ids,non_terminating),!.
 
-non_terminating_chain_1(Head,[X|_Chain]):-
+non_terminating_chain_2(Head,[X|_Chain]):-
 	\+number(X),
-	non_terminating_chain_1(Head,X),!.
-non_terminating_chain_1(Head,[_|Chain]):-
-	non_terminating_chain_1(Head,Chain).
+	non_terminating_chain_2(Head,X),!.
+non_terminating_chain_2(Head,[_|Chain]):-
+	non_terminating_chain_2(Head,Chain).
 	
 
 %! add_ground_equation_header(+Non_ground:term,+Ground:term) is det
