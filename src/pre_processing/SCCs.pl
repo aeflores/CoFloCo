@@ -41,7 +41,7 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 ]).
 
 :- use_module('../db',[input_eq/5]).
-:- use_module(recursion_loop_extraction,[try_loop_extraction/1]).
+%:- use_module(recursion_loop_extraction,[try_loop_extraction/1]).
 
 :- use_module(stdlib(scc),[compute_sccs/2]).
 :- use_module(stdlib(minimal_feedback_set),[compute_mfbs_shamir/3]).
