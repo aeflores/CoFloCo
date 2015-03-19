@@ -154,6 +154,7 @@ The main "data types" used in CoFloCo are the following:
 		      print_help/0]).
 :- use_module('IO/input',[read_cost_equations/1,store_cost_equations/1]).
 :-use_module('IO/params',[set_default_params/0,parse_params/1,get_param/2]).
+:-use_module('utils/cofloco_utils',[tuple/3]).
 
 
 :- use_module(stdlib(numeric_abstract_domains),[nad_set_domain/1]).
@@ -258,12 +259,16 @@ preprocess_cost_equations:-
 % perform the top_down analysis followed
 % by the bottom_up analysis
 refinement:-
-	entry_eq(Head,Cs),
-    add_scc_forward_invariant(Head,0,Cs),
-    functor(Head,F,A),
-    crs_node_scc(F,A,SCC_N),
-	top_down_refinement(SCC_N),	
-	bottom_up_refinement(0,SCC_N),
+	findall(SCC_N,
+	  (
+	  entry_eq(Head,Cs),
+      add_scc_forward_invariant(Head,0,Cs),
+      functor(Head,F,A),
+      crs_node_scc(F,A,SCC_N)
+      ),SCC_Ns),
+    max_list(SCC_Ns,SCC_max),
+	top_down_refinement(SCC_max),	
+	bottom_up_refinement(0,SCC_max),
 	warn_if_no_chains(2).
 
 
@@ -359,12 +364,18 @@ bottom_up_refinement_scc(Head) :-
 %! upper_bounds is det
 % compute upper bounds for all SCC and a closed upper bounds for the entry SCC
 upper_bounds:-
-    entry_eq(Head,_),   
-    functor(Head,F,A),
-    crs_node_scc(F,A,SCC_N),
+	findall((SCC_N,Head),
+	  (
+	  entry_eq(Head,_),
+
+      functor(Head,F,A),
+      crs_node_scc(F,A,SCC_N)
+      ),SCC_Head_Ns),
+    maplist(tuple,SCC_Ns,SCC_Heads,SCC_Head_Ns),
+    max_list(SCC_Ns,SCC_max),
     profiling_start_timer(ubs),
-    bottom_up_upper_bounds(0,SCC_N),
-    compute_closed_bound_scc(Head),
+    bottom_up_upper_bounds(0,SCC_max), 
+    maplist(compute_closed_bound_scc,SCC_Heads),
     profiling_stop_timer_acum(ubs,_).
     
 %! bottom_up_upper_bounds(+SCC_N:int,+Max_SCC_N:int) is det

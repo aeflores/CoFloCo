@@ -103,6 +103,8 @@ cexpr_maximize(Linear,Vs,Cs,Max1) :-
  	 (ML=[Max]->true;
  	  Max=min(ML))),
 	cexpr_simplify_N(Max,1,Cs,Max1).
+	
+cexpr_maximize(c(Cost_center),_Vs,_Cs,c(Cost_center)):-!.
 
 cexpr_maximize(max(Ls),Vs,Cs,Res) :-!,
 	maplist(cexpr_maximize_aux(Vs,Cs),Ls,LsM),
@@ -170,7 +172,8 @@ cexpr_simplify_N(inf,_,_,inf).
 
 cexpr_simplify_N(V,_,_,V):-
  	number(V),!.
-
+cexpr_simplify_N(c(Cost_center),_,_,c(Cost_center)):-!.
+ 	
 cexpr_simplify_N(nat(E),N,Cs,Res):-
 	N1 is N-1,
  	cexpr_simplify_N(E,N1,Cs,ES),

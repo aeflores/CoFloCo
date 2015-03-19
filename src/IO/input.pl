@@ -51,21 +51,19 @@ store_cost_equations(Eqs):-
 	remove_undefined_calls.
 
 %! declare_entry is det
-% get the first cost equation and create a auxiliary entry (cofloco_aux_entry_name) that calls it
-% if there is no entry 	yet
+% If there are entries, the auxiliary entry (cofloco_aux_entry_name) makes a call to each of them
+% otherwise, the first cost equation becomes the entry
 declare_entry:-
-	entry_eq(Call,_),!,
-	input_eq(Call,_,_,_,_),
-	Call =.. [_|As],
-	cofloco_aux_entry_name(F),
-	Aux_Entry =.. [F|As],
-	normalize_input_equation(eq(Aux_Entry,0,[Call],[]),eq(Aux_Entry_Normalized,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
-	asserta(input_eq(Aux_Entry_Normalized,0,Expr_Normalized,[Call_Normalized],Cs_Normalized)).
+	findall(Entry,
+	   entry_eq(Entry,_)
+	   ,Entries),
+	   Entries=[_|_],!,
+	cofloco_aux_entry_name(Aux_Entry),
+	normalize_input_equation(eq(Aux_Entry,0,Entries,[]),eq(Aux_Entry_Normalized,Expr_Normalized,Calls_Normalized,Cs_Normalized)),
+	asserta(input_eq(Aux_Entry_Normalized,0,Expr_Normalized,Calls_Normalized,Cs_Normalized)).
 declare_entry:-
 	input_eq(Call,_,_,_,_),
-	Call =.. [_|As],
-	cofloco_aux_entry_name(F),
-	Aux_Entry =.. [F|As],
+	cofloco_aux_entry_name(Aux_Entry),
 	normalize_input_equation(eq(Aux_Entry,0,[Call],[]),eq(Aux_Entry_Normalized,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
 	asserta(input_eq(Aux_Entry_Normalized,0,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
 	assertz(entry_eq(Call,[])).
@@ -106,12 +104,12 @@ add_equation((Eq,Var_binding)):-!,
    add_equation(Eq).
 
 	
-add_equation(eq(Name,Vars,Exp,Body_Calls,Size_Rel)) :-	
+add_equation(eq(Name,Vars,Exp,Body_Calls,Size_Rel)) :-!,	
      Head=..[Name|Vars],
      add_equation(eq(Head,Exp,Body_Calls,Size_Rel)).
      
 
-add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-
+add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-!,
 	normalize_input_equation(eq(Head,Exp,Body_Calls,Size_Rel), eq(NHead,NExp,NCalls,NSize_Rel)), % Normalize the equation
 	term_variables((NHead,NExp,NCalls),Relevant_Vars),
 	%remove constraints that do not affect anything
@@ -132,12 +130,8 @@ add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-
 	
 	
 add_equation(entry(Term:Size_Rel)):-!,
-	(entry_eq(_,_)->
-	  format('WARNING: more than one entry declared, ignoring ~p~n',[entry(Term:Size_Rel)])
-	  ;
 	  normalize_entry(entry(Term:Size_Rel), Entry_Normalized),
-	  assertz(Entry_Normalized)
-	).
+	  assertz(Entry_Normalized).
 
 % throw an exception on failure
 add_equation(Eq) :-
