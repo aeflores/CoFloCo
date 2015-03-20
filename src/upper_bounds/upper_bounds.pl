@@ -41,7 +41,6 @@ that can be passed on to the callers.
 		  add_external_upper_bound/3,
 		  add_closed_upper_bound/3,
 		  add_single_closed_upper_bound/2,
-		  non_terminating_chain/2,
 		  closed_upper_bound/4]).
 
 :- use_module('../refinement/invariants',[backward_invariant/4]).

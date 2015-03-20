@@ -167,8 +167,8 @@ remove_undefined_calls_1([],_Head,[]).
 remove_undefined_calls_1([C|Cs],Head,Cs_1) :-
 	\+ input_eq(C,_,_,_,_), \+ C=Head,
 	!,
-	functor(C,Cname,_),functor(Head,Headname,_),
-	format('warning: Ignored call to ~p in equation ~p ~n',[Cname,Headname]),
+	functor(C,Cname,C_arity),functor(Head,Headname,Head_arity),
+	format('warning: Ignored call to ~p in equation ~p ~n',[Cname/C_arity,Headname/Head_arity]),
 	remove_undefined_calls_1(Cs,Head,Cs_1).
 remove_undefined_calls_1([C|Cs],Head,[C|Cs_1]) :-
 	remove_undefined_calls_1(Cs,Head,Cs_1).

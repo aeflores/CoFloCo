@@ -198,7 +198,11 @@ cofloco_query(Eqs,Params):-
 	store_cost_equations(Eqs),
 	preprocess_cost_equations,
 	refinement,
-	upper_bounds.
+	(get_param(only_termination,[])->
+			true
+			;
+			upper_bounds
+	).
 
 	
 %! cofloco_query(+Params:list(atom)) is det

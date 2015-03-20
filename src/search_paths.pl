@@ -3,6 +3,7 @@
 :- multifile user:file_search_path/2.
 
 :- prolog_load_context(directory, Dir),
+   (\+user:file_search_path(stdlib,_)->
    atom_concat(Dir,'/costa_stdlib/',Dir_basic),
    asserta(user:file_search_path(stdlib, Dir_basic)),
    
@@ -22,6 +23,9 @@
    asserta(user:file_search_path(stdlib, Dir_ppl)),
    
    atom_concat(Dir,'/lib/',Dir_ppl_binary), 
-   asserta(user:file_search_path(foreign, Dir_ppl_binary)).
-
+   asserta(user:file_search_path(foreign, Dir_ppl_binary))
+   
+   ;
+   true
+   ).
 
