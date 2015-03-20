@@ -55,21 +55,22 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 		  add_external_call_pattern/5,
 		  external_call_pattern/5,
 		  upper_bound/4,
-		  non_terminating_chain/2]).
+		  non_terminating_chain/3]).
 :-use_module('../termination_checker',[termination_argument/4]).
 		 
 			 
 :- use_module('../IO/output',[print_chain/2]).
 :- use_module('../IO/params',[get_param/2]).	
-:- use_module('../utils/cofloco_utils',[bagof_no_fail/3,assign_right_vars/3]).
+:- use_module('../utils/cofloco_utils',[bagof_no_fail/3,assign_right_vars/3,tuple/3]).
 :- use_module('../utils/polyhedra_optimizations',[
 	nad_consistent_constraints_group_aux/1,
 	slice_relevant_constraints_and_vars/5]).
 
+:- use_module(stdlib(utils),[ut_split_at_pos/4]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_lub/6,
 			            nad_normalize/2,
 						nad_list_lub/2,nad_glb/3,nad_project/3]).
-:- use_module(stdlib(set_list),[from_list_sl/2]).
+:- use_module(stdlib(set_list),[from_list_sl/2,unions_sl/2]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 
 %! reinforce_equations_with_forward_invs(Head:term,RefCnt:int) is det
@@ -161,7 +162,7 @@ unfold_calls_aux([Base_Call|More],[Base_Call|MoreB],Head,RefCnt,Cost,R_Calls,New
 	   ;  
 	   backward_invariant(Base_Call,(Chain,RefCnt),_Hash_inv,Head_Pattern),
 	   Id_call=chain(Chain),
-	   (non_terminating_chain(Base_Call,Chain)->
+	   (non_terminating_chain(Base_Call,RefCnt,Chain)->
 	      Terminating=non_terminating
 	      ;
 	      Terminating=terminating
@@ -192,7 +193,7 @@ or_terminating_flag(_,_,non_terminating):-!.
 % if there are not terminating chains we print a warning
 remove_terminating_non_terminating_chains(Head,RefCnt):-
 	chain(Head,RefCnt,Chain),
-	\+non_terminating_chain(Head,Chain),!,%Check if there are terminating chains
+	\+non_terminating_chain(Head,RefCnt,Chain),!,%Check if there are terminating chains
 	remove_terminating_non_terminating_chains_1(Head,RefCnt).
 remove_terminating_non_terminating_chains(Head,RefCnt):-
 	format('Warning: no base case found for predicate~n',Head),
@@ -230,19 +231,17 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	findall((Head,(Condition,Chain)),
 		(
 		backward_invariant(Head,(Chain,RefCnt),_,Condition),
-		\+non_terminating_chain(Head,Chain)
+		\+non_terminating_chain(Head,RefCnt,Chain)
 		)
 		,Ex_pats),
 	
 	assign_right_vars(Ex_pats,Head,Ex_pats1),
 	% group the partitions according to the chains
 	from_pair_list_mm(Ex_pats1,Multimap_simplified),
-	
-	
 	findall((Head,(Condition,Chain)),
 		(
 		backward_invariant(Head,(Chain,RefCnt),_,Condition),
-		non_terminating_chain(Head,Chain)
+		non_terminating_chain(Head,RefCnt,Chain)
 		)
 		,Ex_pats_non_terminating),
 	
@@ -265,5 +264,4 @@ compress_chains_execution_patterns(Head,RefCnt):-
 save_external_execution_patterns(Head,RefCnt,Terminating,(Precondition,Chains),N,N1):-
 	add_external_call_pattern(Head,(N,RefCnt),Terminating,Chains,Precondition),
 	N1 is N+1.
-
 
