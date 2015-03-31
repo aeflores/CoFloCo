@@ -41,14 +41,14 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 			normalize_constraint/2,
 			normalize_constraint_wrt_var/3,		    
 			repeat_n_times/3,
-			get_le_without_constant/3,
 			assign_right_vars/3]).
 :- use_module('../utils/polyhedra_optimizations',[nad_entails_aux/3,
 			slice_relevant_constraints_and_vars/5,
 			nad_consistent_constraints_group/2]).			
 
 :- use_module('../utils/cost_expressions',[cexpr_maximize/4,
-					      is_linear_exp/1]).
+			get_le_without_constant/3,
+			is_linear_exp/1]).
 
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).
 :- use_module(stdlib(set_list)).

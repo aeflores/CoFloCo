@@ -24,17 +24,23 @@ mutual dependencies in order to obtain lexicographic ranking functions
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 :- module(ranking_functions,[init_ranking_functions/0,
+				 clean_ranking_functions/1,
 			     find_ranking_functions/2,
 			     ranking_function/4,
 			     partial_ranking_function/7
 			     ]).
 
 :- use_module(db,[loop_ph/6,phase_loop/5]).
-:- use_module('refinement/chains',[chain/3]).		  
+:- use_module('refinement/chains',[chain/3]).	  
 
 :- use_module('IO/params',[get_param/2]).
 :- use_module('upper_bounds/constraints_maximization',[maximize_linear_expression_all/4]).
-:- use_module('utils/cofloco_utils',[zip_with_op/4,assign_right_vars/3,normalize_constraint/2]).
+:- use_module('utils/cofloco_utils',[zip_with_op/4,
+						assign_right_vars/3,
+						normalize_constraint/2]).
+:- use_module('utils/cost_expressions',[
+						normalize_le/2,
+						le_multiply/3]).						
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,
 						nad_consistent_constraints/1,
 						nad_entails/3, nad_lub/6,nad_list_lub/2,
@@ -76,7 +82,10 @@ init_ranking_functions:-
 	retractall(ranking_function(_,_,_,_)),
 	retractall(partial_ranking_function(_,_,_,_,_,_,_)).
 
-
+clean_ranking_functions(Head):-
+	retractall(ranking_function(Head,_,_,_)),
+	retractall(partial_ranking_function(Head,_,_,_,_,_,_)),
+	retractall(computed_ranking_functions(Head,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! find_ranking_functions(+Head:term,+RefCnt:int) is det
@@ -115,7 +124,7 @@ find_chain_ranking_functions([Phase|Rec_elems],Head,Chain):-
 compute_phase_rfs(Head,_,Phase,Inv):-
 	phase_loop(Phase,_,Head,Call,Cs),
 	nad_glb(Cs,Inv,Cs_1),
-	compute_iterations_ubs_without_fractions( Head, Call, Cs_1, Iter_Ubs),
+	compute_iterations_ubs( Head, Call, Cs_1, Iter_Ubs),
 	maplist(add_ranking_function(Head,_,Phase),Iter_Ubs).
 
 
@@ -139,7 +148,7 @@ compute_phase_partial_rfs(Head,Chain,Phase,Inv):-
 compute_1_loop_rfs(Head,Call,Inv,Loop,Map_in,Map_out):-
 	loop_ph(Head,(Loop,_),Call,Cs_loop,_,_),
 	nad_glb(Cs_loop,Inv,Cs_loop1),
-	compute_iterations_ubs_without_fractions( Head, Call, Cs_loop1, Rfs),
+	compute_iterations_ubs( Head, Call, Cs_loop1, Rfs),
 	foldl(add_rf_2_map(Loop),Rfs,Map_in,Map_out).
 
 add_rf_2_map(Loop,Rf,Map_in,Map_out):-
@@ -181,10 +190,10 @@ check_lexicographic_deps([Loop|Loops],Head,Call,Rf,[Loop|Deps_out],[unknown|Type
 
 %! check_increment(+Head:term,+Call:term,+Cs:polyhedron,+F:linear_expression,-Delta:int) is semidet
 % try to find a costant of how much a ranking function can be increased in the loop defined by Head,Call and Cs
-check_increment(Head,Call,Cs,F,Delta) :-
-	normalize_rf(F,Rf),
+check_increment(Head,Call,Cs,Rf,Delta) :-
 	copy_term([Head,Rf],[Call,Rfp]),
-	Cs_1 = [ D=Rf-Rfp | Cs],
+	normalize_constraint( D=Rf-Rfp ,Constraint),
+	Cs_1 = [ Constraint | Cs],
 	nad_minimize(Cs_1,[D],[Delta1]),
 	Delta is -Delta1.
 
@@ -222,15 +231,16 @@ add_partial_ranking_function(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
 
 
 
-compute_iterations_ubs_without_fractions( Head,Call,Phi, Rfs) :-
+compute_iterations_ubs( Head,Call,Phi, Rfs) :-
      pr04_compute_all_rfs_ppl(Head,Call,Phi,Rfs1),
-     maplist(remove_fraction,Rfs1,Rfs).
+     maplist(adapt_fraction,Rfs1,Rfs).
 
-remove_fraction(Rf,Rf_2):-
+adapt_fraction(Rf,Rf_2):-
 	\+var(Rf),
-	Rf=Rf_1/_,!,
-	remove_fraction(Rf_1,Rf_2).
-remove_fraction(Rf,Rf).
+	Rf=Rf_1/Div,!,
+	le_multiply(Rf_1,1/Div,Rf_2).
+
+adapt_fraction(Rf,Rf).
 
 pr04_compute_all_rfs_ppl(Head, Body, Cs, Rfs_1) :-
 	Head=..[_|EntryVars],
@@ -257,8 +267,8 @@ compute_offset(Rf,Cs,Rf_1):-
 %	).
 	
 	
-normalize_rf(F,FN-Constant) :-
-	normalize_constraint(F>=0,FN>=Constant).
+normalize_rf(F,FN) :-
+	normalize_le(F,FN).
 
 covered_by_rf(Head,Phase,Rf):-
 	ranking_function(Head,_,Phase,Rf1),

@@ -216,7 +216,7 @@ incremental_maximization(It_pairs,EVars,Norms,Cost):-
 %       set the iteration variable to the expression of the norm Rf         
          It_var=Rf,
 %       and the rest of the iteration variables of the constrain to 0         
-         maplist(assign_zero_if_possible,Its),
+         maplist(assign_zero_if_possible(Rf),Its),
 % remove pairs whose iteration variable has taken the 0 value         
          exclude(zero_it_var,It_pairs_rem,Remaining_it_pairs),
 % all the norms norm([Its,It_var],Exp) that contain It_var are transformed into norm([Its],Exp-Rf)
@@ -264,7 +264,8 @@ transform_norms(Rf_used,norm(Its,Rf),norm(Its2,Rf1)):-
 	).
 
 
-assign_zero_if_possible(0):-!.
+assign_zero_if_possible(Rf,Var):-Rf==Var,!.
+assign_zero_if_possible(_,0):-!.
 assign_zero_if_possible(_).
 
 
