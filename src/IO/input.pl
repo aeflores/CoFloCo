@@ -22,7 +22,7 @@ This module reads cost equations and stores them in the database after normalizi
 */
 
 
-:- module(input,[read_cost_equations/1,store_cost_equations/1,normalize_input_equation/2]).
+:- module(input,[read_cost_equations/1,store_cost_equations/1]).
 :- use_module('../db',[input_eq/5,
 					entry_eq/2,
 					cofloco_aux_entry_name/1,

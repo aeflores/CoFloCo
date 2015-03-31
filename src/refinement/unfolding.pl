@@ -249,14 +249,6 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	
 	% group the partitions according to the chains
 	from_pair_list_mm(Ex_pats_non_terminating1,Multimap_simplified_non_terminating),
-	
-	%length(Ex_pats,N1),
-	%length(Multimap_simplified,N2),
-	%length(Ex_pats_non_terminating,N1_non_terminating),	
-	%length(Multimap_simplified_non_terminating,N2_non_terminating),
-	%format('~p go to ~p ~n',[N1,N2]),
-	%format('~p go to ~p ~n',[N1_non_terminating,N2_non_terminating]),
-	
 	foldl(save_external_execution_patterns(Head,RefCnt,terminating),Multimap_simplified,1,Id_N1),
 	foldl(save_external_execution_patterns(Head,RefCnt,non_terminating),Multimap_simplified_non_terminating,Id_N1,_).
 
@@ -264,4 +256,4 @@ compress_chains_execution_patterns(Head,RefCnt):-
 save_external_execution_patterns(Head,RefCnt,Terminating,(Precondition,Chains),N,N1):-
 	add_external_call_pattern(Head,(N,RefCnt),Terminating,Chains,Precondition),
 	N1 is N+1.
-
+	

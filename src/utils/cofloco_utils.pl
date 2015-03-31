@@ -31,12 +31,14 @@ of CoFloCo.
 		    normalize_constraint/2,
 		    assign_right_vars/3,
 		    constraint_to_coeffs_rep/2,
+		    get_le_without_constant/3,
 		    repeat_n_times/3,
 		    bagof_no_fail/3,
 		    foldr/4,
 		    sort_with/3,
 		    write_sum/2,
 		    norm_contains_vars/2,
+		    divide_le_by_number/3,
 		    normalize_constraint_wrt_var/3]).
 
 
@@ -129,6 +131,29 @@ pt([X | Xs], M,Smaller, L, [X | G]) :-
 	 call(Smaller,X,M),!,
     pt(Xs, M,Smaller, L, G).
 pt([X | Xs], M,Smaller, [X | L], G) :- pt(Xs, M,Smaller, L, G).	
+
+
+
+%! get_le_without_constant(+X:linear_expression,-X_wc:linear_expression,-B:number) is det
+% given a linear expression C0+C1*X1+C2*X2+...Cn*Xn:
+% X_wc=C1*X1+C2*X2+...Cn*Xn and B=C0
+get_le_without_constant(X,X_wc,B):-
+	constraint_to_coeffs_rep(X>=0, coeff_rep(Coeffs,Rel,B)),
+	coeffs_rep_to_constraint(coeff_rep(Coeffs,Rel,0), X_wc>=0).
+
+%! divide_le_by_number(+Exp:linear_expression,+Div:number,-Exp_f:linear_expression) is det
+%given a linear expression Exp=C0+C1*X1+C2*X2+...Cn*Xn and a number Div
+% Exp_f=C0/Div+C1/Div*X1+C2/Div*X2+...Cn/Div*Xn
+divide_le_by_number(Exp,Div,Exp_f):-
+	constraint_to_coeffs_rep(Exp>=0, coeff_rep(Coeffs,Rel,B)),
+	divide_coeffs(Coeffs,Div,Coeffs1),
+	divide_fr(B,Div,B1),
+	coeffs_rep_to_constraint(coeff_rep(Coeffs1,Rel,B1), Exp2 >=B1),
+	(B1\=0 -> 
+	   Exp_f=Exp2-B1
+	   ;
+	   Exp_f=Exp2).
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! normalize_constraint(+C:linear_constraint,-CN:linear_constraint) is det

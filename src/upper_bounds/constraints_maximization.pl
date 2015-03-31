@@ -38,8 +38,10 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 :- use_module('../utils/cofloco_utils',[
 	        zip_with_op/4,
 			tuple/3,
-			normalize_constraint/2,normalize_constraint_wrt_var/3,
+			normalize_constraint/2,
+			normalize_constraint_wrt_var/3,		    
 			repeat_n_times/3,
+			get_le_without_constant/3,
 			assign_right_vars/3]).
 :- use_module('../utils/polyhedra_optimizations',[nad_entails_aux/3,
 			slice_relevant_constraints_and_vars/5,
@@ -61,61 +63,115 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 % Maximize all the elements inside the top level loops
 % of the cost structure Cost with respect to the variables Vars according to Cs				
 maximize_internal_elements(cost(Base,Loops,Constr),Vars,Cs,cost(MaxBase,New_loops,Constr)):-
-	cexpr_maximize(Base,Vars,Cs,MaxBase),
-	maplist(maximize_loop(Vars,Cs),Loops,New_loops).
+	maximize_loop(Vars,Cs,loop(_,Base,Loops,[]),loop(_,MaxBase,New_loops,[])).
 
 %! maximize_loop(+Vars:list_set(var),+Cs:polyhedron,+Loop:loop_cost,-Loop2:loop_cost) is det
 % Maximize all the elements of the loop
 % with respect to the variables Vars according to Cs
-maximize_loop(Vars,Cs,loop(It_var,Base,Loops,Constr),loop(It_var,MaxBase,New_loops,Constr_max)):-
-	cexpr_maximize(Base,Vars,Cs,MaxBase),
-	maplist(maximize_loop(Vars,Cs),Loops,New_loops),
-	maximize_constraints_set(Constr,Vars,Cs,Constr_max).						
+maximize_loop(Vars,Cs,Loop,Loop_new):-
+	collect_all_expressions(Loop,[],All_expressions),
+	maximize_expression_set(Vars,Cs,All_expressions,Maximized_map),
+	substitute_by_maximized_expressions(Maximized_map,Loop,Loop_new).						
 
 %! maximize_constraints_set(+Set:set_list(norm),+Cs:polyhedron,+Vars:list_set(var),-Maximized_set:set_list(norm)) is det
 % Maximize all norms in Set
 % with respect to the variables Vars according to Cs
 maximize_constraints_set(Set,Vars,Cs,Maximized_set):-
-	annotate_norms(Vars,Cs,Set,Set_annotated),
-	maximize_constrs_individually(Set_annotated,[],Maximized_set).
+	foldl(collect_expressions_from_norms,Set,[],All_expressions),
+	maximize_expression_set(Vars,Cs,All_expressions,Maximized_map),
+	foldl(substitute_norm_expressions(Maximized_map),Set,[],Maximized_set).
 
-%! annotate_norms(+Vars:list_set(var),+Cs:polyhedron,+Norms:list_set(norm),-Annotated_norms:list_map(norm,(flag,list(cost_expression)))) is det
-% Creates a map that relates each norm with a list of maximized expressions and a flag
-% the flag can be 'linear' or 'no_linear' depending on the nature of the norm's expression
+%! collect_all_expressions(+Loop:loop,+Accum:list_set(cost_expression),-All_expressions:list_set(cost_expression)) is det
+% collect all the cost expressions that appear in a loop recursively
+collect_all_expressions(loop(_It_var,Base,Loops,Norms),Accum,All_expressions):-
+	insert_sl(Accum,Base,Accum1),
+	foldl(collect_expressions_from_norms,Norms,Accum1,Accum2),
+	foldl(collect_all_expressions,Loops,Accum2,All_expressions).
+
+collect_expressions_from_norms(norm(_,Exp),Accum1,Accum2):-
+	insert_sl(Accum1,Exp,Accum2).
+
+%! substitute_by_maximized_expressions(+Map:map(cost_expression,(linear_flag,list(cost_expression))),+Loop:loop,-Loop1:loop) is det
+% substitute all the cost expressions that appear in a loop by their maximized version.
+% the map Map contains the relation between the initial cost expressions and their maximized version.
 %
-% In order to be efficient, extract the set of expressions from the norms first,
-% maximize them and then relate them to their norms again.
-annotate_norms(Vars,Cs,Norms,Annotated_norms):-
-	maplist(zip_with_op(norm),_,Exps,Norms),
-	from_list_sl(Exps,Exps_set),
-	maplist(maximize_expression(Vars,Cs),Exps_set,Maximized_exps),
-	maplist(tuple,Exps_set,Maximized_exps,Maximized_map),
-	annotate_norms_1(Norms,Maximized_map,Annotated_norms).
+% the linear_flag can be 'linear' or 'no_linear' depending on the nature of the norm's expression
+substitute_by_maximized_expressions(Map,loop(It_var,Base,Loops,Norms),loop(It_var,Base1,Loops1,Norms1)):-
+	lookup_lm(Map,Base,(_,Maxs_base)),
+	(Maxs_base=[]->
+	   Base1=inf
+	   ;
+	(Maxs_base=[One]->
+	   Base1=One
+	   ;
+	   Base1=max(Maxs_base)
+	   )),
+	maplist(substitute_by_maximized_expressions(Map),Loops,Loops1),
+	foldl(substitute_norm_expressions(Map),Norms,[],Norms1).
 
-%! maximize_expression(+Vars:list_set(var),+Cs:polyhedron,+Expression:cost_expression,-Flag_Maxs:(Flag,list(cost_expressions))) is det
-% Maximize Expression with respect to Vars and according to Cs
-% if Expression is linear, obtain a list of separate constraints
-% otherwise, obtain a single expression
+substitute_norm_expressions(Map,norm(Its,Exp),Accum,Norms):-
+	lookup_lm(Map,Exp,(_,Maxs_exp)),
+	maplist(zip_with_op(norm,Its),Maxs_exp,Norms_new),
+	from_list_sl(Norms_new,Norms_new_set),
+	union_sl(Norms_new_set,Accum,Norms).
+	
+%! maximize_expression_set(+Vars:list(var),+Cs:polyhedron,+All_expressions:list(cost_expression),-Maximized_exps_map:map_list(cost_expression,(linear_flag,list(cost_expression)))) is det
+% given a list of cost expressions, a polyhedron and a set of variables obtain a map where each original cost expression
+% has a list of maximized cost expressions in terms of Vars and with respect to Cs.
+%
+% for optimization, we group the cost expressions according to the variables that they contain and maximize each of those groups independently.
+maximize_expression_set(Vars,Cs,All_expressions,Maximized_exps_map):-
+	group_per_variables(All_expressions,Expressions_per_variable),
+	maplist(maximize_expression_with_vars_set(Vars,Cs),Expressions_per_variable,Maximized_exps_list),
+	unions_sl(Maximized_exps_list,Maximized_exps_map).
+
+
+group_per_variables(Expressions,Expressions_per_variable):-
+	maplist(term_variables,Expressions,Expressions_vars),
+	maplist(tuple,Expressions_vars,Expressions,Expressions_tuples),
+	from_pair_list_mm(Expressions_tuples,Expressions_per_variable).
+
+%! maximize_expression_with_vars_set(+Vars:list(var),+Cs:polyhedron,+Important_vars_Exps:(list(var),list(cost_expression)),-Maximized_pairs:map_list(cost_expression,(linear_flag,list(cost_expression)))) is det
+% maximize the cost expressions Exps that contain only the variables Important_vars.
+% create a map from the original cost expressions Exps to the list of maximized ones
+%
+% the polyhedron Cs is sliced, keeping only the constraints related to Important_vars
+maximize_expression_with_vars_set(Vars,Cs,(Important_vars,Exps),Maximized_pairs):-
+	slice_relevant_constraints_and_vars(Important_vars,Vars,Cs,Vars1,Cs1),
+	maplist(maximize_expression(Vars1,Cs1),Exps,Maximized_exps),
+	maplist(tuple,Exps,Maximized_exps,Maximized_pairs).
+
 maximize_expression(Vars,Cs,Expression,(linear,Maxs)):-
 	is_linear_exp(Expression),!,
-	term_variables(Expression,Vars_constraint),
-    slice_relevant_constraints_and_vars(Vars_constraint,Vars,Cs,Vars1,Cs1),
-	maximize_linear_expression_all(Expression,Vars1,Cs1,Maxs).
+	maximize_linear_expression_all(Expression,Vars,Cs,Maxs).
 	
 maximize_expression(Vars,Phi,Expression,(no_linear,Maxs)):-
-	term_variables(Expression,Vars_constraint),
-	slice_relevant_constraints_and_vars(Vars_constraint,Vars,Phi,Vars1,Phi1),  
-	cexpr_maximize(Expression,Vars1,Phi1,L1),
+	cexpr_maximize(Expression,Vars,Phi,L1),
 	(L1==inf->
 	   Maxs=[]
 	   ;
 	   Maxs=[L1]
-	   ).
+	   ).	
 
-%! annotate_norms_1(+Norms:list_set(norm),+Map:list_map(cost_expression,(flag,list(cost_expression))),-Norm_pairs:list_map(norm,(flag,list(cost_expression)))) is det
-% associate each norm in Norms to  pair (flag,list(cost_expression))
-% that represents the maximized expressions of the norm and return the pairs in Norm_pairs.
-% If a norm has no maximization, it is eliminated.
+%! compress_sets_constraints(+Norm_sets:list(list_set(norm)),+Vars:list(var),+Cs:polyhedron,-New_constr:list_set(norm)) is det
+% given a list of norm sets, maximize all the sets and try to compress
+% norms that belong to different sets.
+compress_sets_constraints([],_,_,[]).
+compress_sets_constraints([Set1|More],Vars,Cs,New_constr):-
+	maplist(collect_expressions_from_norms_lists,[Set1|More],Sets_expressions),
+	unions_sl(Sets_expressions,All_expressions),
+	maximize_expression_set(Vars,Cs,All_expressions,Maximized_map),
+	maplist(annotate_norms(Maximized_map),[Set1|More],[List1_ann|MoreList_ann]),
+	compress_sets_constraints_1(MoreList_ann,List1_ann,Vars,Cs,New_constr).
+
+collect_expressions_from_norms_lists(Set,Expressions):-
+  foldl(collect_expressions_from_norms,Set,[],Expressions).
+  
+%! annotate_norms(+Map:map_list(cost_expression,(linear_flag,list(cost_expression))),+Norms:list_set(norm),-Norms_pairs:list_map(norm,(flag,list(cost_expression)))) is det
+% associate each norm with the set of maximized expressions of the expression in the norm
+annotate_norms(Map,Norms,Norms_pairs):-
+	annotate_norms_1(Norms,Map,Norms_pairs).
+
 annotate_norms_1([],_Map,[]).
 annotate_norms_1([norm(Its,Exp)|Norms],Map,Norm_pairs):-
 	lookup_lm(Map,Exp,Maximized_pair),
@@ -125,56 +181,51 @@ annotate_norms_1([norm(Its,Exp)|Norms],Map,Norm_pairs):-
 	   Norm_pairs=[(norm(Its,Exp),Maximized_pair)|Norm_pairs_aux]
 	   ),
 	annotate_norms_1(Norms,Map,Norm_pairs_aux).
-
-%! maximize_constrs_individually(+Norm_map:list_map(norm,(flag,list(cost_expression))),+Max_cs_accum:list_set(norm),-Max_cs:list_set(norm)) is det
+	
+%! generate_maximized_constraints(+Norm_map:list_map(norm,(flag,list(cost_expression))),+Max_cs_accum:list_set(norm),-Max_cs:list_set(norm)) is det
 % Add new norms to Max_cs_accum from the pairs of norms in Norm_map
-maximize_constrs_individually([],Max_cs,Max_cs).
-maximize_constrs_individually([(norm(Its,_),(_,Maxs))|More],Max_cs_accum,Max_cs):-
+generate_maximized_constraints([],Max_cs,Max_cs).
+generate_maximized_constraints([(norm(Its,_),(_,Maxs))|More],Max_cs_accum,Max_cs):-
 	maplist(zip_with_op(norm,Its),Maxs,Max_cs1),
 	from_list_sl(Max_cs1,Max_cs1_set),
 	union_sl(Max_cs1_set,Max_cs_accum,Max_cs_accum2),
-	maximize_constrs_individually(More,Max_cs_accum2,Max_cs).
+	generate_maximized_constraints(More,Max_cs_accum2,Max_cs).
 	
-
-%! compress_sets_constraints(+Norm_sets:list(list_set(norm)),+Vars:list(var),+Cs:polyhedron,-New_constr:list_set(norm)) is det
-% given a list of norm sets, maximize all the sets and try to compress
-% norms that belong to different sets.
-compress_sets_constraints([],_,_,[]).
-compress_sets_constraints([Set1|More],Vars,Cs,New_constr):-
-	maplist(annotate_norms(Vars,Cs),[Set1|More],[List1_ann|MoreList_ann]),
-	compress_sets_constraints_1(MoreList_ann,List1_ann,Vars,Cs,New_constr).
-
-
 %! compress_set_constraints_1(+Norm_maps:list(list_map(norm,(flag,list(cost_expression)))),+Carry:list_map(norm,(flag,list(cost_expression))),+Vars:list(var),+Cs:polyhedron,-New_constr:list_set(norm)) is det
 % given a list of norm sets, annotated with their maximization Norm_maps and Carry
 % try to compress the norms using Carry to accumulate the compressed norms
 % or the individual norms that could not be compressed.
 % In the end, substitute the pairs by their corresponding norms with
-% maximize_constrs_individually/3.
+% generate_maximized_constraints/3.
 compress_sets_constraints_1([],Carry,_,_,New_constr):-
-	maximize_constrs_individually(Carry,[],New_constr).
+	generate_maximized_constraints(Carry,[],New_constr).
 compress_sets_constraints_1([Set|More],Carry,Vars,Phi,New_constr):-
 	length(Carry,N),
 	repeat_n_times(N,no,Compressed_Cnt),
-	compress_two_sets(Set,Carry,Compressed_Cnt,Vars,Phi,[],Compr),
-%Disconnecting compression
-%	unions_sl([Set,Carry],Carry1),
+	compress_two_sets(Set,Carry,Compressed_Cnt,Vars,Phi,[],[],Compr),
+    %Disconnecting compression
+    %unions_sl([Set,Carry],Compr),
 	compress_sets_constraints_1(More,Compr,Vars,Phi,New_constr).
 
-%! compress_two_sets(+Set1:list_map(norm,(flag,list(cost_expression))),+Set2:list_map(norm,(flag,list(cost_expression))),Compressed_cnt:list(yes_no),+Vars:list(var),+Phi:polyhedron,+Compr_accum:list_map(norm,(flag,list(cost_expression))),-Compr_out:list_map(norm,(flag,list(cost_expression)))) is det
+
+%! compress_two_sets(+Set1:list_map(norm,(flag,list(cost_expression))),+Set2:list_map(norm,(flag,list(cost_expression))),Compressed_cnt:list(yes_no), +Vars:list(var),+Phi:polyhedron,+Map:map_list(cost_expression:cost_expression,list(cost_expression)),+Compr_accum:list_map(norm,(flag,list(cost_expression))),-Compr_out:list_map(norm,(flag,list(cost_expression)))) is det
 % given two sets of annotated norms, try to compress all the norms in Set1 with all
 % the elements of Set2.
 %
 % Compr_out contains the accumulated norms Compr_accum, the compressed norms
 % and the norms from Set1 and Set2 that could not be compressed.
 % The flags in Compressed_Cnt record which elements of Set2 have been compressed.
-compress_two_sets([],Set2,Compressed_Cnt,_,_,Compr,Compr2):-
+%
+% Map contains pairs of cost expressions that have been already attempted to compress.
+% If the compression was succesful, Map contains the compressed cost expressions
+% otherwise Map contains an empty list
+compress_two_sets([],Set2,Compressed_Cnt,_,_,_,Compr,Compr2):-
 	exclude_compressed(Set2,Compressed_Cnt,Set2_p),
 	union_sl(Set2_p,Compr,Compr2).
 	
-compress_two_sets([C|Set1],Set2,Compressed_Cnt,Vars,Phi,Compr_accum,Compr_out):-
-	try_compress(Set2,Compressed_Cnt,C,Vars,Phi,no,Compr_accum,Compressed_Cnt2,Compr_accum2),
-	compress_two_sets(Set1,Set2,Compressed_Cnt2,Vars,Phi,Compr_accum2,Compr_out).
+compress_two_sets([C|Set1],Set2,Compressed_Cnt,Vars,Phi,Map,Compr_accum,Compr_out):-
+	try_compress(Set2,Compressed_Cnt,C,Vars,Phi,no,Compr_accum,Compressed_Cnt2,Map,Map2,Compr_accum2),
+	compress_two_sets(Set1,Set2,Compressed_Cnt2,Vars,Phi,Map2,Compr_accum2,Compr_out).
 
 exclude_compressed([],[],[]).
 exclude_compressed([X|Xs],[no|Ns],[X|Xs_p]):-!,
@@ -183,7 +234,7 @@ exclude_compressed([_X|Xs],[_|Ns],Xs_p):-!,
 	exclude_compressed(Xs,Ns,Xs_p).	
 	
 
-%! try_compress(+Set:list_map(norm,(flag,list(cost_expression))),+Compressed_Cnts:list(yes_no),+C2:(norm,(flag,list(cost_expression))),+Vars:list(var),+Phi:polyhedron,IsCompressed:flag,+Compr_accum:list_map(norm,(flag,list(cost_expression))),-Compressed_Cnts2:list(yes_no),-Compr:list_map(norm,(flag,list(cost_expression)))) is det
+%! try_compress(+Set:list_map(norm,(flag,list(cost_expression))),+Compressed_Cnts:list(yes_no),+C2:(norm,(flag,list(cost_expression))),+Vars:list(var),+Phi:polyhedron,IsCompressed:flag,+Compr_accum:list_map(norm,(flag,list(cost_expression))),-Compressed_Cnts2:list(yes_no),+Map:map_list(cost_expression:cost_expression,list(cost_expression)),-Map_out:map_list(cost_expression:cost_expression,list(cost_expression)),-Compr:list_map(norm,(flag,list(cost_expression)))) is det
 % try to compress C2 with all the elements of Set.
 % for each element C1 in Set, try to maximize it with C2 and see if the resulting
 % expressions can be smaller that maximizing each constraint independently (using can_be_smaller/4).
@@ -191,48 +242,102 @@ exclude_compressed([_X|Xs],[_|Ns],Xs_p):-!,
 % of the constraints with bigger_than_parts/4.
 %
 % Update the flags yes_no of each constraint of Set and keep a flag for C2.
-% at the end, add C2 to the compressed constraints if we could compress it with any other constraint
-try_compress([],[],C2,_,_,IsCompressed,Compr,[],Compr2):-
+% at the end, add C2 to the compressed constraints if we could not compress it with any other constraint
+%
+% Map maps pair of cost expressions to their compressed versions and acts as a cacheing mechanism
+try_compress([],[],C2,_,_,IsCompressed,Compr,[],Map,Map,Compr2):-
 	(IsCompressed=no->
 	  insert_sl(Compr,C2,Compr2)
 	  ;
 	  Compr2=Compr
 	  ).
 
-try_compress([C1|More],[_Cnt|Compressed_Cnts],C2,Vars,Phi,_IsCompressed,Compr_accum,[yes|Compressed_Cnts2],Compr):-
-	C1=(norm(Its1,L1),(linear,L1M_list)),\+term_variables(L1,[]),
-	C2=(norm(Its2,L2),(linear,L2M_list)),\+term_variables(L2,[]),
-	term_variables((L1,L2),Vars_constraint),
-    slice_relevant_constraints_and_vars(Vars_constraint,Vars,Phi,Vars1,Phi1),	   
-	maximize_linear_expression_all(L1+L2,Vars1,Phi1,L12M_list),
+% If we have two linear expressions that have been succesfully compressed before (they are in Map)
+% we simply take that result
+try_compress([C1|More],[_Cnt|Compressed_Cnts],C2,Vars,Phi,_IsCompressed,Compr_accum,[yes|Compressed_Cnts2],Map,Map_out,Compr):-
+       C1=(norm(Its1,L1),(linear,_)),
+       C2=(norm(Its2,L2),(linear,_)),
+       lookup_lm(Map,L1:L2,Compressed_expressions),
+       Compressed_expressions\=[],!,
+   	   union_sl(Its1,Its2,Its_new),
+       insert_sl(Compr_accum,(norm(Its_new,L1+L2),(linear,Compressed_expressions)),Compr_accum2),
+       try_compress(More,Compressed_Cnts,C2,Vars,Phi,yes,Compr_accum2,Compressed_Cnts2,Map,Map_out,Compr).
+% If we have two linear expressions such that similar expressions (without constant factor) failed to be compressed (they are mapped to an empty list)
+% we fail to compress them as well.
+% This is done because trying to compress two linear expressions is an expensive operation.
+try_compress([C1|More],[Cnt|Compressed_Cnts],C2,Vars,Phi,IsCompressed,Compr_accum,[Cnt|Compressed_Cnts2],Map,Map_out,Compr):-
+       C1=(norm(_Its1,L1),(linear,_)),
+       C2=(norm(_Its2,L2),(linear,_)),
+       get_le_without_constant(L1,L1_wc,_),
+       get_le_without_constant(L2,L2_wc,_),
+       (L1_wc @> L2_wc ->
+          lookup_lm(Map,L1_wc:L2_wc,_)
+          ;
+          lookup_lm(Map,L2_wc:L1_wc,_)
+        ),!,
+       try_compress(More,Compressed_Cnts,C2,Vars,Phi,IsCompressed,Compr_accum,Compressed_Cnts2,Map,Map_out,Compr).
+
+% This is  the case where we succeed to compress the two expressions      
+try_compress([C1|More],[_Cnt|Compressed_Cnts],C2,Vars,Phi,_IsCompressed,Compr_accum,[yes|Compressed_Cnts2],Map,Map_out,Compr):-
+       C1=(norm(Its1,L1),(linear,L1M_list)),\+term_variables(L1,[]),
+       C2=(norm(Its2,L2),(linear,L2M_list)),\+term_variables(L2,[]),
+       term_variables((L1,L2),Vars_constraint),
+       slice_relevant_constraints_and_vars(Vars_constraint,Vars,Phi,Vars1,Phi1),     
+       maximize_linear_expression_all(L1+L2,Vars1,Phi1,L12M_list),
+       include(can_be_smaller(L1M_list,L2M_list,Phi1),L12M_list,Compressed_expressions1),
+       include(bigger_than_parts(L1,L2,Phi1),Compressed_expressions1,Compressed_expressions),  
+   	   Compressed_expressions\=[],!,
+   	   insert_lm(Map,L1:L2,Compressed_expressions,Map1),
+   	   insert_lm(Map1,L2:L1,Compressed_expressions,Map2),
+   	   union_sl(Its1,Its2,Its_new),
+       insert_sl(Compr_accum,(norm(Its_new,L1+L2),(linear,Compressed_expressions)),Compr_accum2),
+       try_compress(More,Compressed_Cnts,C2,Vars,Phi,yes,Compr_accum2,Compressed_Cnts2,Map2,Map_out,Compr).
+% In this case we failed to compress the expressions and we save the failure in the Map
+try_compress([C1|More],[Cnt|Compressed_Cnts],C2,Vars,Phi,IsCompressed,Compr_accum,[Cnt|Compressed_Cnts2],Map,Map_out,Compr):-
+	   C1=(norm(_Its1,L1),(linear,_)),
+       C2=(norm(_Its2,L2),(linear,_)),
+       get_le_without_constant(L1,L1_wc,_),
+       get_le_without_constant(L2,L2_wc,_),
+       (L1_wc @> L2_wc ->
+          insert_lm(Map,L1_wc:L2_wc,[],Map1)
+          ;
+          insert_lm(Map,L2_wc:L1_wc,[],Map1)
+          ),	   
+       try_compress(More,Compressed_Cnts,C2,Vars,Phi,IsCompressed,Compr_accum,Compressed_Cnts2,Map1,Map_out,Compr).
+
+% This case is for cost expressions that are not linear which are never compressed.
+try_compress([_C1|More],[Cnt|Compressed_Cnts],C2,Vars,Phi,IsCompressed,Compr_accum,[Cnt|Compressed_Cnts2],Map,Map_out,Compr):-
+       try_compress(More,Compressed_Cnts,C2,Vars,Phi,IsCompressed,Compr_accum,Compressed_Cnts2,Map,Map_out,Compr).
+
 	
-	include(can_be_smaller(L1M_list,L2M_list,Phi1),L12M_list,Compressed_expressions1),
-	include(bigger_than_parts(L1,L2,Phi1),Compressed_expressions1,Compressed_expressions),	
-    Compressed_expressions\=[],!,
-	union_sl(Its1,Its2,Its_new),
-	insert_sl(Compr_accum,(norm(Its_new,L1+L2),(linear,Compressed_expressions)),Compr_accum2),
-	try_compress(More,Compressed_Cnts,C2,Vars,Phi,yes,Compr_accum2,Compressed_Cnts2,Compr).
-
-try_compress([_C1|More],[Cnt|Compressed_Cnts],C2,Vars,Phi,IsCompressed,Compr_accum,[Cnt|Compressed_Cnts2],Compr):-
-	try_compress(More,Compressed_Cnts,C2,Vars,Phi,IsCompressed,Compr_accum,Compressed_Cnts2,Compr).
-
 %! can_be_smaller_1(+L1M_list:list(linear_expression),+L2M_list:list(linear_expression),+Cs:polyhedron,+L12M:linear_expression) is semidet
 % succeeds if L12M can be smaller than all the combinations of L1M_list and L2M_list
 % under the constraints of Cs
 can_be_smaller([],_,_,_):-!.
 can_be_smaller(_,[],_,_):-!.
-can_be_smaller([L1|L1M_list],L2M_list,Cs,L12M):-
-	can_be_smaller_1([L1|L1M_list],L2M_list,Cs,L12M).
-	
-can_be_smaller_1([],_L2M_list,Cs,_L12M):-nad_consistent_constraints(Cs).
-can_be_smaller_1([L1|L1M_list],L2M_list,Cs,L12M):-
-	maplist(get_smaller_constraint(L1,L12M),L2M_list,Constraints),
-	append(Constraints,Cs,Cs2),
-	can_be_smaller_1(L1M_list,L2M_list,Cs2,L12M).
+/*
+can_be_smaller(L1M_list,L2M_list,_Cs,L12M):-
+	maplist(get_le_without_constant,L1M_list,L1_wc,_),
+	maplist(get_le_without_constant,L2M_list,L2_wc,_),
+	get_le_without_constant(L12M,L12M_wc,_),
+	from_list_sl(L1_wc,L1_wc_set),
+	from_list_sl(L2_wc,L2_wc_set),
+	contains_sl(L1_wc_set,L12M_wc),
+	contains_sl(L2_wc_set,L12M_wc),!.
+*/
+can_be_smaller(L1M_list,L2M_list,Cs,L12M):-
+	maplist(get_smaller_constraint(L1),L1M_list,Constraints1),
+	maplist(get_smaller_constraint(L2),L2M_list,Constraints2),
+	get_bigger_constraint(L1+L2,L12M,C3),
+	append([[C3|Constraints1],Constraints2,Cs],Cs2),
+	nad_consistent_constraints(Cs2).
 
-get_smaller_constraint(L1,L12M,L2,Constraint):-	
-    normalize_constraint((L1+L2)>=(L12M+1),Constraint).
-  
+get_smaller_constraint(L1,L12M,Constraint):-	
+    normalize_constraint(L12M>=L1,Constraint).
+get_bigger_constraint(L1,L12M,Constraint):-	
+    normalize_constraint(L1>=(L12M+1),Constraint).  
+    
+    
 %! bigger_than_parts(+L1:linear_constraint,+L2:linear_constraint,+Cs:polyhedron,+L12M:linear_constraint) is semidet
 % succeeds if L12M is a valid upper bound of both L1 and L2
 bigger_than_parts(L1,L2,Cs,L12M):-
@@ -295,13 +400,15 @@ get_norms_lists_with_expr([Multimap|Multimaps],Expr,[Multimap2|Multimaps2],[Norm
 get_norms_lists_with_expr([Multimap|Multimaps],Expr,[Multimap|Multimaps2],Norms_lists):-
 	get_norms_lists_with_expr(Multimaps,Expr,Multimaps2,Norms_lists).
 
+/*
 get_norm_combination([Norm_list],Norm):-
 	member(Norm,Norm_list).
 get_norm_combination([Norm_list|Norms_lists],norm(Its,Exp)):-
 	member(norm(Its2,Exp),Norm_list),
 	get_norm_combination(Norms_lists,norm(Its1,Exp)),
 	union_sl(Its1,Its2,Its).
-	
+*/
+
 get_norm_combinations_greedy(Norms,Gen_norms_set):-
 	exclude(empty_list,Norms,Norms1),
 	get_norm_combinations_greedy_1(Norms1,Gen_norms),
@@ -319,6 +426,7 @@ head_tail([H|T],H,T).
 accum_norm(norm(Its_1,Exp),norm(Its_0,Exp),norm(Its,Exp)):-
 	union_sl(Its_0,Its_1,Its).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %! maximize_linear_expression_all(+Linear_Expr_to_Maximize:linear_expression,+Vars_of_Interest:list(var),+Context:polyhedron, -Maxs:list(linear_expression)) is det
 % This predicate obtains a list of linear expressions Maxs that are an upper bound of Linear_Expr_to_Maximize

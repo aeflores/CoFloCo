@@ -80,8 +80,7 @@ clean_params:-
 % store the default parameters:
 %  * -v 2
 %  * -n_rankings 2
-%  * -solve_fast 4
-%  * -maximize_fast 2
+%  * -maximize_fast 5
 set_default_params:-
 	parse_params(['-v',2,
 		      '-n_rankings',2,
