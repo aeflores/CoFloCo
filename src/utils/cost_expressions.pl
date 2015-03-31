@@ -30,6 +30,7 @@
 					   cexpr_max/2,
 					   cexpr_min/2,
 					   cexpr_simplify/3,
+					   cexpr_simplify_aux/3,
 					   cexpr_simplify_ctx_free/2,
 					   get_asymptotic_class_name/2,
 					   get_asymptotic_class/2,
@@ -143,22 +144,29 @@ cexpr_maximize_aux(Vs,Cs,Ls,LsM):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! cexpr_simplify(+Ls:cost_expression,+Cs:polyhedron,-LsM:cost_expression) is det
+%! cexpr_simplify(+Expr:cost_expression,+Cs:polyhedron,-Expr_simple:cost_expression) is det
 % simplify Ls completely according to Cs.
 % the result is returned in LsM.
-cexpr_simplify(Expr,Cs,Expr2):-
-	cexpr_simplify_N(Expr,-1,Cs,Expr2),!.
+cexpr_simplify(Expr,Cs,Expr_simple):-
+	cexpr_simplify_N(Expr,-1,Cs,Expr_simple),!.
 
 
-%! cexpr_simplify_ctx_free(+Ls:cost_expression,-LsM:cost_expression) is det
+%! cexpr_simplify_ctx_free(+Expr:cost_expression,-Expr_simple:cost_expression) is det
 % simplify Ls without assuming any environment.
 % the result is returned in LsM.
 %
 % It simplifies only the outmost level (without traversing the whole cost expression)
-cexpr_simplify_ctx_free(Expr,Expr2):-
-	cexpr_simplify_N(Expr,1,[],Expr2).
+cexpr_simplify_ctx_free(Expr,Expr_simple):-
+	cexpr_simplify_N(Expr,1,[],Expr_simple).
 	
-
+%! cexpr_simplify_aux(+Cs:polyhedron,+Cost:cost_expression,-Cost_simple:cost_expression) is det
+% simplify Cost completely according to Cs.
+% the result is returned in Cost_simple.
+%
+% This predicate has an alternative order of the arguments so it can be called with maplist
+% for a list of cost expressions.
+cexpr_simplify_aux(Cs,Expr,Expr_simple):-
+	cexpr_simplify(Expr,Cs,Expr_simple).
 
 %! cexpr_simplify_N(+Cs:polyhedron,+N:int,+Ls:cost_expression,-LsM:cost_expression) is det
 % simplify N levels of Ls according to Cs.
