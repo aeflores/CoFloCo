@@ -129,6 +129,9 @@ pt([X | Xs], M,Smaller, L, [X | G]) :-
 	 call(Smaller,X,M),!,
     pt(Xs, M,Smaller, L, G).
 pt([X | Xs], M,Smaller, [X | L], G) :- pt(Xs, M,Smaller, L, G).	
+
+
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! normalize_constraint(+C:linear_constraint,-CN:linear_constraint) is det

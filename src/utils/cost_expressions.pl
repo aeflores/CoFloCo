@@ -30,13 +30,18 @@
 					   cexpr_max/2,
 					   cexpr_min/2,
 					   cexpr_simplify/3,
+					   cexpr_simplify_aux/3,
 					   cexpr_simplify_ctx_free/2,
 					   get_asymptotic_class_name/2,
 					   get_asymptotic_class/2,
-					   is_linear_exp/1]).
+					   is_linear_exp/1,
+					   get_le_without_constant/3,
+					   le_multiply/3,
+					   normalize_le/2
+					   ]).
 
 
-:- use_module(cofloco_utils,[normalize_constraint/2,zip_with_op/4]).
+:- use_module(cofloco_utils,[normalize_constraint/2,zip_with_op/4,write_sum/2]).
 :- use_module(polyhedra_optimizations,[nad_entails_aux/3]).
 :- use_module('../upper_bounds/constraints_maximization',[maximize_linear_expression_all/4]).
 
@@ -44,7 +49,45 @@
 :- use_module(stdlib(utils),[ut_sort/2,ut_append/3,ut_member/2,ut_sort_rdup/2,ut_flat_list/2,ut_split_at_pos/4]).
 :- use_module(stdlib(set_list),[remove_sl/3,union_sl/3,contains_sl/2,from_list_sl/2,difference_sl/3,insert_sl/3]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3]).
+:- use_module(stdlib(linear_expression), [parse_le/2,multiply_le/3]).
 
+%! normalize_le(+Le:linear_expression,-Le_n:linear_expression) is det
+% normalize the linear expression Le
+normalize_le(Le,Le_n):-
+	parse_le( Le, Le_x),
+	write_le(Le_x,Le_n).
+
+write_le(Coeffs+C,Le):-
+	maplist(write_coeffs,Coeffs,Coeffs1),
+	write_sum(Coeffs1,Le_aux),
+	(C==0->
+	  Le=Le_aux
+	  ;
+	  (Le_aux==0->
+	     Le=C
+	     ; 
+	     Le=Le_aux+C
+	  )
+	  ).	
+write_coeffs((Var,Coeff),Coeff*Var).
+
+%! get_le_without_constant(+X:linear_expression,-X_wc:linear_expression,-B:number) is det
+% given a linear expression C0+C1*X1+C2*X2+...Cn*Xn:
+% X_wc=C1*X1+C2*X2+...Cn*Xn and B=C0
+get_le_without_constant(X,X_wc,C):-
+	parse_le( X, Coeffs+C),
+	write_le(Coeffs+0,X_wc).
+
+%! le_multiply(+Exp:linear_expression,+Fr:number,-Exp_f:linear_expression) is det
+%given a linear expression Exp=C0+C1*X1+C2*X2+...Cn*Xn and a number Fr
+% Exp_f=C0*Fr+C1*Fr*X1+C2*Fr*X2+...Cn*Fr*Xn
+le_multiply(Exp,Fr,Exp_f):-
+	parse_le( Exp, Le_x),
+	multiply_le(Le_x,Fr,Le_x_mul),
+	write_le(Le_x_mul,Exp_f).
+	
+	
+	
 %! parse_cost_expression(+C:cost_expression, -C2:cost_expression) is semidet
 % This predicate fails is the cost expression C does not have a valid format.
 % Otherwise, it return a simplified version of C.
@@ -143,22 +186,29 @@ cexpr_maximize_aux(Vs,Cs,Ls,LsM):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! cexpr_simplify(+Ls:cost_expression,+Cs:polyhedron,-LsM:cost_expression) is det
+%! cexpr_simplify(+Expr:cost_expression,+Cs:polyhedron,-Expr_simple:cost_expression) is det
 % simplify Ls completely according to Cs.
 % the result is returned in LsM.
-cexpr_simplify(Expr,Cs,Expr2):-
-	cexpr_simplify_N(Expr,-1,Cs,Expr2),!.
+cexpr_simplify(Expr,Cs,Expr_simple):-
+	cexpr_simplify_N(Expr,-1,Cs,Expr_simple),!.
 
 
-%! cexpr_simplify_ctx_free(+Ls:cost_expression,-LsM:cost_expression) is det
+%! cexpr_simplify_ctx_free(+Expr:cost_expression,-Expr_simple:cost_expression) is det
 % simplify Ls without assuming any environment.
 % the result is returned in LsM.
 %
 % It simplifies only the outmost level (without traversing the whole cost expression)
-cexpr_simplify_ctx_free(Expr,Expr2):-
-	cexpr_simplify_N(Expr,1,[],Expr2).
+cexpr_simplify_ctx_free(Expr,Expr_simple):-
+	cexpr_simplify_N(Expr,1,[],Expr_simple).
 	
-
+%! cexpr_simplify_aux(+Cs:polyhedron,+Cost:cost_expression,-Cost_simple:cost_expression) is det
+% simplify Cost completely according to Cs.
+% the result is returned in Cost_simple.
+%
+% This predicate has an alternative order of the arguments so it can be called with maplist
+% for a list of cost expressions.
+cexpr_simplify_aux(Cs,Expr,Expr_simple):-
+	cexpr_simplify(Expr,Cs,Expr_simple).
 
 %! cexpr_simplify_N(+Cs:polyhedron,+N:int,+Ls:cost_expression,-LsM:cost_expression) is det
 % simplify N levels of Ls according to Cs.
@@ -334,18 +384,7 @@ cexpr_simplify_aux(Cs,N,Ls,LsM):-
 	cexpr_simplify_N(Ls,N,Cs,LsM).	
 
 compress_arithmetic(E,ES):-
-	normalize_constraint(E>=0,Part >=X),
-
-	(X\=0->
-	Xneg is 0-X,
-	(Part\==0->
-	
-	ES=Part+Xneg
-	;
-	ES=Xneg
-	)
-	;
-	ES=Part).
+	normalize_le(E,ES).
 
 %! cexpr_simplify_min(+List:list(cost_expression),+N:int,+Cs:polyhedron,-List_simpl:list(cost_expression)) is det
 % simplify a list of cost expressions N levels according to Cs

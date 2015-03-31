@@ -38,7 +38,6 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).		
 %! compute_loops(Head:term,RefCnt:int) is det
 % compute a loop for each cost equation that has a recursive call
-%FIXME distinguish terminating and non-terminating
 compute_loops(Head,RefCnt):-
 	copy_term(Head,Rec_call),
 	compute_loops_1(Head,RefCnt,Rec_call,terminating),
@@ -47,6 +46,7 @@ compute_loops(Head,RefCnt):-
     compute_loops_1(Head,RefCnt,none,non_terminating),
     %add a non-terminating stub
     add_loop_ph(Head,RefCnt,none,[],[],non_terminating).
+      
 compute_loops_1(Head,RefCnt,Rec_Call,Term_flag) :-
 	findall(((Head,Rec_Call),(Inv,Eq_Id)),(
 		    get_equation(Head,Rec_Call,RefCnt,Eq_Id,Cs,Term_flag),
@@ -60,11 +60,10 @@ compute_loops_1(Head,RefCnt,Rec_Call,Term_flag) :-
 	from_pair_list_mm(Normalized_loops,Simplified_loops)
 	;
 	maplist(put_in_list,Normalized_loops,Simplified_loops)
-	),
-	
-	
+	),	
 	maplist(save_loop(Head,RefCnt,Rec_Call,Term_flag),Simplified_loops).
-	        
+												
+							        
 get_equation(Head,none,RefCnt,Eq_Id,Cs,Term_flag):-
 	 eq_ph(Head,(Eq_Id,RefCnt),_,_,[],_,Cs,Term_flag).
 	 	 	    

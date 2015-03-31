@@ -31,7 +31,7 @@ Specific "data types" of this module:
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(ub_solver,[solve_system/3]).
+:- module(ub_solver,[solve_system/4]).
 
 
 :- use_module('../IO/params',[get_param/2]).
@@ -47,6 +47,8 @@ Specific "data types" of this module:
 					      cexpr_add/3,
 					      cexpr_max/2,
 					      cexpr_min/2,
+					      cexpr_simplify_aux/3,
+					      cexpr_simplify/3,
 					      get_asymptotic_class/2
 ]).
 
@@ -69,21 +71,21 @@ Specific "data types" of this module:
 % solve a cost structure Cost into a regular cost expression Max
 %  * solve the cost structures inside the loops
 %  * solve the constraints of the loops and add the base cost
-solve_system(cost(Base,Loops,External_constrs),Vars,Max):-
-	maplist(solve_loop(Vars),Loops,It_vars,It_costs),
-	remove_zero_costs(It_vars,It_costs,External_constrs,It_vars1,It_costs1,External_constrs1),
-	group_same_its_constraints(External_constrs1,External_constrs2),
+solve_system(cost(Base,Loops,External_constrs),Vars,Cs,Max):-
+	maplist(solve_loop(Vars,Cs),Loops,It_vars,It_costs),
+	maplist(cexpr_simplify_aux(Cs),It_costs,It_costs_simple),
+	remove_zero_costs(It_vars,It_costs_simple,External_constrs,It_vars1,It_costs1,External_constrs1),
+	group_same_its_constraints(External_constrs1,Cs,External_constrs2),
 	group_dependant_it_constrs(External_constrs2,It_vars1,Grouped_It_vars),
 	maplist(zip_with_op(p),It_vars1,It_costs1,It_pairs),
 	maplist(solve_constr_group(It_pairs,Vars),Grouped_It_vars,Costs),
 	cexpr_add_list([Base|Costs],Max),!.
 
-
 %! solve_loop(+Vars:list(var),+Loop:loop_cost,-It_var:var,-Cost:cost_expression) is det
 % solve the cost structure inside the loop Loop and return the cost Cost and
 % the iteration variable of the loop It_var
-solve_loop(Vars,loop(It_var,Base,Loops,Constr),It_var,Cost):-
-	solve_system(cost(Base,Loops,Constr),Vars,Cost).
+solve_loop(Vars,Cs,loop(It_var,Base,Loops,Constr),It_var,Cost):-
+	solve_system(cost(Base,Loops,Constr),Vars,Cs,Cost).
 
 %! remove_zero_costs(+It_vars:list(var),+It_costs:list(cost_expression),+Norms:list(norm),-It_vars1:list(var),-It_costs1:list(cost_expression),-Norms1:list(norm)) is det
 % remove the iteration variables whose loop cost is 0
@@ -112,14 +114,15 @@ filter_zeroes_in_norms([_|Norms],Filtered_norms):-
 %! group_same_its_constraints(+Norms:list(norm),-Norms2:list(norm)) is det
 % put all the norms that contain the same set of iteration variables together.
 % For example, if we have norm([I1,I2],A) and norm([I1,I2],B), it generates norm([I1,I2],min([A,B]))
-group_same_its_constraints(Norms,Norms2):-
+group_same_its_constraints(Norms,Cs,Norms2):-
 	maplist(zip_with_op(norm),Its_list,Exps,Norms),
 	maplist(tuple,Its_list,Exps,Pair_list),
 	from_pair_list_mm(Pair_list,Multimap),
-	maplist(generate_min_norm,Multimap,Norms2).
+	maplist(generate_min_norm(Cs),Multimap,Norms2).
 
-generate_min_norm((Its,[Exp]),norm(Its,Exp)):-!.
-generate_min_norm((Its,Exps),norm(Its,min(Exps))).
+generate_min_norm(_,(Its,[Exp]),norm(Its,Exp)):-!.
+generate_min_norm(Cs,(Its,Exps),norm(Its,Cost_simple)):-
+	cexpr_simplify(min(Exps),Cs,Cost_simple).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -213,7 +216,7 @@ incremental_maximization(It_pairs,EVars,Norms,Cost):-
 %       set the iteration variable to the expression of the norm Rf         
          It_var=Rf,
 %       and the rest of the iteration variables of the constrain to 0         
-         maplist(assign_zero_if_possible,Its),
+         maplist(assign_zero_if_possible(Rf),Its),
 % remove pairs whose iteration variable has taken the 0 value         
          exclude(zero_it_var,It_pairs_rem,Remaining_it_pairs),
 % all the norms norm([Its,It_var],Exp) that contain It_var are transformed into norm([Its],Exp-Rf)
@@ -261,7 +264,8 @@ transform_norms(Rf_used,norm(Its,Rf),norm(Its2,Rf1)):-
 	).
 
 
-assign_zero_if_possible(0):-!.
+assign_zero_if_possible(Rf,Var):-Rf==Var,!.
+assign_zero_if_possible(_,0):-!.
 assign_zero_if_possible(_).
 
 

@@ -195,13 +195,18 @@ cofloco_query(Eqs,Params):-
     ppl_my_initialize,
 	init_timers,
 	init_database,
+	profiling_start_timer(analysis),
 	store_cost_equations(Eqs),
 	preprocess_cost_equations,
 	refinement,
 	(get_param(only_termination,[])->
 			true
 			;
-			upper_bounds
+			upper_bounds,
+			profiling_stop_timer(analysis,T_analysis),
+			ansi_format([underline,bold],'Time statistics:~p~n',[' ']),
+			conditional_call(get_param(stats,[]),print_stats),		
+			format("Total analysis performed in ~0f ms.~n~n",[T_analysis])  
 	).
 
 	

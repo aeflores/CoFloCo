@@ -137,12 +137,19 @@ compress_chain_constraints_1([Lg|More],Norms,[Norms1|Norms_list],Prev_entry,Head
 % avoid trying to compress norms that do not depend on the common variables.
 compress_two_sets_constraints_with_filtering(Set1,Set2,Common_vars,Cs,Vars,Compressed):-
 	from_list_sl(Common_vars,Common_vars_set),
-	partition(norm_contains_vars(Common_vars_set),Set2,DepNorms,Non_depNorms),
+	partition(norm_contains_initial_and_final_vars(Common_vars_set),Set2,DepNorms,Non_depNorms),
 	maximize_constraints_set(Non_depNorms,Vars,Cs,No_dep_maximized),
 	compress_sets_constraints([Set1,DepNorms],Vars,Cs,Compressed_dep),
 	union_sl(Compressed_dep,No_dep_maximized,Compressed).
 	
-
+norm_contains_initial_and_final_vars(Set,norm(_Its,E)):-
+	term_variables(E,Vars),
+	from_list_sl(Vars,Vars_set),
+	difference_sl(Vars_set,Set,Diff),
+	length(Vars_set,N1),
+	length(Diff,N2),
+	N1>N2,N2>0.
+	
 substitute_norm_expression(Vars1,Vars2,norm(Its,E),norm(Its,E2)):-
 	copy_term((Vars1,E),(Vars2,E2)).
 

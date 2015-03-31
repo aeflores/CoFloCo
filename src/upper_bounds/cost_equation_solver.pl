@@ -94,7 +94,7 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 	cexpr_maximize(CExp,EVars,Phi1,Base_cost_out),
 	%loops
 	ut_flat_list(Loops,Loops_flat),
-	maplist(maximize_loop(EVars,Phi1),Loops_flat,Loops_out),
+	maximize_loop(EVars,Phi1,loop(_,0,Loops_flat,[]),loop(_,0,Loops_out,[])),
 	%loop constraints
 	compress_sets_constraints(Constraints,TVars,Phi1,Constraints_out),
 	Cost=cost(Base_cost_out,Loops_out,Constraints_out).

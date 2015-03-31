@@ -110,6 +110,8 @@ However, for each SCC there is a special base case that will allow us to represe
 %  * remove imposible chains generated with the non_terminating_stub/2
 compute_chains(Head,RefCnt):-
 	clean_graph,
+	retractall(chain(Head,RefCnt,_)),
+	retractall(phase(_,Head,RefCnt)),
 	add_nodes(Head,RefCnt),
 	compute_phases(Head,RefCnt),
 	compute_basic_chains(Head,RefCnt),

@@ -42,10 +42,10 @@ Specific "data types" of this module:
 
 :- use_module(ranking_functions,[ranking_function/4,
 				 partial_ranking_function/7]).
-
 :- use_module('refinement/chains',[chain/3]).
 :- use_module('IO/params',[get_param/2]).
 :- use_module('IO/output',[print_phase_termination_argument/4]).
+:- use_module('utils/polyhedra_optimizations',[nad_normalize_polyhedron/2]).
 :- use_module('utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module(stdlib(set_list)).
 
@@ -88,8 +88,6 @@ prove_termination(Head,RefCnt):-
 	maplist(save_phase_termination_argument(Head,_),Chain,Termination_argument),
 	fail.
 prove_termination(_,_).
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
