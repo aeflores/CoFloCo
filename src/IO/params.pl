@@ -171,7 +171,7 @@ param_description('stats','Show some basic statistics').
 param_description('debug','Show debug information').
 param_description('v','0-3 : selects the level of verbosity ').
 %param_description('visual',_,'Launch the upper bound graphical visualizer ').
-param_description('break_chains','Attempt to break phases').
+%param_description('break_chains','Attempt to break phases').
 
 param_description('n_rankings',' nat : (default 2) Sets the maximum number of ranking functions that are considered for each cost equation ').
 param_description('assume_sequential',
@@ -185,3 +185,6 @@ param_description('maximize_fast',
 'nat : (default 5) The  maximum number of upper bound of a cost expression that the maximize operation can return').
 param_description('conditional_ubs',
 'Generate a set of conditional upper bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
+
+param_description('compress_chains',
+'Join chains that have the same precondition. It can increase performance greatly but in some cases it can produce upper bounds that are less tight by a constant factor (the asymptotic complexity does not change)').
