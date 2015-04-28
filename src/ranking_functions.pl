@@ -27,7 +27,8 @@ mutual dependencies in order to obtain lexicographic ranking functions
 				 clean_ranking_functions/1,
 			     find_ranking_functions/2,
 			     ranking_function/4,
-			     partial_ranking_function/7
+			     partial_ranking_function/7,
+			     unbounded_loop/2,computed_ranking_functions/3
 			     ]).
 
 :- use_module(db,[loop_ph/6,phase_loop/5]).
@@ -76,6 +77,8 @@ mutual dependencies in order to obtain lexicographic ranking functions
 % record that the inference of ranking functions for the corresponding Phase of Chain in Head has been already performed
 :-dynamic computed_ranking_functions/3.
 
+:-dynamic unbounded_loop/2.
+
 %! init_ranking_functions is det
 %clean the stored ranking functions
 init_ranking_functions:-
@@ -83,6 +86,7 @@ init_ranking_functions:-
 	retractall(partial_ranking_function(_,_,_,_,_,_,_)).
 
 clean_ranking_functions(Head):-
+	retractall(unbounded_loop(Head,_)),
 	retractall(ranking_function(Head,_,_,_)),
 	retractall(partial_ranking_function(Head,_,_,_,_,_,_)),
 	retractall(computed_ranking_functions(Head,_,_)).
@@ -149,6 +153,7 @@ compute_1_loop_rfs(Head,Call,Inv,Loop,Map_in,Map_out):-
 	loop_ph(Head,(Loop,_),Call,Cs_loop,_,_),
 	nad_glb(Cs_loop,Inv,Cs_loop1),
 	compute_iterations_ubs( Head, Call, Cs_loop1, Rfs),
+	(Rfs=[]-> assert(unbounded_loop(Head,Loop));true),
 	foldl(add_rf_2_map(Loop),Rfs,Map_in,Map_out).
 
 add_rf_2_map(Loop,Rf,Map_in,Map_out):-

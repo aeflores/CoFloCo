@@ -127,7 +127,9 @@ The main "data types" used in CoFloCo are the following:
 			 compress_chains_execution_patterns/2]). 
 :- use_module('refinement/chains',[compute_chains/2,chain/3,init_chains/0]).
 :- use_module('refinement/loops',[compute_loops/2,compute_phase_loops/2]).
-
+:- use_module('refinement/termination_driven_refinement',[
+		termination_driven_refinement/2
+	]).
 
 :- use_module(ranking_functions,[init_ranking_functions/0,find_ranking_functions/2]).
 :- use_module(termination_checker,[init_termination/0,prove_termination/2]).
@@ -351,7 +353,8 @@ bottom_up_refinement_scc(Head) :-
 
 	
 	profiling_start_timer(termination),
-	find_ranking_functions(Head,2),
+	%find_ranking_functions(Head,2),
+	termination_driven_refinement(Head,2),
 	prove_termination(Head,2),
 	profiling_stop_timer_acum(termination,_),
 	

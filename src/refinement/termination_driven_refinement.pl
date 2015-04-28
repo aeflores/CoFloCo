@@ -7,15 +7,25 @@
 				 clean_ranking_functions/1,
 			     find_ranking_functions/2,
 			     ranking_function/4,
-			     partial_ranking_function/7
+			     partial_ranking_function/7,
+			     unbounded_loop/2,
+			     computed_ranking_functions/3
 			     ]).
 :- use_module('../db',[loop_ph/6,phase_loop/5,add_loop_ph/6]).
 :- use_module('chains',[chain/3,phase/3]).	
 :- use_module('loops',[compute_phase_loops/2]).	  	
 :- use_module(chains,[compute_chains/2]).
-
-:-dynamic unbounded_loop/2.
-max_termination_refinement_iterations(3).
+:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,
+						nad_consistent_constraints/1,
+						nad_entails/3, nad_lub/6,nad_list_lub/2,
+						nad_widen/5, nad_false/1,
+						nad_all_ranking_functions_PR/4,
+						nad_glb/3]).
+:- use_module('../utils/cofloco_utils',[zip_with_op/4,
+						assign_right_vars/3,
+						normalize_constraint/2]).
+						
+max_termination_refinement_iterations(10).
 
 termination_driven_refinement(Head,RefCnt):-
 	max_termination_refinement_iterations(N),
