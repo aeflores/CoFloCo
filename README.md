@@ -9,11 +9,12 @@ other intermediate representations.
 
 The main techniques used in CoFloCo are described in the paper:
  * Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295
+https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf
 
 Using Vagrant
 -------------
 
-You can use CoFloCo without installing any of the dependencies using VagrantTo 
+You can use CoFloCo without installing any of the dependencies using 
 [Vagrant](https://www.vagrantup.com).  Vagrant will start a
 Linux virtual machine and install the needed dependencies.  In the
 `CoFloCo/` directory, run the command `vagrant up` to provision and
@@ -42,19 +43,19 @@ Complete Installation
    The distributions that are available with apt-get (linux) or port (mac) do not include the SWI-prolog
    interface at the moment.
 
-   For convenience, we included a binary of PPL for Linux x64  in  src/lib/. If you have this system,
+   For convenience, we included a binary of PPL for Linux x64  in  `src/lib/`. If you have this system,
    you can avoid compiling and installing the library. 
    Just make sure the make sure the libraries are found by cofloco before you execute it:
     
-     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./src/lib/
+     `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./src/lib/`
    
    If you want to use your own installation of PPL (say you have a mac), you can download the sources from
    the official page http://bugseng.com/products/ppl/download.
    In the directory of ppl execute:
    
-      ./configure --enable-interfaces=swi_prolog
-      make
-      sudo make install
+      `./configure --enable-interfaces=swi_prolog`
+      `make`
+      `sudo make install`
    
 	Some extra options might be necessary depending on your system. PPL provides documentation
 	on how to configure and compile in different systems.
@@ -62,24 +63,24 @@ Complete Installation
    
  * Once installed all the requirements, you can call CoFloCo with the script "cofloco" in the main directory: 
    
-     ./cofloco -i examples/EXAMPLE_FILE
+     `./cofloco -i examples/EXAMPLE_FILE`
 
 
 Usage information
 ------------------
-  See the file ./USAGE for a description of the parameters, input format, explanation of the outputs, etc.
+  See the file `./USAGE` for a description of the parameters, input format, explanation of the outputs, etc.
   
 Files:
 ------------------
-  * examples/: Example input files
-      - examples/evaluation/ : A set of examples used in the evaluation of the tool
-      - examples/testing/ :Small examples to exercise different functionalities of the tool.
-  * src/: Source files of CoFloCo
-      - src/main_cofloco.pl: The main module
+  * `examples/`: Example input files
+      - `examples/evaluation/` : A set of examples used in the evaluation of the tool
+      - `examples/testing/` :Small examples to exercise different functionalities of the tool.
+  * `src/`: Source files of CoFloCo
+      - `src/main_cofloco.pl`: The main module
       - ...
-  * cofloco: main script for executing CoFloCo
-  * README: this file
-  * USAGE: basic instructions of how to use CoFloCo
+  * `cofloco`: main script for executing CoFloCo
+  * `README`: this file
+  * `USAGE`: basic instructions of how to use CoFloCo
   
 
 Contact:
