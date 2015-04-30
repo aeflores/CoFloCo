@@ -8,8 +8,7 @@ as an input. The abstract representation is a set of cost equations that can be 
 other intermediate representations.
 
 The main techniques used in CoFloCo are described in the paper:
- * [Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295]
-https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf
+ * [Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295](https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf)
 
 Using Vagrant
 -------------
@@ -54,7 +53,9 @@ Complete Installation
    In the directory of ppl execute:
    
       `./configure --enable-interfaces=swi_prolog
+
       make
+
       sudo make install`
    
 	Some extra options might be necessary depending on your system. PPL provides documentation
