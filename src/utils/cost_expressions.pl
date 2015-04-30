@@ -258,6 +258,7 @@ cexpr_simplify_N(nat(E),N,Cs,Res):-
  	).
 cexpr_simplify_N(E/D,N,Cs,ES/D):-
 	N1 is N-1,
+	number(D),
  	cexpr_simplify_N(E,N1,Cs,ES).
 
 cexpr_simplify_N(-(-E),N,Cs,ES):-!,
