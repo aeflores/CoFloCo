@@ -49,14 +49,15 @@ Specific "data types" of this module:
 					      cexpr_min/2,
 					      cexpr_simplify_aux/3,
 					      cexpr_simplify/3,
+					      is_linear_exp/1,
 					      get_asymptotic_class/2
 ]).
+:- use_module('../utils/polyhedra_optimizations',[nad_entails_aux/3]).
 
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,
-						nad_entails/3,
 						nad_list_lub/2,
 						nad_lub/6,
 						nad_glb/3,
@@ -74,7 +75,8 @@ Specific "data types" of this module:
 solve_system(cost(Base,Loops,External_constrs),Vars,Cs,Max):-
 	maplist(solve_loop(Vars,Cs),Loops,It_vars,It_costs),
 	maplist(cexpr_simplify_aux(Cs),It_costs,It_costs_simple),
-	remove_zero_costs(It_vars,It_costs_simple,External_constrs,It_vars1,It_costs1,External_constrs1),
+	maplist(avoid_negative_costs(Cs),It_costs_simple,It_costs_simple_positive),
+	remove_zero_costs(It_vars,It_costs_simple_positive,External_constrs,It_vars1,It_costs1,External_constrs1),
 	group_same_its_constraints(External_constrs1,Cs,External_constrs2),
 	group_dependant_it_constrs(External_constrs2,It_vars1,Grouped_It_vars),
 	maplist(zip_with_op(p),It_vars1,It_costs1,It_pairs),
@@ -87,6 +89,31 @@ solve_system(cost(Base,Loops,External_constrs),Vars,Cs,Max):-
 solve_loop(Vars,Cs,loop(It_var,Base,Loops,Constr),It_var,Cost):-
 	solve_system(cost(Base,Loops,Constr),Vars,Cs,Cost).
 
+%! avoid_negative_costs(+Cs:polyhedron,+Cost:cost_expression,-Cost2:cost_expression) is det
+% If the body of a loop has negative cost, we approximate to cost 0
+% if the body might be negative, we wrap it into a nat() expression
+avoid_negative_costs(_,Number,Cost2):-
+	number(Number),!,
+	(Number< 0->
+	   Cost2=0
+	   ;
+	   Cost2=Number
+	).
+
+avoid_negative_costs(Cs,Cost,Cost2):-
+	is_linear_exp(Cost),!,
+	term_variables((Cs,Cost),Vars),
+	(nad_entails_aux(Vars,Cs,[Cost>=0])->
+	 	Cost2=Cost
+	;
+	(nad_entails_aux(Vars,Cs,[Cost=<0])->
+	      Cost2=0
+	      ;
+	      Cost2=nat(Cost)
+	)).
+	
+avoid_negative_costs(_,Cost,nat(Cost)).
+
 %! remove_zero_costs(+It_vars:list(var),+It_costs:list(cost_expression),+Norms:list(norm),-It_vars1:list(var),-It_costs1:list(cost_expression),-Norms1:list(norm)) is det
 % remove the iteration variables whose loop cost is 0
 % from the list of iteration variables and from the norms
@@ -98,7 +125,7 @@ remove_zero_costs(It_vars,It_costs,Norms,It_vars1,It_costs1,Norms1):-
 
 %! remove_zero_cost(-It_var:var,+It_cost:cost_expression) is det
 % If It_cost is zero, assign It_var to zero
-remove_zero_cost(0,0):-!.
+remove_zero_cost(0,Cost):-Cost==0,!.
 remove_zero_cost(_,_).
 
 %! filter_zeroes_in_norms(+Norms:list(norm),-Norms1:list(norm)) is det

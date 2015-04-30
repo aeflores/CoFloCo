@@ -431,17 +431,15 @@ cexpr_simplify_max(List,N,Cs,List_simpl):-
  	  List_simpl=[inf]
  	;
  	%otherwise, get the maximum number
-  	 max_number_list(Ns,N_max),
- 	 (N_max>0 ->
-	 simplify_redundant([N_max|Vs_1],Cs,=<,List_simpl)
- 	 ;
- 	  (Vs_1=[]->
- 	   % the elements in max have to be non-negative implicitly
- 	   	List_simpl=[0]
-     	  ;
-	   simplify_redundant(Vs_1,Cs,=<,List_simpl)
- 	  )
- 	 )
+  	 (max_list(Ns,N_max)->
+	    simplify_redundant([N_max|Vs_1],Cs,=<,List_simpl)
+	 ;
+	 (Vs_1=[]->
+	 	simplify_redundant([0],Cs,=<,List_simpl)
+	 	;
+	 	simplify_redundant(Vs_1,Cs,=<,List_simpl)
+	 )
+	)
  	).
 
 
@@ -500,9 +498,6 @@ check_candidates([C|More],E,Cs,Op,Accum,New_candidates):-
 check_candidates([C|More],E,Cs,Op,Accum,New_candidates):-
 	check_candidates(More,E,Cs,Op,[C|Accum],New_candidates).
 
-
- max_number_list([],0).
- max_number_list([N|Ns],Max):-max_list([N|Ns],Max).
   	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
