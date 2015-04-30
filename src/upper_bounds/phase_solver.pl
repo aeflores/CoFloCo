@@ -188,7 +188,7 @@ compute_phase_cost(Phase,Chain,Head,Call,Forward_inv_hash,cost(0,Elems2,Constrs3
 % * get the cost of the equation
 % * put it inside a loop
 % * try to compress their constraints inductively and extract the involved loops accordingly
-compute_phase_loop_cost(Head,Call,Forward_inv_hash,Cs_star_trans,Cs_transitive,Eq_id,(It_var,Loops_out),External_constrs2):-
+compute_phase_loop_cost(Head,Call,Forward_inv_hash,Cs_star_trans,Cs_transitive,Eq_id,(It_var,Loops_out),External_constrs):-
 	profiling_start_timer(equation_cost),
 	get_equation_cost(Head,Call,Forward_inv_hash,Eq_id,Cost),
 	loop_ph(Head,(Eq_id,_),Call,Phi,_,_),
@@ -196,10 +196,9 @@ compute_phase_loop_cost(Head,Call,Forward_inv_hash,Cs_star_trans,Cs_transitive,E
 	put_in_loop(Cost,Loop,It_var),
 	profiling_start_timer(flatten_loops),
 	inductive_compression(Loop,Phi,Head,Cs_star_trans,Cs_transitive,Call,Loops_out,External_constrs),
-	profiling_stop_timer_acum(flatten_loops,_),
-	from_list_sl(External_constrs,External_constrs2).
+	profiling_stop_timer_acum(flatten_loops,_).
 
-%! inductive_compression(+Loop:loop_cost,+Phi:polyhedron,+Head:term,+Cs_star_trans:polyhedron,+Cs_trans:polyhedron,+Call:term,-New_loops:list(loop_cost),-Unrolled_mult_set:list(norm)) is det
+%! inductive_compression(+Loop:loop_cost,+Phi:polyhedron,+Head:term,+Cs_star_trans:polyhedron,+Cs_trans:polyhedron,+Call:term,-New_loops:list(loop_cost),-Unrolled_mult_set:list_set(norm)) is det
 % * get the expressions in Norms and try to compress them inductively (unroll them)
 % * split the  constraints into unrolled and not_unrolled.
 % * get the interation variables that have been compressed and extract the involved loops
