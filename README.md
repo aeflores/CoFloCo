@@ -8,7 +8,7 @@ as an input. The abstract representation is a set of cost equations that can be 
 other intermediate representations.
 
 The main techniques used in CoFloCo are described in the paper:
- * Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295
+ * [Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295]
 https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf
 
 Using Vagrant
@@ -26,14 +26,14 @@ Requirements:
 --------------
  * Linux or Mac: In principle it should be possible to use CoFloCo in Windows but it might require some slight changes.
    
- * SWI-Prolog:  CoFloCo works with Version 6.6.6
-     http://www.swi-prolog.org/
+ * [SWI-Prolog](http://www.swi-prolog.org/):  CoFloCo works with Version 6.6.6
      
- * GMP: The GNU Multiple Precision Arithmetic Library (It is required by SWI-Prolog)
-     https://gmplib.org/
      
- * Parma Polyhedra Library (PPL): CoFloCo uses the latest version available at the moment (1.1)  
-     http://bugseng.com/products/ppl
+ * [GMP](https://gmplib.org/): The GNU Multiple Precision Arithmetic Library (It is required by SWI-Prolog)
+     
+     
+ * [Parma Polyhedra Library (PPL)](http://bugseng.com/products/ppl): CoFloCo uses the latest version available at the moment (1.1)  
+
 
 Complete Installation
 --------------
@@ -53,9 +53,9 @@ Complete Installation
    the official page http://bugseng.com/products/ppl/download.
    In the directory of ppl execute:
    
-      `./configure --enable-interfaces=swi_prolog`
-      `make`
-      `sudo make install`
+      `./configure --enable-interfaces=swi_prolog
+      make
+      sudo make install`
    
 	Some extra options might be necessary depending on your system. PPL provides documentation
 	on how to configure and compile in different systems.
