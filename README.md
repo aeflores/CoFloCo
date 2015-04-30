@@ -52,11 +52,11 @@ Complete Installation
    the official page http://bugseng.com/products/ppl/download.
    In the directory of ppl execute:
    
-      `./configure --enable-interfaces=swi_prolog
+      `./configure --enable-interfaces=swi_prolog`
 
-      make
+      `make`
 
-      sudo make install`
+      `sudo make install`
    
 	Some extra options might be necessary depending on your system. PPL provides documentation
 	on how to configure and compile in different systems.
