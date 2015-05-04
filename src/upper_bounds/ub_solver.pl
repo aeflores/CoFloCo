@@ -72,7 +72,7 @@ Specific "data types" of this module:
 % solve a cost structure Cost into a regular cost expression Max
 %  * solve the cost structures inside the loops
 %  * solve the constraints of the loops and add the base cost
-solve_system(cost(Base,Loops,External_constrs),Vars,Cs,Max):-
+solve_system(cost(Base,Loops,External_constrs,_),Vars,Cs,Max):-
 	maplist(solve_loop(Vars,Cs),Loops,It_vars,It_costs),
 	maplist(cexpr_simplify_aux(Cs),It_costs,It_costs_simple),
 	maplist(avoid_negative_costs(Cs),It_costs_simple,It_costs_simple_positive),
@@ -86,8 +86,8 @@ solve_system(cost(Base,Loops,External_constrs),Vars,Cs,Max):-
 %! solve_loop(+Vars:list(var),+Loop:loop_cost,-It_var:var,-Cost:cost_expression) is det
 % solve the cost structure inside the loop Loop and return the cost Cost and
 % the iteration variable of the loop It_var
-solve_loop(Vars,Cs,loop(It_var,Base,Loops,Constr),It_var,Cost):-
-	solve_system(cost(Base,Loops,Constr),Vars,Cs,Cost).
+solve_loop(Vars,Cs,loop(It_var,Base,Loops,Constr,_),It_var,Cost):-
+	solve_system(cost(Base,Loops,Constr,_),Vars,Cs,Cost).
 
 %! avoid_negative_costs(+Cs:polyhedron,+Cost:cost_expression,-Cost2:cost_expression) is det
 % If the body of a loop has negative cost, we approximate to cost 0

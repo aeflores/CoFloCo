@@ -34,7 +34,6 @@ mutual dependencies in order to obtain lexicographic ranking functions
 :- use_module('refinement/chains',[chain/3]).	  
 
 :- use_module('IO/params',[get_param/2]).
-:- use_module('upper_bounds/constraints_maximization',[maximize_linear_expression_all/4]).
 :- use_module('utils/cofloco_utils',[zip_with_op/4,
 						assign_right_vars/3,
 						normalize_constraint/2]).

@@ -26,8 +26,8 @@ the input variables and the variables of the recursive call (if there is one)
 :- module(cost_equation_solver,[get_equation_cost/5,init_cost_equation_solver]).
 
 :- use_module(constraints_maximization,[
-			compress_sets_constraints/4,
-			maximize_loop/4]).
+			compress_sets_constraints/5,
+			max_min_loop/4]).
 
 :- use_module('../db',[eq_ph/8,
 			     loop_ph/6,
@@ -86,7 +86,8 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
        eq_ph(Head,(Eq_id,_),C, Base_Calls,[Call],_,Phi,_)
        ),
 	nad_glb(Forward_inv,Phi,Phi1),
-	maplist(substitute_call,Base_Calls,Base_costs,Loops,Constraints),
+	maplist(substitute_call,Base_Calls,Base_costs,Loops,Constraints_IConstraints),
+	maplist(tuple,Constraints,IConstraints,Constraints_IConstraints),
     term_variables((Head,Call),TVars),
 	term_variables(Head,EVars),
 	%base cost
@@ -94,16 +95,17 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 	cexpr_maximize(CExp,EVars,Phi1,Base_cost_out),
 	%loops
 	ut_flat_list(Loops,Loops_flat),
-	maximize_loop(EVars,Phi1,loop(_,0,Loops_flat,[]),loop(_,0,Loops_out,[])),
+	max_min_loop(EVars,Phi1,loop(_,0,Loops_flat,[],[]),loop(_,0,Loops_out,[],[])),
 	%loop constraints
-	compress_sets_constraints(Constraints,TVars,Phi1,Constraints_out),
-	Cost=cost(Base_cost_out,Loops_out,Constraints_out).
+	compress_sets_constraints(Constraints,TVars,Phi1,max,Constraints_out),
+	compress_sets_constraints(IConstraints,TVars,Phi1,min,IConstraints_out),
+	Cost=cost(Base_cost_out,Loops_out,Constraints_out,IConstraints_out).
 
 
-substitute_call((Call,chain(Chain)),Base_cost,Loops,Constraints) :-
-    upper_bound(Call,Chain,_Hash,cost(Base_cost,Loops,Constraints)).
-substitute_call((Call,external_pattern(Id)),Base_cost,Loops,Constraints) :-
-	external_upper_bound(Call,Id,cost(Base_cost,Loops,Constraints)).
+substitute_call((Call,chain(Chain)),Base_cost,Loops,(Constraints,IConstraints)) :-
+    upper_bound(Call,Chain,_Hash,cost(Base_cost,Loops,Constraints,IConstraints)).
+substitute_call((Call,external_pattern(Id)),Base_cost,Loops,(Constraints,IConstraints)) :-
+	external_upper_bound(Call,Id,cost(Base_cost,Loops,Constraints,IConstraints)).
 
 
 

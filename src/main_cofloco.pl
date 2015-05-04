@@ -74,10 +74,11 @@ The main "data types" used in CoFloCo are the following:
     a cost per iteration of C plus the cost of the loops that has inside Loops.
     Norms bind the iteration variable of the loops in Loops.
     
-  * cost_structure: cost(cost_expression,list(loop_cost),list(norm))
+  * cost_structure: cost(cost_expression,list(loop_cost),list(norm),list(inorm))
     a cost structure cost(Base,Loops,Norms) has a basic cost Base
     plus the cost of the loops that are inside Loops.
-    Norms bind the iteration variables of the loops in Loops.
+    Norms bind the iteration variables of the loops from the top.
+    INorms bind the iteration variables of the loops from below.
 
 
 

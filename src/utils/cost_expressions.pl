@@ -43,7 +43,7 @@
 
 :- use_module(cofloco_utils,[normalize_constraint/2,zip_with_op/4,write_sum/2]).
 :- use_module(polyhedra_optimizations,[nad_entails_aux/3]).
-:- use_module('../upper_bounds/constraints_maximization',[maximize_linear_expression_all/4]).
+:- use_module('../upper_bounds/constraints_maximization',[max_min_linear_expression_all/5]).
 
 :- use_module('../IO/params',[get_param/2]).
 :- use_module(stdlib(utils),[ut_sort/2,ut_append/3,ut_member/2,ut_sort_rdup/2,ut_flat_list/2,ut_split_at_pos/4]).
@@ -141,7 +141,7 @@ cexpr_maximize(Constant,_,_,Constant) :-
  
 cexpr_maximize(Linear,Vs,Cs,Max1) :-
  	is_linear_exp(Linear),!,
- 	maximize_linear_expression_all(Linear,Vs,Cs,ML),
+ 	max_min_linear_expression_all(Linear,Vs,Cs,max,ML),
  	(ML=[] -> Max=inf;
  	 (ML=[Max]->true;
  	  Max=min(ML))),

@@ -292,8 +292,8 @@ print_partition_condition(Cond):-
 	format(' or ~p~n',[Cond]).
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-print_cost_structure(cost(Exp,Loops,Conditions)):-
+%FIXME: print the minimal constraints
+print_cost_structure(cost(Exp,Loops,Conditions,_)):-
 	print(Exp),
 	print_cs_loops(Loops,[Conditions],1,_,All_conditions),
 	reverse(All_conditions,All_conditions_rev),
@@ -305,7 +305,7 @@ print_cost_structure(cost(Exp,Loops,Conditions)):-
 	 ).
 
 print_cs_loops([],Accum_conditions,N,N,Accum_conditions).
-print_cs_loops([loop(It_var,Exp,InternalLoops,Conds)|Loops],Accum_conditions,N,Nout,All_conditions):-
+print_cs_loops([loop(It_var,Exp,InternalLoops,Conds,_IConds)|Loops],Accum_conditions,N,Nout,All_conditions):-
 	it_var_name(It_var,N),
 	N2 is N+1,
 	format('+~p*(~p',[It_var,Exp]),

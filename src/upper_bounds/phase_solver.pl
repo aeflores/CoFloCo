@@ -36,9 +36,9 @@ Specific "data types" of this module:
 
 :- module(phase_solver,[compute_phases_cost/5,init_phase_solver/0]).
 
-:- use_module(constraints_maximization,[compress_or_constraints/4,
-				maximize_internal_elements/4,
-				maximize_linear_expression_all/4]).
+:- use_module(constraints_maximization,[compress_or_constraints/5,
+				max_min_internal_elements/4,
+				max_min_linear_expression_all/5]).
 :- use_module(cost_equation_solver,[get_equation_cost/5]).
 			      
 :- use_module('../db',[phase_loop/5,
@@ -132,7 +132,7 @@ compute_phases_cost([Phase|More],Chain,Head,Call,[Cost1|Costs]):-
 	ut_flat_list([Phi,Inv_cs,Forward_inv,Head_patt],Cs_total),
 
 	%solve the internal loops and express them in terms of the variables at the beginning of the chain
-	maximize_internal_elements(Cost,Vars,Cs_total,Cost1),	
+	max_min_internal_elements(Cost,Vars,Cs_total,Cost1),	
 	Head_total=Head,
 	compute_phases_cost(More,Chain,Head,Call,Costs).
 	
@@ -158,7 +158,7 @@ compute_phase_cost(Non_it,_,Head,Call,Forward_inv_hash,Cost):-
 	profiling_stop_timer_acum(equation_cost,_),
 	assert(phase_cost(Non_it,Head,Call,Forward_inv_hash,Cost)).
 
-compute_phase_cost(Phase,Chain,Head,Call,Forward_inv_hash,cost(0,Elems2,Constrs3)):-
+compute_phase_cost(Phase,Chain,Head,Call,Forward_inv_hash,cost(0,Elems2,Constrs3,IConstrs)):-
 	phase_transitive_closure(Phase,_,Head,Call,Cs_transitive),
 	get_phase_star(Head,Call,Phase,Cs_star_trans),
     %get the cost of each iterative component of the phase
@@ -171,16 +171,16 @@ compute_phase_cost(Phase,Chain,Head,Call,Forward_inv_hash,cost(0,Elems2,Constrs3
 	simplify_or_cost_structure(Loops_out_flat,External_constrs,Cs_transitive,Removed_it_vars,Elems2,NormsList2),
     %add the constraints based on the ranking functions of the phase
 	add_rfs(Head,Call,Phase,Chain,It_vars,Removed_it_vars,It_constrs,Differential_norms),
-	
+	add_inverse_rfs(Head,Call,Phase,Chain,It_vars,Removed_it_vars,IConstrs),
 	split_out_dependent_constrs(NormsList2,Call,NormsList3,NormsList4),
 	ut_flat_list([It_constrs|NormsList4],NormList4_flat),
 	from_list_sl(NormList4_flat,NormList4_set),
 	%compress contraints that have been inductively compressed with the ones added from the ranking functions
-	compress_or_constraints([Differential_norms|NormsList3],Head,Call,Constrs1),
+	compress_or_constraints([Differential_norms|NormsList3],Head,Call,max,Constrs1),
 	profiling_stop_timer_acum(compress_or,_),
 		
 	union_sl(NormList4_set,Constrs1,Constrs3),	
-	assert(phase_cost(Phase,Head,Call,Forward_inv_hash,cost(0,Elems2,Constrs3))).
+	assert(phase_cost(Phase,Head,Call,Forward_inv_hash,cost(0,Elems2,Constrs3,IConstrs))).
 
 
 %! compute_phase_loop_cost(+Head:term,+Call:term,+Forward_inv_hash:(int,polyhedron),+Cs_star_trans:polyhedron,+Cs_transitive:polyhedron,+Eq_id:equation_id,-It_var_Loops_out:(var,list(loop_cost)),-External_constrs2:list(norm)) is det
@@ -204,7 +204,7 @@ compute_phase_loop_cost(Head,Call,Forward_inv_hash,Cs_star_trans,Cs_transitive,E
 % * get the interation variables that have been compressed and extract the involved loops
 % * remove such iteration variables from the norms that are not unrolled
 inductive_compression(Loop,Phi,Head,Cs_star_trans,Cs_trans,Call,New_loops,Unrolled_mult_set):-
-	Loop=loop(It_var,_,_,Norms),
+	Loop=loop(It_var,_,_,Norms,INorms),
 	maplist(zip_with_op,_,_,Expressions,Norms),
 	from_list_sl(Expressions,Expressions_set),
 	maplist(tuple,Expressions_set,_,Map_expressions),
@@ -226,7 +226,10 @@ inductive_compression(Loop,Phi,Head,Cs_star_trans,Cs_trans,Call,New_loops,Unroll
     %remove compressed iteration variables from norms that are not compressed
 	maplist(remove_it_vars_from_constr(It_vars_set),Not_unrolled,Not_unrolled_filtered),
 	exclude(empty_norm,Not_unrolled_filtered,Not_unrolled_filtered1),
-	extract_involved_loops(It_vars_set,Loop,Not_unrolled_filtered1,New_loops).
+	
+	maplist(remove_it_vars_from_constr(It_vars_set),INorms,IConstrs_filtered),
+	exclude(empty_norm,IConstrs_filtered,IConstrs_filtered1),
+	extract_involved_loops(It_vars_set,Loop,Not_unrolled_filtered1,IConstrs_filtered1,New_loops).
 
 %! try_inductive_compression(+Head:term,+Phi:polyhedron,+Cs_star_trans:polyhedron,+Cs_trans:polyhedron,+Call:term,?L_Constant:(linear_expression,int)) is semidet
 % try to compress a linear expression L inductively
@@ -244,10 +247,10 @@ try_inductive_compression(Head,Phi,Cs_star_trans,Cs_trans,Call,(L,Constant2)):-
 	term_variables((L,L2),Vars_constraint),
 	slice_relevant_constraints_and_vars(Vars_constraint,Vars,Cs_comb,Vars1,Cs_comb1),
 	
-	maximize_linear_expression_all(L+L2,Vars1,Cs_comb1,Lsum_list),
+	max_min_linear_expression_all(L+L2,Vars1,Cs_comb1,max,Lsum_list),
 	member(Lsum,Lsum_list),
 	Call=Call3,%here Lsum and L are in the same universe
-	maximize_linear_expression_all(Lsum-L,[],Cs_trans,Maxs),
+	max_min_linear_expression_all(Lsum-L,[],Cs_trans,max,Maxs),
 	member(Constant,Maxs),
 	Constant=<0,!,
 	Constant2 is -Constant.
@@ -265,7 +268,7 @@ split_out_dependent_constrs_1(Vars_set,Norms,DepNorms,Non_depNorms):-
 
 	
 	
-put_in_loop(cost(Base,Elems,Constrs),loop(It_var,Base,Elems,Constrs),It_var).
+put_in_loop(cost(Base,Elems,Constrs,IConstrs),loop(It_var,Base,Elems,Constrs,IConstrs),It_var).
 
 %! is_unrolled(+Exps_map:list_map(cost_expression,int),+Norm:norm) is semidet
 is_unrolled(Exps_map,norm(_,Exp)):-
@@ -294,13 +297,12 @@ remove_it_vars_from_constr(It_vars_set,norm(Its,Rf),norm(Difference,Rf)):-
 % given a set of iteration variables that are in compressed constraints,
 % extract their loops from Loop. These loops that were inside the main loop, now they are
 % at the same level. Loops is the transformed original loop plus the ones extracted.
-extract_involved_loops(It_vars_set,loop(It_var,Base,Elems,_),Unrolled_norms,[New_loop|Unrolled]):-
+extract_involved_loops(It_vars_set,loop(It_var,Base,Elems,_,_),Unrolled_norms,INorms,[New_loop|Unrolled]):-
 	partition(is_loop_unrolled(It_vars_set),Elems,Unrolled,Not_unrolled),
-	New_loop=loop(It_var,Base,Not_unrolled,Unrolled_norms).
+	New_loop=loop(It_var,Base,Not_unrolled,Unrolled_norms,INorms).
 
-%! is_loop_unrolled(+It_vars_set:list_set,+Loop:loop_cost) is semidet
-% succeeds if the iteration variable of the loop Loop is in the set It_vars_set
-is_loop_unrolled(It_vars_set,loop(It_var,_,_,_)):-
+%! is_loop_unrolled(+It_vars_set:list_set,+Loop:loop_cos in the set It_vars_set
+is_loop_unrolled(It_vars_set,loop(It_var,_Base,_Internal,_Norms,_INorms)):-
 	contains_sl(It_vars_set,It_var).
 
 %! reinforce_unrolled_constraint(+It_var,+Norm:norm,+Norm_info:int,-Norm_out:norm)
@@ -347,6 +349,9 @@ add_rfs(Head,Call,Phase,Chain,It_vars,Removed_vars,Abstract_norms2,Differential_
 	%generate new norms by taking the difference between the norm in terms of Head 
 	% and the norm in terms of Call
 	get_differential_norms(Abstract_norms2,Head,Call,Differential_norms).
+
+%FIXME: we do not add this constraints yet
+add_inverse_rfs(_Head,_Call,_Phase,_Chain,_It_vars,_Removed_it_vars,[]).
 
 %! abstract_norms(+Dictionary:list_map(equation_id,var),+Norm_concrete:norm,-Norm_abstract:norm) is det
 % substitute the "iteration variables" of Norm_concrete that are equation_ids
@@ -505,7 +510,7 @@ find_resets([Dep|Deps],Rf,(Head,Phase,Chain),[Dep|Removed_deps],[Reset|Resets]):
     nad_glb(Cs,Cs_star,Cs_total),
 	Head=..[_|EVars],
 	copy_term((Head,Rf),(Call2,Rf_instance)),
-	maximize_linear_expression_all(Rf_instance,EVars,Cs_total,Rf_bounds),
+	max_min_linear_expression_all(Rf_instance,EVars,Cs_total,max,Rf_bounds),
 	member(Reset,Rf_bounds),!,
 	find_resets(Deps,Rf,(Head,Phase,Chain),Removed_deps,Resets).
 	
