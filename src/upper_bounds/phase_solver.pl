@@ -65,6 +65,7 @@ Specific "data types" of this module:
 		    slice_relevant_constraints_and_vars/5]).
 
 :- use_module('../utils/cost_expressions',[
+						  normalize_le/2,
 					      cexpr_simplify_ctx_free/2,
 					      is_linear_exp/1]).
 :- use_module('../utils/cost_structures',[simplify_or_cost_structure/6]).					      
@@ -77,6 +78,7 @@ Specific "data types" of this module:
 						nad_list_glb/2,
 						nad_lub/6,
 						nad_glb/3,
+						nad_maximize/3,
 						nad_consistent_constraints/1]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
@@ -350,10 +352,26 @@ add_rfs(Head,Call,Phase,Chain,It_vars,Removed_vars,Abstract_norms2,Differential_
 	% and the norm in terms of Call
 	get_differential_norms(Abstract_norms2,Head,Call,Differential_norms).
 
-%FIXME: we do not add this constraints yet
+%FIXME: basic treatment
+add_inverse_rfs(Head,Call,Phase,_Chain,It_vars,[],INorms):-!,
+	from_list_sl(It_vars,It_vars_set),
+	(find_lower_bound(Head,Call,Phase,LB)->
+	    INorms=[norm(It_vars_set,LB)]
+	;
+	    INorms=[]    
+	),!.
+
 add_inverse_rfs(_Head,_Call,_Phase,_Chain,_It_vars,_Removed_it_vars,[]).
 
-
+find_lower_bound(Head,Call,Phase,LB):-
+	ranking_function(Head,_Chain,Phase,Rf),
+	copy_term((Head,Rf),(Call,Rf1)),
+	phase_loop(Phase,_,Head,Call,Phi),
+	normalize_constraint( D=Rf-Rf1 ,Constraint),
+	Cs_1 = [ Constraint | Phi],
+	nad_maximize(Cs_1,[D],[Delta1]),
+	normalize_le(1/Delta1*(Rf-Rf1),LB).
+	
 %! abstract_norms(+Dictionary:list_map(equation_id,var),+Norm_concrete:norm,-Norm_abstract:norm) is det
 % substitute the "iteration variables" of Norm_concrete that are equation_ids
 % by the corresponding real iteration variables

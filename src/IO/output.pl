@@ -333,7 +333,7 @@ print_all_cs_conditions([First|All_conditions],Max_Min):-
 print_cs_conditions(_Max_Min,[]):-!.
 print_cs_conditions(Max_Min,Conditions):-
 	format('~n~12|',[]),
-	print_cs_conditions_1(Max_Min,Conditions).
+	print_cs_conditions_1(Conditions,Max_Min).
 
 print_cs_conditions_1([C],Max_Min):-!,print_norm(C,Max_Min).
 print_cs_conditions_1([C|Cs],Max_Min):-
