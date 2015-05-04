@@ -353,6 +353,7 @@ add_rfs(Head,Call,Phase,Chain,It_vars,Removed_vars,Abstract_norms2,Differential_
 %FIXME: we do not add this constraints yet
 add_inverse_rfs(_Head,_Call,_Phase,_Chain,_It_vars,_Removed_it_vars,[]).
 
+
 %! abstract_norms(+Dictionary:list_map(equation_id,var),+Norm_concrete:norm,-Norm_abstract:norm) is det
 % substitute the "iteration variables" of Norm_concrete that are equation_ids
 % by the corresponding real iteration variables

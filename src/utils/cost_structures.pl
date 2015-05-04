@@ -115,7 +115,9 @@ cost_structure_simplify_it_vars(cost(Exp,Loops,Norms,INorms),Cost):-
 		       % remove the iteration variables of loops that have been eliminated
 		       ce_norms_simplify(Norms,[],Removed_it_vars_set,[],Norms2),
 		       from_list_sl(Norms2,Norms2_set),
-		       Cost=cost(Exp,Resulting_loops_set,Norms2_set,INorms)
+		       ce_norms_simplify(INorms,[],Removed_it_vars_set,[],INorms2),
+		       from_list_sl(INorms2,INorms2_set),
+		       Cost=cost(Exp,Resulting_loops_set,Norms2_set,INorms2_set)
 		       ).
 		       
 %! infinite_loop(+Loop_pairs:list((list(int),loop))) is semidet
@@ -197,11 +199,12 @@ ce_loops_simplify([loop(It_var,Exp,InternalLoops,Norms,INorms)|Loops],Ctx,Loops_
 	      exclude(loop_contains(Rem_it_vars_internal1),InternalLoops,InternalLoops2),
 	      ce_loops_simplify(InternalLoops2,Ctx,InternalLoops3,Rem_it_vars_internal1,Rem_it_vars_internal2),
 	      ce_norms_simplify(Norms,Ctx,Rem_it_vars_internal2,[],Norms2),
+	      ce_norms_simplify(INorms,Ctx,Rem_it_vars_internal2,[],INorms2),
 	      ( (Exp2==0, InternalLoops3=[])->
 		 Loops_out=Loops2,
 		 insert_sl(Rem_it_vars1,It_var,Rem_it_vars2)
 	      ;
-		Loops_out=[loop(It_var,Exp2,InternalLoops3,Norms2,INorms)|Loops2],
+		Loops_out=[loop(It_var,Exp2,InternalLoops3,Norms2,INorms2)|Loops2],
 		Rem_it_vars2=Rem_it_vars1
 	      ),
 	      ce_loops_simplify(Loops,Ctx,Loops2,Rem_it_vars2,Rem_it_vars_out).
