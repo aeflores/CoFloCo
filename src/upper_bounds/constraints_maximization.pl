@@ -214,11 +214,7 @@ compress_sets_constraints_1([],Carry,_,_,_,New_constr):-
 compress_sets_constraints_1([Set|More],Carry,Vars,Phi,Max_Min,New_constr):-
 	length(Carry,N),
 	repeat_n_times(N,no,Compressed_Cnt),
-	(Max_Min==max->
-	compress_two_sets(Set,Carry,Compressed_Cnt,Vars,Phi,[],[],Compr)
-	;
-	unions_sl([Set,Carry],Compr) %FIXME: No compression for lower bounds for now
-	),
+	compress_two_sets(Set,Carry,Compressed_Cnt,Vars,Phi,Max_Min,[],[],Compr),
     %Disconnecting compression
     %unions_sl([Set,Carry],Compr),
 	compress_sets_constraints_1(More,Compr,Vars,Phi,Max_Min,New_constr).
@@ -235,14 +231,18 @@ compress_sets_constraints_1([Set|More],Carry,Vars,Phi,Max_Min,New_constr):-
 % Map contains pairs of cost expressions that have been already attempted to compress.
 % If the compression was succesful, Map contains the compressed cost expressions
 % otherwise Map contains an empty list
-compress_two_sets([],Set2,Compressed_Cnt,_,_,_,Compr,Compr2):-
+compress_two_sets([],Set2,Compressed_Cnt,_,_,_,_,Compr,Compr2):-
 	exclude_compressed(Set2,Compressed_Cnt,Set2_p),
 	union_sl(Set2_p,Compr,Compr2).
 	
-compress_two_sets([C|Set1],Set2,Compressed_Cnt,Vars,Phi,Map,Compr_accum,Compr_out):-
+compress_two_sets([C|Set1],Set2,Compressed_Cnt,Vars,Phi,max,Map,Compr_accum,Compr_out):-
 	try_compress(Set2,Compressed_Cnt,C,Vars,Phi,no,Compr_accum,Compressed_Cnt2,Map,Map2,Compr_accum2),
-	compress_two_sets(Set1,Set2,Compressed_Cnt2,Vars,Phi,Map2,Compr_accum2,Compr_out).
-
+	compress_two_sets(Set1,Set2,Compressed_Cnt2,Vars,Phi,max,Map2,Compr_accum2,Compr_out).
+	
+compress_two_sets([C|Set1],Set2,Compressed_Cnt,Vars,Phi,min,Map,Compr_accum,Compr_out):-
+	try_compress_min(Set2,Compressed_Cnt,C,Vars,Phi,no,Compr_accum,Compressed_Cnt2,Compr_accum2),
+	compress_two_sets(Set1,Set2,Compressed_Cnt2,Vars,Phi,min,Map,Compr_accum2,Compr_out).
+	
 exclude_compressed([],[],[]).
 exclude_compressed([X|Xs],[no|Ns],[X|Xs_p]):-!,
 	exclude_compressed(Xs,Ns,Xs_p).
@@ -326,6 +326,31 @@ try_compress([_C1|More],[Cnt|Compressed_Cnts],C2,Vars,Phi,IsCompressed,Compr_acc
        try_compress(More,Compressed_Cnts,C2,Vars,Phi,IsCompressed,Compr_accum,Compressed_Cnts2,Map,Map_out,Compr).
 
 	
+try_compress_min([],[],C2,_,_,IsCompressed,Compr,[],Compr2):-
+	(IsCompressed=no->
+	  insert_sl(Compr,C2,Compr2)
+	  ;
+	  Compr2=Compr
+	  ).	
+% This is  the case where we succeed to compress the two expressions      
+try_compress_min([C1|More],[_Cnt|Compressed_Cnts],C2,Vars,Phi,_IsCompressed,Compr_accum,[yes|Compressed_Cnts2],Compr):-
+       C1=(norm(Its1,L1),(linear,L1M_list)),\+term_variables(L1,[]),
+       C2=(norm(Its2,L2),(linear,L2M_list)),\+term_variables(L2,[]),
+       term_variables((L1,L2),Vars_constraint),
+       slice_relevant_constraints_and_vars(Vars_constraint,Vars,Phi,Vars1,Phi1),     
+       max_min_linear_expression_all(L1+L2,Vars1,Phi1,min,L12M_list),
+       include(can_be_bigger(L1M_list,L2M_list,Phi1),L12M_list,Compressed_expressions),
+       %include(bigger_than_parts(L1,L2,Phi1),Compressed_expressions1,Compressed_expressions),  
+   	   Compressed_expressions\=[],!,
+   	   union_sl(Its1,Its2,Its_new),
+       insert_sl(Compr_accum,(norm(Its_new,L1+L2),(linear,Compressed_expressions)),Compr_accum2),
+       try_compress_min(More,Compressed_Cnts,C2,Vars,Phi,yes,Compr_accum2,Compressed_Cnts2,Compr).
+
+
+% This case is for cost expressions that are not linear which are never compressed.
+try_compress_min([_C1|More],[Cnt|Compressed_Cnts],C2,Vars,Phi,IsCompressed,Compr_accum,[Cnt|Compressed_Cnts2],Compr):-
+       try_compress_min(More,Compressed_Cnts,C2,Vars,Phi,IsCompressed,Compr_accum,Compressed_Cnts2,Compr).	
+	
 %! can_be_smaller_1(+L1M_list:list(linear_expression),+L2M_list:list(linear_expression),+Cs:polyhedron,+L12M:linear_expression) is semidet
 % succeeds if L12M can be smaller than all the combinations of L1M_list and L2M_list
 % under the constraints of Cs
@@ -353,7 +378,24 @@ get_smaller_constraint(L1,L12M,Constraint):-
 get_bigger_constraint(L1,L12M,Constraint):-	
     normalize_constraint(L1>=(L12M+1),Constraint).  
     
-    
+can_be_bigger([],_,_,_):-!.
+can_be_bigger(_,[],_,_):-!.
+/*
+can_be_smaller(L1M_list,L2M_list,_Cs,L12M):-
+	maplist(get_le_without_constant,L1M_list,L1_wc,_),
+	maplist(get_le_without_constant,L2M_list,L2_wc,_),
+	get_le_without_constant(L12M,L12M_wc,_),
+	from_list_sl(L1_wc,L1_wc_set),
+	from_list_sl(L2_wc,L2_wc_set),
+	contains_sl(L1_wc_set,L12M_wc),
+	contains_sl(L2_wc_set,L12M_wc),!.
+*/
+can_be_bigger(L1M_list,L2M_list,Cs,L12M):-
+	maplist(get_bigger_constraint(L1),L1M_list,Constraints1),
+	maplist(get_bigger_constraint(L2),L2M_list,Constraints2),
+	get_smaller_constraint(L1+L2,L12M,C3),
+	append([[C3|Constraints1],Constraints2,Cs],Cs2),
+	nad_consistent_constraints(Cs2).    
 %! bigger_than_parts(+L1:linear_constraint,+L2:linear_constraint,+Cs:polyhedron,+L12M:linear_constraint) is semidet
 % succeeds if L12M is a valid upper bound of both L1 and L2
 bigger_than_parts(L1,L2,Cs,L12M):-
@@ -362,6 +404,7 @@ bigger_than_parts(L1,L2,Cs,L12M):-
 	term_variables((Constraint1,Constraint2,Cs),Vars),
 	nad_entails(Vars,Cs,[Constraint1,Constraint2]).
     
+  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! compress_or_constraints(+Sets:list(list_set(norm)),+Entry:term,+Call:term,-Norms:list_set(norm)) is det
@@ -477,7 +520,6 @@ max_min_linear_expression_all_n(N,Linear_Expr_to_Maximize, Vars_of_Interest, Con
 	Rest is N-Curr_length,
 	% If we have not iferred enough upper bounds
 	(Rest > 0 ->
-	
 	term_variables(Maxs,Used_vars),
 	from_list_sl(Used_vars,Used_vars_set),
 	from_list_sl(Vars_of_Interest,Vars_of_Interest_set),
