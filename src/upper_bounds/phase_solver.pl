@@ -257,18 +257,21 @@ get_norm_combinations_greedy(Norms,Extra_its_maxs,Gen_norms_set):-
 	from_list_sl(Gen_norms,Gen_norms_set).
 
 get_norm_combinations_greedy_1([],_,[]).	
-get_norm_combinations_greedy_1(Norms,(Extra_its,Maxs),Gen_norms1):-
+get_norm_combinations_greedy_1(Norms,(Extra_its1,Extra_its2,Maxs),Gen_norms1):-
 	maplist(head_tail,Norms,[norm(Its_0,Exp)|Heads],Tails),
 	exclude(empty_list,Tails,Tails1),
 	foldl(accum_norm,Heads,norm(Its_0,Exp),norm(Its,Exp)),
-	maplist(add_to_norm(Its,[Exp|Maxs]),Extra_its,Gen_norms_aux),
-	get_norm_combinations_greedy_1(Tails1,Extra_its,Gen_norms),
+	maplist(add_to_norm(Its,[Exp|Maxs],Extra_its2),Extra_its1,Gen_norms_aux),
+	get_norm_combinations_greedy_1(Tails1,(Extra_its1,Extra_its2,Maxs),Gen_norms),
 	ut_flat_list(Gen_norms_aux,Gen_norms_aux2),
 	append(Gen_norms_aux2,Gen_norms,Gen_norms1).
 
-add_to_norm(Its,Exps,Exp2,Gen_norms):-
-	maplist(add_to_norm_1(Its,Exp2),Exps,Gen_norms).
-add_to_norm_1(Its,Exp1,Exp2,norm(Its,Exp1+Exp2)).
+add_to_norm(Its,Exps,Exps2,Exp,Gen_norms):-
+	maplist(add_to_norm_1(Its,Exp,Exps2),Exps,Gen_norms).
+add_to_norm_1(Its,Exp,Exps2,Exp2,Gen_norms):-
+	maplist(add_to_norm_2(Its,Exp,Exp2),Exps2,Gen_norms).	
+	
+add_to_norm_2(Its,Exp1,Exp2,Exp3,norm(Its,Exp1+Exp2+Exp3)).
 
 		
 	
@@ -378,11 +381,10 @@ check_bad_loops(Head,Call,Exp,Max_Min,Loop,Info):-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 add_extra_iterations([],_Phase,_It_vars,_Norms,[]).
-add_extra_iterations([(Exp,(Extra_its_info,Maxs))|Exps],Phase,It_vars,(Norms,INorms),[(Exp,(Extra_its,Maxs))|Exps_complete]):-
+add_extra_iterations([(Exp,(Extra_its_info,Maxs))|Exps],Phase,It_vars,(Norms,INorms),[(Exp,(Extra_its1,Extra_its2,Maxs))|Exps_complete]):-
 	partition(max_component,Extra_its_info,Extra_its_info_max,Extra_its_info_min),
 	get_extra_iterations(Extra_its_info_max,(Phase,It_vars),Norms,max,Extra_its1),
 	get_extra_iterations(Extra_its_info_min,(Phase,It_vars),INorms,min,Extra_its2),!,
-	append(Extra_its1,Extra_its2,Extra_its),
 	add_extra_iterations(Exps,Phase,It_vars,Norms,Exps_complete).
 	
 add_extra_iterations([_|Exps],Phase,It_vars,Norms,Exps_complete):-
@@ -408,8 +410,10 @@ get_extra_iterations(Extra_its_info,(Phase,It_vars),Norms,Max_Min,Extra_its_list
 		),
 		assign_right_vars(Extra_its_list,Vars,Extra_its_list_right).
 
-abstract_loop_id(Phase_vars_dicc,(Loop,Cnt),(It_var,Cnt)):-
+abstract_loop_id(Phase_vars_dicc,(max(Loop),Cnt),(It_var,Cnt)):-
 	lookup_lm(Phase_vars_dicc,Loop,It_var).
+abstract_loop_id(Phase_vars_dicc,(min(Loop),Cnt),(It_var,Cnt)):-
+	lookup_lm(Phase_vars_dicc,Loop,It_var).	
 	
 get_involved_it_vars(Abstract_info,It_vars_set):-
 	maplist(tuple,It_vars,_,Abstract_info),
