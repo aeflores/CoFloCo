@@ -31,6 +31,7 @@
 
 :- use_module('../upper_bounds/constraints_maximization',[
 				  compress_or_constraints/5]).	
+:- use_module('../IO/params',[get_param/2]).				  
 :- use_module(cost_expressions,[cexpr_simplify/3]).	
 :- use_module(cofloco_utils,[tuple/3]).	
 :- use_module(stdlib(set_list)).
@@ -99,6 +100,9 @@ cost_structure_simplify_it_vars(cost(Exp,_,_,_),cost(Exp,[],[],[])):-
           Exp==inf,!.   		      
 
 %FIXME INorms
+% deactivated for negative costs
+cost_structure_simplify_it_vars(Cost,Cost):-get_param(negative,[]),!.           
+
 cost_structure_simplify_it_vars(cost(Exp,Loops,Norms,INorms),Cost):-	            
 		       number_norms(Norms,0,Numbered_norms),
 		       group_similar_loops(Loops,Grouped_loops),
