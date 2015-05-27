@@ -32,7 +32,7 @@ that can be passed on to the callers.
 			compute_single_closed_bound/2]).
 
 :- use_module(chain_solver,[compute_chain_cost/3]).
-:- use_module(ub_solver,[solve_system/4]).
+:- use_module(ub_solver,[solve_system/5]).
 
 :- use_module('../db',[
 		  external_call_pattern/5,
@@ -81,7 +81,7 @@ compute_closed_bound(Head):-
 	upper_bound(Head,Chain,_Vars,Cost),
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 	Head=..[_|Vars],
-	solve_system(Cost,Vars,Head_Pattern,UB),
+	solve_system(Cost,Vars,Head_Pattern,max,UB),
 	cexpr_simplify(UB,Head_Pattern,UB1),
 	add_closed_upper_bound(Head,Chain,UB1),
 	fail.

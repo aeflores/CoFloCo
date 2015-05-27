@@ -27,7 +27,8 @@
 		cost_structure_simplify/3,
 		simplify_or_cost_structure/6,
 		cost_structure_simplify_it_vars/2,
-		compress_cost_structures/4]).
+		compress_cost_structures/4,
+		remove_it_vars_from_constr/3]).
 
 :- use_module('../upper_bounds/constraints_maximization',[
 				  compress_or_constraints/5]).	
@@ -37,6 +38,13 @@
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
+
+
+%! remove_it_vars_from_constr(+It_vars_set:list_set(var),+Norm:norm,-Filtered_constr:norm) is det
+%  remove the Iteration variables in It_vars_set from the norm Norm
+remove_it_vars_from_constr(It_vars_set,norm(Its,Rf),norm(Difference,Rf)):-
+	from_list_sl(Its,Its_set),
+	difference_sl(Its_set,It_vars_set,Difference).	
 
 %! compress_cost_structures(+Cs_list:list(cost_structure),+Inv:polyhedron,-Cost_structure:cost_structure) is det
 % obtain a cost structure that is a safe approximation of the disjuntion of the cost

@@ -31,7 +31,7 @@ Specific "data types" of this module:
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(ub_solver,[solve_system/4]).
+:- module(ub_solver,[solve_system/5]).
 
 
 :- use_module('../IO/params',[get_param/2]).
@@ -68,26 +68,31 @@ Specific "data types" of this module:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Maximize a explicit cost expression or part of it
 
-%! solve_system(+Cost:cost_structure,+Vars:list(var),-Max:cost_expression) is det
+%! solve_system(+Cost:cost_structure,+Vars:list(var),Max_Min:flag,-Max:cost_expression) is det
 % solve a cost structure Cost into a regular cost expression Max
 %  * solve the cost structures inside the loops
 %  * solve the constraints of the loops and add the base cost
-solve_system(cost(Base,Loops,External_constrs,_),Vars,Cs,Max):-
-	maplist(solve_loop(Vars,Cs),Loops,It_vars,It_costs),
+solve_system(cost(Base,Loops,External_constrs,I_External_constrs),Vars,Cs,Max_Min,Max):-
+	(Max_Min=max->
+	   Selected_constrs=External_constrs
+	   ;
+	   Selected_constrs=I_External_constrs
+	 ),
+	maplist(solve_loop(Vars,Cs,Max_Min),Loops,It_vars,It_costs),
 	maplist(cexpr_simplify_aux(Cs),It_costs,It_costs_simple),
 	maplist(avoid_negative_costs(Cs),It_costs_simple,It_costs_simple_positive),
-	remove_zero_costs(It_vars,It_costs_simple_positive,External_constrs,It_vars1,It_costs1,External_constrs1),
-	group_same_its_constraints(External_constrs1,Cs,External_constrs2),
+	remove_zero_costs(It_vars,It_costs_simple_positive,Selected_constrs,It_vars1,It_costs1,External_constrs1),
+	group_same_its_constraints(External_constrs1,Cs,Max_Min,External_constrs2),
 	group_dependant_it_constrs(External_constrs2,It_vars1,Grouped_It_vars),
 	maplist(zip_with_op(p),It_vars1,It_costs1,It_pairs),
-	maplist(solve_constr_group(It_pairs,Vars),Grouped_It_vars,Costs),
-	cexpr_add_list([Base|Costs],Max),!.
+	maplist(solve_constr_group(It_pairs,Vars,Max_Min),Grouped_It_vars,Costs),
+	cexpr_add_list([Base|Costs],Max),!.	
 
 %! solve_loop(+Vars:list(var),+Loop:loop_cost,-It_var:var,-Cost:cost_expression) is det
 % solve the cost structure inside the loop Loop and return the cost Cost and
 % the iteration variable of the loop It_var
-solve_loop(Vars,Cs,loop(It_var,Base,Loops,Constr,_),It_var,Cost):-
-	solve_system(cost(Base,Loops,Constr,_),Vars,Cs,Cost).
+solve_loop(Vars,Cs,Max_Min,loop(It_var,Base,Loops,Constr,_),It_var,Cost):-
+	solve_system(cost(Base,Loops,Constr,_),Vars,Cs,Max_Min,Cost).
 
 %! avoid_negative_costs(+Cs:polyhedron,+Cost:cost_expression,-Cost2:cost_expression) is det
 % If the body of a loop has negative cost, we approximate to cost 0
@@ -141,16 +146,17 @@ filter_zeroes_in_norms([_|Norms],Filtered_norms):-
 %! group_same_its_constraints(+Norms:list(norm),-Norms2:list(norm)) is det
 % put all the norms that contain the same set of iteration variables together.
 % For example, if we have norm([I1,I2],A) and norm([I1,I2],B), it generates norm([I1,I2],min([A,B]))
-group_same_its_constraints(Norms,Cs,Norms2):-
+group_same_its_constraints(Norms,Cs,Max_min,Norms2):-
 	maplist(zip_with_op(norm),Its_list,Exps,Norms),
 	maplist(tuple,Its_list,Exps,Pair_list),
 	from_pair_list_mm(Pair_list,Multimap),
-	maplist(generate_min_norm(Cs),Multimap,Norms2).
+	maplist(generate_1_norm(Cs,Max_min),Multimap,Norms2).
 
-generate_min_norm(_,(Its,[Exp]),norm(Its,Exp)):-!.
-generate_min_norm(Cs,(Its,Exps),norm(Its,Cost_simple)):-
+generate_1_norm(_,(Its,[Exp]),norm(Its,Exp)):-!.
+generate_1_norm(Cs,max,(Its,Exps),norm(Its,Cost_simple)):-
 	cexpr_simplify(min(Exps),Cs,Cost_simple).
-
+generate_1_norm(Cs,min,(Its,Exps),norm(Its,Cost_simple)):-
+	cexpr_simplify(max(Exps),Cs,Cost_simple).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! group_dependant_it_constrs(+Constrs:list(norm),+It_vars:list(var),-Grouped_It_vars:list(it_group)) is det
@@ -205,7 +211,7 @@ add_constr_to_group(C,it_group(V,Cs),it_group(V,Cs2)):-
 % on each other. We select a set of constraints according to heuristic criteria.
 % Then we maximize each iteration variable and constraint one by one.
 % The current criterion guarantees that this approach is safe.
-solve_constr_group(It_pairs,EntryVars,it_group(Vars,Norms_all),Cost):-
+solve_constr_group(It_pairs,EntryVars,max,it_group(Vars,Norms_all),Cost):-
 	%FIXME when solve_precise we should check that the set of constraints generates
 	% an acyclic dependency graph, otherwise the result could be unsound
 	%(get_param(solve_precise,[N_extra])->
@@ -220,7 +226,24 @@ solve_constr_group(It_pairs,EntryVars,it_group(Vars,Norms_all),Cost):-
 	include(has_iteration_variable(Vars),It_pairs,It_pairs1),
 	from_list_sl(Norms,Maximized_norms_set),
 	incremental_maximization(It_pairs1,EntryVars,Maximized_norms_set,Cost).
-
+	
+/*	
+solve_constr_group(It_pairs,EntryVars,min,it_group(Vars,Norms_all),Cost):-
+	%FIXME when solve_precise we should check that the set of constraints generates
+	% an acyclic dependency graph, otherwise the result could be unsound
+	%(get_param(solve_precise,[N_extra])->
+	%constraint_selection(it_group(Vars,Norms_all),N_extra,it_group(Vars,Norms))
+	%;
+	% this greedy constraint selection makes all the constraints independent from each other
+	% this guarantees that the constraints can be maximized one by one
+	aggresive_constraint_selection(it_group(Vars,Norms_all),it_group(Vars,Norms))
+	%)
+	,
+	%get the costs that correspond to the iteration variables Vars
+	include(has_iteration_variable(Vars),It_pairs,It_pairs1),
+	from_list_sl(Norms,Maximized_norms_set),
+	incremental_maximization(It_pairs1,EntryVars,Maximized_norms_set,Cost).
+*/
 has_iteration_variable(Vars,p(It_var,_)):-
 	contains_sl(Vars,It_var).
 

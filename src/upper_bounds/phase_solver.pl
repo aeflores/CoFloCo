@@ -5,16 +5,6 @@ at the beginning and the end of the phase.
 The internal elements of the cost structure are directly expressed 
 in terms of the initial values of the chain.
 
-
-Specific "data types" of this module:
-  * rf_structure:list(int-val(list(equation_id),linear_expression,list((equation_id,int)),list(equation_id),cost_expression))
-    This data structure is a sorted list
-    of ranking functions that are sorted by the number of dependencies they have.
-    each element contains the specific dependencies in two categories: the Increment_deps
-    and the Unknown_deps. The equations in Increment_deps increment the ranking function by a
-    constant, the Unkown_deps reset the value of the ranking function.
-    Finally, the last part of the ranking function contains the additional expression
-    that has to be added to the rf to account for dependencies that have been already removed
 @author Antonio Flores Montoya
 
 @copyright Copyright (C) 2014,2015 Antonio Flores Montoya
@@ -36,20 +26,20 @@ Specific "data types" of this module:
 
 :- module(phase_solver,[compute_phases_cost/5,init_phase_solver/0]).
 
-:- use_module(constraints_maximization,[compress_or_constraints/5,
+:- use_module(constraints_maximization,[
 				max_min_internal_elements/4,
 				max_min_linear_expression_all/5]).
 :- use_module(cost_equation_solver,[get_equation_cost/5]).
-			      
+:- use_module(constraints_generation,[
+		add_phase_upper_bounds/8,
+		add_phase_lower_bounds/7]).			
+				      
 :- use_module('../db',[phase_loop/5,
 		       loop_ph/6]).
 :-use_module('../refinement/invariants',[backward_invariant/4,
 			      phase_transitive_closure/5,
 			      relation2entry_invariant/3,get_phase_star/4,
 			      	forward_invariant/4]).
-:- use_module('../ranking_functions',[
-				      ranking_function/4,
-				      partial_ranking_function/7]).
 :- use_module('../IO/params',[get_param/2]).
 
 :- use_module('../utils/cofloco_utils',[
@@ -69,7 +59,9 @@ Specific "data types" of this module:
 						  normalize_le/2,
 					      cexpr_simplify_ctx_free/2,
 					      is_linear_exp/1]).
-:- use_module('../utils/cost_structures',[simplify_or_cost_structure/6]).					      
+:- use_module('../utils/cost_structures',[simplify_or_cost_structure/6,
+										remove_it_vars_from_constr/3]).			
+		      
 
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
@@ -97,11 +89,6 @@ Specific "data types" of this module:
 % clear all the intermediate results
 init_phase_solver:-
 	retractall(phase_cost(_,_,_,_,_,_)).
-
-%rf_limit(-N:int) is det
-% stablish the maximum number of ranking functions for the whole phase that are to be considered
-rf_limit(N):-
-	get_param(n_rankings,[N]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,10 +152,10 @@ compute_phase_cost(Phase,Chain,Head,Call,(Forward_hash,Forward_inv),inv(Head_tot
 	
 	maplist(get_internal_norm_expressions((Call_vars_set,Head_vars_set)),Loops,Norm_exprs,INorm_exprs),
 	maplist(get_loop_it_var,Loops,It_vars),
-	add_rfs(Head,Call,Phase,Chain,It_vars,[],It_constrs,Differential_norms),
+	add_phase_upper_bounds(Head,Call,Phase,Chain,It_vars,[],It_constrs,Differential_norms),
 	union_sl(It_constrs,Differential_norms,New_norms),
 	(get_param(negative,[])->
-		add_inverse_rfs(Head,Call,Phase,Chain,It_vars,[],New_Inorms)
+		add_phase_lower_bounds(Head,Call,Phase,Chain,It_vars,[],New_Inorms)
 	;
 		New_Inorms=[]
 	),
@@ -234,11 +221,7 @@ clean_remaining_norms([norm(Its,Rf)|Remaining],It_vars_set,Remaining1):-
 	    clean_remaining_norms(Remaining,It_vars_set,Remaining_aux),
 	    Remaining1=[norm(Diff,Rf)|Remaining_aux]
 	). 
-%! remove_it_vars_from_constr(+It_vars_set:list_set(var),+Norm:norm,-Filtered_constr:norm) is det
-%  remove the Iteration variables in It_vars_set from the norm Norm
-remove_it_vars_from_constr(It_vars_set,norm(Its,Rf),norm(Difference,Rf)):-
-	from_list_sl(Its,Its_set),
-	difference_sl(Its_set,It_vars_set,Difference).	
+
 	
 %TODO: Rewrite
 get_norm_combinations_greedy_mul([],_,Accum,Accum).
@@ -508,219 +491,3 @@ loop_contains_exp(Exp,Set,Loop,[Loop]):-
 		contains_sl(Set,Exp),!.
 loop_contains_exp(_Exp,_Set,_Loop,[]).	
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%! add_rfs(Head:term,Call:term,Phase:phase,Chain:chain,It_vars:list(var),Removed_vars:list_set(var),Abstract_norms2:list(norm),Differential_norms:list(norm)) is det
-% given a Phase in a Chain generate 2 sets of norms that bound the number of iterations
-% of each component of the Phase. 
-%  * Abstract_norms2 depend on the initial variables of the phase (the ones of Head)
-%  * Differential_norms depend on both the initial and the final variables of the phase (Head and Call)
-%
-% the iteration variables in Removed vars are excluded form the generated norms.
-% It_vars contains the concrete variables that correspond to each of the loops of Phase.
-add_rfs(Head,Call,Phase,Chain,It_vars,Removed_vars,Abstract_norms2,Differential_norms):-
-	maplist(tuple,Phase,It_vars,It_var_dictionary),
-	%rf_limit establishes how many bounds we want to generate per loop
-	rf_limit(Max),
-	length(Phase,N_loops),
-	repeat_n_times(N_loops,Max,Counters),
-	maplist(tuple,Phase,Counters,Phase_counters),
-	% collect all the ranking functions and their dependencies
-	% sort them according to the number of dependencies
-	obtain_initial_rf_stucture(Head,Chain,Phase,Structure),
-    % incrementally find upper bounds for each of the phases until the counters reach 0,
-    % the available ranking functions are all consumed or
-    % we find a ranking function with unresolved dependencies
-	find_phase_upper_bounds(Structure,Phase_counters,(Head,Phase,Chain),[],Concrete_norms),
-	%substitute the cost_equation_id of the phase by the corresponding iteration variables
-	maplist(abstract_norms(It_var_dictionary),Concrete_norms,Abstract_norms),
-	% remove the iteration variables of Removed_vars
-	maplist(remove_it_vars_from_constr(Removed_vars),Abstract_norms,Abstract_norms1),
-	exclude(empty_norm,Abstract_norms1,Abstract_norms2),
-	%generate new norms by taking the difference between the norm in terms of Head 
-	% and the norm in terms of Call
-	get_differential_norms(Abstract_norms2,Head,Call,Differential_norms).
-
-%FIXME: basic treatment
-add_inverse_rfs(Head,Call,Phase,_Chain,It_vars,[],INorms):-!,
-	from_list_sl(It_vars,It_vars_set),
-	(find_lower_bound(Head,Call,Phase,LB)->
-	    INorms=[norm(It_vars_set,LB)]
-	;
-	    INorms=[]    
-	),!.
-
-add_inverse_rfs(_Head,_Call,_Phase,_Chain,_It_vars,_Removed_it_vars,[]).
-
-find_lower_bound(Head,Call,Phase,LB):-
-	ranking_function(Head,_Chain,Phase,Rf),
-	copy_term((Head,Rf),(Call,Rf1)),
-	phase_loop(Phase,_,Head,Call,Phi),
-	normalize_constraint( D=Rf-Rf1 ,Constraint),
-	Cs_1 = [ Constraint | Phi],
-	nad_maximize(Cs_1,[D],[Delta1]),
-	normalize_le(1/Delta1*(Rf-Rf1),LB).
-	
-%! abstract_norms(+Dictionary:list_map(equation_id,var),+Norm_concrete:norm,-Norm_abstract:norm) is det
-% substitute the "iteration variables" of Norm_concrete that are equation_ids
-% by the corresponding real iteration variables
-abstract_norms(Dictionary,norm(Its,Exp),norm(Its3,Exp)):-
-	maplist(lookup_lm(Dictionary),Its,Its2),
-	from_list_sl(Its2,Its3).
-
-empty_norm(norm([],_)).
-	
-%! 	get_differential_norms(+Norms:list(norm),+Head:term,+Call:term,-Norms_out:list(norm)) is det
-% for every norm that is a linear expression, we create a new norm that
-% is the difference between the initial value and the final value of the norm.
-% That is, the norm expressed in terms of Head and Call.
-get_differential_norms([],_Head,_Call,[]).
-get_differential_norms([norm(Its,Exp)|Norms],Head,Call,[norm(Its,Exp_diff)|Norms_out]):-
-	is_linear_exp(Exp),!,
-	copy_term((Head,Exp),(Call,Exp_2)),
-	cexpr_simplify_ctx_free(Exp-Exp_2,Exp_diff),
-	get_differential_norms(Norms,Head,Call,Norms_out).
-	
-get_differential_norms([norm(_Its,_Exp)|Norms],Head,Call,Norms_out):-
-	get_differential_norms(Norms,Head,Call,Norms_out).	
-	
-
-%! obtain_initial_rf_stucture(Head:term,Chain:chain,Phase:phase,Structure:rf_structure) is det
-% get all the ranking functions of the phase Phase in the chain Chain.
-% create a data structure Structure.
-%
-% rf_structure:list(int-val(list(equation_id),linear_expression,list((equation_id,int)),list(equation_id),cost_expression))
-% This data structure is a sorted list
-% of ranking functions that are sorted by the number of dependencies they have.
-% each element contains the specific dependencies in two categories: the Increment_deps
-% and the Unknown_deps. The equations in Increment_deps increment the ranking function by a
-%constant, the Unkown_deps reset the value of the ranking function.
-% Finally, the last part of the ranking function contains the additional expression
-% that has to be added to the rf to account for dependencies that have been already removed
-obtain_initial_rf_stucture(Head,Chain,Phase,Structure):-
-	bagof_no_fail(0-val(Phase,Rf,[],[],0),
-	ranking_function(Head,Chain,Phase,Rf)
-	   ,Rfs),
-	bagof_no_fail(NDeps-val(Loops,Rf,Increment_deps,Unknown_deps_simple,0),
-	Deps^Deps_type^Map_dependencies^Unknown_deps^Ignored^
-	(
-			partial_ranking_function(Head,Chain,Phase,Loops,Rf,Deps,Deps_type),
-			maplist(tuple,Deps,Deps_type,Map_dependencies),			
-			length(Map_dependencies,NDeps),
-			partition(increment_dep,Map_dependencies,Increment_deps,Unknown_deps),
-			maplist(tuple,Unknown_deps_simple,Ignored,Unknown_deps)
-		
-			),Deps_structure),
-	%order ranking function by number of dependencies
-	keysort(Deps_structure,Sorted_structure),
-	append(Rfs,Sorted_structure,Structure).
-
-increment_dep((_,N)):-number(N).	
-	
-%! find_phase_upper_bounds(+Structure:rf_structure,+Counters:list_map(equation_id,int),+Phase_info:(term,phase,chain),+Norms_accum:list(norm),-Concrete_norms:list(norm))	is det
-% visit the rf_structure until all the needed norms have been obtained (Counters=[]);
-% the structure is empty (Structure=[]) or there are no more elements without dependencies.
-%
-% For each element without dependencies, create a new norm, decrease the counters
-% of the involved cost equations and  (try to) remove the elements where that element appears as
-% a dependency
-
-
-find_phase_upper_bounds(_Structure,[],_Phase_info,Concrete_norms,Concrete_norms):-!.
-find_phase_upper_bounds([],_,_Phase_info,Concrete_norms,Concrete_norms):-!.
-find_phase_upper_bounds([0-val(Loops,Rf,[],[],Accum)|Deps],Counters,Phase_info,Norms_accum,Norms):-!,
-    update_ub_counters(Counters,Loops,Counters2),
-    Norms_accum2=[norm(Loops,Rf+Accum)|Norms_accum],
-	update_deps_ub_structure(Deps,Loops,Rf+Accum,Phase_info,Deps1),
-	find_phase_upper_bounds(Deps1,Counters2,Phase_info,Norms_accum2,Norms).
-find_phase_upper_bounds([N-val(Loop,Rf,Incr_Deps,Unknown_Deps,Accum)|Deps],Counters,Phase_info,Norms_accum,Norms):-
-	N>0,
-	keysort([N-val(Loop,Rf,Incr_Deps,Unknown_Deps,Accum)|Deps],[N2-val(Loop2,Rf2,Incr_Deps2,Unknown_Deps2,Accum2)|Deps2]),
-	(N2=0->
-	 find_phase_upper_bounds([N2-val(Loop2,Rf2,Incr_Deps2,Unknown_Deps2,Accum2)|Deps2],Counters,Phase_info,Norms_accum,Norms)
-	;
-	 Norms=Norms_accum
-	).
-
-%! update_ub_counters(+Counters:list_map(equation_id,int),+Loops:set_list(equation_id),-Counters2:list_map(equation_id,int)) is det
-% remove one from the counters corresponding to the cost equations in Loops
-% if a counter reaches 0, remove the pair from the map
-update_ub_counters([],_,[]).
-update_ub_counters(Counters,[],Counters):-!.
-update_ub_counters([(Loop,N)|Cnts],[Loop|Loops],Counters):-!,
-	N1 is N-1,
-	(N1 > 0-> 
-	   Counters=[(Loop,N1)|Counters_aux]
-	   ;
-	   Counters=Counters_aux
-	   ),
-	update_ub_counters(Cnts,Loops,Counters_aux).
-update_ub_counters([(Loop,N)|Cnts],[Loop2|Loops],[(Loop,N)|Counters_aux]):-
-	Loop < Loop2,!,
-	update_ub_counters(Cnts,[Loop2|Loops],Counters_aux).	
-	
-update_ub_counters([(Loop,N)|Cnts],[Loop2|Loops],Counters_aux):-
-	Loop > Loop2,
-	update_ub_counters([(Loop,N)|Cnts],Loops,Counters_aux).		
-
-
-%! update_deps_ub_structure(+Structure:rf_structure,+Loops_ub:set_list(equation_id),+Ub:cost_expression,+Phase_info:(term,phase,chain),-Structure_out:rf_structure) is det
-% For each element in Structure:
-%
-% * Remove the increment dependencies to the loops in Loops_ub, obtain the maximum increment Max_incr
-%   and add Max_inc* Ub to the accumulator
-% * For the loops In Loops_ub that are unknown dependencies, 
-%   try to find a reset value of the ranking function in that loop.
-%   * If no reset is found, the dependency is not removed
-%   * If we find a reset, we add max(Resets)* nat(Ub) to the accumulator
-% * Finally, we recompute the number of dependencies
-update_deps_ub_structure([],_,_,_,[]).
-update_deps_ub_structure([_-val(Loops,Rf,Incr_Deps,Unknown_Deps,Accum)|Deps],Loops_ub,Ub,Phase_info,
-                         [N2-val(Loops,Rf,Incr_Deps2,Unknown_Deps2,Accum2)|Desp1]):-
-	remove_incr_loops(Incr_Deps,Loops_ub,Incr_Deps2,Max_incr),
-	(Max_incr >0 -> 
-	      Accum1=Accum+Max_incr* nat(Ub)
-	      ;
-	      Accum1=Accum
-	 ),
-	intersection_sl(Unknown_Deps,Loops_ub,Removable_Unknown_deps),
-	find_resets(Removable_Unknown_deps,Rf,Phase_info,Removed_deps,Resets),
-	(Resets\=[]->
-	   Accum2=Accum1+max(Resets)* nat(Ub)
-	   ;
-	   Accum2=Accum1
-	   ),
-	difference_sl(Unknown_Deps,Removed_deps,Unknown_Deps2),
-	
-	length(Incr_Deps2,N2_1),
-	length(Unknown_Deps2,N2_2),
-	N2 is N2_1+N2_2,
-	update_deps_ub_structure(Deps,Loops_ub,Ub,Phase_info,Desp1).
-
-
-remove_incr_loops([],_Loops_ub,[],0).
-remove_incr_loops([(Loop,N)|Incr_Deps],Loops_ub,Incr_Deps2,Max_incr):-
-	contains_sl(Loops_ub,Loop),!,
-	remove_incr_loops(Incr_Deps,Loops_ub,Incr_Deps2,Max_incr_aux),
-	Max_incr is max(Max_incr_aux,N).
-remove_incr_loops([(Loop,N)|Incr_Deps],Loops_ub,[(Loop,N)|Incr_Deps2],Max_incr):-
-	remove_incr_loops(Incr_Deps,Loops_ub,Incr_Deps2,Max_incr).
-	
-% If Rf is reseted to a new value in an equation Dep, after Dep Rf will have a fixed value.
-% We try to relate such value with the initial values of the variables at the beginning of the
-% phase using phase_star
-
-find_resets([],_,_Phase_info,[],[]).
-
-find_resets([Dep|Deps],Rf,(Head,Phase,Chain),[Dep|Removed_deps],[Reset|Resets]):-	
-	get_phase_star(Head,Call,Phase,Cs_star),
-	loop_ph(Call,(Dep,_),Call2,Cs,_,_),
-    nad_glb(Cs,Cs_star,Cs_total),
-	Head=..[_|EVars],
-	copy_term((Head,Rf),(Call2,Rf_instance)),
-	max_min_linear_expression_all(Rf_instance,EVars,Cs_total,max,Rf_bounds),
-	member(Reset,Rf_bounds),!,
-	find_resets(Deps,Rf,(Head,Phase,Chain),Removed_deps,Resets).
-	
-find_resets([_Dep|Deps],Rf,Phase_info,Removed_deps,Resets):-	
-	find_resets(Deps,Rf,Phase_info,Removed_deps,Resets).	
