@@ -104,7 +104,7 @@ substitute_by_maximized_expressions(Map,loop(It_var,Base,Loops,Norms),loop(It_va
 	(Maxs_base=[One]->
 	   Base1=One
 	   ;
-	   Base1=max(Maxs_base)
+	   Base1=min(Maxs_base)
 	   )),
 	maplist(substitute_by_maximized_expressions(Map),Loops,Loops1),
 	foldl(substitute_norm_expressions(Map),Norms,[],Norms1).
