@@ -28,7 +28,8 @@
 		simplify_or_cost_structure/6,
 		cost_structure_simplify_it_vars/2,
 		compress_cost_structures/4,
-		remove_it_vars_from_constr/3]).
+		remove_it_vars_from_constr/3,
+		norm_its_contained_in_set/2]).
 
 :- use_module('../upper_bounds/constraints_maximization',[
 				  compress_or_constraints/5]).	
@@ -46,9 +47,15 @@ remove_it_vars_from_constr(It_vars_set,norm(Its,Rf),norm(Difference,Rf)):-
 	from_list_sl(Its,Its_set),
 	difference_sl(Its_set,It_vars_set,Difference).	
 
+norm_its_contained_in_set(It_vars_set,norm(Its,_Rf)):-
+	from_list_sl(Its,Its_set),
+	difference_sl(Its_set,It_vars_set,[]).	
+
 %! compress_cost_structures(+Cs_list:list(cost_structure),+Inv:polyhedron,-Cost_structure:cost_structure) is det
 % obtain a cost structure that is a safe approximation of the disjuntion of the cost
 % structures in Cs_list
+compress_cost_structures([],_Head,_Inv,cost(0,[],[],[])):-!.
+ 
 compress_cost_structures(Cs_list,Head,Inv,New_cost):-
     maplist(get_cost_structure_components,Cs_list,Exps,Loops,Norms_INorms),
     maplist(tuple,Norms,INorms,Norms_INorms),

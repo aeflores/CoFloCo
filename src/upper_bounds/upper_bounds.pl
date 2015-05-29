@@ -50,8 +50,6 @@ that can be passed on to the callers.
 :- use_module('../utils/cost_structures',[
 				cost_structure_simplify/3,
 				compress_cost_structures/4]).
-
-
 %! compute_upper_bound_for_scc(+Head:term,+RefCnt:int) is det
 % compute an upper bound for each chain
 % then, compress the upper bounds for the chains that have been grouped into

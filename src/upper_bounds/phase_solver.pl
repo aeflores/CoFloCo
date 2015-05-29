@@ -60,7 +60,8 @@ in terms of the initial values of the chain.
 					      cexpr_simplify_ctx_free/2,
 					      is_linear_exp/1]).
 :- use_module('../utils/cost_structures',[simplify_or_cost_structure/6,
-										remove_it_vars_from_constr/3]).			
+										remove_it_vars_from_constr/3,
+										norm_its_contained_in_set/2]).			
 		      
 
 :- use_module(stdlib(utils),[ut_flat_list/2]).
@@ -105,7 +106,6 @@ compute_phases_cost([Phase|More],Chain,Head,Call,[Cost|Costs]):-
 	relation2entry_invariant(Head_total,([Phase|More],_),inv(Head_total,Head,Inv_cs)),
 	forward_invariant(Head,([Phase|More],_),Forward_inv_hash,Forward_inv),
 	%obtain a cost structure in terms of the variables at the beginning and end of the phase
-%	trace,
 	compute_phase_cost(Phase,Chain,Head,Call,(Forward_inv_hash,Forward_inv),inv(Head_total,Head,Inv_cs),Cost),	
 
 	compute_phases_cost(More,Chain,Head,Call,Costs).
@@ -199,16 +199,19 @@ extract_unrolled_loop_1(Compressed_exps,Compressed_Iexps,loop(It_var,Base,Loops,
 	partition(norm_contains_exp(Compressed_exps),Norms,Unrolled,Remaining),
 	maplist(get_it_vars_in_constr,Unrolled,It_vars_list),
 	unions_sl(It_vars_list,It_vars_set),
-	partition(norm_contains_exp(Compressed_Iexps),INorms,IUnrolled,IRemaining),
-	maplist(get_it_vars_in_constr,IUnrolled,IIt_vars_list),
-	unions_sl(IIt_vars_list,IIt_vars_set),
-	(difference_sl(IIt_vars_set,It_vars_set,[])->
+	partition(norm_contains_exp(Compressed_Iexps),INorms,IUnrolled_aux,IRemaining_aux),
+	%FIXME:there might be a better way of doing this
+	% right now, if the iteration variable cannot be compressed for upper bounds, we do not compress it for lower bounns either
+	%this could make us loose precision
+	partition(norm_its_contained_in_set(It_vars_set),IUnrolled_aux,IUnrolled,IRemaining_aux2),
+	append(IRemaining_aux,IRemaining_aux2,IRemaining),
+	
+	%maplist(get_it_vars_in_constr,IUnrolled,IIt_vars_list),
+	%unions_sl(IIt_vars_list,IIt_vars_set),
 	clean_remaining_norms(Remaining,It_vars_set,Remaining1),
-	clean_remaining_norms(IRemaining,It_vars_set,IRemaining1),
 	partition(is_loop_unrolled(It_vars_set),Loops,Loops_unrolled,Loops_left),
-	Loop=loop(It_var,Base,Loops_left,Remaining1,IRemaining1)
-	;
-	 trace).
+	clean_remaining_norms(IRemaining,It_vars_set,IRemaining1),
+	Loop=loop(It_var,Base,Loops_left,Remaining1,IRemaining1).
 	
 
 

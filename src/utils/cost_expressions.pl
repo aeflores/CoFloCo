@@ -410,12 +410,14 @@ cexpr_simplify_min(List,N,Cs,List_simpl):-
  	;
  	%otherwise, get the minimum number and consider it together with the symbolic expressions
  	min_list(Ns,N_min),
- 	(N_min>0 ->
+%now the non-negativeness is not implicit
+% 	(N_min>0 ->
 	  simplify_redundant([N_min|Vs_2],Cs,>=,List_simpl)
-	  ;
-	  % the elements in min have to be non-negative implicitly
-	  List_simpl=[0]
- 	)).
+%	  ;
+%	  % the elements in min have to be non-negative implicitly
+%	  List_simpl=[0]
+% 	)
+ 	).
  	
 %! cexpr_simplify_max(+List:list(cost_expression),+N:int,+Cs:polyhedron,-List_simpl:list(cost_expression)) is det
 % simplify a list of cost expressions N levels according to Cs
@@ -435,7 +437,7 @@ cexpr_simplify_max(List,N,Cs,List_simpl):-
 	    simplify_redundant([N_max|Vs_1],Cs,=<,List_simpl)
 	 ;
 	 (Vs_1=[]->
-	 	simplify_redundant([0],Cs,=<,List_simpl)
+	 	throw(error('there is a max with no elements inside'))
 	 	;
 	 	simplify_redundant(Vs_1,Cs,=<,List_simpl)
 	 )

@@ -61,6 +61,7 @@ Specific "data types" of this module:
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(list_map),[lookup_lm/3]).
+:- use_module(stdlib(fraction),[min_fr/3,max_fr/3,negate_fr/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3,
 						nad_list_lub/2,
 						nad_list_glb/2,
@@ -287,7 +288,7 @@ remove_incr_loops([],max,_Loops_ub,[],0).
 remove_incr_loops([(Loop,N)|Incr_Deps],max,Loops_ub,Incr_Deps2,Max_incr):-
 	contains_sl(Loops_ub,Loop),!,
 	remove_incr_loops(Incr_Deps,max,Loops_ub,Incr_Deps2,Max_incr_aux),
-	Max_incr is max(Max_incr_aux,N).
+	max_fr(Max_incr_aux,N,Max_incr).
 
 
 remove_incr_loops(_,min,[],[],inf).	
@@ -295,11 +296,11 @@ remove_incr_loops([(Loop,N)|Incr_Deps],min,Loops_ub,Incr_Deps2,Min_incr):-
 	contains_sl(Loops_ub,Loop),!,
 	remove_sl(Loops_ub,Loop,Loops_ub1),
 	remove_incr_loops(Incr_Deps,min,Loops_ub1,Incr_Deps2,Min_incr_aux),
-	NNeg is 0-N,
+	negate_fr(N,NNeg),
 	(Min_incr_aux=inf->
 	  Min_incr=NNeg
 	  ;
-	  Min_incr is min(Min_incr_aux,NNeg)
+	  min_fr(Min_incr_aux,NNeg,Min_incr)
 	).
 
 remove_incr_loops([(Loop,N)|Incr_Deps],Max_Min,Loops_ub,[(Loop,N)|Incr_Deps2],Incr):-
@@ -375,15 +376,18 @@ get_lower_bound_val(Head,Call,Chain,Phase,Val):-
 	normalize_le(1/Max*(Rf-Rf1),LB),
 	Val= N-val(Loops,LB,Negative,[],0).
 	
-get_maximum_decrease(Head,Call,(D,Constraint),Loop,(Loop,Deltanum)):-
+get_maximum_decrease(Head,Call,(D,Constraint),Loop,(Loop,Delta)):-
 	loop_ph(Head,(Loop,_),Call,Cs,_,_),
 	Cs_1 = [ Constraint | Cs],
-	nad_maximize(Cs_1,[D],[Delta]),
-	Deltanum is Delta,
-	!.
+	nad_maximize(Cs_1,[D],[Delta]),!.
 	
 get_maximum_decrease(_,_,_,Loop,(Loop,unknown)).
 	
 zero_modification((_,N)):-number(N),N =:= 0.
+zero_modification((_,N/D)):-number(N),number(D),N =:= 0.
+
 positive_modification((_,N)):-number(N),N > 0.
+positive_modification((_,N/D)):-number(N),number(D),N > 0,D > 0.
+
 negative_modification((_,N)):-number(N),N < 0.
+negative_modification((_,N/D)):-number(N),number(D),N < 0,D > 0.
