@@ -54,6 +54,7 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 		  add_eq_ph/2,
 		  add_external_call_pattern/5,
 		  external_call_pattern/5,
+		  reset_scc/1,
 		  upper_bound/4,
 		  non_terminating_chain/3]).
 :-use_module('../termination_checker',[termination_argument/4]).
@@ -107,14 +108,24 @@ reinforce_calls([Head|More],RefCnt,Cs):-
 %! reinforce_scc_forward_inv(Head:term,RefCnt:int,Cs:polyhedron) is det
 % if the is already a SCC forward invariant, we relax it with the new conditions Cs.
 % if there is none, we initialize it with the given conditions Cs.
+%/*
 reinforce_scc_forward_inv(Head,RefCnt,Inv):-
 	retract(scc_forward_invariant(Head,RefCnt,Inv_2)),!,
-	Head=..[_|Vars],
+		Head=..[_|Vars],
 	nad_lub(Vars,Inv,Vars,Inv_2,Vars,New_Inv),
 	assertz(scc_forward_invariant(Head,RefCnt,New_Inv)).
 reinforce_scc_forward_inv(Head,RefCnt,Inv):-
 	assertz(scc_forward_invariant(Head,RefCnt,Inv)).
-
+%*/
+/*	
+reinforce_scc_forward_inv(Head,RefCnt,Inv):-
+	retract(scc_forward_invariant(Head,RefCnt,Inv_2)),!,
+	Head=..[_|Vars],
+	nad_lub(Vars,Inv,Vars,Inv_2,Vars,New_Inv),
+	assertz(scc_forward_invariant(Head,RefCnt,[])).
+reinforce_scc_forward_inv(Head,RefCnt,Inv):-
+	assertz(scc_forward_invariant(Head,RefCnt,[])).
+*/
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! unfold_calls(Head:term,RefCnt:int) is det
@@ -238,6 +249,12 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	assign_right_vars(Ex_pats,Head,Ex_pats1),
 	% group the partitions according to the chains
 	from_pair_list_mm(Ex_pats1,Multimap_simplified),
+	
+	(reset_scc(Head)-> 
+	   merge_patterns(Multimap_simplified,Multimap_simplified_2)
+	   ;
+	  Multimap_simplified_2=Multimap_simplified
+	   ),
 	findall((Head,(Condition,Chain)),
 		(
 		backward_invariant(Head,(Chain,RefCnt),_,Condition),
@@ -249,11 +266,17 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	
 	% group the partitions according to the chains
 	from_pair_list_mm(Ex_pats_non_terminating1,Multimap_simplified_non_terminating),
-	foldl(save_external_execution_patterns(Head,RefCnt,terminating),Multimap_simplified,1,Id_N1),
+	foldl(save_external_execution_patterns(Head,RefCnt,terminating),Multimap_simplified_2,1,Id_N1),
 	foldl(save_external_execution_patterns(Head,RefCnt,non_terminating),Multimap_simplified_non_terminating,Id_N1,_).
 
 
 save_external_execution_patterns(Head,RefCnt,Terminating,(Precondition,Chains),N,N1):-
 	add_external_call_pattern(Head,(N,RefCnt),Terminating,Chains,Precondition),
 	N1 is N+1.
+	
+	
+merge_patterns(Multimap,[(Inv,Chains)]):-
+	maplist(tuple,Invs,Chains_lists,Multimap),
+	nad_list_lub(Invs,Inv),
+	unions_sl(Chains_lists,Chains).
 	

@@ -38,6 +38,7 @@ This module acts as a database that stores:
 	   input_eq/5,	 
 	   entry_eq/2,   
 	   ground_equation_header/1,
+	   reset_scc/1,
 	   eq_ph/8,
        loop_ph/6,
 	   phase_loop/5,
@@ -84,6 +85,9 @@ This module acts as a database that stores:
 % A ground version of the cost equation header that records the original names of the variables in the input file.
 % it is used to print the results according to those names
 :- dynamic ground_equation_header/1. 
+
+
+:-dynamic reset_scc/1.
 
 /**  eq_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Cost:cost_expression,-Non_rec_Calls:list(term),-Rec_Calls:list(term),-Calls:list(term),-Cs:polyhedron,Term_flag:flag)
 
