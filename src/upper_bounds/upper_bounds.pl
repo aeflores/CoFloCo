@@ -66,7 +66,7 @@ compute_upper_bound_for_scc(Head,RefCnt):-
 % compute an upper bound for a chain,
 % simplify it according to the information of the backward invariant
 % and store it,
-compute_chain_upper_bound(Head,Chain):-
+compute_chain_upper_bound(Head,Chain):-	
 	compute_chain_cost(Head,Chain,UB),   
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 	cost_structure_simplify(UB,Head_Pattern,UB2),

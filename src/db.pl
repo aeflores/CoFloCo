@@ -38,6 +38,7 @@ This module acts as a database that stores:
 	   input_eq/5,	 
 	   entry_eq/2,   
 	   ground_equation_header/1,
+	   reset_scc/3,
 	   eq_ph/8,
        loop_ph/6,
 	   phase_loop/5,
@@ -84,6 +85,12 @@ This module acts as a database that stores:
 % A ground version of the cost equation header that records the original names of the variables in the input file.
 % it is used to print the results according to those names
 :- dynamic ground_equation_header/1. 
+
+%! reset_scc(Head:term,Vars:list(var),Type:flag)
+% specify that the scc whose header is Head has to be compressed keeping
+% only the information related to Vars
+% Type can be 'weak' or 'strong' 
+:-dynamic reset_scc/3.
 
 /**  eq_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Cost:cost_expression,-Non_rec_Calls:list(term),-Rec_Calls:list(term),-Calls:list(term),-Cs:polyhedron,Term_flag:flag)
 
@@ -243,10 +250,6 @@ add_eq_ph(eq_ph(Head,RefCnt,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previ
 	counter_increase(eq_ph,1,Id),
 	assertz(eq_ph(Head,(Id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)),
 	assertz(eq_refined(Previous_eqs,Id)).	
-%	copy_term(eq_ph(Head,(Id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size),Eq_print),
-%	numbervars(Eq_print,0,_),
-%	writeln(Eq_print),
-
 	  
 %! add_loop_ph(+Head:term,+RefCnt:int,+Call:term,+Cs:polyhedron,+Ids:list(equation_id),Term_flag:flag) is det
 % stores the loop corresponding to the cost equations Ids in the database
