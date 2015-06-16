@@ -30,7 +30,7 @@ This module reads cost equations and stores them in the database after normalizi
 					add_ground_equation_header/2]).
 :- use_module('../utils/cofloco_utils',[normalize_constraint/2]).
 :- use_module('../utils/cost_expressions',[is_linear_exp/1,parse_cost_expression/2]).
-:- use_module('../utils/polyhedra_optimizations',[slice_relevant_constraints/4]).
+:- use_module('../utils/polyhedra_optimizations',[slice_relevant_constraints/4,nad_normalize_polyhedron/2]).
 :- use_module(stdlib(counters),[counter_increase/3]).
 :- use_module(stdlib(utils),[ut_var_member_chk/2]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
@@ -193,9 +193,10 @@ normalize_input_equation(EQ,EQ_Normalized) :-
        ;
        true
        ),
-        nad_normalize(Cs_aux_filtered,Cs_aux_Normalized),
+       maplist(normalize_constraint,Cs_aux_filtered,Cs_aux_Normalized),
+       nad_normalize_polyhedron(Cs_aux_Normalized,Cs_aux_Normalized1),
 	parse_cost_expression(Cost_Expr,Expr_Normalized), %% replace by simplification
-	EQ_Normalized = eq(Head_Normalized,Expr_Normalized,Body_Normalized,Cs_aux_Normalized).
+	EQ_Normalized = eq(Head_Normalized,Expr_Normalized,Body_Normalized,Cs_aux_Normalized1).
 
 normalize_entry(entry(Call:Cs), Entry_Normalized) :-
 	normalize_atom(Call,[],Call_Normalized,_,Cs_aux-Cs),
