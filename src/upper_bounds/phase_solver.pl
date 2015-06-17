@@ -67,6 +67,9 @@ in terms of the initial values of the chain.
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(list_map),[lookup_lm/3]).
+:- use_module(stdlib(fraction),[greater_fr/2,geq_fr/2,negate_fr/2]).
+:- use_module(stdlib(fraction_list),[max_frl/2,min_frl/2]).
+
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3,
 						nad_list_lub/2,
 						nad_list_glb/2,
@@ -149,7 +152,6 @@ compute_phase_cost(Phase,Chain,Head,Call,(Forward_hash,Forward_inv),inv(Head_tot
 	from_list_sl(Head_vars,Head_vars_set),
 	term_variables(Call,Call_vars),
 	from_list_sl(Call_vars,Call_vars_set),
-	
 	maplist(get_internal_norm_expressions((Call_vars_set,Head_vars_set)),Loops,Norm_exprs,INorm_exprs),
 	maplist(get_loop_it_var,Loops,It_vars),
 	add_phase_upper_bounds(Head,Call,Phase,Chain,It_vars,[],It_constrs,Differential_norms),
@@ -162,6 +164,7 @@ compute_phase_cost(Phase,Chain,Head,Call,(Forward_hash,Forward_inv),inv(Head_tot
 	profiling_start_timer(flatten_loops),
 	inductive_compression(Head,Call,Phase,It_vars,max,(New_norms,New_Inorms),Norm_exprs,Compressed_exps),
 	inductive_compression(Head,Call,Phase,It_vars,min,(New_norms,New_Inorms),INorm_exprs,ICompressed_exps),
+
 	extract_unrolled_loops(Loops,Compressed_exps,ICompressed_exps,Loops2,Unrolled_norms,Unrolled_Inorms),
 	
 	
@@ -264,10 +267,35 @@ add_to_norm_2(Its,Exp1,Exp2,Exp3,norm(Its,Exp1+Exp2+Exp3)).
 %! compute_phase_loop_cost(+Head:term,+Call:term,+Forward_inv_hash:(int,polyhedron),+Cs_star_trans:polyhedron,+Cs_transitive:polyhedron,+Eq_id:equation_id,-It_var_Loops_out:(var,list(loop_cost)),-External_constrs2:list(norm)) is det
 % given a cost equation id that belongs to a phase:
 % * get the cost of the equation
-compute_phase_loop_cost(Head,Call,Forward_inv_hash,Eq_id,loop(_It_var,Base,Elems,Constrs,IConstrs)):-
+compute_phase_loop_cost(Head,Call,Forward_inv_hash,Eq_id,loop(_It_var,Base,Elems,All_Constrs,IConstrs)):-
 	profiling_start_timer(equation_cost),
 	get_equation_cost(Head,Call,Forward_inv_hash,Eq_id,cost(Base,Elems,Constrs,IConstrs)),
+	expand_only_input_constraints(Constrs,Head,Call,Eq_id,Extra_Constrs),
+	union_sl(Constrs,Extra_Constrs,All_Constrs),
 	profiling_stop_timer_acum(equation_cost,_).
+
+expand_only_input_constraints(Constrs,Head,Call,Loop_id,Extra_Constrs_set):-
+	loop_ph(Head,(Loop_id,_),Call,Phi,_,_),
+	term_variables(Call,Call_vars),
+	from_list_sl(Call_vars,Call_vars_set),
+	include(norm_has_linear_exp,Constrs,Constrs_linear),
+	exclude(norm_contains_vars(Call_vars_set),Constrs_linear,Constrs_head),
+	get_difference_version(Constrs_head,Head,Call,Phi,Extra_Constrs),
+	from_list_sl(Extra_Constrs,Extra_Constrs_set).
+
+norm_has_linear_exp(norm(_,Exp)):-
+	is_linear_exp(Exp).
+	
+get_difference_version([],_,_,_,[]).
+get_difference_version([norm(Its,Exp)|Constrs],Head,Call,Phi,[norm(Its,New_exp)|Diff_constrs]):-
+	copy_term((Head,Exp),(Call,Exp2)),
+	normalize_constraint( D=Exp2 ,Constraint),
+	Cs_1 = [ Constraint | Phi],
+	nad_maximize(Cs_1,[D],[Delta]),!,
+	normalize_le(Exp+Delta -Exp2,New_exp),	
+	get_difference_version(Constrs,Head,Call,Phi,Diff_constrs).
+get_difference_version([_|Constrs],Head,Call,Phi,Diff_constrs):-
+	get_difference_version(Constrs,Head,Call,Phi,Diff_constrs).
 
 get_internal_norm_expressions(Call_vars_set,loop(_It_var,_Base,_Elems,Constrs,IConstrs),Norm_exps_set,INorm_exps_set):-
 	maplist(get_norm_exp,Constrs,Norms_exps),
@@ -302,28 +330,50 @@ inductive_compression(Head,Call,Phase,It_vars,Max_Min,New_norms,Expressions_sets
 	
 
 try_inductive_compression(Head,Phase,Cs_star_trans,Cs_trans,Call,Max_Min,((L,(Bad_loops_info_flat,Maxs)),Expressions_map)):-
-	phase_loop(Phase,_,Call,Call2,Phi),
+	%phase_loop(Phase,_,Call,Call2,Phi),
+	Head=..[_|EVars],
+	%trace,
+	%(Expressions_map=[Loop]->
+	%   loop_ph(Head,(Loop,_),Call,Phi,_,_)
+	%   copy_term((loop_ph(Head,(Loop,_),Call,Phi,_,_),L),(Loop1,Lprint)),
+	 %  numbervars(Loop1,0,_),
+	%   writeln((Loop1,Lprint))
+	%   ;
+	   phase_loop(Phase,_,Head,Call,Phi),
+	% ),
 	difference_sl(Phase,Expressions_map,Bad_loops),
 	copy_term((Head,Call,Phi,L),(Call,Call2,Cs2,L2)),
 	copy_term((Head,Call,L),(Head,Call2,L_total)),
 	
 
 	ut_flat_list([Cs_trans,Cs2],Cs_comb),
-	Head=..[_|EVars],
+    %ut_flat_list([Phi,Cs2],Cs_comb),
 	%Call2=..[_|ECall3],
 	%append(EVars,ECall3,Vars),
 
 	term_variables(Cs_comb,Vars_constraint),
 	%slice_relevant_constraints_and_vars(Vars_constraint,Vars,Cs_comb,Vars1,Cs_comb1),
-	(Max_Min=max->
-	normalize_constraint(L+L2=<L_total,Inductive_constraint)
+	(Max_Min=max->	
+	%normalize_constraint(L+L2=<L_total,Inductive_constraint),
+	%nad_entails(Vars_constraint,Cs_comb,[Inductive_constraint]),	
+	normalize_constraint( D=(L+L2-L_total) ,Inductive_constraint_aux),
+    nad_maximize([Inductive_constraint_aux|Cs_comb],[D],[Delta]),
+ 	(greater_fr(Delta,0)->
+ 		maplist(generate_loop_info(Delta,max),Expressions_map,Same_loops_info)
+    	;
+    	Same_loops_info=[]
+    	)
 	;
-	normalize_constraint(L+L2>=L_total,Inductive_constraint)
+	normalize_constraint(L+L2>=L_total,Inductive_constraint),
+	nad_entails(Vars_constraint,Cs_comb,[Inductive_constraint])
 	),
-	nad_entails(Vars_constraint,Cs_comb,[Inductive_constraint]),
+
+	
+
 	maplist(does_not_decrease(Head,Call,L),Expressions_map),
 	maplist(check_bad_loops(Head,Call,L,Max_Min),Bad_loops,Bad_loops_info),
-	ut_flat_list(Bad_loops_info,Bad_loops_info_flat),!,
+	%Bad_loops_info=[],
+	ut_flat_list([Same_loops_info,Bad_loops_info],Bad_loops_info_flat),!,
 	maplist(get_loop_cs(Call,Call2),Expressions_map,Css),
 	nad_list_lub(Css,Phi_extra),
 	ut_flat_list([Cs_star_trans,Phi_extra],Cs_comb2),
@@ -332,6 +382,9 @@ try_inductive_compression(Head,Phase,Cs_star_trans,Cs_trans,Call,Max_Min,((L,(Ba
 	;
 	Maxs=[]
 	).
+
+generate_loop_info(Delta,Max_min,Loop,(Max_min_loop,Delta)):-
+	Max_min_loop=..[Max_min,Loop].
 
 does_not_decrease(Head,Call,L,Loop):-
 	loop_ph(Head,(Loop,_),Call,Cs,_,_),
@@ -353,8 +406,8 @@ check_bad_loops(Head,Call,Exp,Max_Min,Loop,Info):-
 	  Pos_loop=min(Loop),
 	  Neg_loop=max(Loop)
 	),
-	Constant is 0-Delta,
-	(Constant>=0->
+	negate_fr(Delta,Constant),
+	(geq_fr(Constant,0)->
 	   (Constant\==0 ->
 	   	  Info=(Pos_loop,Constant)
 	 	;
@@ -430,7 +483,7 @@ combine_extra_its_and_bounds_max([],_,_):-fail.
 combine_extra_its_and_bounds_max([(Its,Bound)|Bounds_set],Abstract_info,Factor*Bound+Extra_its):-
 	partition(info_contains_its(Its),Abstract_info,Selected,Remaining_info),
 	maplist(tuple,_,Factors,Selected),
-	max_list(Factors,Factor),
+	max_frl(Factors,Factor),
 	foldl(filter_remaining_bound(Its),Bounds_set,[],Bounds_set1),
 	combine_extra_its_and_bounds_max(Bounds_set1,Remaining_info,Extra_its).
 combine_extra_its_and_bounds_max([_|Bounds_set],Abstract_info,Extra_its):-
@@ -442,7 +495,7 @@ combine_extra_its_and_bounds_min([(Its,Bound)|Bounds_set],Abstract_info,Factor*B
 	partition(info_contains_its(Its),Abstract_info,Selected,Remaining_info),
 	maplist(tuple,_,Factors,Selected),
 	length(Its,N),length(Selected,N),%we force that all iteration variables are present
-	min_list(Factors,Factor),
+	min_frl(Factors,Factor),
 	combine_extra_its_and_bounds_min(Bounds_set,Remaining_info,Extra_its).
 combine_extra_its_and_bounds_min([_|Bounds_set],Abstract_info,Extra_its):-
 	combine_extra_its_and_bounds_min(Bounds_set,Abstract_info,Extra_its).	
