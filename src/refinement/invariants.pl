@@ -613,6 +613,7 @@ backward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
     partition_invariant_and_loops(inv(Head,Inv_0),Loops,Groups_inv_loops),
     maplist(low_level_backward_invariant_fixpoint,Groups_inv_loops,Invs),
     ut_flat_list(Invs,Inv_out).
+%    low_level_backward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
     
 forward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
 	low_level_forward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
@@ -624,6 +625,7 @@ relation2entry_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head,Inv
 	partition_invariant_and_loops(inv(Entry,Head,Inv_0),Loops,Groups_inv_loops),
     maplist(low_level_relation2entry_invariant_fixpoint,Groups_inv_loops,Invs),
     ut_flat_list(Invs,Inv_out).
+%    low_level_relation2entry_invariant_fixpoint((inv(Entry,Head,Inv_0),Loops),Inv_out).
 
 % auxiliar procedures to split a set of loops into their independent components
 
@@ -634,7 +636,8 @@ relation2entry_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head,Inv
 
 partition_invariant_and_loops(inv(Head,Inv_0),Loops,Groups_inv_loops):-
 	copy_term((inv(Head,Inv_0),Loops),(inv(Head_out,Inv_aux),Loops1)),
-	foldl(accumulate_loop_constr,Loops1,(Head_out,Inv_aux),(_,All_constraints)),
+	get_extra_connection_constraint(Inv_aux,Vars_constr),
+	foldl(accumulate_loop_constr,Loops1,(Head_out,[Vars_constr|Inv_aux]),(_,All_constraints)),
 	Head_out=..[_|Vars],
     group_relevant_vars(Vars,All_constraints,Groups,_),  
     maplist(get_inv_and_loop_part(Head_out,inv(Head,Inv_0),Loops),Groups,Groups_inv_loops).
@@ -645,6 +648,15 @@ partition_invariant_and_loops(inv(Entry,Head,Inv_0),Loops,Groups_inv_loops):-
 	Entry_out=..[_|Vars],
     group_relevant_vars(Vars,All_constraints,Groups,_),
     maplist(get_inv_and_loop_part(Entry_out,inv(Entry,Head,Inv_0),Loops),Groups,Groups_inv_loops).  
+ 
+% heuristic to connect extra variables that might be related through a constant value
+% for example x>=0 y<0 implies that y<X which might be important
+% the typical example is x=0, y=0 and in each loop x=x+1 and y=y+1. We want to know that after any number of loops x=y
+get_extra_connection_constraint(Inv_aux,Vars):-
+	include(only_one_var,Inv_aux,Related_to_constants),
+	term_variables(Related_to_constants,Vars). 
+only_one_var(X):-
+	term_variables(X,[_]).	
     
 accumulate_loop_constr((Head,Head,Cs),(Head,Css),(Head,Csss)):-
 	append(Cs,Css,Csss).
