@@ -616,10 +616,10 @@ backward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
 %    low_level_backward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
     
 forward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
-	low_level_forward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
-%	partition_invariant_and_loops(inv(Head,Inv_0),Loops,Groups_inv_loops),
-%   maplist(low_level_forward_invariant_fixpoint,Groups_inv_loops,Invs),
-%    ut_flat_list(Invs,Inv_out).  
+	partition_invariant_and_loops(inv(Head,Inv_0),Loops,Groups_inv_loops),
+   maplist(low_level_forward_invariant_fixpoint,Groups_inv_loops,Invs),
+    ut_flat_list(Invs,Inv_out).  
+%	low_level_forward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
 
 relation2entry_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head,Inv_out)):-
 	partition_invariant_and_loops(inv(Entry,Head,Inv_0),Loops,Groups_inv_loops),
