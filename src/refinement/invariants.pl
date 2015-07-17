@@ -13,9 +13,6 @@ This module computes different kinds of invariants for the chains:
     It is inferred in base of all the calls to such SCC.
     In the future we could consider multiple invariants scc_forward_invariant/3, one for each call to the SCC
     to increase precission
-  * relation2entry_invariant/3: This invariant maintains the relation between the variables at the beginning
-    of a chain and the variables at some point of the chain. it is used to maximize the internal elements of 
-    a cost structure.
   * phase_transitive_closure/5:  The transitive closure of a phase
   
 @author Antonio Flores Montoya
@@ -44,7 +41,6 @@ This module computes different kinds of invariants for the chains:
 		      backward_invariant/4,
 		      forward_invariant/4,
 		      scc_forward_invariant/3,
-		      relation2entry_invariant/3,
 		      get_phase_star/4,
 		      phase_transitive_closure/5,
 		      add_scc_forward_invariant/3]).
@@ -95,27 +91,6 @@ normalize_constraint/2]).
 % This invariant reflects the preconditions of a SCC.
 % It is inferred in base of all the calls to such SCC.
 :- dynamic scc_forward_invariant/3.
-  
-%! relation2entry_invariant(Head,Chain_RefCnt:(chain,int),InvT:inv(term,term,polyhedron))
-%  This invariant maintains the relation between the variables at the beginning
-%  of a chain and the variables at some point of the last phase (first in the list).
-%  The last phase has been applied 0 or more times.
-%  There is an invariant for each suffix of each chain.
-%
-% InvT=inv(Head_inv,Call_inv,Inv) where Inv is expressed in terms of the variables of Head_inv and Call_inv
-:- dynamic relation2entry_invariant/3.
-
-%! relation2entry_invariant_aux(Head,Chain_RefCnt:(chain,int),InvT:inv(term,term,polyhedron))
-%  This invariant maintains the relation between the variables at the beginning
-%  of a chain and the variables at some point of the last phase (first in the list).
-%  The last phase has been applied 1 or more times.
-%  This invariant is only an intermediate value to compute the relation2entry_invariant/3 of longer chains.
-%  There is an invariant for each suffix of each chain.
-%
-% InvT=inv(Head_inv,Call_inv,Inv) where Inv is expressed in terms of the variables of Head_inv and Call_inv
-:- dynamic relation2entry_invariant_aux/3.
-  
- 
 
 %! phase_transitive_closure(Phase:phase,RefCnt:int,Head:term,Call:term,Inv:polyhedron)
 % The transitive closure of a Phase 
@@ -140,8 +115,6 @@ clean_invariants:-
 	retractall(phase_transitive_closure(_,_,_,_,_)),
 	retractall(phase_transitive_star_closure(_,_,_,_,_)),
 	retractall(backward_invariant(_,_,_,_)),
-	retractall(relation2entry_invariant(_,_,_)),
-	retractall(relation2entry_invariant_aux(_,_,_)),
 	retractall(forward_invariant(_,_,_,_)),
 	retractall(scc_forward_invariant(_,_,_)).
 
@@ -180,20 +153,6 @@ add_scc_forward_invariant(Head,RefCnt,Inv) :-
 	nad_normalize_polyhedron(Inv,Inv_normalized),
 	assertz(scc_forward_invariant(Head,RefCnt,Inv_normalized)).
 	
-%! add_relation2entry_invariant(+Phase:phase,+Chain_RefCnt:(chain,int),+Inv:polyhedron)
-%  store the invariant if it does not already exits
-add_relation2entry_invariant(Head,(Chain,RefCnt),_) :-
-	relation2entry_invariant(Head,(Chain,RefCnt),_),!.
-add_relation2entry_invariant(Head,(Chain,RefCnt),Inv) :-
-	assertz(relation2entry_invariant(Head,(Chain,RefCnt),Inv)).
-	
-%! add_relation2entry_invariant_aux(+Phase:phase,+Chain_RefCnt:(chain,int),+Inv:polyhedron)
-%  store the invariant if it does not already exits
-add_relation2entry_invariant_aux(Head,(Chain,RefCnt),_) :-
-	relation2entry_invariant_aux(Head,(Chain,RefCnt),_),!.
-add_relation2entry_invariant_aux(Head,(Chain,RefCnt),Inv) :-
-	assertz(relation2entry_invariant_aux(Head,(Chain,RefCnt),Inv)).	
-	
 %! add_phase_transitive_closure(+Phase:phase,+RefCnt:int,+Head:term,+Call:term,+Inv:polyhedron)
 %  store the transitive closure if it does not already exits
 add_phase_transitive_closure(Phase,RefCnt,_,_,_) :-
@@ -217,7 +176,6 @@ compute_invariants_for_scc(Head,RefCnt) :-
 	profiling_start_timer(inv_transitive),
 	compute_loops_transitive_closures(Head,RefCnt),
 	profiling_stop_timer_acum(inv_transitive,_),
-	compute_relation2entry_invariants(Head,RefCnt),
 	!. 
 
 compute_invariants_for_scc(_N,_) :-
@@ -332,103 +290,6 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	).
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
-
-
-compute_relation2entry_invariants(Head,RefCnt):-
-	chain(Head,RefCnt,Chain),
-	compute_relation2entry_invariant(Chain,RefCnt,Head,_Inv),
-	fail.
-compute_relation2entry_invariants(_,_).
-
-%! compute_relation2entry_invariant(+Chain:chain,+RefCnt:int,?Entry_Call:term,-Inv:inv(term,term,polyhedron)) is det
-% given a chain fragment [P1,P2...PN], computes a invariant that relates the variables at the beginning
-% of PN with the variables at any point during P1.
-% This invariant is stored, but the invariant returned is a different one.
-% The returned invariant is valid at any point after at least ONE iteration of P1 has been performed.
-compute_relation2entry_invariant(Chain,RefCnt,Entry_Call,inv(Entry_Call_out,Call,Inv_out)):-
-% if the invariant is already computed, we apply the loops of the phase once and return the result.
-	relation2entry_invariant_aux(Entry_Call,(Chain,RefCnt),inv(Entry_Call_out,Call,Inv_out)),!.
-  
-  
-% in the initial phase, if it's a non-iterative phase (number(Entry_phase)) the stored invariant
-% is just a set of equalities
-% the returned invariant is obtained by applying the loop once.
-compute_relation2entry_invariant([Entry_phase],RefCnt,Head,inv(Head,Call, Inv_aux)):-
-    number(Entry_phase),
-    loop_ph(Head,(Entry_phase,RefCnt),Call,Inv_aux,_,_),Call\==none,
-    !,
-    Head=..[_|Vars_head],
-    Call=..[_|Vars_call],
-    add_equality_constraints(Vars_head, Vars_call, [], Inv),    
-	%we save the invariant at the entry but we return the next one
-    add_relation2entry_invariant(Entry_Call,([Entry_phase],RefCnt),inv(Head,Call, Inv)),
-    add_relation2entry_invariant_aux(Entry_Call,([Entry_phase],RefCnt),inv(Head,Call, Inv_aux)).
-
-%this is the case where the initial phase is also the final one.
-% that is, this is a chain with only a base case
-%the result of this call is never be used
-compute_relation2entry_invariant([Entry_phase],RefCnt,Entry_Call,none):-
-    number(Entry_phase),!,%a non recursive phase
-    copy_term(Entry_Call,Head),
-    Entry_Call=..[_|Vars_entry],
-    Head=..[_|Vars_head],
-    add_equality_constraints(Vars_entry, Vars_head, [], Inv),
-    add_relation2entry_invariant(Entry_Call,([Entry_phase],RefCnt),inv(Entry_Call,Head,Inv)).
-
-% an initial phase that is recursive. we return the transitive closure
-% and we store the transitive reflexive closure
-% we store that invariant and apply the loops once more to obtain the return invariant
-compute_relation2entry_invariant([Entry_phase],RefCnt,Entry_Call,inv(Head,Call, Inv_aux)):-!,
-    copy_term(Entry_Call,Head),
-    phase_transitive_closure(Entry_phase,RefCnt,Head,Call,Inv_aux),
-    get_phase_star(Head,Call,Entry_phase,Inv),  
-    add_relation2entry_invariant(Head,([Entry_phase],RefCnt),inv(Head,Call, Inv)),
-    add_relation2entry_invariant_aux(Head,([Entry_phase],RefCnt),inv(Head,Call, Inv_aux)).
-	    
-
-% not the last phase and non-recursive but not the leaf
-% we start with the invariant of the suffix
-% we store that invariant and apply the loop once to obtain the return invariant
-compute_relation2entry_invariant([Non_loop|Chain],RefCnt,Entry_Call,inv(Entry_Call_out,Call, Inv_aux)):-
-    number(Non_loop),
-    loop_ph(Head,(Non_loop,RefCnt),Call,Cs,_,_),!,
-    compute_relation2entry_invariant(Chain,RefCnt,Entry_Call,inv(Entry_Call_out,Head, Inv)),
-  
-    Entry_Call_out=..[_|Vars1],
-    Call=..[_|Vars2],
-    nad_glb(Inv,Cs,Cs_1),
-    append(Vars1,Vars2,Vars),
-    nad_project_group(Vars,Cs_1,Inv_aux),
-    add_relation2entry_invariant(Entry_Call_out,([Non_loop|Chain],RefCnt),inv(Entry_Call_out,Head, Inv)),
-    add_relation2entry_invariant_aux(Entry_Call_out,([Non_loop|Chain],RefCnt),inv(Entry_Call_out,Call, Inv_aux)).
-%For the leave
-compute_relation2entry_invariant([Phase|Chain],RefCnt,Entry_Call,none):-
-    number(Phase),!,
-    compute_relation2entry_invariant(Chain,RefCnt,Entry_Call,inv(Entry_Call_out,Head_out, Inv)),
-    add_relation2entry_invariant(Entry_Call_out,([Phase|Chain],RefCnt),inv(Entry_Call_out,Head_out, Inv)).
-
-% an iterative phase that is not the initial one
-% we start  with the invariant of the suffix, we apply the transitive closure to obtain
-% the return value and the transitive reflexive closure to obtain the invariant
-compute_relation2entry_invariant([Phase|Chain],RefCnt,Entry_Call,inv(Head_aux,Call2, Inv_aux)):-!,
-    copy_term(Entry_Call,Head_aux),
-    compute_relation2entry_invariant(Chain,RefCnt,Head_aux,inv(Head_aux,Call,Inv_0)),
-
-	phase_transitive_closure(Phase,RefCnt,Call,Call2,Cs_transitive),
-	get_phase_star(Call,Call2,Phase,Cs_star),
-	Call2=..[_|C2vars],
-	Head_aux=..[_|Evars],
-	append(Evars,C2vars,Resulting_vars),
-	nad_glb(Cs_star,Inv_0,Inv_1),
-	nad_glb(Cs_transitive,Inv_0,Inv_2),
-	nad_project_group(Resulting_vars,Inv_1,Inv),
-	nad_project_group(Resulting_vars,Inv_2,Inv_aux),
-	
-    add_relation2entry_invariant(Head_aux,([Phase|Chain],RefCnt),inv(Head_aux,Call2, Inv)),
-    add_relation2entry_invariant_aux(Head_aux,([Phase|Chain],RefCnt),inv(Head_aux,Call2, Inv)).
-  
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! unfeasible_chain_suffix(Head:term,RefCnt:int,Chain_suffix:chain)
 % store suffixes of chains that are not feasible in order to avoid repeating computation of invariants
@@ -585,7 +446,7 @@ compute_phase_transitive_closure(Phase,RefCnt):-
 	    member(Loop,Phase),
 	    loop_ph(Head_loop,(Loop,RefCnt),Call_loop,Cs_loop,_,_)
 	    ),Loops),
-        relation2entry_invariant_fixpoint(inv(Head,Call,Inv_0),Loops,inv(Entry_out,Call_out, Trans_closure)),
+        transitive_closure_invariant_fixpoint(inv(Head,Call,Inv_0),Loops,inv(Entry_out,Call_out, Trans_closure)),
         add_phase_transitive_closure(Phase,RefCnt,Entry_out,Call_out,Trans_closure).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -621,11 +482,11 @@ forward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
     ut_flat_list(Invs,Inv_out).  
 %	low_level_forward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
 
-relation2entry_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head,Inv_out)):-
+transitive_closure_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head,Inv_out)):-
 	partition_invariant_and_loops(inv(Entry,Head,Inv_0),Loops,Groups_inv_loops),
-    maplist(low_level_relation2entry_invariant_fixpoint,Groups_inv_loops,Invs),
+    maplist(low_level_transitive_closure_invariant_fixpoint,Groups_inv_loops,Invs),
     ut_flat_list(Invs,Inv_out).
-%    low_level_relation2entry_invariant_fixpoint((inv(Entry,Head,Inv_0),Loops),Inv_out).
+%    low_level_transitive_closure_invariant_fixpoint((inv(Entry,Head,Inv_0),Loops),Inv_out).
 
 % auxiliar procedures to split a set of loops into their independent components
 
@@ -721,7 +582,7 @@ low_level_backward_invariant_fixpoint((inv(Head_inv,Inv),Loops),Inv_out):-
 	ppl_delete_Polyhedron(Inv_final_handle).
 
 	
-low_level_relation2entry_invariant_fixpoint((inv(Entry_inv,Head_inv,Inv),Loops),Inv_out):-
+low_level_transitive_closure_invariant_fixpoint((inv(Entry_inv,Head_inv,Inv),Loops),Inv_out):-
 	Loops=[Loop1|_More_loops],
 	copy_term(Loop1,(Head_inv,Call,_)),
 	%create the ppl_polyhedra from the constraints

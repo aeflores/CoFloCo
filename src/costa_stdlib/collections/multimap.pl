@@ -136,7 +136,8 @@ The predicate fails if there are no values for Key.
 */
 values_of_mm( MMap, Key, Vals) :-
     open_cursor_lm( MMap, Key, MVals, _Cursor),
-    eval_maybe( MVals, [], Vals).
+    eval_maybe( MVals, [], Vals),
+    Vals\=[].
 
 /*
 keys_of_mm( + MMap : multimap<K,V>, + Val : V , - Keys : set<K>) is det.

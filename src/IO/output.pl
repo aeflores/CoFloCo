@@ -49,7 +49,10 @@ This module prints the results of the analysis
 :- use_module('../refinement/chains',[chain/3]).
 
 :- use_module('../utils/cost_expressions',[cexpr_add_list/2,get_asymptotic_class_name/2]).
-:- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2]).
+:- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2,tuple/3]).
+
+:- use_module('../utils/cost_structures',[shorten_variables_names/2,
+get_cost_exp_from_normal_form/2]).
 
 :- use_module('../IO/params',[parameter_dictionary/3,get_param/2,
 		      param_description/2]).
@@ -222,11 +225,34 @@ print_results_1(Entry,RefCnt):-
  	upper_bound(Entry,Chain,_,CExp),
 	print_chain(Entry,Chain),
 	format(': ',[]),
-	print_cost_structure(CExp),
+	print_new_cost_structure(CExp),
+	%print_cost_structure(CExp),
 	format('~n  with precondition: ~p ~n~n',[EPat_pretty]),
  	fail.
 print_results_1(_Entry,_).
 
+
+
+gen_mult_bases((A,B),A*B).
+
+print_new_cost_structure(Cost):-
+	shorten_variables_names(Cost,cost(Top_exps,Aux_exps,Bases,Base)),
+	maplist(gen_mult_bases,Bases,Bases1),
+	write_sum([Base|Bases1],Sum),
+	format('~p',[Sum]),
+	format('~n  Such that:~12|',[]),
+	maplist(print_top_exp,Top_exps),
+	maplist(print_aux_exp,Aux_exps).
+
+print_top_exp(ub(Exp,Bounded)):-
+	write_sum(Bounded,Sum),
+	format('~p =< ~p~n',[Sum,Exp]).
+
+print_aux_exp(ub(Elems,Exp,Bounded)):-
+	get_cost_exp_from_normal_form(Exp,Exp2),
+	maplist(tuple,X,X,Elems),
+	write_sum(Bounded,Sum),
+	format('~p =< ~p~n',[Sum,Exp2]).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_closed_results(+Entry:term,+RefCnt:int) is det

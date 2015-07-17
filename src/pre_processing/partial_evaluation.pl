@@ -32,7 +32,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 
 :- use_module('SCCs',[crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
 :- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
-
+:- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2,nad_project_group/3]).
 %:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_consistent_constraints/1]).
@@ -199,7 +199,8 @@ replace_cost_relations:-
 	(nad_consistent_constraints_group(Vars,Size) ->	    
 	    nad_project_group(Vars,Size,P_Size),
 	  % nad_project(Vars,Size,P_Size),
-	    add_eq_ph(eq_ph(Head,0,Exp,NR_Calls,R_Calls,Calls,P_Size,terminating),none)
+	    cexpr_simplify_ctx_free(Exp,Exp_simpl),
+	    add_eq_ph(eq_ph(Head,0,Exp_simpl,NR_Calls,R_Calls,Calls,P_Size,terminating),none)
 	;
 	    true
 	),

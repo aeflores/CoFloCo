@@ -183,7 +183,8 @@ init_db:-
 	            ) ),
 	counter_initialize(input_eqs,0),
 	
-	
+	counter_initialize(aux_vars,0),
+	counter_initialize(short_terms,0),
 	counter_initialize(ubs,0),
 	counter_initialize(eq_ph,0),
 	counter_initialize(loop_ph,0),

@@ -32,7 +32,7 @@ that can be passed on to the callers.
 			compute_single_closed_bound/2]).
 
 :- use_module(chain_solver,[compute_chain_cost/3]).
-:- use_module(ub_solver,[solve_system/5]).
+%:- use_module(ub_solver,[solve_system/5]).
 
 :- use_module('../db',[
 		  external_call_pattern/5,
@@ -47,9 +47,9 @@ that can be passed on to the callers.
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3,cexpr_max/2]).
-:- use_module('../utils/cost_structures',[
-				cost_structure_simplify/3,
-				compress_cost_structures/4]).
+:- use_module('../utils/cost_structures',[naive_maximization/2]).
+%				cost_structure_simplify/3,
+%				compress_cost_structures/4]).
 %! compute_upper_bound_for_scc(+Head:term,+RefCnt:int) is det
 % compute an upper bound for each chain
 % then, compress the upper bounds for the chains that have been grouped into
@@ -67,9 +67,10 @@ compute_upper_bound_for_scc(Head,RefCnt):-
 % simplify it according to the information of the backward invariant
 % and store it,
 compute_chain_upper_bound(Head,Chain):-	
-	compute_chain_cost(Head,Chain,UB),   
-	backward_invariant(Head,(Chain,_),_,Head_Pattern),
-	cost_structure_simplify(UB,Head_Pattern,UB2),
+%	trace,
+	compute_chain_cost(Head,Chain,UB2),   
+%	backward_invariant(Head,(Chain,_),_,Head_Pattern),
+%	cost_structure_simplify(UB,Head_Pattern,UB2),
 	add_upper_bound(Head,Chain,UB2).
 
 %! compute_closed_bound(+Head:term) is det
@@ -78,8 +79,7 @@ compute_chain_upper_bound(Head,Chain):-
 compute_closed_bound(Head):-
 	upper_bound(Head,Chain,_Vars,Cost),
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
-	Head=..[_|Vars],
-	solve_system(Cost,Vars,Head_Pattern,max,UB),
+	naive_maximization(Cost,UB),
 	cexpr_simplify(UB,Head_Pattern,UB1),
 	add_closed_upper_bound(Head,Chain,UB1),
 	fail.
@@ -93,15 +93,15 @@ compute_closed_bound(_Head).
 %
 % Each call pattern contains a set of chains. The upper bound (cost structure)
 % is obtained by compressing the upper bound of these chains into one.
-compress_upper_bounds_for_external_calls(Head,RefCnt):-
-	external_call_pattern(Head,(Precondition_id,RefCnt),_Terminating,Components,Inv),
-	bagof_no_fail(Cost_structure,Chain^E1^(
-		    member(Chain,Components),
-	        upper_bound(Head,Chain,E1,Cost_structure)
-	        ),Cost_structures),       
-	compress_cost_structures(Cost_structures,Head,Inv,Final_cost_structure),
-	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),
-	fail.
+%compress_upper_bounds_for_external_calls(Head,RefCnt):-
+%	external_call_pattern(Head,(Precondition_id,RefCnt),_Terminating,Components,Inv),
+%	bagof_no_fail(Cost_structure,Chain^E1^(
+%		    member(Chain,Components),
+%	        upper_bound(Head,Chain,E1,Cost_structure)
+%	        ),Cost_structures),       
+%	compress_cost_structures(Cost_structures,Head,Inv,Final_cost_structure),
+%%	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),
+%	fail.
 compress_upper_bounds_for_external_calls(_,_).	
 
 %! compute_single_closed_bound(+Head:term,-SimpleExp:cost_expression) is det

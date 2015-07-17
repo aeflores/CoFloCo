@@ -36,15 +36,17 @@ of CoFloCo.
 		    foldr/4,
 		    sort_with/3,
 		    write_sum/2,
+		    write_product/2,
 		    norm_contains_vars/2,
-		    normalize_constraint_wrt_var/3]).
+		    normalize_constraint_wrt_var/3,
+		    normalize_constraint_wrt_vars/3]).
 
 
 :- use_module(polyhedra_optimizations,[nad_entails_aux/3]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_entails/3,nad_consistent_constraints/1,nad_lub/6,nad_list_lub/2]).
 :- use_module(stdlib(linear_expression), [parse_le/2, integrate_le/3]).
-:- use_module(stdlib(fraction),[divide_fr/3,negate_fr/2]).
+:- use_module(stdlib(fraction),[divide_fr/3,negate_fr/2,geq_fr/2,gcd_fr/3]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,7 +185,9 @@ coeffs_rep_to_constraint(coeff_rep(Coeffs,Op,B), Constraint) :-
 write_sum([],0).
 write_sum([X|Xs],Sum):-
 	foldr(zip_with_op('+'),Xs,X,Sum).
-
+write_product([],0).
+write_product([X|Xs],Sum):-
+	foldr(zip_with_op('*'),Xs,X,Sum).
 
 %! normalize_constraint_wrt_var(C,Var,NC) is det
 % given C:=C1*Var+C2*X2+...CN*XN>= C0, express the constraint in terms of Var:
@@ -204,7 +208,62 @@ normalize_constraint_wrt_var(C,Var,NC) :-
 	;   Exp_aux = Exp+B_aux
 	),
 	NC =.. [Op_aux, Var, Exp_aux].
+normalize_constraint_wrt_vars(C,Vars,NC) :-
+	constraint_to_coeffs_rep(C,coeff_rep(Coeffs,Op,B)),
+	partition(coeff_contains_var(Vars),Coeffs,Coeffs_its,Coeffs_vars),
+	Coeffs_its=[_|_],
+	(maplist(positive_coeff,Coeffs_its)->
+		maplist(negate_coefficient,Coeffs_vars,Coeffs_vars_neg),
+		
+		maplist(get_coeff_components,Coeffs_its,[Factor1|Factors],Its),
+		foldl(gcd_fr,Factors,Factor1,GCD),
+		divide_coeffs(Coeffs_vars_neg,GCD,Coeffs_vars_neg_div),
+		divide_fr(B,GCD,B_div),
+		write_sum(Coeffs_vars_neg_div,Exp),
+		NC =.. [Op, Its, Exp+B_div]
+	;
+	maplist(negative_coeff,Coeffs_its),
+	%Fail if we have mixed coefficients
+		maplist(negate_coefficient,Coeffs_its,Coeffs_its_neg),
+		maplist(get_coeff_components,Coeffs_its_neg,[Factor1|Factors],Its),
+		foldl(gcd_fr,Factors,Factor1,GCD),
+		divide_coeffs(Coeffs_vars,GCD,Coeffs_vars_div),
+		divide_fr(B,GCD,B_div),
+		write_sum(Coeffs_vars_div,Exp),
+		reverse_op(Op,Op_aux),
+		NC =.. [Op_aux, Its, Exp-B_div]
+	).
 
+relax_constraint_with_its(Its,Constraint,Constraint1):-
+	%FIXME ignoring equal for now
+	constraint_to_coeffs_rep(Constraint, coeff_rep(Coeffs,>=,B)),
+	partition(coeff_contains_var(Its),Coeffs,Coeffs_its,Coeffs_vars),
+	maplist(positive_coeff,Coeffs_its),!,
+	coeffs_rep_to_constraint(coeff_rep(Coeffs_vars,>=,B),Constraint1).
+	
+relax_constraint_with_its(Its,Constraint,Constraint):-
+	%FIXME ignoring equal for now
+	constraint_to_coeffs_rep(Constraint, coeff_rep(Coeffs,=,_B)),
+	partition(coeff_contains_var(Its),Coeffs,Coeffs_its,_Coeffs_vars),
+	Coeffs_its=[],!.	
+relax_constraint_with_its(Its,Constraint,Constraint):-
+	%FIXME ignoring equal for now
+	constraint_to_coeffs_rep(Constraint, coeff_rep(Coeffs,=<,_B)),
+	partition(coeff_contains_var(Its),Coeffs,Coeffs_its,_Coeffs_vars),
+	Coeffs_its=[],!.	
+relax_constraint_with_its(_Its,_Constraint,[]).
+
+get_coeff_components(C*V,C,V).	
+coeff_contains_var(Vars,_C * Var):-
+	contains_sl(Vars,Var).
+negate_coefficient(C* Var,C_neg * Var):-
+	negate_fr(C,C_neg).	
+	
+positive_coeff(Fr * _):-
+   geq_fr(Fr,0).	
+negative_coeff(Fr * _):-
+   geq_fr(0,Fr).
+   
 reverse_op(>=,=<).
 reverse_op(=<,>=).
 reverse_op(=,=).

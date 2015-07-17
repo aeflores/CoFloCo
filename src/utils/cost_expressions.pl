@@ -32,6 +32,7 @@
 					   cexpr_simplify/3,
 					   cexpr_simplify_aux/3,
 					   cexpr_simplify_ctx_free/2,
+					   cexpr_substitute_lin_exp_by_vars/4,
 					   get_asymptotic_class_name/2,
 					   get_asymptotic_class/2,
 					   is_linear_exp/1,
@@ -48,8 +49,14 @@
 :- use_module('../IO/params',[get_param/2]).
 :- use_module(stdlib(utils),[ut_sort/2,ut_append/3,ut_member/2,ut_sort_rdup/2,ut_flat_list/2,ut_split_at_pos/4]).
 :- use_module(stdlib(set_list),[remove_sl/3,union_sl/3,contains_sl/2,from_list_sl/2,difference_sl/3,insert_sl/3]).
+:- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
+
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3]).
 :- use_module(stdlib(linear_expression), [parse_le/2,multiply_le/3]).
+
+
+
+
 
 %! normalize_le(+Le:linear_expression,-Le_n:linear_expression) is det
 % normalize the linear expression Le
@@ -98,6 +105,45 @@ le_multiply(Exp,Fr,Exp_f):-
 	 	numbervars(C,0,_),
 	    throw(invalid_cost_expression(C))
 	  ).
+	  
+%constant
+cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,Exp,Lin_exp_Map):-
+	term_variables(Exp,[]),!.
+%linear expression	
+cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,Skeleton,Lin_exp_Map1):-
+	is_linear_exp(Exp),!,
+	normalize_le(Exp,Exp_normalized),
+	(lookup_lm(Lin_exp_Map,Exp_normalized,Var)->
+		Skeleton=Var,
+		Lin_exp_Map1=Lin_exp_Map
+		;
+		insert_lm(Lin_exp_Map,Exp_normalized,New_var,Lin_exp_Map1),
+		Skeleton=New_var
+	).
+	
+cexpr_substitute_lin_exp_by_vars(nat(Exp),Lin_exp_Map,nat(Skeleton),Lin_exp_Map1):-!,
+	cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,Skeleton,Lin_exp_Map1).
+cexpr_substitute_lin_exp_by_vars(A*B,Lin_exp_Map,S_A*S_B,Lin_exp_Map2):-!,
+	cexpr_substitute_lin_exp_by_vars(A,Lin_exp_Map,S_A,Lin_exp_Map1),
+	cexpr_substitute_lin_exp_by_vars(B,Lin_exp_Map1,S_B,Lin_exp_Map2).   
+cexpr_substitute_lin_exp_by_vars(A-B,Lin_exp_Map,S_A-S_B,Lin_exp_Map2):-!,
+	cexpr_substitute_lin_exp_by_vars(A,Lin_exp_Map,S_A,Lin_exp_Map1),
+	cexpr_substitute_lin_exp_by_vars(B,Lin_exp_Map1,S_B,Lin_exp_Map2).
+cexpr_substitute_lin_exp_by_vars(A+B,Lin_exp_Map,S_A+S_B,Lin_exp_Map2):-!,
+	cexpr_substitute_lin_exp_by_vars(A,Lin_exp_Map,S_A,Lin_exp_Map1),
+	cexpr_substitute_lin_exp_by_vars(B,Lin_exp_Map1,S_B,Lin_exp_Map2).
+
+cexpr_substitute_lin_exp_by_vars(max(Al),Lin_exp_Map,max(S_Al),Lin_exp_Map1):-!,
+	cexpr_substitute_lin_exp_by_vars_list(Al,S_Al,Lin_exp_Map,Lin_exp_Map1).
+cexpr_substitute_lin_exp_by_vars(min(Al),Lin_exp_Map,min(S_Al),Lin_exp_Map1):-!,
+	cexpr_substitute_lin_exp_by_vars_list(Al,S_Al,Lin_exp_Map,Lin_exp_Map1). 	   
+ 
+cexpr_substitute_lin_exp_by_vars_list([],[],Lin_exp_Map,Lin_exp_Map).
+cexpr_substitute_lin_exp_by_vars_list([Exp|Exps],[S_Exp|S_Exps],Lin_exp_Map,Lin_exp_Map2):-
+	cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,S_Exp,Lin_exp_Map1),
+	cexpr_substitute_lin_exp_by_vars_list(Exps,S_Exps,Lin_exp_Map1,Lin_exp_Map2).	
+		  
+	  
 %! cexpr_min(+Exps:list(cost_expression),-Exp:cost_expression) is det
 % create a cost expression that is the minimum of the cost expressions in Exps.
  cexpr_min([Exp],Exp):-!.
