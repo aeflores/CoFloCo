@@ -43,7 +43,7 @@ For the constraints, this is done at the same time of the compression.
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3]).			      
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[
-		 extend_variables_names/3]).
+		 cstr_extend_variables_names/3]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_list_glb/2]).
@@ -62,7 +62,7 @@ compute_chain_cost(Head,Chain,Cost_total1):-
 	profiling_stop_timer_acum(loop_phases,_),
 	profiling_start_timer(chain_solver),
 	compress_chain_costs(Chain,Costs,Head,Call,Cost_total),
-	extend_variables_names(Cost_total,ch(Chain),Cost_total1),	
+	cstr_extend_variables_names(Cost_total,ch(Chain),Cost_total1),	
 	profiling_stop_timer_acum(chain_solver,_),
 	!.
 

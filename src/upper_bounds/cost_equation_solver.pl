@@ -34,7 +34,7 @@ the input variables and the variables of the recursive call (if there is one)
 			     external_upper_bound/3]).
 
 :- use_module('../utils/cofloco_utils',[tuple/3]).
-:- use_module('../utils/cost_structures',[extend_variables_names/3]).
+:- use_module('../utils/cost_structures',[cstr_extend_variables_names/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 
 

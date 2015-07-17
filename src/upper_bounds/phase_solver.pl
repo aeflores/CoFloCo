@@ -2,8 +2,7 @@
 
 This module computes the cost structure of a phase in terms of the variables 
 at the beginning and the end of the phase.
-The internal elements of the cost structure are directly expressed 
-in terms of the initial values of the chain.
+
 
 @author Antonio Flores Montoya
 
@@ -39,7 +38,7 @@ in terms of the initial values of the chain.
 				  backward_invariant/4,
 			      forward_invariant/4]).
 :- use_module('../IO/params',[get_param/2]).
-:- use_module('../utils/cost_structures',[extend_variables_names/3]).			
+:- use_module('../utils/cost_structures',[cstr_extend_variables_names/3]).			
 		      
 
 :- use_module(stdlib(set_list)).
@@ -67,7 +66,6 @@ init_phase_solver:-
 % the constraints of the cost structure are expressed in terms of the variables at the beginnig and end of the chain (Head and Call)
 compute_phases_cost([],_,_,_,[]).
 compute_phases_cost([Phase|More],Chain,Head,Call,[Cost|Costs]):-
-	%get all kinds of invariants
 	%backward_invariant(Head_total,(Chain,_),_,Head_patt),
 	forward_invariant(Head,([Phase|More],_),Forward_inv_hash,Forward_inv),
 	%obtain a cost structure in terms of the variables at the beginning and end of the phase
@@ -106,6 +104,6 @@ compute_phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv),Cost):-
 
 get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,cost(Top_exps1,Aux_exps1,Bases1,Base1)):-
 	get_equation_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost),
-	extend_variables_names(Cost,it(Eq_id),cost(Top_exps1,Aux_exps1,Bases1,Base1)).
+	cstr_extend_variables_names(Cost,it(Eq_id),cost(Top_exps1,Aux_exps1,Bases1,Base1)).
 	
 	
