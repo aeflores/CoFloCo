@@ -236,23 +236,25 @@ print_results_1(_Entry,_).
 gen_mult_bases((A,B),A*B).
 
 print_new_cost_structure(Cost):-
-	cstr_shorten_variables_names(Cost,cost(Top_exps,Aux_exps,Bases,Base)),
+	cstr_shorten_variables_names(Cost,cost((Top_exps,Aux_exps),(LTop_exps,LAux_exps),Bases,Base)),
 	maplist(gen_mult_bases,Bases,Bases1),
 	write_sum([Base|Bases1],Sum),
 	format('~p',[Sum]),
 	format('~n  Such that:~12|',[]),
-	maplist(print_top_exp,Top_exps),
-	maplist(print_aux_exp,Aux_exps).
+	maplist(print_top_exp('=<'),Top_exps),
+	maplist(print_aux_exp('=<'),Aux_exps),
+	maplist(print_top_exp('>='),LTop_exps),
+	maplist(print_aux_exp('>='),LAux_exps).
 
-print_top_exp(ub(Exp,Bounded)):-
+print_top_exp(Op,bound(Exp,Bounded)):-
 	write_sum(Bounded,Sum),
-	format('~p =< ~p~n',[Sum,Exp]).
+	format('~p ~p ~p~n',[Sum,Op,Exp]).
 
-print_aux_exp(ub(Elems,Exp,Bounded)):-
+print_aux_exp(Op,bound(Elems,Exp,Bounded)):-
 	cstr_get_cexpr_from_normalform(Exp,Exp2),
 	maplist(tuple,X,X,Elems),
 	write_sum(Bounded,Sum),
-	format('~p =< ~p~n',[Sum,Exp2]).	
+	format('~p ~p ~p~n',[Sum,Op,Exp2]).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_closed_results(+Entry:term,+RefCnt:int) is det

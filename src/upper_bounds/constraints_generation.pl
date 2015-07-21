@@ -33,7 +33,7 @@ Specific "data types" of this module:
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 :- module(constraints_generation,[
-		%add_phase_lower_bounds/7,
+		add_phase_lower_bounds/6,
 		add_phase_upper_bounds/6
 	]).
 
@@ -92,6 +92,8 @@ add_phase_upper_bounds(Head,Call,Phase,_Chain,Top,Aux):-
 	append(Top1,Top2,Top),
 	append(Aux1,Aux2,Aux).
 	
+add_phase_lower_bounds(_Head,_Call,_Phase,_Chain,[],[]).
+
 
 get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Top,[]):-
 		bagof_no_fail(Rf,
@@ -134,7 +136,7 @@ get_constr_from_partial_function(Head,Call,Phase,(Loops,Rf,Incr_deps,Unknown_dep
 		  cstr_name_aux_var(Name_aux),
 		  ut_flat_list([Index,Index2],Index_total),
 		  append(Summands,Summands2,Summands_total),
-		  Aux=[ub([(Name_aux,Var_aux)|Index_total],add([mult([Var_aux])|Summands_total]),Bounded)|Aux_accum],
+		  Aux=[bound([(Name_aux,Var_aux)|Index_total],add([mult([Var_aux])|Summands_total]),Bounded)|Aux_accum],
 		  maplist(cstr_generate_top_exp([Name_aux]),[Rf,Rf_diff],[Top1,Top2]),
 		  ut_flat_list([Top1,Top2,Extra_tops,Top_accum],Top).
 		  	
@@ -164,7 +166,15 @@ find_reset(Dep,Rf,Head,Phase,Reset):-
 	Head=..[_|EVars],
 	copy_term((Head,Rf),(Call2,Rf_instance)),
 	max_min_linear_expression_all(Rf_instance,EVars,Cs_total,max,Rf_bounds),
-	member(Reset,Rf_bounds),!.
+	(member(Reset,Rf_bounds)->
+		true
+		;
+		term_variables(Call,Call_vars),
+		max_min_linear_expression_all(Rf_instance,Call_vars,Cs,max,Rf_bounds2),
+		Rf_bounds2\=[],
+		format(user_error,'Could not find a reset to ~p in loop ~p phase ~p~n but not undefined: ~p',[Rf,Dep,Phase,Rf_bounds2]),
+		fail
+		),!.
   
 		   	   
 get_difference_version(Head,Call,Rf,Rf_diff):-

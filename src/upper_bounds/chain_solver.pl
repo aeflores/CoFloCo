@@ -33,7 +33,7 @@ For the constraints, this is done at the same time of the compression.
 
 :- use_module(phase_solver,[compute_phases_cost/5]).
 :- use_module(constraints_maximization,[
-		maximize_top_expressions_in_chain/6]).
+		max_min_top_exprs_in_chain/6]).
 
 :-use_module('../db',[phase_loop/5,loop_ph/6]).
 :-use_module('../refinement/invariants',[
@@ -88,19 +88,21 @@ compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,C
 	copy_term((Head_total,Call_total,Cost),(Head,Call,Cost1)),
 	get_all_phase_information(Head,Call,[Lg|More],Cs_list),
 	nad_list_glb([Cs_prev|Cs_list],Cs_total),
-	Cost_prev=cost(Top_exps_prev,Aux_exps_prev,Bases_prev,Base_prev),
-	Cost1=cost(Top_exps_1,Aux_exps_1,Bases1,Base1),
-	append(Top_exps_prev,Top_exps_1,Top_exps_total),
-	maximize_top_expressions_in_chain(Top_exps_total,[Lg|More],Cs_total,Head,Top_exps_new,Aux_exps_new),
+	Cost_prev=cost(Ub_cons,Lb_cons,Bases_prev,Base_prev),
+	Cost1=cost(Ub_cons2,Lb_cons2,Bases1,Base1),
+	compress_chain_constrs(Ub_cons,Ub_cons2,max,[Lg|More],Cs_total,Head,Ub_cons_new),
+	compress_chain_constrs(Lb_cons,Lb_cons2,min,[Lg|More],Cs_total,Head,Lb_cons_new),
 	append(Bases_prev,Bases1,Bases_total),
-	ut_flat_list([Aux_exps_new,Aux_exps_1,Aux_exps_prev],Aux_exps_total),
 	cexpr_simplify_ctx_free(Base_prev+Base1,Base2),
-	Cost_next=cost(Top_exps_new,Aux_exps_total,Bases_total,Base2),
+	Cost_next=cost(Ub_cons_new,Lb_cons_new,Bases_total,Base2),
 	Head=..[_|EVars],
 	nad_project_group(EVars,Cs_total,Cs_next),
 	compress_chain_costs_1(More,Cost_list,Cost_next,Cs_next,Head_total,Call_total,Head,Cost_total).
 	
-
+compress_chain_constrs((Tops1,Aux1),(Tops2,Aux2),Max_min,Chain,Cs_total,Head,(Top_exps_new,Aux_exps_new)):-
+	append(Tops1,Tops2,Top_total),
+	max_min_top_exprs_in_chain(Top_total,Max_min,Chain,Cs_total,Head,(Top_exps_new,Aux_exps_extra)),
+	ut_flat_list([Aux_exps_extra,Aux1,Aux2],Aux_exps_new).
 
 %! get_all_base_case_information(+Head:term,+Part_chain:chain,-Phi:polyhedron) is det
 %  obtain the base case definition and the forward invariant

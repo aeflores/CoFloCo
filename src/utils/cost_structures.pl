@@ -24,6 +24,8 @@
 
 
 :- module(cost_structures,[
+		cstr_empty/1,
+		cstr_constant/2,
 		cstr_naive_maximization/2,
 		cstr_name_aux_var/1,
 		cstr_get_it_name/2,
@@ -42,21 +44,25 @@
 
 :-dynamic short_db/3.
 
+cstr_empty(cost(([],[]),([],[]),[],0)).
+cstr_constant(C,cost(([],[]),([],[]),[],C)).
+
 cstr_name_aux_var([aux(Num)]):-
 	counter_increase(aux_vars,1,Num).
 
 cstr_get_it_name(Loop,[it(Loop)]).
-cstr_generate_top_exp(Bounded,Max,ub(Max,Bounded)).
+cstr_generate_top_exp(Bounded,Max,bound(Max,Bounded)).
 
 %cstr_naive_maximization(cost(Top_exps,Aux_exps,Bases,Base),Cost):-
 cstr_naive_maximization(Cost_long,Cost):-
-	cstr_shorten_variables_names(Cost_long,cost(Top_exps,Aux_exps,Bases,Base)),	
+	cstr_shorten_variables_names(Cost_long,cost((Top_exps,Aux_exps),_,Bases,Base)),	
 	get_top_bounded(Top_exps,[],Map_bounded),
 	remove_not_bounded(Aux_exps,Map_bounded,Map_final,_Aux_exps2,_Removed),
 	maplist(substitute_base(Map_final),Bases,Concrete_bases),
 	write_sum([Base|Concrete_bases],Cost).
 	
 substitute_base(_Map,(_Name,0),0):-!.
+substitute_base(_Map,(_Name,N),0):-number(N),N < 0.
 
 substitute_base(Map,(Name,Val),Concrete):-
 	values_of_mm(Map,Name,Values),!,
@@ -67,13 +73,18 @@ substitute_base(Map,(Name,Val),Concrete):-
 		).
 substitute_base(_Map,(_Name,_Val),inf).	
 	
-cstr_remove_cycles(cost(Top_exps,Aux_exps,Bases,Base),Short):-
+cstr_remove_cycles(cost(Ub_cons,Lb_cons,Bases,Base),Short):-
+	cstr_remove_constrs_cycles(Ub_cons,Ub_cons2),
+	cstr_remove_constrs_cycles(Lb_cons,Lb_cons2),
+	cstr_shorten_variables_names(cost(Ub_cons2,Lb_cons2,Bases,Base),Short).
+
+cstr_remove_constrs_cycles((Top_exps,Aux_exps),(Top_exps,Aux_exps2)):-
 	get_top_bounded(Top_exps,[],Map_bounded),
-	remove_not_bounded(Aux_exps,Map_bounded,_Map_final,Aux_exps2,_Removed),
-	cstr_shorten_variables_names(cost(Top_exps,Aux_exps2,Bases,Base),Short).
+	remove_not_bounded(Aux_exps,Map_bounded,_Map_final,Aux_exps2,_Removed).
+
 
 get_top_bounded([],Map,Map).
-get_top_bounded([ub(Exp,Bounded)|Top_exps],Map,Map_out):-
+get_top_bounded([bound(Exp,Bounded)|Top_exps],Map,Map_out):-
 	foldl(add_bound_to_multimap(Exp),Bounded,Map,Map_aux),
 	get_top_bounded(Top_exps,Map_aux,Map_out).
 	
@@ -93,7 +104,7 @@ remove_not_bounded(Aux_exps,Map,Map_out,Aux_exp_out,Removed):-
 	  ).
 	  
 split_bounded([],Map,Map,[],[]).
-split_bounded([ub(Elems,Exp,Bounded)|Aux_exps],Map,Map_out,[ub(Elems,Exp,Bounded)|Exp_Bounded],Exp_Not_bounded):-
+split_bounded([bound(Elems,Exp,Bounded)|Aux_exps],Map,Map_out,[bound(Elems,Exp,Bounded)|Exp_Bounded],Exp_Not_bounded):-
 	maplist(tuple,Names,Vars,Elems),
 	maplist(values_of_mm(Map),Names,Expressions),!,
 	maplist(min_expression,Expressions,Expressions2),
@@ -104,7 +115,7 @@ split_bounded([ub(Elems,Exp,Bounded)|Aux_exps],Map,Map_out,[ub(Elems,Exp,Bounded
 	split_bounded(Aux_exps,Map_aux,Map_out,Exp_Bounded,Exp_Not_bounded).
 	
 
-split_bounded([ub(Elems,Exp,Bounded)|Aux_exps],Map,Map_out,Exp_Bounded,[ub(Elems,Exp,Bounded)|Exp_Not_bounded]):-
+split_bounded([bound(Elems,Exp,Bounded)|Aux_exps],Map,Map_out,Exp_Bounded,[bound(Elems,Exp,Bounded)|Exp_Not_bounded]):-
 	split_bounded(Aux_exps,Map,Map_out,Exp_Bounded,Exp_Not_bounded).	
 	
 min_expression([A],A):-!.
@@ -117,30 +128,38 @@ cstr_get_cexpr_from_normalform(add(Summands),Exp3):-
 write_product_1(mult(List),Product):-
 	write_product(List,Product).
 
-cstr_extend_variables_names(cost(Top_exps,Aux_exps,Bases,Base),Prefix,cost(Top_exps1,Aux_exps1,Bases1,Base)):-
-		maplist(extend_top_exp_name(Prefix),Top_exps,Top_exps1),
-		maplist(extend_aux_exp_name(Prefix),Aux_exps,Aux_exps1),
+cstr_extend_variables_names(cost(Ub_cons,Lb_cons,Bases,Base),Prefix,cost(Ub_cons1,Lb_cons1,Bases1,Base)):-
+		cstr_constrs_extend_variables_names(Ub_cons,Prefix,Ub_cons1),
+		cstr_constrs_extend_variables_names(Lb_cons,Prefix,Lb_cons1),
 		maplist(extend_base_name(Prefix),Bases,Bases1).
+		
+cstr_constrs_extend_variables_names((Top_exps,Aux_exps),Prefix,(Top_exps1,Aux_exps1)):-
+	maplist(extend_top_exp_name(Prefix),Top_exps,Top_exps1),
+	maplist(extend_aux_exp_name(Prefix),Aux_exps,Aux_exps1).
 
 extend_base_name(Prefix,(Name,Value),([Prefix|Name],Value)).
-extend_aux_exp_name(Prefix,ub(Elems,Expression,Bounded),ub(Elems2,Expression,Bounded2)):-
+extend_aux_exp_name(Prefix,bound(Elems,Expression,Bounded),bound(Elems2,Expression,Bounded2)):-
 	maplist(extend_base_name(Prefix),Elems,Elems2),
 	maplist(append([Prefix]),Bounded,Bounded2).
-extend_top_exp_name(Prefix,ub(Expression,Bounded),ub(Expression,Bounded2)):-
+extend_top_exp_name(Prefix,bound(Expression,Bounded),bound(Expression,Bounded2)):-
 	maplist(append([Prefix]),Bounded,Bounded2).	
 	
-cstr_shorten_variables_names(cost(Top_exps,Aux_exps,Bases,Base),cost(Top_exps1,Aux_exps1,Bases1,Base)):-
-		maplist(shorten_top_exp_name,Top_exps,Top_exps1),
-		maplist(shorten_aux_exp_name,Aux_exps,Aux_exps1),
+cstr_shorten_variables_names(cost(Ub_cons,Lb_cons,Bases,Base),cost(Ub_cons1,Lb_cons1,Bases1,Base)):-
+		cstr_constrs_shorten_variables_names(Ub_cons,Ub_cons1),
+		cstr_constrs_shorten_variables_names(Lb_cons,Lb_cons1),
 		maplist(shorten_base_name,Bases,Bases1).
+		
+cstr_constrs_shorten_variables_names((Top_exps,Aux_exps),(Top_exps1,Aux_exps1)):-
+	maplist(shorten_top_exp_name,Top_exps,Top_exps1),
+	maplist(shorten_aux_exp_name,Aux_exps,Aux_exps1).
 		
 shorten_base_name((Name,Value),(Short_name,Value)):-
 	shorten_name(Name,Short_name).
-shorten_aux_exp_name(ub(Elems,Expression,Bounded),ub(Elems2,Expression,Bounded2)):-
+shorten_aux_exp_name(bound(Elems,Expression,Bounded),bound(Elems2,Expression,Bounded2)):-
 	maplist(shorten_base_name,Elems,Elems2),
 	maplist(shorten_name,Bounded,Bounded2).
 	
-shorten_top_exp_name(ub(Expression,Bounded),ub(Expression,Bounded2)):-
+shorten_top_exp_name(bound(Expression,Bounded),bound(Expression,Bounded2)):-
 	maplist(shorten_name,Bounded,Bounded2).	
 
 
@@ -154,36 +173,43 @@ shorten_name(Name,Short_name):-
 	 	Short_name=[s(Id)]
 	 	).
 	 	
-cstr_join(cost(T,A,Bs,B),cost(T2,A2,B2s,B2),cost(T3,A3,B3s,B3)):-
+cstr_join(cost((T,A),(LT,LA),Bs,B),cost((T2,A2),(LT2,LA2),B2s,B2),cost((T3,A3),(LT3,LA3),B3s,B3)):-
 	append(T,T2,T3),
 	append(A,A2,A3),
+	append(LT,LT2,LT3),
+	append(LA,LA2,LA3),
 	append(Bs,B2s,B3s),
 	B3=B+B2.	 	
 	
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cstr_propagate_summatory(Loop,cost(Top,Aux,Bases,Base),cost(Top2,Aux2,[([it(Loop)],Base)|Bases1],0),Summatories):-
+cstr_propagate_summatory(Loop,cost(Ub_cons,Lb_cons,Bases,Base),cost(Ub_cons2,Lb_cons2,[([it(Loop)],Base)|Bases1],0),(Ub_Summatories,Lb_Summatories)):-
 	generate_initial_sum_map(Bases,[],Sum_map_initial,Bases1),
+	cstr_constrs_propagate_summatory(Ub_cons,Sum_map_initial,Ub_cons2,Ub_Summatories),
+	cstr_constrs_propagate_summatory(Lb_cons,Sum_map_initial,Lb_cons2,Lb_Summatories).
+	
+	
+cstr_constrs_propagate_summatory((Top,Aux),Sum_map_initial,(Top2,Aux2),Summatories):-	
 	propagate_sum_aux_backwards(Aux,Sum_map_initial,Aux2,Sum_map,Max_map),
 	get_maxs(Top,Max_map,Top2),
 	get_summatories(Top,Sum_map,Summatories).
 	
 get_maxs([],_,[]).
-get_maxs([ub(Exp,Bounded)|Tops],Max_set,Tops2):-
+get_maxs([bound(Exp,Bounded)|Tops],Max_set,Tops2):-
 	include(contains_sl(Max_set),Bounded,Non_summatories),
 	(Non_summatories\=[]->
-		Tops2=[ub(Exp,Non_summatories)|Tops1]
+		Tops2=[bound(Exp,Non_summatories)|Tops1]
 		;
 		Tops2=Tops1
 		),
 	get_maxs(Tops,Max_set,Tops1).
 	
 get_summatories([],_,[]).
-get_summatories([ub(Exp,Bounded)|Tops],Sum_map,Tops2):-
+get_summatories([bound(Exp,Bounded)|Tops],Sum_map,Tops2):-
 	get_mapped(Bounded,Sum_map,New_names),
 	(New_names\=[]->
-		Tops2=[ub(Exp,New_names)|Tops1]
+		Tops2=[bound(Exp,New_names)|Tops1]
 		;
 		Tops2=Tops1
 		),
@@ -200,12 +226,12 @@ generate_initial_sum_map([(Name,Val)|Bases],Map,Map_out,[(Name2,Val)|Bases1]):-
 	
 	
 propagate_sum_aux_backwards([],Sum_map,[],Sum_map,[]).
-propagate_sum_aux_backwards([ub(Index,Expr,Bounded)|Aux_ini],Sum_map_initial,Aux3,Sum_map2,Max_map3):-	
+propagate_sum_aux_backwards([bound(Index,Expr,Bounded)|Aux_ini],Sum_map_initial,Aux3,Sum_map2,Max_map3):-	
 	propagate_sum_aux_backwards(Aux_ini,Sum_map_initial,Aux,Sum_map,Max_map),
 	get_mapped(Bounded,Sum_map,New_names),
 	include(contains_sl(Max_map),Bounded,Non_summatories),
 	(Non_summatories\=[]->
-		Aux2=[ub(Index,Expr,Non_summatories)|Aux],
+		Aux2=[bound(Index,Expr,Non_summatories)|Aux],
 		foldl(add_indexes_to_set,Index,Max_map,Max_map2)
 	;
 	  Aux2=Aux,
@@ -217,7 +243,7 @@ propagate_sum_aux_backwards([ub(Index,Expr,Bounded)|Aux_ini],Sum_map_initial,Aux
 	update_max_set(Index,Expr,Index_max,Max_map2,Max_map3),
 	update_sum_map(Index,Expr,Index_sum,Max_map3,Sum_map,Sum_map2),
 	append(Index_max,Index_sum,Index_final),
-	Aux3=[ub(Index_final,Expr,New_names)|Aux2]
+	Aux3=[bound(Index_final,Expr,New_names)|Aux2]
 	;
 	Aux3=Aux2,
 	Sum_map2=Sum_map,
