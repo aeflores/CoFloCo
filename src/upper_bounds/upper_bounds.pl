@@ -47,7 +47,7 @@ that can be passed on to the callers.
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3,cexpr_max/2]).
-:- use_module('../utils/cost_structures',[cstr_naive_maximization/2]).
+:- use_module('../utils/cost_structures',[cstr_naive_maximization/2,cstr_join_equal_top_expressions/2]).
 %				cost_structure_simplify/3,
 %				compress_cost_structures/4]).
 %! compute_upper_bound_for_scc(+Head:term,+RefCnt:int) is det
@@ -68,7 +68,8 @@ compute_upper_bound_for_scc(Head,RefCnt):-
 % and store it,
 compute_chain_upper_bound(Head,Chain):-	
 %	trace,
-	compute_chain_cost(Head,Chain,UB2),   
+	compute_chain_cost(Head,Chain,UB),   
+	cstr_join_equal_top_expressions(UB,UB2),
 %	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 %	cost_structure_simplify(UB,Head_Pattern,UB2),
 	add_upper_bound(Head,Chain,UB2).

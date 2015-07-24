@@ -36,6 +36,7 @@ the input variables and the variables of the recursive call (if there is one)
 :- use_module('../utils/cofloco_utils',[tuple/3]).
 :- use_module('../utils/cost_structures',[cstr_extend_variables_names/3,
 			cstr_empty/1,
+			cstr_join_equal_top_expressions/2,
 			cstr_constant/2]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 
@@ -93,7 +94,8 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 	maplist(from_list_sl,Base_calls_vars,Base_calls_sets),
 	max_min_constrs_in_cost_equation(Ub_cons,max,Base_calls_sets,Phi1,TVars,New_Ub_cons),
 	max_min_constrs_in_cost_equation(Lb_cons,min,Base_calls_sets,Phi1,TVars,New_Lb_cons),
-	Cost=cost(New_Ub_cons,New_Lb_cons,Bases,Base).
+	cstr_join_equal_top_expressions(cost(New_Ub_cons,New_Lb_cons,Bases,Base),Cost).
+	%Cost=cost(New_Ub_cons,New_Lb_cons,Bases,Base).
 
 accumulate_calls((Call,chain(Chain)),(cost((Tops1,Auxs1),(LTops1,LAuxs1),Bases1,Base1),N),(cost(([Tops2|Tops1],[Auxs2|Auxs1]),([LTops2|LTops1],[LAuxs2|LAuxs1]),Bases,Base),N1)) :-
     N1 is N+1,

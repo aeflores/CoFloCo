@@ -30,17 +30,21 @@
 		cstr_name_aux_var/1,
 		cstr_get_it_name/2,
 		cstr_generate_top_exp/3,
+		cstr_generate_top_exp_inv/3,
 		cstr_get_cexpr_from_normalform/2,
 		cstr_remove_cycles/2,
 		cstr_extend_variables_names/3,
 		cstr_propagate_summatory/4,
 		cstr_join/3,
+		cstr_get_lin_exp_from_tops/2,
+		cstr_join_equal_top_expressions/2,
 		cstr_shorten_variables_names/2]).
 :- use_module(cofloco_utils,[write_sum/2,write_product/2,tuple/3]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
+:- use_module(stdlib(utils),[ut_flat_list/2]).	
 :- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
 :- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
-:- use_module(stdlib(set_list),[contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3]).
+:- use_module(stdlib(set_list),[contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
 :-dynamic short_db/3.
 
@@ -51,37 +55,157 @@ cstr_name_aux_var([aux(Num)]):-
 	counter_increase(aux_vars,1,Num).
 
 cstr_get_it_name(Loop,[it(Loop)]).
-cstr_generate_top_exp(Bounded,Max,bound(Max,Bounded)).
 
-%cstr_naive_maximization(cost(Top_exps,Aux_exps,Bases,Base),Cost):-
+cstr_generate_top_exp(Bounded,Max,bound(Max,Bounded)).
+cstr_generate_top_exp_inv(Max,Bounded,bound(Max,Bounded)).
+
+cstr_generate_aux_exp(Index,Exp,Bounded,bound(Index,Exp,Bounded)).
+
+
+cstr_get_lin_exp_from_tops(Tops,Exps_set):-
+ 	maplist(cstr_get_expression_from_top,Tops,Exps),
+ 	from_list_sl(Exps,Exps_set).
+cstr_get_expression_from_top(bound(Exp,_),Exp).
+
+
 cstr_naive_maximization(Cost_long,Cost):-
 	cstr_shorten_variables_names(Cost_long,cost((Top_exps,Aux_exps),_,Bases,Base)),	
 	get_top_bounded(Top_exps,[],Map_bounded),
 	remove_not_bounded(Aux_exps,Map_bounded,Map_final,_Aux_exps2,_Removed),
-	maplist(substitute_base(Map_final),Bases,Concrete_bases),
+	maplist(substitute_base(Map_final,max),Bases,Concrete_bases),
 	write_sum([Base|Concrete_bases],Cost).
 	
-substitute_base(_Map,(_Name,0),0):-!.
-substitute_base(_Map,(_Name,N),0):-number(N),N < 0.
+/*	
+cstr_minimization(Cost_long,Exp+Base):-
+	term_variables(Tops_exps,Vars),
+	cstr_shorten_variables_names(Cost_long,cost(_,(Top_exps,Aux_exps),Bases,Base)),	
+	append(Tops_exps,Aux_exps,All_exps),
+	incremental_minimization(All_exps,Vars,[],Bases,Exp).
+	
+incremental_minimization([],_,Map,Bases,Cost):-
+	maplist(substitute_base(Map,min),Bases,Concrete_bases),
+	write_sum([Base|Concrete_bases],Cost).
 
-substitute_base(Map,(Name,Val),Concrete):-
+incremental_minimization([bound(Exp,[Bounded])|Exps],Vars,Map,Bases,Cost):-!,
+	add_bound_to_multimap(Exp),Bounded,Map,Map_aux)
+	incremental_minimization(Exps,Vars,Map_aux,Bases,Cost).	
+	
+incremental_minimization([bound(Exp,Bounded)|Exps],Vars,Map,Bases,Cost):-
+	findall((Vars,Costs),
+		member(Bounded1,Bounded),
+	add_bound_to_multimap(Exp),Bounded,Map,Map_aux),
+	incremental_minimization(Exps,Map_aux,Bases,Cost).		
+	
+	maplist(tuple,Names,Vars,Elems),
+	maplist(values_of_mm(Map),Names,Expressions),!,
+	maplist(min_expression,Expressions,Expressions2),
+	copy_term((Vars,Exp),(Vars2,Exp2)),
+	cstr_get_cexpr_from_normalform(Exp2,Exp3),
+	Vars2=Expressions2,
+	foldl(add_bound_to_multimap(Exp3),Bounded,Map,Map_aux),
+*/	
+substitute_base(_Map,_,(_Name,0),0):-!.
+substitute_base(_Map,_,(_Name,N),0):-number(N),N < 0.
+
+substitute_base(Map,max,(Name,Val),Concrete):-
 	values_of_mm(Map,Name,Values),!,
 	(Values=[One]->
 		Concrete=Val*One
 		;
 		Concrete=min(Values)*Val
 		).
-substitute_base(_Map,(_Name,_Val),inf).	
+substitute_base(_Map,max,(_Name,_Val),inf).	
+
+
+substitute_base(Map,min,(Name,Val),Concrete):-
+	values_of_mm(Map,Name,Values),!,
+	(Values=[One]->
+		Concrete=Val*One
+		;
+		Concrete=max(Values)*Val
+		).
+substitute_base(_Map,min,(_Name,_Val),0).	
+
+cstr_join_equal_top_expressions(cost(Ub_cons,Lb_cons,Bases,Base),cost(Ub_cons2,Lb_cons2,Bases,Base)):-
+	cstr_constrs_join_equal_top_expressions(Ub_cons,Ub_cons2),
+	cstr_constrs_join_equal_top_expressions(Lb_cons,Lb_cons2).
+	
+cstr_constrs_join_equal_top_expressions((Tops,Auxs),(Tops2,Auxs2)):-
+	foldl(add_top_to_expr_top_multimap,Tops,[],Exp_Tops_multimap),
+	partition(unitary_multimap_entry,Exp_Tops_multimap,Non_repeated_tops_pairs,Repeated_tops_pairs),
+	maplist(tuple,_,Non_repeated_tops,Non_repeated_tops_pairs),
+	maplist(generate_compressed_top,Repeated_tops_pairs,New_tops,New_aux),
+	ut_flat_list([Non_repeated_tops,New_tops],Tops2),
+	ut_flat_list([New_aux,Auxs],Auxs2).
+
+add_top_to_expr_top_multimap(bound(Exp,Bounded),Multimap,Multimap1):-
+	put_mm( Multimap, Exp, bound(Exp,Bounded), Multimap1).
+	
+unitary_multimap_entry((_,[_])).
+
+generate_compressed_top((Exp,Tops),New_top,New_auxs):-
+	cstr_name_aux_var(Name),
+	cstr_generate_top_exp([Name],Exp,New_top),
+	maplist(cstr_generate_top_exp_inv(_Exp),Bounded_list,Tops),
+	maplist(cstr_generate_aux_exp([(Name,Var)],add([mult([Var])])),Bounded_list,New_auxs).
+	
+	
+	
 	
 cstr_remove_cycles(cost(Ub_cons,Lb_cons,Bases,Base),Short):-
 	cstr_remove_constrs_cycles(Ub_cons,Ub_cons2),
 	cstr_remove_constrs_cycles(Lb_cons,Lb_cons2),
-	cstr_shorten_variables_names(cost(Ub_cons2,Lb_cons2,Bases,Base),Short).
+	cstr_remove_useless_constrs(cost(Ub_cons2,Lb_cons2,Bases,Base),Simplified),
+	cstr_shorten_variables_names(Simplified,Short).
 
 cstr_remove_constrs_cycles((Top_exps,Aux_exps),(Top_exps,Aux_exps2)):-
 	get_top_bounded(Top_exps,[],Map_bounded),
 	remove_not_bounded(Aux_exps,Map_bounded,_Map_final,Aux_exps2,_Removed).
 
+cstr_remove_useless_constrs(cost(Ub_cons,Lb_cons,Bases,Base),cost(Ub_cons2,Lb_cons2,Bases1,Base)):-
+	foldl(compute_initial_reference_set,Bases,([],[]),(Bases1,Ref_set)),
+	cstr_constr_remove_useless_constrs(Ub_cons,max,Ref_set,Ub_cons2),
+	cstr_constr_remove_useless_constrs(Lb_cons,min,Ref_set,Lb_cons2).
+
+cstr_constr_remove_useless_constrs((Tops,Auxs),Max_min,Ref_set,(Tops2,Auxs2)):-
+	reverse(Auxs,Aux_rev),
+	remove_useless_aux_constrs(Aux_rev,Ref_set,[],Max_min,Ref_set1,Auxs2),
+	exclude(useless_top_constr(Ref_set1,Max_min),Tops,Tops2).
+	
+compute_initial_reference_set((_Name,0),(Bases,Ref_set),(Bases,Ref_set)).
+compute_initial_reference_set((Name,Value),(Bases,Ref_set),([(Name,Value)|Bases],Ref_set1)):-
+	insert_sl(Ref_set,Name,Ref_set1).
+
+remove_useless_aux_constrs([],Ref_set,Auxs,_,Ref_set,Auxs).
+remove_useless_aux_constrs([bound(Index,Exp,Bounded)|Auxs],Ref_set_accum,Auxs_accum,max,Ref_set,Auxs_out):-	
+	from_list_sl(Bounded,Bounded_set),
+	intersection_sl(Ref_set_accum,Bounded_set,Bounded1),
+	Bounded1\=[],!,
+	maplist(tuple,Names,_,Index),
+	from_list_sl(Names,Names_set),
+	union_sl(Names_set,Ref_set_accum,Ref_set_accum2),
+	remove_useless_aux_constrs(Auxs,Ref_set_accum2,[bound(Index,Exp,Bounded1)|Auxs_accum],max,Ref_set,Auxs_out).
+	
+remove_useless_aux_constrs([_|Auxs],Ref_set_accum,Auxs_accum,max,Ref_set,Auxs_out):-	
+	remove_useless_aux_constrs(Auxs,Ref_set_accum,Auxs_accum,max,Ref_set,Auxs_out).		
+
+remove_useless_aux_constrs([bound(Index,Exp,Bounded)|Auxs],Ref_set_accum,Auxs_accum,min,Ref_set,Auxs_out):-	
+	from_list_sl(Bounded,Bounded_set),
+	intersection_sl(Ref_set_accum,Bounded_set,Bounded),!,
+	maplist(tuple,Names,_,Index),
+	from_list_sl(Names,Names_set),
+	union_sl(Names_set,Ref_set_accum,Ref_set_accum2),
+	remove_useless_aux_constrs(Auxs,Ref_set_accum2,[bound(Index,Exp,Bounded)|Auxs_accum],min,Ref_set,Auxs_out).
+	
+remove_useless_aux_constrs([_|Auxs],Ref_set_accum,Auxs_accum,min,Ref_set,Auxs_out):-	
+	remove_useless_aux_constrs(Auxs,Ref_set_accum,Auxs_accum,min,Ref_set,Auxs_out).		
+
+useless_top_constr(Ref_set,max,bound(_,Bounded)):-
+	from_list_sl(Bounded,Bounded_set),
+	intersection_sl(Bounded_set,Ref_set,[]).
+useless_top_constr(Ref_set,min,bound(_,Bounded)):-
+	from_list_sl(Bounded,Bounded_set),
+	\+intersection_sl(Bounded_set,Ref_set,Bounded_set).		
 
 get_top_bounded([],Map,Map).
 get_top_bounded([bound(Exp,Bounded)|Top_exps],Map,Map_out):-

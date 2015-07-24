@@ -92,7 +92,6 @@ add_phase_upper_bounds(Head,Call,Phase,_Chain,Top,Aux):-
 	append(Top1,Top2,Top),
 	append(Aux1,Aux2,Aux).
 	
-add_phase_lower_bounds(_Head,_Call,_Phase,_Chain,[],[]).
 
 
 get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Top,[]):-
@@ -180,6 +179,66 @@ find_reset(Dep,Rf,Head,Phase,Reset):-
 get_difference_version(Head,Call,Rf,Rf_diff):-
 	copy_term((Head,Rf),(Call,Rfp)),
 	normalize_le(Rf-Rfp,Rf_diff).
+
+
+
+add_phase_lower_bounds(Head,Call,Phase,Chain,Top,Aux):-
+	rf_limit(Max),
+	get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain,Top,Aux).
+	%get_partial_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Top2,Aux2),
+	%append(Top1,Top2,Top),
+	%append(Aux1,Aux2,Aux).
+	
+get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain,Top,[]):-
+		bagof_no_fail(Df,
+			get_lower_bound_val(Head,Call,Chain,Phase,Df)
+	   ,Dfs),
+	   ut_split_at_pos(Dfs,Max,Dfs_selected,_),
+	   maplist(cstr_get_it_name,Phase,Bounded),
+	   maplist(cstr_generate_top_exp(Bounded),Dfs_selected,Top).
+	   
+get_lower_bound_val(Head,Call,Chain,Phase,LB):-
+	ranking_function(Head,Chain,Phase,Rf),
+	copy_term((Head,Rf),(Call,Rf1)),
+	phase_loop(Phase,_,Head,Call,Phi),
+	normalize_constraint( D=Rf-Rf1 ,Constraint),
+	Cs_1 = [ Constraint | Phi],
+	nad_maximize(Cs_1,[D],[Delta1]),
+	normalize_le(1/Delta1*(Rf-Rf1),LB).
+
+/*	
+get_lower_bound_val(Head,Call,Chain,Phase,Val):-
+	partial_ranking_function(Head,Chain,Phase,_,Rf,_,_),
+	copy_term((Head,Rf),(Call,Rf1)),
+	normalize_constraint( D=Rf-Rf1 ,Constraint),
+	maplist(get_maximum_decrease(Head,Call,(D,Constraint)),Phase,Modifications),
+	exclude(zero_modification,Modifications,Non_zero_modifications),
+	partition(positive_modification,Non_zero_modifications,Positive,Non_positive),
+	partition(negative_modification,Non_positive,Negative,Unknown),
+	length(Non_positive,N),
+	%for now, do not allow resets
+	Unknown=[],
+	maplist(tuple,Loops,Nums,Positive),
+	max_list(Nums,Max),
+	normalize_le(1/Max*(Rf-Rf1),LB),
+	Val= N-val(Loops,LB,Negative,[],0).
+*/	
+get_maximum_decrease(Head,Call,(D,Constraint),Loop,(Loop,Delta)):-
+	loop_ph(Head,(Loop,_),Call,Cs,_,_),
+	Cs_1 = [ Constraint | Cs],
+	nad_maximize(Cs_1,[D],[Delta]),!.
+	
+get_maximum_decrease(_,_,_,Loop,(Loop,unknown)).
+	
+zero_modification((_,N)):-number(N),N =:= 0.
+zero_modification((_,N/D)):-number(N),number(D),N =:= 0.
+
+positive_modification((_,N)):-number(N),N > 0.
+positive_modification((_,N/D)):-number(N),number(D),N > 0,D > 0.
+
+negative_modification((_,N)):-number(N),N < 0.
+negative_modification((_,N/D)):-number(N),number(D),N < 0,D > 0.
+
 /*
 
 %FIXME: basic treatment
@@ -223,46 +282,5 @@ obtain_initial_inverse_rf_stucture(Head,Call,Chain,Phase,Structure):-
 	
 
 
-get_lower_bound_val(Head,Call,Chain,Phase,Val):-
-	ranking_function(Head,Chain,Phase,Rf),
-	copy_term((Head,Rf),(Call,Rf1)),
-	phase_loop(Phase,_,Head,Call,Phi),
-	normalize_constraint( D=Rf-Rf1 ,Constraint),
-	Cs_1 = [ Constraint | Phi],
-	nad_maximize(Cs_1,[D],[Delta1]),
-	normalize_le(1/Delta1*(Rf-Rf1),LB),
-	Val= 0-val(Phase,LB,[],[],0).
-	
-get_lower_bound_val(Head,Call,Chain,Phase,Val):-
-	partial_ranking_function(Head,Chain,Phase,_,Rf,_,_),
-	copy_term((Head,Rf),(Call,Rf1)),
-	normalize_constraint( D=Rf-Rf1 ,Constraint),
-	maplist(get_maximum_decrease(Head,Call,(D,Constraint)),Phase,Modifications),
-	exclude(zero_modification,Modifications,Non_zero_modifications),
-	partition(positive_modification,Non_zero_modifications,Positive,Non_positive),
-	partition(negative_modification,Non_positive,Negative,Unknown),
-	length(Non_positive,N),
-	%for now, do not allow resets
-	Unknown=[],
-	maplist(tuple,Loops,Nums,Positive),
-	max_list(Nums,Max),
-	normalize_le(1/Max*(Rf-Rf1),LB),
-	Val= N-val(Loops,LB,Negative,[],0).
-	
-get_maximum_decrease(Head,Call,(D,Constraint),Loop,(Loop,Delta)):-
-	loop_ph(Head,(Loop,_),Call,Cs,_,_),
-	Cs_1 = [ Constraint | Cs],
-	nad_maximize(Cs_1,[D],[Delta]),!.
-	
-get_maximum_decrease(_,_,_,Loop,(Loop,unknown)).
-	
-zero_modification((_,N)):-number(N),N =:= 0.
-zero_modification((_,N/D)):-number(N),number(D),N =:= 0.
-
-positive_modification((_,N)):-number(N),N > 0.
-positive_modification((_,N/D)):-number(N),number(D),N > 0,D > 0.
-
-negative_modification((_,N)):-number(N),N < 0.
-negative_modification((_,N/D)):-number(N),number(D),N < 0,D > 0.
 
 */
