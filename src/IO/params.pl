@@ -66,11 +66,16 @@ parameter_dictionary('-n_rankings','n_rankings',[number]).
 parameter_dictionary('-maximize_fast','maximize_fast',[number]).
 
 parameter_dictionary('-compress_chains','compress_chains',[]).
+parameter_dictionary('-negative','negative',[]).
 
 parameter_dictionary('-only_termination','only_termination',[bool]).
 parameter_dictionary('-prolog_format','prolog_format',[bool]).
 
 parameter_dictionary('-conditional_ubs','conditional_ubs',[]).
+
+
+incompatible_parameters(param(negative,[]),param(compress_chains,_)).
+
 %% clean_params is det
 % erase all the stored parameters
 clean_params:-
@@ -84,7 +89,7 @@ clean_params:-
 set_default_params:-
 	parse_params(['-v',2,
 		      '-n_rankings',2,
-		      '-maximize_fast',5
+		      '-maximize_fast',2
 		      ]).
 		      
 %% parse_params(Params:list(atoms)) is det
@@ -156,8 +161,18 @@ add_param(Key,_Value):-
 	retract(param(Key,_)),
 	fail.
 add_param(Key,Value):-
-	assert(param(Key,Value)).
+	check_param_incompatibility(param(Key,Value),param(Key2,Value2)),!,
+	throw(incompatible_arguments((Key,Value),(Key2,Value2))).
 
+add_param(Key,Value):-
+	assert(param(Key,Value)).	
+
+check_param_incompatibility(Param,param(Key,Val)):-
+	incompatible_parameters(Param,param(Key,Val)),
+	get_param(Key,Val).
+check_param_incompatibility(Param,param(Key,Val)):-
+	incompatible_parameters(param(Key,Val),Param),
+	get_param(Key,Val).
 %% get_param(+Param:atom,-Values:list(values)) is nondet
 % consult the stored values of the parameter Param
 get_param(Param,Values):-

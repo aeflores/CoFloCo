@@ -33,8 +33,8 @@ For the constraints, this is done at the same time of the compression.
 
 :- use_module(phase_solver,[compute_phases_cost/5]).
 :- use_module(constraints_maximization,[
-    maximize_constraints_set/4,
-	compress_sets_constraints/4]).
+    max_min_constraints_set/5,
+	compress_sets_constraints/5]).
 
 :-use_module('../db',[phase_loop/5,loop_ph/6]).
 :-use_module('../refinement/invariants',[backward_invariant/4,
@@ -65,13 +65,14 @@ For the constraints, this is done at the same time of the compression.
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
 %   * compress the norms of different phases
-compute_chain_cost(Head,Chain,cost(Base,Loops,Norms_out)):-
+compute_chain_cost(Head,Chain,cost(Base,Loops,Norms_out,INorms_out)):-
 	profiling_start_timer(loop_phases),
 	compute_phases_cost(Chain,Chain,Head,Call,Cost_exprs),
 	profiling_stop_timer_acum(loop_phases,_),
-	compress_phases(Cost_exprs,cost(Base,Loops,Norms)),
+	compress_phases(Cost_exprs,cost(Base,Loops,Norms,INorms)),
 	profiling_start_timer(chain_solver),
-	compress_chain_constraints(Chain,Norms,Head,Call,Norms_out),
+	compress_chain_constraints(Chain,Norms,Head,Call,max,Norms_out),
+	compress_chain_constraints(Chain,INorms,Head,Call,min,INorms_out),
 	profiling_stop_timer_acum(chain_solver,_),
 	!.
 
@@ -80,14 +81,15 @@ compute_chain_cost(Head,Chain,cost(Base,Loops,Norms_out)):-
 % compress_phases(Costs:list(cost_structure),Cost_out:cost_structure) is det
 % Put all the loops together and the norms in a list in inverse order.
 % The base costs are all added and simplified
-compress_phases(Costs,cost(Base,Loops_flat,Constrs1)):-
-	foldl(accum_costs,Costs,cost([],[],[]),cost(Bases,Loops_rev,Constrs)),
+compress_phases(Costs,cost(Base,Loops_flat,Constrs1,IConstrs1)):-
+	foldl(accum_costs,Costs,cost([],[],[],[]),cost(Bases,Loops_rev,Constrs,IConstrs)),
 	ut_flat_list(Loops_rev,Loops_flat),
 	reverse(Constrs,Constrs1),
+	reverse(IConstrs,IConstrs1),
 	cexpr_add_list(Bases,CExp),
 	cexpr_simplify_ctx_free(CExp,Base).
 
-accum_costs(cost(Base,Loops,C),cost(Bases,Loops_list,Cs),cost([Base|Bases],[Loops|Loops_list],[C|Cs])).
+accum_costs(cost(Base,Loops,C,IC),cost(Bases,Loops_list,Cs,ICs),cost([Base|Bases],[Loops|Loops_list],[C|Cs],[IC|ICs])).
 
 
 
@@ -99,18 +101,18 @@ accum_costs(cost(Base,Loops,C),cost(Bases,Loops_list,Cs),cost([Base|Bases],[Loop
 % At each step we try to compress the norms from the previous phases 
 % witht the ones of the current phase and express them in terms of the initial variables
 % of the phase.
-compress_chain_constraints([Lg|More],[Norms|Norms_list],Head_total,Call,Norms_out):-!,
+compress_chain_constraints([Lg|More],[Norms|Norms_list],Head_total,Call,Max_Min,Norms_out):-!,
 	copy_term(Head_total,Head),
 	% put norms expressed in terms of Head
 	maplist(substitute_norm_expression(Head_total,Head),Norms,Norms1),
 	% get all invariants together
 	get_all_base_case_information(Head,[Lg|More],Phi),
-	compress_chain_constraints_1(More,Norms1,Norms_list,Head,Head_total,Call,Phi,Norms_out).
+	compress_chain_constraints_1(More,Norms1,Norms_list,Head,Head_total,Call,Phi,Max_Min,Norms_out).
 
-compress_chain_constraints_1([],Norms_out,[],Prev_entry,Head_total,_Call,_Cs_prev,Norms_out):-
+compress_chain_constraints_1([],Norms_out,[],Prev_entry,Head_total,_Call,_Cs_prev,_Max_Min,Norms_out):-
 	Head_total=Prev_entry.
 
-compress_chain_constraints_1([Lg|More],Norms,[Norms1|Norms_list],Prev_entry,Head_total,Call,Cs_prev,Norms_out):-!,
+compress_chain_constraints_1([Lg|More],Norms,[Norms1|Norms_list],Prev_entry,Head_total,Call,Cs_prev,Max_Min,Norms_out):-!,
 	copy_term((Head_total,Call),(Head,Prev_entry)),
 	% express the norms of the phase in terms of a new Head and the previous Head
 	maplist(substitute_norm_expression((Head_total,Call),(Head,Prev_entry)),Norms1,Norms2),
@@ -122,9 +124,9 @@ compress_chain_constraints_1([Lg|More],Norms,[Norms1|Norms_list],Prev_entry,Head
 	Head=..[_|EVars],
 	Prev_entry=..[_|CVars],
 	%compress the accumulated norms and the norms in the current phase
-	compress_two_sets_constraints_with_filtering(Norms,Norms2,CVars,Cs_total,EVars,Compressed),
+	compress_two_sets_constraints_with_filtering(Norms,Norms2,CVars,Cs_total,EVars,Max_Min,Compressed),
 	nad_project_group(EVars,Cs_total,Cs_next),
-	compress_chain_constraints_1(More,Compressed,Norms_list,Head,Head_total,Call,Cs_next,Norms_out).
+	compress_chain_constraints_1(More,Compressed,Norms_list,Head,Head_total,Call,Cs_next,Max_Min,Norms_out).
 
 
 %! compress_two_sets_constraints_with_filtering(+Set1:list_set(norm),+Set2:list_set(norm),+Common_vars:list(var),+Cs:polyhedron,+Vars:list(var),-Compressed:set_list(norm)) is det
@@ -135,11 +137,11 @@ compress_chain_constraints_1([Lg|More],Norms,[Norms1|Norms_list],Prev_entry,Head
 %
 % Common_vars are the variables that might appear in constraints of both sets.
 % avoid trying to compress norms that do not depend on the common variables.
-compress_two_sets_constraints_with_filtering(Set1,Set2,Common_vars,Cs,Vars,Compressed):-
+compress_two_sets_constraints_with_filtering(Set1,Set2,Common_vars,Cs,Vars,Max_Min,Compressed):-
 	from_list_sl(Common_vars,Common_vars_set),
 	partition(norm_contains_initial_and_final_vars(Common_vars_set),Set2,DepNorms,Non_depNorms),
-	maximize_constraints_set(Non_depNorms,Vars,Cs,No_dep_maximized),
-	compress_sets_constraints([Set1,DepNorms],Vars,Cs,Compressed_dep),
+	max_min_constraints_set(Non_depNorms,Vars,Cs,Max_Min,No_dep_maximized),
+	compress_sets_constraints([Set1,DepNorms],Vars,Cs,Max_Min,Compressed_dep),
 	union_sl(Compressed_dep,No_dep_maximized,Compressed).
 	
 norm_contains_initial_and_final_vars(Set,norm(_Its,E)):-

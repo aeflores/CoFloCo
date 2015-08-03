@@ -152,7 +152,7 @@ Examples:
  * leq_fr( 1,1)         ?       true.
  
 */
-leq_fr( Small , Big ) :- geq_fr( Small , Big ).
+leq_fr( Small , Big ) :- geq_fr( Big , Small ).
 
 /*
 lesser_fr( + Small : fraction, + Big : fraction) is semidet.

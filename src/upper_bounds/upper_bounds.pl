@@ -32,7 +32,7 @@ that can be passed on to the callers.
 			compute_single_closed_bound/2]).
 
 :- use_module(chain_solver,[compute_chain_cost/3]).
-:- use_module(ub_solver,[solve_system/4]).
+:- use_module(ub_solver,[solve_system/5]).
 
 :- use_module('../db',[
 		  external_call_pattern/5,
@@ -50,8 +50,6 @@ that can be passed on to the callers.
 :- use_module('../utils/cost_structures',[
 				cost_structure_simplify/3,
 				compress_cost_structures/4]).
-
-
 %! compute_upper_bound_for_scc(+Head:term,+RefCnt:int) is det
 % compute an upper bound for each chain
 % then, compress the upper bounds for the chains that have been grouped into
@@ -68,7 +66,7 @@ compute_upper_bound_for_scc(Head,RefCnt):-
 % compute an upper bound for a chain,
 % simplify it according to the information of the backward invariant
 % and store it,
-compute_chain_upper_bound(Head,Chain):-	  
+compute_chain_upper_bound(Head,Chain):-	
 	compute_chain_cost(Head,Chain,UB),   
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 	cost_structure_simplify(UB,Head_Pattern,UB2),
@@ -81,7 +79,7 @@ compute_closed_bound(Head):-
 	upper_bound(Head,Chain,_Vars,Cost),
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 	Head=..[_|Vars],
-	solve_system(Cost,Vars,Head_Pattern,UB),
+	solve_system(Cost,Vars,Head_Pattern,max,UB),
 	cexpr_simplify(UB,Head_Pattern,UB1),
 	add_closed_upper_bound(Head,Chain,UB1),
 	fail.

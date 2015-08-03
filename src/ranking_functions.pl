@@ -34,7 +34,6 @@ mutual dependencies in order to obtain lexicographic ranking functions
 :- use_module('refinement/chains',[chain/3]).	  
 
 :- use_module('IO/params',[get_param/2]).
-:- use_module('upper_bounds/constraints_maximization',[maximize_linear_expression_all/4]).
 :- use_module('utils/cofloco_utils',[zip_with_op/4,
 						assign_right_vars/3,
 						normalize_constraint/2]).
@@ -47,6 +46,7 @@ mutual dependencies in order to obtain lexicographic ranking functions
 						nad_widen/5, nad_false/1,
 						nad_all_ranking_functions_PR/4,
 						nad_glb/3]).
+:- use_module(stdlib(fraction),[leq_fr/2,negate_fr/2]).						
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(multimap),[
     empty_mm/1,
@@ -68,7 +68,7 @@ mutual dependencies in order to obtain lexicographic ranking functions
 %
 %Deps  store the loops that can increase the value of the ranking function
 %Deps_type specifies how the value is increased:
-%  * an integer: the ranking function can be incremented in that magnitude
+%  * a fraction: the ranking function can be incremented in that magnitude
 %  * unknown: the ranking function might be "restarted"
 :- dynamic partial_ranking_function/7.
 
@@ -176,7 +176,7 @@ check_lexicographic_deps([],_Head,_Call,_Rf,[],[]).
 check_lexicographic_deps([Loop|Loops],Head,Call,Rf,Deps_out,Type_deps_out):-
 	loop_ph(Head,(Loop,_),Call,Cs_loop,_,_),
 	check_increment(Head,Call,Cs_loop,Rf,Inc),
-	( Inc =< 0 ->
+	( leq_fr(Inc,0) ->
 	    Deps_out=Deps_out_aux,
 	    Type_deps_out=Type_deps_out_aux
 	  ;
@@ -188,14 +188,14 @@ check_lexicographic_deps([Loop|Loops],Head,Call,Rf,Deps_out,Type_deps_out):-
 check_lexicographic_deps([Loop|Loops],Head,Call,Rf,[Loop|Deps_out],[unknown|Type_deps_out]):-
 	check_lexicographic_deps(Loops,Head,Call,Rf,Deps_out,Type_deps_out).
 
-%! check_increment(+Head:term,+Call:term,+Cs:polyhedron,+F:linear_expression,-Delta:int) is semidet
+%! check_increment(+Head:term,+Call:term,+Cs:polyhedron,+F:linear_expression,-Delta:fraction) is semidet
 % try to find a costant of how much a ranking function can be increased in the loop defined by Head,Call and Cs
 check_increment(Head,Call,Cs,Rf,Delta) :-
 	copy_term([Head,Rf],[Call,Rfp]),
 	normalize_constraint( D=Rf-Rfp ,Constraint),
 	Cs_1 = [ Constraint | Cs],
 	nad_minimize(Cs_1,[D],[Delta1]),
-	Delta is -Delta1.
+	negate_fr(Delta1,Delta).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -38,7 +38,9 @@
     ppl_ranking_function_PR/5,
     ppl_all_ranking_functions_MS/5,
     ppl_all_ranking_functions_PR/5,
-    get_generators/4
+    get_generators/4,
+    from_ppl/5,
+    to_ppl_dim/4
 			 
 ]).
 
@@ -87,12 +89,27 @@
      ppl_Pointset_Powerset_C_Polyhedron_difference_assign/2,
      ppl_Polyhedron_equals_Polyhedron/2, 
      ppl_Pointset_Powerset_C_Polyhedron_geometrically_equals_Pointset_Powerset_C_Polyhedron/2,
- 	  ppl_termination_test_MS_C_Polyhedron/1,
- 	  ppl_termination_test_PR_C_Polyhedron/1,
- 	  ppl_one_affine_ranking_function_MS_C_Polyhedron/2,
- 	  ppl_one_affine_ranking_function_PR_C_Polyhedron/2,
- 	  ppl_all_affine_ranking_functions_MS_C_Polyhedron/2,
- 	  ppl_all_affine_ranking_functions_PR_C_Polyhedron/2
+     
+     ppl_new_Octagonal_Shape_mpz_class_from_C_Polyhedron/2,
+	 ppl_new_Octagonal_Shape_mpz_class_from_constraints/2,
+	 ppl_new_Octagonal_Shape_mpz_class_from_space_dimension/3,
+	 ppl_Octagonal_Shape_mpz_class_add_constraints/2,
+     ppl_Octagonal_Shape_mpz_class_remove_higher_space_dimensions/2,
+     ppl_Octagonal_Shape_mpz_class_BHMZ05_widening_assign/2,
+     ppl_Octagonal_Shape_mpz_class_contains_Octagonal_Shape_mpz_class/2,  
+     ppl_Octagonal_Shape_mpz_class_intersection_assign/2,
+	 ppl_Octagonal_Shape_mpz_class_upper_bound_assign/2,  
+     ppl_Octagonal_Shape_mpz_class_is_empty/1,  
+     ppl_Octagonal_Shape_mpz_class_get_constraints/2,
+ 	 ppl_Octagonal_Shape_mpz_class_get_minimized_constraints/2,	   
+     ppl_delete_Octagonal_Shape_mpz_class/1,
+     
+ 	 ppl_termination_test_MS_C_Polyhedron/1,
+ 	 ppl_termination_test_PR_C_Polyhedron/1,
+ 	 ppl_one_affine_ranking_function_MS_C_Polyhedron/2,
+ 	 ppl_one_affine_ranking_function_PR_C_Polyhedron/2,
+ 	 ppl_all_affine_ranking_functions_MS_C_Polyhedron/2,
+ 	 ppl_all_affine_ranking_functions_PR_C_Polyhedron/2
  ]).
 
 :- use_module(stdlib(res_polyhedra),[lp_get_point/2]). 
@@ -100,6 +117,8 @@
 
 :- use_module(stdlib(list_utils),[length_lu/2,take_lu/3]).
 :- use_module(stdlib(utils),[ut_length/2]). 
+
+
 
 % ***IMPORTANT****
 %
@@ -500,15 +519,13 @@ to_ppl_dim ( type, + Dim + Constraints,  - Handle) ::
 Handle is the handle of a PPL_Object of type Type that represents the 
 Constraints, and has dimension Dim. 
 */
-to_ppl_dim( c , Dim , Elem, Handle ) :-
+to_ppl_dim( c , Dim , Elem, Handle ) :- 
     ppl_new_C_Polyhedron_from_space_dimension(Dim, universe, Handle), 
     ppl_Polyhedron_add_constraints(Handle, Elem).
 
-to_ppl_dim( o , Dim , Elem, Handle2 ) :-
-    ppl_new_C_Polyhedron_from_space_dimension(Dim, universe, Handle),
-    ppl_Polyhedron_add_constraints(Handle, Elem),
-    ppl_new_Octagonal_Shape_mpz_class_from_C_Polyhedron(Handle,Handle2),
-    ppl_delete_Polyhedron(Handle).
+to_ppl_dim( o , Dim , Elem, Handle ) :-
+	ppl_new_Octagonal_Shape_mpz_class_from_space_dimension(Dim,universe,Handle),
+	ppl_Octagonal_Shape_mpz_class_add_constraints(Handle,Elem).
     
 
 to_ppl_dim( nnc , Dim , Elem, Handle ) :-
@@ -555,11 +572,11 @@ from_ppl( T, H, D, Vs, Cs) :-
     from_ppl_x( T,H,D,Vs,Cs).
 
 from_ppl_x(c, Handle, _Dim, Vars, Elem) :-     
-    ppl_Polyhedron_get_constraints(Handle,Ground_Cs),
+	ppl_Polyhedron_get_constraints(Handle,Ground_Cs),
     from_numbervars_nu(Vars, Ground_Cs, Elem).
 
 from_ppl_x(o, Handle, _Dim, Vars, Elem) :-     
-    ppl_Octagonal_Shape_mpz_class_get_constraints(Handle,Ground_Cs),
+	ppl_Octagonal_Shape_mpz_class_get_constraints(Handle,Ground_Cs),
     from_numbervars_nu(Vars, Ground_Cs, Elem).
 
 from_ppl_x(nnc, Handle, _Dim, Vars, Elem) :-     

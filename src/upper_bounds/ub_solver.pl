@@ -31,7 +31,7 @@ Specific "data types" of this module:
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(ub_solver,[solve_system/4]).
+:- module(ub_solver,[solve_system/5]).
 
 
 :- use_module('../IO/params',[get_param/2]).
@@ -68,26 +68,57 @@ Specific "data types" of this module:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Maximize a explicit cost expression or part of it
 
-%! solve_system(+Cost:cost_structure,+Vars:list(var),-Max:cost_expression) is det
+%! solve_system(+Cost:cost_structure,+Vars:list(var),Max_Min:flag,-Max:cost_expression) is det
 % solve a cost structure Cost into a regular cost expression Max
 %  * solve the cost structures inside the loops
 %  * solve the constraints of the loops and add the base cost
-solve_system(cost(Base,Loops,External_constrs),Vars,Cs,Max):-
-	maplist(solve_loop(Vars,Cs),Loops,It_vars,It_costs),
+
+	
+%solve with negative costs!!!
+solve_system(cost(Base,Loops,External_constrs,I_External_constrs),Vars,Cs,max,Max):-
+	maplist(solve_loop(Vars,Cs,max),Loops,It_vars,It_costs),
+	maplist(cexpr_simplify_aux(Cs),It_costs,It_costs_simple),
+	split_positive_and_negative(It_costs_simple,It_vars,Cs,It_costs_pos,It_vars_pos,It_costs_neg,It_vars_neg),
+	
+	filter_ub_constraints(External_constrs,It_vars_pos,External_constrs1),
+	group_same_its_constraints(External_constrs1,Cs,max,External_constrs2),
+	group_dependant_it_constrs(External_constrs2,It_vars_pos,Grouped_It_vars_pos),
+	maplist(zip_with_op(p),It_vars_pos,It_costs_pos,It_pairs_pos),
+	maplist(solve_constr_group(It_pairs_pos,Vars,max),Grouped_It_vars_pos,Costs_pos),
+	
+	filter_lb_constraints(I_External_constrs,It_vars_neg,I_External_constrs1),	
+	group_same_its_constraints(I_External_constrs1,Cs,min,I_External_constrs2),
+	group_dependant_it_constrs(I_External_constrs2,It_vars_neg,Grouped_It_vars_neg),
+	maplist(zip_with_op(p),It_vars_neg,It_costs_neg,It_pairs_neg),
+	maplist(solve_constr_group(It_pairs_neg,Vars,min),Grouped_It_vars_neg,Costs_neg),
+	
+	%remove_zero_costs(It_vars,It_costs_simple_positive,Selected_constrs,It_vars1,It_costs1,External_constrs1),
+	append(Costs_neg,Costs_pos,Costs),
+	cexpr_add_list([Base|Costs],Max),!.		
+
+/*
+solve_system(cost(Base,Loops,External_constrs,I_External_constrs),Vars,Cs,Max_Min,Max):-
+	(Max_Min=max->
+	   Selected_constrs=External_constrs
+	   ;
+	   Selected_constrs=I_External_constrs
+	 ),
+	maplist(solve_loop(Vars,Cs,Max_Min),Loops,It_vars,It_costs),
 	maplist(cexpr_simplify_aux(Cs),It_costs,It_costs_simple),
 	maplist(avoid_negative_costs(Cs),It_costs_simple,It_costs_simple_positive),
-	remove_zero_costs(It_vars,It_costs_simple_positive,External_constrs,It_vars1,It_costs1,External_constrs1),
-	group_same_its_constraints(External_constrs1,Cs,External_constrs2),
+	remove_zero_costs(It_vars,It_costs_simple_positive,Selected_constrs,It_vars1,It_costs1,External_constrs1),
+	group_same_its_constraints(External_constrs1,Cs,Max_Min,External_constrs2),
 	group_dependant_it_constrs(External_constrs2,It_vars1,Grouped_It_vars),
 	maplist(zip_with_op(p),It_vars1,It_costs1,It_pairs),
-	maplist(solve_constr_group(It_pairs,Vars),Grouped_It_vars,Costs),
-	cexpr_add_list([Base|Costs],Max),!.
+	maplist(solve_constr_group(It_pairs,Vars,Max_Min),Grouped_It_vars,Costs),
+	cexpr_add_list([Base|Costs],Max),!.	
+*/
 
 %! solve_loop(+Vars:list(var),+Loop:loop_cost,-It_var:var,-Cost:cost_expression) is det
 % solve the cost structure inside the loop Loop and return the cost Cost and
 % the iteration variable of the loop It_var
-solve_loop(Vars,Cs,loop(It_var,Base,Loops,Constr),It_var,Cost):-
-	solve_system(cost(Base,Loops,Constr),Vars,Cs,Cost).
+solve_loop(Vars,Cs,Max_Min,loop(It_var,Base,Loops,Constr,IConstr),It_var,Cost):-
+	solve_system(cost(Base,Loops,Constr,IConstr),Vars,Cs,Max_Min,Cost).
 
 %! avoid_negative_costs(+Cs:polyhedron,+Cost:cost_expression,-Cost2:cost_expression) is det
 % If the body of a loop has negative cost, we approximate to cost 0
@@ -114,6 +145,60 @@ avoid_negative_costs(Cs,Cost,Cost2):-
 	
 avoid_negative_costs(_,Cost,nat(Cost)).
 
+
+
+split_positive_and_negative([],[],_Cs,[],[],[],[]).
+split_positive_and_negative([C|Costs],[It_var|It_vars],Cs,[C|Costs_pos],[It_var|It_vars_pos],Costs_neg,It_vars_neg):-
+	is_positive(C,Cs),!,
+	split_positive_and_negative(Costs,It_vars,Cs,Costs_pos,It_vars_pos,Costs_neg,It_vars_neg).
+	
+split_positive_and_negative([C|Costs],[It_var|It_vars],Cs,Costs_pos,It_vars_pos,[C|Costs_neg],[It_var|It_vars_neg]):-
+	is_negative(C,Cs),!,	
+	split_positive_and_negative(Costs,It_vars,Cs,Costs_pos,It_vars_pos,Costs_neg,It_vars_neg).
+	
+split_positive_and_negative([C|Costs],[It_var|It_vars],Cs,[nat(C)|Costs_pos],[It_var|It_vars_pos],[min([C,0])|Costs_neg],[It_var|It_vars_neg]):-
+	split_positive_and_negative(Costs,It_vars,Cs,Costs_pos,It_vars_pos,Costs_neg,It_vars_neg).
+	
+is_positive(Exp,_Cs):-
+	number(Exp),Exp >= 0,!.
+is_positive(Exp,Cs):-
+	is_linear_exp(Exp),
+	term_variables((Cs,Exp),Vars),
+	nad_entails_aux(Vars,Cs,[Exp>=0]),!.
+	
+is_negative(Exp,_Cs):-
+	number(Exp),Exp >= 0,!.
+is_negative(Exp,Cs):-
+	is_linear_exp(Exp),
+	term_variables((Cs,Exp),Vars),
+	nad_entails_aux(Vars,Cs,[Exp=<0]),!.	
+	
+	
+filter_ub_constraints(External_constrs,It_vars_keep,External_constrs1):-
+	filter_ub_constraints_1(External_constrs,It_vars_keep,[],External_constrs1).
+filter_ub_constraints_1([],_,Norms2,Norms2).
+filter_ub_constraints_1([norm(It_vars,Exp)|Norms],It_vars_keep,Norms_accum,Norms_out):-
+	from_list_sl(It_vars,It_vars1),
+	intersection_sl(It_vars1,It_vars_keep,It_vars2),
+	(It_vars2=[]->
+	  filter_ub_constraints_1(Norms,It_vars_keep,Norms_accum,Norms_out)
+	;
+	  filter_ub_constraints_1(Norms,It_vars_keep,[norm(It_vars2,Exp)|Norms_accum],Norms_out)
+	).
+	
+filter_lb_constraints(External_constrs,It_vars_keep,External_constrs1):-
+	filter_lb_constraints_1(External_constrs,It_vars_keep,[],External_constrs1).
+filter_lb_constraints_1([],_,Norms2,Norms2).
+filter_lb_constraints_1([norm(It_vars,Exp)|Norms],It_vars_keep,Norms_accum,Norms_out):-
+	from_list_sl(It_vars,It_vars1),
+	intersection_sl(It_vars1,It_vars_keep,It_vars2),
+	length(It_vars1,N),
+	(length(It_vars2,N)->
+		filter_lb_constraints_1(Norms,It_vars_keep,[norm(It_vars2,Exp)|Norms_accum],Norms_out)  
+	;
+		filter_lb_constraints_1(Norms,It_vars_keep,Norms_accum,Norms_out)
+	).
+	
 %! remove_zero_costs(+It_vars:list(var),+It_costs:list(cost_expression),+Norms:list(norm),-It_vars1:list(var),-It_costs1:list(cost_expression),-Norms1:list(norm)) is det
 % remove the iteration variables whose loop cost is 0
 % from the list of iteration variables and from the norms
@@ -141,16 +226,17 @@ filter_zeroes_in_norms([_|Norms],Filtered_norms):-
 %! group_same_its_constraints(+Norms:list(norm),-Norms2:list(norm)) is det
 % put all the norms that contain the same set of iteration variables together.
 % For example, if we have norm([I1,I2],A) and norm([I1,I2],B), it generates norm([I1,I2],min([A,B]))
-group_same_its_constraints(Norms,Cs,Norms2):-
+group_same_its_constraints(Norms,Cs,Max_min,Norms2):-
 	maplist(zip_with_op(norm),Its_list,Exps,Norms),
 	maplist(tuple,Its_list,Exps,Pair_list),
 	from_pair_list_mm(Pair_list,Multimap),
-	maplist(generate_min_norm(Cs),Multimap,Norms2).
+	maplist(generate_1_norm(Cs,Max_min),Multimap,Norms2).
 
-generate_min_norm(_,(Its,[Exp]),norm(Its,Exp)):-!.
-generate_min_norm(Cs,(Its,Exps),norm(Its,Cost_simple)):-
+generate_1_norm(_,(Its,[Exp]),norm(Its,Exp)):-!.
+generate_1_norm(Cs,max,(Its,Exps),norm(Its,Cost_simple)):-
 	cexpr_simplify(min(Exps),Cs,Cost_simple).
-
+generate_1_norm(Cs,min,(Its,Exps),norm(Its,Cost_simple)):-
+	cexpr_simplify(max(Exps),Cs,Cost_simple).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! group_dependant_it_constrs(+Constrs:list(norm),+It_vars:list(var),-Grouped_It_vars:list(it_group)) is det
@@ -205,7 +291,7 @@ add_constr_to_group(C,it_group(V,Cs),it_group(V,Cs2)):-
 % on each other. We select a set of constraints according to heuristic criteria.
 % Then we maximize each iteration variable and constraint one by one.
 % The current criterion guarantees that this approach is safe.
-solve_constr_group(It_pairs,EntryVars,it_group(Vars,Norms_all),Cost):-
+solve_constr_group(It_pairs,EntryVars,max,it_group(Vars,Norms_all),Cost):-
 	%FIXME when solve_precise we should check that the set of constraints generates
 	% an acyclic dependency graph, otherwise the result could be unsound
 	%(get_param(solve_precise,[N_extra])->
@@ -220,6 +306,15 @@ solve_constr_group(It_pairs,EntryVars,it_group(Vars,Norms_all),Cost):-
 	include(has_iteration_variable(Vars),It_pairs,It_pairs1),
 	from_list_sl(Norms,Maximized_norms_set),
 	incremental_maximization(It_pairs1,EntryVars,Maximized_norms_set,Cost).
+	
+
+solve_constr_group(It_pairs,EntryVars,min,it_group(Vars,Norms_all),Cost):-
+	aggresive_constraint_selection_min(it_group(Vars,Norms_all),it_group(Vars,Norms)),
+	%get the costs that correspond to the iteration variables Vars
+	include(has_iteration_variable(Vars),It_pairs,It_pairs1),
+	from_list_sl(Norms,Maximized_norms_set),
+	incremental_minimization(It_pairs1,EntryVars,Maximized_norms_set,Cost).
+
 
 has_iteration_variable(Vars,p(It_var,_)):-
 	contains_sl(Vars,It_var).
@@ -308,6 +403,59 @@ zero_it_var(p(It_var,_)):-
 empty_norm(norm([],_)).
 
 
+
+incremental_minimization([],_,_,0).
+
+incremental_minimization(It_pairs,EVars,Norms,Cost):-
+	findall((EVars,Cost1),
+% for every iteration variable,
+   		(select(p(It_var,It_cost),It_pairs,It_pairs_rem),
+	
+   		 findall((EVars,Cost_inter),
+   		 (
+   		   partition(contains_it_var(It_var),Norms,Norms_related,_Norms_rest),
+       (Norms_related=[_|_]->
+%   select a norm that cover It_var      
+         member(norm(Its,Rf),Norms_related),
+%       set the iteration variable to the expression of the norm Rf         
+         It_var=Rf,
+%       and the rest of the iteration variables of the constrain to 0         
+         maplist(assign_zero_if_possible(Rf),Its),
+% remove pairs whose iteration variable has taken the 0 value         
+         exclude(zero_it_var,It_pairs_rem,Remaining_it_pairs),
+% all the norms norm([Its,It_var],Exp) that contain It_var are transformed into norm([Its],Exp-Rf)
+         maplist(transform_norms(Rf),Norms,Transformed_norms),
+% exclude norms that are left empty        
+         exclude(empty_norm,Transformed_norms,Remaining_norms),
+
+         (Remaining_it_pairs=[]->
+	      Cost_aux=0
+          ;
+          %recursive call
+          incremental_minimization(Remaining_it_pairs,EVars,Remaining_norms,Cost_aux)
+          ),
+          % accumulate the cost
+          % Cost_iter= Rf*It_cost+ Cost_aux
+         cexpr_mul(nat(Rf),It_cost,Loop_CExpr),
+         cexpr_add(Loop_CExpr,Cost_aux,Cost_inter)
+       ;
+       % the pair is not bounded by any constraint!
+	     Cost_inter=0
+       )  
+       ),Inter_costs),
+   	   assign_right_vars(Inter_costs,EVars,Inter_costs2),
+   	   % keep the minimum of considering different constraints
+   	   cexpr_max(Inter_costs2,Cost1)
+   	),Costs),
+   	assign_right_vars(Costs,EVars,Costs2),
+   	%keep the maximum of maximizing iteration variables in different order
+   	cexpr_min(Costs2,Cost).
+
+
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % select the norms
  
@@ -346,7 +494,27 @@ take_n([Norm|More],N,Selected_norms,Selected_norms_out):-
 	take_n(More,N1,[Norm|Selected_norms],Selected_norms_out).
 take_n(_,0,Selected_norms,Selected_norms).
 */		
-	
+aggresive_constraint_selection_min(it_group(Vars,Norms),it_group(Vars,Taken_norms)):-
+	order_norms_heuristically_min(Norms,Ordered_norms),
+	take_norms_agressive_min(Ordered_norms,Vars,Taken_norms).
+
+%! take_norms_agressive(+Norms:list(norm),+Vs:list_set(var),-Norms1:list(norm)) is det
+% collect norms until all the iteration variables are covered
+% each time we take one, remove the covered iteration variables from the remaining norms (thus eliminating dependencies)
+% and re-order the transformed norms
+take_norms_agressive_min([],_NVars,[]).
+take_norms_agressive_min([norm(Vars,Exp)|Norms],Rest_vars,[norm(Vars,Exp)| Taken_norms]):-
+	difference_sl(Rest_vars,Vars,Rest_vars1),
+	(Rest_vars1=[] ->
+	       Taken_norms=[]
+	;
+	       exclude(norm_contains_it_vars(Vars),Norms,Norms1),
+	       order_norms_heuristically_min(Norms1,Ordered_norms),
+	       take_norms_agressive_min(Ordered_norms,Rest_vars1, Taken_norms)
+	 ).	
+norm_contains_it_vars(Its1,norm(Its,_)):-
+	intersection_sl(Its1,Its,[_|_]).	 
+	 
 %! aggresive_constraint_selection(+It_group:it_group,-It_group2:it_group) is det	
 % select a set of norms that will be taken into account and ignore the rest.
 % the selection is done according to the following heuristics:
@@ -392,6 +560,8 @@ keep_it_vars([norm(Vars,Exp)|Norms],Vs,Norms1):-
 order_norms_heuristically(Norms,Ordered_norms):-
 	sort_with(Norms,bigger_heuristic,Ordered_norms).
 
+order_norms_heuristically_min(Norms,Ordered_norms):-
+	sort_with(Norms,smaller_heuristic,Ordered_norms).
 %! bigger_heuristic(+Norm1:norm,+Norm2:norm) is semidet
 % define an heuristic criteron to sort norms according to:
 %  *if both norms are numbers, the value of the numbers 
@@ -422,4 +592,25 @@ bigger_heuristic(norm(Vars1,Expression1),norm(Vars2,Expression2)):-
 	term_variables(Expression1,VarsExp1),length(VarsExp1,NVars1),
 	term_variables(Expression2,VarsExp2),length(VarsExp2,NVars2),
 	NVars1 < NVars2,!.
+	
+
+	
+smaller_heuristic(norm(_Vars1,Expression1),norm(_Vars2,Expression2)):-
+	number(Expression1),
+	number(Expression2),
+	Expression1 < Expression2,!.
+
+smaller_heuristic(norm(_Vars1,Expression1),norm(_Vars2,Expression2)):-
+	get_asymptotic_class(Expression1,Class1),
+	get_asymptotic_class(Expression2,Class2),
+	(Class1 < Class2),!.
+	
+smaller_heuristic(norm(Vars1,Expression1),norm(Vars2,Expression2)):-
+	get_asymptotic_class(Expression1,Class1),
+	get_asymptotic_class(Expression2,Class2),
+	(Class1 == Class2),
+	length(Vars1,N1),length(Vars2,N2),
+	(N1 > N2),!.
+	
+	
 	

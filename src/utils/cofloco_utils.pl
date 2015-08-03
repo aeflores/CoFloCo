@@ -77,7 +77,7 @@ repeat_n_times(N,Elem,[Elem|Is]):-
 
 %! get_it_vars_in_loop(+Loop:loop_cost,-It_var:Var) is det
 % obtain the iteration variable of Loop
-get_it_vars_in_loop(loop(It_var,_,_,_),It_var).
+get_it_vars_in_loop(loop(It_var,_,_,_,_),It_var).
 
 %! tuple(?A:A,?B:B,?C:(A,B))
 % C is the pair (A,B).

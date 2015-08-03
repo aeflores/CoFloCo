@@ -54,6 +54,7 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 		  add_eq_ph/2,
 		  add_external_call_pattern/5,
 		  external_call_pattern/5,
+		  reset_scc/3,
 		  upper_bound/4,
 		  non_terminating_chain/3]).
 :-use_module('../termination_checker',[termination_argument/4]).
@@ -64,13 +65,15 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3,assign_right_vars/3,tuple/3]).
 :- use_module('../utils/polyhedra_optimizations',[
 	nad_consistent_constraints_group_aux/1,
-	slice_relevant_constraints_and_vars/5]).
+	slice_relevant_constraints_and_vars/5,
+	group_relevant_vars/4,
+	nad_normalize_polyhedron/2]).
 
 :- use_module(stdlib(utils),[ut_split_at_pos/4]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_lub/6,
 			            nad_normalize/2,
 						nad_list_lub/2,nad_glb/3,nad_project/3]).
-:- use_module(stdlib(set_list),[from_list_sl/2,unions_sl/2]).
+:- use_module(stdlib(set_list),[from_list_sl/2,unions_sl/2,union_sl/3]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 
 %! reinforce_equations_with_forward_invs(Head:term,RefCnt:int) is det
@@ -107,14 +110,24 @@ reinforce_calls([Head|More],RefCnt,Cs):-
 %! reinforce_scc_forward_inv(Head:term,RefCnt:int,Cs:polyhedron) is det
 % if the is already a SCC forward invariant, we relax it with the new conditions Cs.
 % if there is none, we initialize it with the given conditions Cs.
+%/*
 reinforce_scc_forward_inv(Head,RefCnt,Inv):-
 	retract(scc_forward_invariant(Head,RefCnt,Inv_2)),!,
-	Head=..[_|Vars],
+		Head=..[_|Vars],
 	nad_lub(Vars,Inv,Vars,Inv_2,Vars,New_Inv),
 	assertz(scc_forward_invariant(Head,RefCnt,New_Inv)).
 reinforce_scc_forward_inv(Head,RefCnt,Inv):-
 	assertz(scc_forward_invariant(Head,RefCnt,Inv)).
-
+%*/
+/*	
+reinforce_scc_forward_inv(Head,RefCnt,Inv):-
+	retract(scc_forward_invariant(Head,RefCnt,Inv_2)),!,
+	Head=..[_|Vars],
+	nad_lub(Vars,Inv,Vars,Inv_2,Vars,New_Inv),
+	assertz(scc_forward_invariant(Head,RefCnt,[])).
+reinforce_scc_forward_inv(Head,RefCnt,Inv):-
+	assertz(scc_forward_invariant(Head,RefCnt,[])).
+*/
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! unfold_calls(Head:term,RefCnt:int) is det
@@ -172,7 +185,6 @@ unfold_calls_aux([Base_Call|More],[Base_Call|MoreB],Head,RefCnt,Cost,R_Calls,New
 	term_variables(Head_Pattern,Relevant_vars_ini),
 	slice_relevant_constraints_and_vars(Relevant_vars_ini,[],Total_Cons,_,Relevant_Cons),
 	nad_consistent_constraints_group_aux(Relevant_Cons),
-	
 	or_terminating_flag(Term_flag,Terminating,Term_flag2),
 	%if the calls are sequential and one does not terminate, we can eliminate further calls
 	((get_param(assume_sequential,[]),Terminating=non_terminating)->
@@ -183,6 +195,7 @@ unfold_calls_aux([Base_Call|More],[Base_Call|MoreB],Head,RefCnt,Cost,R_Calls,New
 			    [(Base_Call,Id_call)|New_T_Calls],Total_Cons,Term_flag2,Id)
 	).
 
+	
 or_terminating_flag(terminating,terminating,terminating):-!.
 or_terminating_flag(_,_,non_terminating):-!.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -238,6 +251,12 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	assign_right_vars(Ex_pats,Head,Ex_pats1),
 	% group the partitions according to the chains
 	from_pair_list_mm(Ex_pats1,Multimap_simplified),
+	
+	(reset_scc(Head,Important_vars,Flag)-> 
+	   merge_patterns(Head,Important_vars,Flag,Multimap_simplified,Multimap_simplified_2)
+	   ;
+	  Multimap_simplified_2=Multimap_simplified
+	   ),
 	findall((Head,(Condition,Chain)),
 		(
 		backward_invariant(Head,(Chain,RefCnt),_,Condition),
@@ -249,11 +268,53 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	
 	% group the partitions according to the chains
 	from_pair_list_mm(Ex_pats_non_terminating1,Multimap_simplified_non_terminating),
-	foldl(save_external_execution_patterns(Head,RefCnt,terminating),Multimap_simplified,1,Id_N1),
-	foldl(save_external_execution_patterns(Head,RefCnt,non_terminating),Multimap_simplified_non_terminating,Id_N1,_).
+	(reset_scc(Head,Important_vars,Flag)-> 
+	   merge_patterns(Head,Important_vars,Flag,Multimap_simplified_non_terminating,Multimap_simplified_non_terminating_2)
+	   ;
+	  Multimap_simplified_non_terminating_2=Multimap_simplified_non_terminating
+	   ),
+	
+	foldl(save_external_execution_patterns(Head,RefCnt,terminating),Multimap_simplified_2,1,Id_N1),
+	foldl(save_external_execution_patterns(Head,RefCnt,non_terminating),Multimap_simplified_non_terminating_2,Id_N1,_).
 
 
 save_external_execution_patterns(Head,RefCnt,Terminating,(Precondition,Chains),N,N1):-
 	add_external_call_pattern(Head,(N,RefCnt),Terminating,Chains,Precondition),
 	N1 is N+1.
+
+
+
+merge_patterns(Head,Important_vars,strong,Multimap,Multimap_simplified2):-
+	Head=..[_|Vars],
+	foldl(accum_all_constraints_from_multimap,Multimap,[],All_css),
+	from_list_sl(Important_vars,Important_vars_set),
+	slice_relevant_constraints_and_vars(Important_vars_set,Vars,All_css,Selected_vars,_),
+	maplist(tuple,Invs,_Chains_lists,Multimap),
+	maplist(reduce_precondition_to_vars(Selected_vars),Invs,Reduced_invs),
+	maplist(tuple,Reduced_invs,Multimap,Multimap_two_levels),	
+	from_pair_list_mm(Multimap_two_levels,Multimap_two_levels_compressed),
+	maplist(merge_patterns_aux,Multimap_two_levels_compressed,Multimap_simplified2).
+	
+merge_patterns(_Head,Important_vars,weak,Multimap,Multimap_simplified2):-
+	from_list_sl(Important_vars,Important_vars_set),
+	maplist(tuple,Invs,_Chains_lists,Multimap),
+	maplist(reduce_precondition_to_vars(Important_vars_set),Invs,Reduced_invs),
+	maplist(tuple,Reduced_invs,Multimap,Multimap_two_levels),	
+	from_pair_list_mm(Multimap_two_levels,Multimap_two_levels_compressed),
+	maplist(merge_patterns_aux,Multimap_two_levels_compressed,Multimap_simplified2).	
+	
+merge_patterns_aux((_,Multimap),(Inv,Chains)):-
+	maplist(tuple,Invs,Chains_lists,Multimap),
+	nad_list_lub(Invs,Inv),
+	unions_sl(Chains_lists,Chains).
+
+accum_all_constraints_from_multimap((Inv,_),Set,Set1):-
+	from_list_sl(Inv,Inv_set),
+	union_sl(Inv_set,Set,Set1).
+		
+reduce_precondition_to_vars([],_,[]):-!.
+reduce_precondition_to_vars(Vars,Inv,Inv_simplified):-
+	nad_project(Vars,Inv,Inv_projected),
+	nad_normalize_polyhedron(Inv_projected,Inv_simplified).
+	
 	
