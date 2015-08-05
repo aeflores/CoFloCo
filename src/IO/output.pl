@@ -43,6 +43,7 @@ This module prints the results of the analysis
 						external_call_pattern/5,
 						upper_bound/4,
 						closed_upper_bound/4,
+						closed_lower_bound/4,
 						conditional_upper_bound/3,
 						non_terminating_chain/3]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
@@ -250,7 +251,8 @@ print_top_exp(Op,bound(Exp,Bounded)):-
 	write_sum(Bounded,Sum),
 	format('~p ~p ~p~n',[Sum,Op,Exp]).
 
-print_aux_exp(Op,bound(Elems,Exp,Bounded)):-
+print_aux_exp(Op,bound(Elems_0,Exp_0,Bounded)):-
+	copy_term((Elems_0,Exp_0),(Elems,Exp)),
 	cstr_get_cexpr_from_normalform(Exp,Exp2),
 	maplist(tuple,X,X,Elems),
 	write_sum(Bounded,Sum),
@@ -260,8 +262,9 @@ print_aux_exp(Op,bound(Elems,Exp,Bounded)):-
 %! print_closed_results(+Entry:term,+RefCnt:int) is det
 % print the chains, invariants and closed upper bounds of SCC Entry in the refinement phase RefCnt	
 print_closed_results(Entry,RefCnt):-
-	ground_header(Entry),
-	ansi_format([underline,bold],'Solved cost expressions of ~p: ~n',[Entry]),
+	copy_term(Entry,Entry_ground),
+	ground_header(Entry_ground),
+	ansi_format([underline,bold],'Solved cost expressions of ~p: ~n',[Entry_ground]),
 	(get_param(prolog_format,_)->
 	  print_closed_results_prolog_format(Entry,RefCnt)
 	  ;
@@ -272,8 +275,18 @@ print_closed_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
 	maplist(pretty_print_constr,EPat,EPat_pretty),
  	closed_upper_bound(Entry,Chain,_,CExp),
+ 	closed_lower_bound(Entry,Chain,_,CExp_lb),
+ 	get_asymptotic_class_name(CExp,Asym_class),
+	get_asymptotic_class_name(CExp_lb,Asym_class1),
+	ground_header(Entry),
 	print_chain(Entry,Chain),
 	format(': ~p  with precondition: ~p ~n',[CExp,EPat_pretty]),
+	format('Lower bound: ~p ~n',[CExp_lb]),
+	format('Upper Asymptotic: ~p ~n Lower Asymptotic ~p~n ',[Asym_class,Asym_class1]),
+	(Asym_class\=Asym_class1->
+		format(user_error,'Imprecise lower bound (~p, ~p)~n',[Asym_class,Asym_class1])
+		;
+		true),
  	fail.
 print_closed_results_1(_Entry,_).
 

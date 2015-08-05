@@ -486,7 +486,7 @@ transitive_closure_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head
 	partition_invariant_and_loops(inv(Entry,Head,Inv_0),Loops,Groups_inv_loops),
     maplist(low_level_transitive_closure_invariant_fixpoint,Groups_inv_loops,Invs),
     ut_flat_list(Invs,Inv_out).
-%    low_level_transitive_closure_invariant_fixpoint((inv(Entry,Head,Inv_0),Loops),Inv_out).
+ %   low_level_transitive_closure_invariant_fixpoint((inv(Entry,Head,Inv_0),Loops),Inv_out).
 
 % auxiliar procedures to split a set of loops into their independent components
 

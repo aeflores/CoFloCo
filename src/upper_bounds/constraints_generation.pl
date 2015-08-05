@@ -3,16 +3,6 @@
 This module generates new constraints for the iteration variables of a phase based on 
 the ranking functions.
 
-
-Specific "data types" of this module:
-  * rf_structure:list(int-val(list(equation_id),linear_expression,list((equation_id,int)),list(equation_id),cost_expression))
-    This data structure is a sorted list
-    of ranking functions that are sorted by the number of dependencies they have.
-    each element contains the specific dependencies in two categories: the Increment_deps
-    and the Unknown_deps. The equations in Increment_deps increment the ranking function by a
-    constant, the Unkown_deps reset the value of the ranking function.
-    Finally, the last part of the ranking function contains the additional expression
-    that has to be added to the rf to account for dependencies that have been already removed
     
 @author Antonio Flores Montoya
 

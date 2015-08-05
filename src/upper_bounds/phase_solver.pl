@@ -26,7 +26,7 @@ at the beginning and the end of the phase.
 :- module(phase_solver,[compute_phases_cost/5,init_phase_solver/0]).
 
 :- use_module(constraints_maximization,[
-					max_min_costs_in_phase/5]).
+					max_min_costs_in_phase/6]).
 					
 :- use_module(cost_equation_solver,[get_equation_cost/5]).
 		
@@ -99,7 +99,7 @@ compute_phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv),Cost):-
 	profiling_start_timer(equation_cost),
 	maplist(get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv)),Phase,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
-	max_min_costs_in_phase(Costs,Head,Call,Phase,Cost),
+	max_min_costs_in_phase(Costs,Head,Call,Forward_inv,Phase,Cost),
 	assert(phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv),Cost)).
 
 get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,cost(Top_exps1,Aux_exps1,Bases1,Base1)):-

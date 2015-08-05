@@ -52,7 +52,9 @@ This module acts as a database that stores:
 	   external_upper_bound/3,
 	   add_external_upper_bound/3,
 	   closed_upper_bound/4,
+	   closed_lower_bound/4,
 	   add_closed_upper_bound/3,
+	   add_closed_lower_bound/3,
 	   single_closed_upper_bound/2,
 	   add_single_closed_upper_bound/2,
 	   conditional_upper_bound/3,	  
@@ -141,6 +143,11 @@ This module acts as a database that stores:
 % Hash is the hash of part of the cost structure and can be used to compress similar cost structures
 :- dynamic closed_upper_bound/4.
 
+%! closed_lower_bound(?Head:term,?Chain:chain,-Hash:int,-Cost_expression:cost_expression)
+% an cost expression that represents an lower bound of the chain Chain that belongs to the SCC Head.  
+% Hash is the hash of part of the cost structure and can be used to compress similar cost structures
+:- dynamic closed_lower_bound/4.
+
 %! single_closed_upper_bound(?Head:term,-Cost_expression:cost_expression)
 % an cost expression that represents an upper bound of the SCC Head.  
 :- dynamic single_closed_upper_bound/2.
@@ -174,6 +181,7 @@ init_db:-
 	retractall(upper_bound(_,_,_,_)),
 	retractall(external_upper_bound(_,_,_)),
 	retractall(closed_upper_bound(_,_,_,_)),
+	retractall(closed_lower_bound(_,_,_,_)),
 	retractall(single_closed_upper_bound(_,_)),
 	retractall(non_terminating_stub(_,_)),
 	retractall(non_terminating_chain(_,_,_)),
@@ -302,6 +310,17 @@ add_closed_upper_bound(Head,Chain,CExpr) :-
 	  term_hash(C,Hash),
 	  assertz(closed_upper_bound(Head,Chain,Hash,CExpr))
 	),!.
+%! add_closed_lower_bound(+Head:term,+Chain:chain,+Cost_expression:cost_expression) is det
+% stores the closed lower bound of chain Chain. It computes the hash of the cost expression
+add_closed_lower_bound(Head,Chain,CExpr) :-	
+	(closed_lower_bound(Head,Chain,_,CExpr)->
+	 true
+	;
+	  copy_term((Head,CExpr),(E,C)),
+	  numbervars(E,0,_),
+	  term_hash(C,Hash),
+	  assertz(closed_lower_bound(Head,Chain,Hash,CExpr))
+	),!.	
 	
 %! add_single_closed_upper_bound(+Head:term,+Cost_expression:cost_expression) is det
 % stores the single closed upper bound of the SCC Head.

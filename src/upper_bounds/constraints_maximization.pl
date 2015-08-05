@@ -30,7 +30,7 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 :- module(constraints_maximization,[
 				  max_min_constrs_in_cost_equation/6,
 				  max_min_top_exprs_in_chain/6,
-				  max_min_costs_in_phase/5,
+				  max_min_costs_in_phase/6,
 				  max_min_linear_expression_all/5]).
 				  
 :- use_module('../IO/params',[get_param/2]).
@@ -79,7 +79,7 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 						nad_list_lub/2,
 						nad_project/3,nad_entails/3,nad_normalize/2,
 						nad_consistent_constraints/1]).
-:- use_module(stdlib(fraction),[greater_fr/2,geq_fr/2,negate_fr/2]).
+:- use_module(stdlib(fraction),[greater_fr/2,geq_fr/2,negate_fr/2,multiply_fr/3]).
 :- use_module(stdlib(fraction_list),[max_frl/2,min_frl/2]).
 				
 %/*										
@@ -301,17 +301,17 @@ maximize_insecure_constraints(Vars,Phi,Max_Min,Bounded=<Linear_Expr_to_Maximize,
 			
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
-max_min_costs_in_phase(Costs,Head,Call,Phase,Cost_final):-
+max_min_costs_in_phase(Costs,Head,Call,Forward_inv,Phase,Cost_final):-
 	add_phase_upper_bounds(Head,Call,Phase,_,Top_exps_new,Aux_exps_new),
 	add_phase_lower_bounds(Head,Call,Phase,_,LTop_exps_new,LAux_exps_new),
 	
-	
+
 	maplist(cstr_remove_cycles,Costs,Costs_simple),
 	maplist(cstr_propagate_summatory,Phase,Costs_simple,Costs_propagated,Summatories_pairs),
 	maplist(tuple,Summatories,LSummatories,Summatories_pairs),
-	maplist(max_min_top_expressions_in_loop(Head,Call,Phase),Phase,Costs_propagated,Costs_maximized),
-	compute_summatories(Head,Call,Phase,max,Summatories,Top_exps2,Aux_exps2),
-	compute_summatories(Head,Call,Phase,min,LSummatories,LTop_exps2,LAux_exps2),
+	maplist(max_min_top_expressions_in_loop(Head,Call,Phase,Forward_inv),Phase,Costs_propagated,Costs_maximized),
+	compute_summatories(Head,Call,Phase,Forward_inv,max,Summatories,Top_exps2,Aux_exps2),
+	compute_summatories(Head,Call,Phase,Forward_inv,min,LSummatories,LTop_exps2,LAux_exps2),
 	cstr_empty(Empty_cost),
 	foldl(cstr_join,Costs_maximized,Empty_cost,cost(Ub_constrs,Lb_constrs,Bases,Base)),
 	Ub_constrs=(Top_exps,Aux_exps),
@@ -324,47 +324,48 @@ max_min_costs_in_phase(Costs,Head,Call,Phase,Cost_final):-
 	cstr_remove_cycles(cost((Top_exps_final,Aux_exps_final),(LTop_exps_final,LAux_exps_final),Bases,Base),Cost_final).
 		
 	
-compute_summatories(Head,Call,Phase,Max_min,Summatories,Top_exps2,Aux_exps2):-
-	compute_sums(Head,Call,Phase,Max_min,Summatories,Top,Aux,Summatories_left),
-	maplist(simple_multiplication_list(Head,Call,Phase,Max_min),Phase,Summatories_left,Tops,Auxs),
+compute_summatories(Head,Call,Phase,Forward_inv,Max_min,Summatories,Top_exps2,Aux_exps2):-
+	compute_sums(Head,Call,Phase,Forward_inv,Max_min,Summatories,Top,Aux,Summatories_left),
+	maplist(simple_multiplication_list(Head,Call,Phase,Forward_inv,Max_min),Phase,Summatories_left,Tops,Auxs),
 	ut_flat_list([Top,Tops],Top_exps2),
 	ut_flat_list([Aux,Auxs],Aux_exps2).
 
 
-simple_multiplication_list(Head,Call,Phase,Max_min,Loop,Sums,Tops,Auxs):-
-	maplist(simple_multiplication(Head,Call,Phase,Max_min,Loop),Sums,Tops,Auxs).
+simple_multiplication_list(Head,Call,Phase,Forward_inv,Max_min,Loop,Sums,Tops,Auxs):-
+	maplist(simple_multiplication(Head,Call,Phase,Forward_inv,Max_min,Loop),Sums,Tops,Auxs).
 	
-simple_multiplication(Head,Call,Phase,Max_min,Loop,bound(Exp,Bounded),Top_exps_new,Aux_exps_total):-
+simple_multiplication(Head,Call,Phase,Forward_inv,Max_min,Loop,bound(Exp,Bounded),Top_exps_new,Aux_exps_total):-
 	cstr_name_aux_var(Aux_name),
-	max_min_top_expression_in_loop(Head,Call,Phase,Max_min,Loop,bound(Exp,[Aux_name]),Top_exps_new,Aux_exps_new),
+	max_min_top_expression_in_loop(Head,Call,Phase,Forward_inv,Max_min,Loop,bound(Exp,[Aux_name]),Top_exps_new,Aux_exps_new),
 	cstr_get_it_name(Loop,Loop_name),
     Aux_exp=bound([(Aux_name,Aux_var),(Loop_name,It_var)],add([mult([It_var,Aux_var])]),Bounded),
     append(Aux_exps_new,[Aux_exp],Aux_exps_total).
 
 	
-max_min_top_expressions_in_loop(Head,Call,Phase,Loop,cost((Top_exps,Aux),(LTop_exps,LAux),Bs,B),cost((Top_exps_new2,Aux2),(LTop_exps_new2,LAux2),Bs,B)):-
-	maplist(max_min_top_expression_in_loop(Head,Call,Phase,max,Loop),Top_exps,Top_exps_new,Aux_exps_new),
+max_min_top_expressions_in_loop(Head,Call,Phase,Forward_inv,Loop,cost((Top_exps,Aux),(LTop_exps,LAux),Bs,B),cost((Top_exps_new2,Aux2),(LTop_exps_new2,LAux2),Bs,B)):-
+	maplist(max_min_top_expression_in_loop(Head,Call,Phase,Forward_inv,max,Loop),Top_exps,Top_exps_new,Aux_exps_new),
 	ut_flat_list(Top_exps_new,Top_exps_new2),
 	ut_flat_list([Aux_exps_new|Aux],Aux2),
 	
-	maplist(max_min_top_expression_in_loop(Head,Call,Phase,min,Loop),LTop_exps,LTop_exps_new,LAux_exps_new),
+	maplist(max_min_top_expression_in_loop(Head,Call,Phase,Forward_inv,min,Loop),LTop_exps,LTop_exps_new,LAux_exps_new),
 	ut_flat_list(LTop_exps_new,LTop_exps_new2),
 	ut_flat_list([LAux_exps_new|LAux],LAux2).
 
-max_min_top_expression_in_loop(Head,Call,Phase,Max_min,Loop,bound(Exp,Bounded),Top_exps_new,Aux_exps_new):-
-	traditional_phase_maximization(Head,Call,Phase,Max_min,Loop,Exp,Bounded,Top_exps_new,Aux_exps_new).
+max_min_top_expression_in_loop(Head,Call,Phase,Forward_inv,Max_min,Loop,bound(Exp,Bounded),Top_exps_new,Aux_exps_new):-
+	traditional_phase_maximization(Head,Call,Phase,Forward_inv,Max_min,Loop,Exp,Bounded,Top_exps_new,Aux_exps_new).
 	
 
-traditional_phase_maximization(Head,Call,Phase,Max_min,Loop,Exp,Bounded,Top_exps_new,[]):-
-	get_phase_star(Head_total,Head,Phase,Cs_star_trans),
+traditional_phase_maximization(Head,Call,Phase,Forward_inv,Max_min,Loop,Exp,Bounded,Top_exps_new,[]):-
+	%get_phase_star(Head_total,Head,Phase,Cs_star_trans),
+	phase_transitive_closure(Phase,_,Head_total,Head,Cs_star_trans),
 	loop_ph(Head,(Loop,_),Call,Cs,_,_),
-	ut_flat_list([Cs_star_trans,Cs],Context),
+	ut_flat_list([Cs_star_trans,Cs,Forward_inv],Context),
 	term_variables(Head_total,Vars_of_Interest),
 	max_min_linear_expression_all(Exp, Vars_of_Interest, Context,Max_min, Maxs_out),
 	Head_total=Head,
 	maplist(cstr_generate_top_exp(Bounded),Maxs_out,Top_exps_new).
 
-compute_sums(Head,Call,Phase,Max_min,Summatories_ini,Top,Aux,Summatories_left):-
+compute_sums(Head,Call,Phase,Forward_inv,Max_min,Summatories_ini,Top,Aux,Summatories_left):-
 	maplist(add_difference_versions(Head,Call),Summatories_ini,Phase,Summatories),
 	phase_transitive_closure(Phase,_,Head,Call,Cs_transitive),
 	%get_phase_star(Head,Call,Phase,Cs_star_trans),
@@ -373,7 +374,7 @@ compute_sums(Head,Call,Phase,Max_min,Summatories_ini,Top,Aux,Summatories_left):-
 	maplist(get_expressions_map(Expressions_sets,Phase),All_expressions,Expressions_map),
 	maplist(tuple,All_expressions,_Solutions,Pairs),
 	maplist(tuple,Pairs,Expressions_map,Pairs1),
-	include(try_inductive_compression(Head,Phase,Cs_transitive,Call,Max_min),Pairs1,Summed),
+	include(try_inductive_compression(Head,Phase,Forward_inv,Cs_transitive,Call,Max_min),Pairs1,Summed),
 	maplist(tuple,Summed_map,_,Summed),
 	generate_top_and_aux_from_compressed(Summed_map,Summatories,Top,Aux,Summatories_left).
 
@@ -402,6 +403,7 @@ get_expressions_map(Ex_sets,Phase,Exp,Map_set):-
 	
 loop_contains_exp(Exp,Set,Loop,[Loop]):-
 		contains_sl(Set,Exp),!.
+
 loop_contains_exp(_Exp,_Set,_Loop,[]).	
 
 
@@ -433,7 +435,7 @@ remove_tops_with_exp_1(_Exp,Tops,_Tops1,_Bounded):-
 
 top_has_exp(Exp,bound(Exp2,_)):-Exp==Exp2.
 
-try_inductive_compression(Head,Phase,Cs_star_trans,Call,Max_Min,((L,(Bounded_var,Tops,Auxs)),Expressions_map)):-
+try_inductive_compression(Head,Phase,Forward_inv,Cs_star_trans,Call,Max_Min,((L,(Bounded_var,Tops,Auxs)),Expressions_map)):-
 	%phase_loop(Phase,_,Call,Call2,Phi),
 	\+term_variables(L,[]),
 	Head=..[_|EVars],
@@ -445,11 +447,11 @@ try_inductive_compression(Head,Phase,Cs_star_trans,Call,Max_Min,((L,(Bounded_var
 	),
 	
 	difference_sl(Phase,Expressions_map,Other_loops),
-	copy_term((Head,Call,Phi,L),(Call,Call2,Cs2,L2)),
+	copy_term((Head,Call,Phi,Forward_inv,L),(Call,Call2,Cs2,Forward_inv2,L2)),
 	copy_term((Head,Call,L),(Head,Call2,L_total)),
 	
 
-	ut_flat_list([Cs_star_trans,Cs2],Cs_comb),
+	ut_flat_list([Cs_star_trans,Cs2,Forward_inv2],Cs_comb),
 	term_variables(Cs_comb,Vars_constraint),
 
 	(Max_Min=max->	
@@ -471,7 +473,7 @@ try_inductive_compression(Head,Phase,Cs_star_trans,Call,Max_Min,((L,(Bounded_var
     Same_loops_info=[]
 	),
 	maplist(is_not_negative(Head,Call,L),Expressions_map),
-	maplist(check_bad_loops(Head,Call,L,Max_Min),Other_loops,Bad_loops_info),
+	maplist(check_bad_loops(Head,Call,Forward_inv,L,Max_Min),Other_loops,Bad_loops_info),
 	ut_flat_list([Same_loops_info,Bad_loops_info],Bad_loops_info_flat),!,
 	(Max_Min=max->
 	max_min_linear_expression_all(L_total,EVars,Cs_comb,Max_Min,Maxs)
@@ -480,16 +482,65 @@ try_inductive_compression(Head,Phase,Cs_star_trans,Call,Max_Min,((L,(Bounded_var
 	),
 	generate_top_and_aux(Bad_loops_info_flat,Max_Min,[L|Maxs],Bounded_var,Tops,Auxs).
 
+
+%triangular
+try_inductive_compression(Head,Phase,Forward_inv,_Cs_star_trans,Call,Max_Min,((L2,(Bounded_var,Tops,Auxs)),Expressions_map)):-
+	%phase_loop(Phase,_,Call,Call2,Phi),
+	%trace,
+	term_variables(L2,Vars_L),
+	Vars_L\=[],
+	Head=..[_|EVars],
+	
+%	from_list_sl(EVars,EVars_set),
+%	difference_sl(Vars_l_set,EVars_set,[]),%only entry variables
+	
+	(Expressions_map=Phase->
+		phase_loop(Phase,_,Head,Call,Phi)
+		;
+		maplist(get_loop_cs(Head,Call),Expressions_map,Css),
+		nad_list_lub(Css,Phi)
+	),
+	max_min_linear_expression_all(L2,EVars,Phi,Max_Min,Lss),
+	member(L,Lss),\+term_variables(L,[]),
+	
+	difference_sl(Phase,Expressions_map,Other_loops),
+
+	copy_term((Head,L),(Call,Lp)),
+	
+
+	ut_flat_list([Phi,Forward_inv],Cs_comb),
+	%term_variables(Cs_comb,Vars_constraint),
+	%trace,
+	normalize_constraint( D=(Lp-L) ,Inductive_constraint_aux),
+	(Max_Min=max->	
+    nad_maximize([Inductive_constraint_aux|Cs_comb],[D],[Delta])
+    ,
+    Delta\=0/1
+	;
+    nad_minimize([Inductive_constraint_aux|Cs_comb],[D],[Delta])
+    ,
+    Delta\=0/1
+	),
+	maplist(is_not_negative(Head,Call,L),Expressions_map),
+	maplist(check_bad_loops(Head,Call,Forward_inv,L,Max_Min),Other_loops,Bad_loops_info),
+	ut_flat_list(Bad_loops_info,Bad_loops_info_flat),
+	generate_top_and_aux_triangular(Delta,Expressions_map,Bad_loops_info_flat,Max_Min,Lss,Bounded_var,Tops,Auxs).
+	
+
+	
+
+generate_top_and_aux_triangular(Delta,[Loop],Info,_,Maxs,Bounded,Tops,Auxs):-
+	multiply_fr(Delta,1/2,Delta_2),
+	%we can always exclude min
+	exclude(is_min,Info,Info2),
+	maplist(get_factors_from_loop_info,Info2,Factors,Index),
+	cstr_name_aux_var(Name_aux),
+	cstr_get_it_name(Loop,Name_loop),%trace,
+	Auxs=[bound([(Name_aux,Var_aux),(Name_loop,Var_loop_1),(Name_loop,Var_loop_2),(Name_loop,Var_loop_3),(Name_loop,Var_loop_4)|Index],add([mult([Var_loop_1,Var_aux]),mult([Var_loop_2,Var_loop_3,Delta_2]),mult([Var_loop_4,Delta_2])|Factors]),Bounded)],
+	maplist(cstr_generate_top_exp([Name_aux]),Maxs,Tops)
+	.	
 /*	
-try_triangular_sum(Head,Call,Phase,min,Summatories,_Top,_Aux,Summatories):-
-	phase_loop(Phase,_,Head,Call,Phi),
-	Phase=[_One],
-	maplist(get_top_lin_expr,Summatories,[Expressions_set]),
-	maplist(tuple,Expressions_set,Multiplicative,Expressions_pairs),
-	include(try_triangular_expression(Head,Phase,Phi,Call,min),Expressions_pairs,Compressed_pairs),!.
-	
-try_triangular_sum(Head,Call,Phase,_,Summatories,[],[],Summatories).
-	
+
 
 try_triangular_expression(Head,[Loop],Phi,Call,min,(Expression,Constant)):-,
 	copy_term((Head,Call,Phi,Expression),(Call,Call2,Phi2,Expression2)),
@@ -532,14 +583,20 @@ is_not_negative(Head,Call,L,Loop):-
 	nad_entails(Vars_constraint,Cs,[Positive_constraint]).
 
 
-check_bad_loops(Head,Call,Exp,Max_Min,Loop,Info):-
-	loop_ph(Head,(Loop,_),Call,Cs,_,_),
+check_bad_loops(Head,Call,Forward_inv,Exp,Max_Min,Loop,Info):-
+	loop_ph(Head,(Loop,_),Call,Cs_ini,_,_),
 	normalize_constraint( D=Exp ,Constraint),
+	append(Cs_ini,Forward_inv,Cs),
 	Cs_1 = [ Constraint | Cs],
 	(Max_Min=max->
-	  nad_minimize(Cs_1,[D],[Delta]),
+	  (nad_minimize(Cs_1,[D],[Delta])->
 	  Pos_loop=max(Loop),
 	  Neg_loop=min(Loop)
+	  ;
+	 % term_variables(Head,Vars),
+	 % max_min_linear_expression_all(Exp,Vars,Cs,min, MINS),
+	  fail
+	  )
 	;
 	  nad_maximize(Cs_1,[D],[Delta]),
 	  Pos_loop=min(Loop),

@@ -40,6 +40,7 @@ that can be passed on to the callers.
 		  upper_bound/4,
 		  add_external_upper_bound/3,
 		  add_closed_upper_bound/3,
+		  add_closed_lower_bound/3,
 		  add_single_closed_upper_bound/2,
 		  closed_upper_bound/4]).
 
@@ -47,7 +48,7 @@ that can be passed on to the callers.
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3,cexpr_max/2]).
-:- use_module('../utils/cost_structures',[cstr_naive_maximization/2,cstr_join_equal_top_expressions/2]).
+:- use_module('../utils/cost_structures',[cstr_naive_maximization/2,cstr_naive_minimization/2,cstr_join_equal_top_expressions/2]).
 %				cost_structure_simplify/3,
 %				compress_cost_structures/4]).
 %! compute_upper_bound_for_scc(+Head:term,+RefCnt:int) is det
@@ -66,14 +67,14 @@ compute_upper_bound_for_scc(Head,RefCnt):-
 % compute an upper bound for a chain,
 % simplify it according to the information of the backward invariant
 % and store it,
-compute_chain_upper_bound(Head,Chain):-	
-%	trace,
-	compute_chain_cost(Head,Chain,UB),   
+compute_chain_upper_bound(Head,Chain):-
+	compute_chain_cost(Head,Chain,UB),!,  
 	cstr_join_equal_top_expressions(UB,UB2),
 %	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 %	cost_structure_simplify(UB,Head_Pattern,UB2),
 	add_upper_bound(Head,Chain,UB2).
-
+compute_chain_upper_bound(Head,Chain):-
+	throw(fatal_error('failed to compute chain bound',Head,Chain)).
 %! compute_closed_bound(+Head:term) is det
 % compute a closed bound for each cost structure that has been previously inferred
 % and store it
@@ -83,6 +84,10 @@ compute_closed_bound(Head):-
 	cstr_naive_maximization(Cost,UB),
 	cexpr_simplify(UB,Head_Pattern,UB1),
 	add_closed_upper_bound(Head,Chain,UB1),
+	
+	cstr_naive_minimization(Cost,LB),
+	cexpr_simplify(LB,Head_Pattern,LB1),
+	add_closed_lower_bound(Head,Chain,LB1),
 	fail.
 compute_closed_bound(_Head).
 
