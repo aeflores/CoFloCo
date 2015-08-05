@@ -285,8 +285,7 @@ add_upper_bound(Head,Chain,CExpr) :-
 	;
 	  copy_term((Head,CExpr),(E,C)),
 	  numbervars((E,C),0,_),
-	  C=cost(_,Loops,Constr,IConstr),
-	  term_hash((Loops,Constr,IConstr),Hash),
+	  term_hash(C,Hash),
 	  assertz(upper_bound(Head,Chain,Hash,CExpr))
 	),!.
 	

@@ -102,8 +102,8 @@ compute_phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv),Cost):-
 	max_min_costs_in_phase(Costs,Head,Call,Forward_inv,Phase,Cost),
 	assert(phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv),Cost)).
 
-get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,cost(Top_exps1,Aux_exps1,Bases1,Base1)):-
+get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost2):-
 	get_equation_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost),
-	cstr_extend_variables_names(Cost,it(Eq_id),cost(Top_exps1,Aux_exps1,Bases1,Base1)).
+	cstr_extend_variables_names(Cost,it(Eq_id),Cost2).
 	
 	

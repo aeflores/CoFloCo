@@ -53,7 +53,8 @@ This module prints the results of the analysis
 :- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2,tuple/3]).
 
 :- use_module('../utils/cost_structures',[cstr_shorten_variables_names/2,
-cstr_get_cexpr_from_normalform/2]).
+cstr_get_cexpr_from_normalform_ground/2]).
+
 
 :- use_module('../IO/params',[parameter_dictionary/3,get_param/2,
 		      param_description/2]).
@@ -237,26 +238,33 @@ print_results_1(_Entry,_).
 gen_mult_bases((A,B),A*B).
 
 print_new_cost_structure(Cost):-
-	cstr_shorten_variables_names(Cost,cost((Top_exps,Aux_exps),(LTop_exps,LAux_exps),Bases,Base)),
+	cstr_shorten_variables_names(Cost,cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)),
+	partition(is_ub_aux_exp,Aux_exps,Ub_Aux_exps,Lb_Aux_exps),
 	maplist(gen_mult_bases,Bases,Bases1),
 	write_sum([Base|Bases1],Sum),
 	format('~p',[Sum]),
 	format('~n  Such that:~12|',[]),
-	maplist(print_top_exp('=<'),Top_exps),
-	maplist(print_aux_exp('=<'),Aux_exps),
-	maplist(print_top_exp('>='),LTop_exps),
-	maplist(print_aux_exp('>='),LAux_exps).
+	maplist(print_top_exp,Top_exps),
+	maplist(print_aux_exp,Ub_Aux_exps),
+	maplist(print_top_exp,LTop_exps),
+	maplist(print_aux_exp,Lb_Aux_exps).
+	
+is_ub_aux_exp(bound(ub,_,_)).
 
-print_top_exp(Op,bound(Exp,Bounded)):-
+print_top_exp(bound(Op,Exp,Bounded)):-
+	print_op(Op,Op_p),
 	write_sum(Bounded,Sum),
-	format('~p ~p ~p~n',[Sum,Op,Exp]).
+	format('~p ~p ~p~n',[Sum,Op_p,Exp]).
 
-print_aux_exp(Op,bound(Elems_0,Exp_0,Bounded)):-
-	copy_term((Elems_0,Exp_0),(Elems,Exp)),
-	cstr_get_cexpr_from_normalform(Exp,Exp2),
-	maplist(tuple,X,X,Elems),
+print_aux_exp(bound(Op,Exp_0,Bounded)):-
+	print_op(Op,Op_p),
+	copy_term(Exp_0,Exp),
+	cstr_get_cexpr_from_normalform_ground(Exp,Exp2),
 	write_sum(Bounded,Sum),
-	format('~p ~p ~p~n',[Sum,Op,Exp2]).	
+	format('~p ~p ~p~n',[Sum,Op_p,Exp2]).	
+	
+print_op(ub,'=<').
+print_op(lb,'>=').
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_closed_results(+Entry:term,+RefCnt:int) is det

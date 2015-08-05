@@ -49,7 +49,7 @@ the ranking functions.
 :- use_module('../utils/cost_structures',[
 			cstr_name_aux_var/1,
 			cstr_get_it_name/2,
-			cstr_generate_top_exp/3
+			cstr_generate_top_exp/4
 			]).
 
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).
@@ -92,7 +92,7 @@ get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Top,[]):-
 	   maplist(get_difference_version(Head,Call),Rfs_selected,Rfs_diff),
 	   maplist(cstr_get_it_name,Phase,Bounded),
 	   append(Rfs_selected,Rfs_diff,Rfs_total),
-	   maplist(cstr_generate_top_exp(Bounded),Rfs_total,Top).
+	   maplist(cstr_generate_top_exp(Bounded,ub),Rfs_total,Top).
 
 
 
@@ -114,7 +114,7 @@ increment_dep((_,N)):-number(N).
 get_constr_from_partial_function(Head,Call,_Phase,(Loops,Rf,[],[]),(Top_accum,Aux),(Top,Aux)):-
 	maplist(cstr_get_it_name,Loops,Bounded),
 	get_difference_version(Head,Call,Rf,Rf_diff),
-	maplist(cstr_generate_top_exp(Bounded),[Rf,Rf_diff],[Top1,Top2]),
+	maplist(cstr_generate_top_exp(Bounded,ub),[Rf,Rf_diff],[Top1,Top2]),
 	Top=[Top1,Top2|Top_accum],!.
 	
 get_constr_from_partial_function(Head,Call,Phase,(Loops,Rf,Incr_deps,Unknown_deps),(Top_accum,Aux_accum),(Top,Aux)):-
@@ -125,8 +125,9 @@ get_constr_from_partial_function(Head,Call,Phase,(Loops,Rf,Incr_deps,Unknown_dep
 		  cstr_name_aux_var(Name_aux),
 		  ut_flat_list([Index,Index2],Index_total),
 		  append(Summands,Summands2,Summands_total),
-		  Aux=[bound([(Name_aux,Var_aux)|Index_total],add([mult([Var_aux])|Summands_total]),Bounded)|Aux_accum],
-		  maplist(cstr_generate_top_exp([Name_aux]),[Rf,Rf_diff],[Top1,Top2]),
+		  Internal_exp=exp([(Name_aux,Var_aux)|Index_total],[],add([mult([Var_aux])|Summands_total]),add([])),
+		  Aux=[bound(ub,Internal_exp,Bounded)|Aux_accum],
+		  maplist(cstr_generate_top_exp([Name_aux],ub),[Rf,Rf_diff],[Top1,Top2]),
 		  ut_flat_list([Top1,Top2,Extra_tops,Top_accum],Top).
 		  	
 get_constr_from_partial_function(_Head,_Call,_Phase,_,(Top,Aux),(Top,Aux)).
@@ -139,7 +140,7 @@ get_mult_summands(Head,Rf,Phase,Loop,mult([Var_loop,Var_aux]),[(It_name,Var_loop
 	cstr_get_it_name(Loop,It_name),
 	cstr_name_aux_var(Name_aux),
 	find_reset(Loop,Rf,Head,Phase,Reset),
-	cstr_generate_top_exp([Name_aux],Reset,Extra_top).
+	cstr_generate_top_exp([Name_aux],ub,Reset,Extra_top).
 		   
 		   
 		   
@@ -185,7 +186,7 @@ get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain,Top,[]):-
 	   ,Dfs),
 	   ut_split_at_pos(Dfs,Max,Dfs_selected,_),
 	   maplist(cstr_get_it_name,Phase,Bounded),
-	   maplist(cstr_generate_top_exp(Bounded),Dfs_selected,Top).
+	   maplist(cstr_generate_top_exp(Bounded,lb),Dfs_selected,Top).
 	   
 get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 	ranking_function(Head,Chain,Phase,Rf),

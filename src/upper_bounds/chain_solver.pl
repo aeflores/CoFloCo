@@ -88,21 +88,20 @@ compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,C
 	copy_term((Head_total,Call_total,Cost),(Head,Call,Cost1)),
 	get_all_phase_information(Head,Call,[Lg|More],Cs_list),
 	nad_list_glb([Cs_prev|Cs_list],Cs_total),
-	Cost_prev=cost(Ub_cons,Lb_cons,Bases_prev,Base_prev),
-	Cost1=cost(Ub_cons2,Lb_cons2,Bases1,Base1),
-	compress_chain_constrs(Ub_cons,Ub_cons2,max,[Lg|More],Cs_total,Head,Ub_cons_new),
-	compress_chain_constrs(Lb_cons,Lb_cons2,min,[Lg|More],Cs_total,Head,Lb_cons_new),
+	Cost_prev=cost(Ub_tops,Lb_tops,Auxs,Bases_prev,Base_prev),
+	Cost1=cost(Ub_tops1,Lb_tops1,Auxs1,Bases1,Base1),
+	append(Ub_tops,Ub_tops1,Ub_tops_total),
+	append(Lb_tops,Lb_tops1,Lb_tops_total),
+	max_min_top_exprs_in_chain(Ub_tops_total,[Lg|More],Cs_total,Head,Ub_tops_new,Ub_Aux_exps_extra),
+	max_min_top_exprs_in_chain(Lb_tops_total,[Lg|More],Cs_total,Head,Lb_tops_new,Lb_Aux_exps_extra),
+	ut_flat_list([Ub_Aux_exps_extra,Lb_Aux_exps_extra,Auxs,Auxs1],Aux_exps_new),
 	append(Bases_prev,Bases1,Bases_total),
 	cexpr_simplify_ctx_free(Base_prev+Base1,Base2),
-	Cost_next=cost(Ub_cons_new,Lb_cons_new,Bases_total,Base2),
+	Cost_next=cost(Ub_tops_new,Lb_tops_new,Aux_exps_new,Bases_total,Base2),
 	Head=..[_|EVars],
 	nad_project_group(EVars,Cs_total,Cs_next),
 	compress_chain_costs_1(More,Cost_list,Cost_next,Cs_next,Head_total,Call_total,Head,Cost_total).
-	
-compress_chain_constrs((Tops1,Aux1),(Tops2,Aux2),Max_min,Chain,Cs_total,Head,(Top_exps_new,Aux_exps_new)):-
-	append(Tops1,Tops2,Top_total),
-	max_min_top_exprs_in_chain(Top_total,Max_min,Chain,Cs_total,Head,(Top_exps_new,Aux_exps_extra)),
-	ut_flat_list([Aux_exps_extra,Aux1,Aux2],Aux_exps_new).
+
 
 %! get_all_base_case_information(+Head:term,+Part_chain:chain,-Phi:polyhedron) is det
 %  obtain the base case definition and the forward invariant
