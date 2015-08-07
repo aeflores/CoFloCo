@@ -26,8 +26,7 @@
 :- module(cost_structures,[
 		cstr_empty/1,
 		cstr_constant/2,
-		cstr_naive_maximization/2,
-		cstr_naive_minimization/2,
+		cstr_maxminimization/3,
 		cstr_name_aux_var/1,
 		cstr_get_it_name/2,
 		cstr_generate_top_exp/4,
@@ -42,10 +41,12 @@
 		cstr_join_equal_top_expressions/2,
 		cstr_shorten_variables_names/2]).
 :- use_module(cofloco_utils,[write_sum/2,write_product/2,tuple/3,assign_right_vars/3]).	
+:- use_module(cost_expressions,[cexpr_simplify/3]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
-:- use_module(stdlib(utils),[ut_flat_list/2]).	
+:- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).	
 :- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
 :- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
+:- use_module(stdlib(fraction),[greater_fr/2]).
 :- use_module(stdlib(set_list),[contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
 :-dynamic short_db/3.
@@ -141,17 +142,34 @@ split_bounded([Bound|Aux_exps],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,[
 	split_bounded(Aux_exps,Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).
 
 cstr_remove_useless_constrs(cost(Ub_tops,Lb_tops,Auxs,Bases,Base),cost(Ub_tops2,Lb_tops2,Auxs2,Bases2,Base)):-
-	foldl(compute_initial_reference_set,Bases,([],[]),(Bases2,Ref_set)),
+	foldl(compute_initial_reference_set(max),Bases,([],[]),(Bases1,Ref_set1)),
+	foldl(compute_initial_reference_set(min),Bases1,([],Ref_set1),(Bases2,Ref_set2)),
+	reverse(Auxs,Aux_rev),
+	remove_useless_aux_constrs(Aux_rev,Ref_set2,[],Ref_set3,Auxs2),
+	exclude(useless_top_constr(Ref_set3),Ub_tops,Ub_tops2),
+	exclude(useless_top_constr(Ref_set3),Lb_tops,Lb_tops2).
+
+cstr_remove_useless_constrs_max_min(cost(Ub_tops,Lb_tops,Auxs,Bases,Base),Max_min,cost(Ub_tops2,Lb_tops2,Auxs2,Bases2,Base)):-
+	foldl(compute_initial_reference_set(Max_min),Bases,([],[]),(Bases2,Ref_set)),
 	reverse(Auxs,Aux_rev),
 	remove_useless_aux_constrs(Aux_rev,Ref_set,[],Ref_set1,Auxs2),
 	exclude(useless_top_constr(Ref_set1),Ub_tops,Ub_tops2),
 	exclude(useless_top_constr(Ref_set1),Lb_tops,Lb_tops2).
 
 	
-compute_initial_reference_set((_Name,0),(Bases,Ref_set),(Bases,Ref_set)).
-compute_initial_reference_set((Name,Value),(Bases,Ref_set),([(Name,Value)|Bases],Ref_set2)):-
-	insert_sl(Ref_set,ub(Name),Ref_set1),
-	insert_sl(Ref_set1,lb(Name),Ref_set2).
+compute_initial_reference_set(_,(_Name,0),(Bases,Ref_set),(Bases,Ref_set)).
+compute_initial_reference_set(min,(Name,Value),(Bases,Ref_set),([(Name,Value)|Bases],Ref_set2)):-
+	(greater_fr(Value,0)->
+		insert_sl(Ref_set,lb(Name),Ref_set2)
+		;
+		insert_sl(Ref_set,ub(Name),Ref_set2)
+		).
+compute_initial_reference_set(max,(Name,Value),(Bases,Ref_set),([(Name,Value)|Bases],Ref_set2)):-
+	(greater_fr(Value,0)->
+		insert_sl(Ref_set,ub(Name),Ref_set2)
+		;
+		insert_sl(Ref_set,lb(Name),Ref_set2)
+		).	
 
 opposite_sign(ub,lb).
 opposite_sign(lb,ub).
@@ -198,143 +216,284 @@ useless_top_constr(Ref_set,bound(Op,_,Bounded)):-
 		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cstr_naive_maximization(Cost_long,Cost):-
-	cstr_shorten_variables_names(Cost_long,cost(Top_exps,_,Aux_exps,Bases,Base)),	
-	get_top_bounded_map(Top_exps,[],Map_bounded),
-	remove_not_bounded_map(Aux_exps,Map_bounded,Map_final,_Aux_exps2,_Removed),
-	maplist(substitute_base(Map_final,max),Bases,Concrete_bases),
-	write_sum([Base|Concrete_bases],Cost).
 
-
-cstr_naive_minimization(Cost_long,Cost):-
-	cstr_shorten_variables_names(Cost_long,cost(_,LTop_exps,Aux_exps,Bases,Base)),	
-	term_variables(LTop_exps,Vars),
-	findall((Vars,Min),
+	
+add_bound_to_multimap(Exp,Var,Map,Map1):-
+	lookup_lm(Map,Var,Vals),!,
+	insert_sl(Vals,Exp,Vals2),
+	%ut_split_at_pos(Vals1,1,Vals2,_),
+	insert_lm(Map,Var,Vals2,Map1).
+	
+add_bound_to_multimap(Exp,Var,Map,Map1):-
+	insert_lm(Map,Var,[Exp],Map1).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+	
+:-dynamic maximization_mode/1.		
+	
+cstr_maxminimization(Cost_long,Max_min,Bound):-
+	retractall(maximization_mode(_)),assert(maximization_mode(simple)),
+	cstr_shorten_variables_names(Cost_long,Cost_short),	
+	cstr_remove_useless_constrs_max_min(Cost_short,Max_min,cost(Ub_tops,Lb_tops,Aux_exps,Bases,Base)),
+	
+	foldl(compute_initial_reference_set(max),Bases,([],[]),(_,Ref_set1)),
+	term_variables((Ub_tops,Lb_tops),Vars),
+	findall((Vars,Max_Min_case),
 		(
-		get_top_bounded_min(LTop_exps,[],Map_bounded),
-		remove_not_bounded_min(Aux_exps,Map_bounded,Map_final,_Aux_exps2,_Removed),
-		maplist(substitute_base(Map_final,min),Bases,Concrete_bases),
-		write_sum([Base|Concrete_bases],Min)
+		get_top_bounded_map(Ub_tops,[],Ub_map),
+		get_top_bounded_map(Lb_tops,[],Lb_map),
+		remove_zero_constraints(Aux_exps,Ub_map,Ref_set1,Ub_map2,Aux_exps2),	
+		get_aux_bounded_map(Aux_exps2,Ub_map2,Lb_map,Ub_map_final,Lb_map_final),	
+		maplist(substitute_base(Ub_map_final,Lb_map_final,Max_min),Bases,Concrete_bases_max_min),
+		write_sum([Base|Concrete_bases_max_min],Max_Min_case)
 		)
-		,Mins),
-	assign_right_vars(Mins,Vars,Mins_right),
-	Cost=min(Mins_right).	
+		,Maxs_Mins_list),
+		length(Maxs_Mins_list,N),writeln(N),
+	assign_right_vars(Maxs_Mins_list,Vars,Maxs_Mins_right),
+	zip_with(Max_min,Maxs_Mins_right,Bound).
 
-substitute_base(_Map,_,(_Name,0),0):-!.
-substitute_base(_Map,_,(_Name,N),0):-number(N),N < 0.
+remove_zero_constraints(Aux_exps,Ub_map,Ref_set,Ub_map2,Aux_exps2):-
+	get_zero_bounded(Ub_map,Zeroes),
+	propagate_zeroes(Aux_exps,Zeroes,Aux_exps1,Zeroes2),
+	foldl(add_bound_to_multimap(0),Zeroes2,Ub_map,Ub_map2),
+	reverse(Aux_exps1,Aux_exps_rev),
+	remove_useless_aux_constrs(Aux_exps_rev,Ref_set,[],_Ref_set3,Aux_exps2).
+	
+get_zero_bounded([],[]).
+get_zero_bounded([(Name,Set)|More],[Name|More_set]):-
+	contains_sl(Set,0),!,
+	get_zero_bounded(More,More_set).
+get_zero_bounded([_|More],More_set):-
+	get_zero_bounded(More,More_set).	
 
-substitute_base(Map,max,(Name,Val),Concrete):-
-	values_of_mm(Map,Name,Values),!,
+propagate_zeroes([],Zeroes_out,[],Zeroes_out).
+	
+propagate_zeroes([bound(ub,Exp,Bounded)|More],Zeroes,Aux_exps_out,Zeroes_out):-
+	is_made_zero(Exp,Zeroes),!,
+	from_list_sl(Bounded,Bounded_set),
+	union_sl(Zeroes,Bounded_set,Zeroes1),
+	propagate_zeroes(More,Zeroes1,Aux_exps_out,Zeroes_out).
+	
+propagate_zeroes([bound(Op,Exp,Bounded)|More],Zeroes,[bound(Op,Exp,Bounded)|Aux_exps_out],Zeroes_out):-
+	propagate_zeroes(More,Zeroes,Aux_exps_out,Zeroes_out).
+	
+is_made_zero(exp(Index_pos,_,add(Factors),_),Zeroes):-
+	copy_term((Index_pos,Factors),(Index_pos2,Factors2)),
+	maplist(set_to_zero_one(Zeroes),Index_pos2),
+	maplist(zero_factor,Factors2),!.
+
+zero_factor(mult(List)):-	
+	member(0,List),!.
+	
+set_to_zero_one(Zeroes,(Name,0)):-
+	contains_sl(Zeroes,Name),!.
+set_to_zero_one(_,(_Name,1)).
+	
+	
+substitute_base(Ub_Map,Lb_Map,Max_min,(Name,Val),Concrete):-
+	(greater_fr(Val,0)->
+	 	(Max_min=max->
+	 		lookup_lm(Ub_Map,Name,Values),
+	 		Op=min
+	 		;
+	 		lookup_lm(Lb_Map,Name,Values),
+	 		Op=max
+	 	)
+	 	;
+	 	(Max_min=max->
+	 		lookup_lm(Lb_Map,Name,Values),
+	 		Op=max
+	 		;
+	 		lookup_lm(Ub_Map,Name,Values),
+	 		Op=min
+	 	)
+	 ),!,
 	(Values=[One]->
+		(One==0->
+		  Concrete=0
+		  ;
 		Concrete=Val*nat(One)
+		)
 		;
-		Concrete=nat(min(Values))*Val
+		Concrete_aux=..[Op,Values],
+		Concrete=Val*nat(Concrete_aux)
 		).
-substitute_base(_Map,max,(_Name,_Val),inf).	
 
+substitute_base(_,_,Max_min,(_Name,Val),Res):-
+	(greater_fr(Val,0)->
+	 	(Max_min=max->
+	 		Res=inf
+	 		;
+	 		Res=0
+	 	)
+	 	;
+	 	(Max_min=max->
+	 		Res=0
+	 		;
+	 		Res=0
+	 	)
+	 ),!.
 
-substitute_base(Map,min,(Name,Val),Concrete):-
-	values_of_mm(Map,Name,Values),!,
-	(Values=[One]->
-		Concrete=Val*nat(One)
-		;
-		Concrete=nat(max(Values))*Val
-		).
-substitute_base(_Map,min,(_Name,_Val),0).
 
 get_top_bounded_map([],Map,Map).
+
+
+%FIXME we have to be careful with bad behaved sets of constraints
 get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,Map_out):-
-	foldl(add_bound_to_multimap(Exp),Bounded,Map,Map_aux),
-	get_top_bounded_map(Top_exps,Map_aux,Map_out).
+	maximization_mode(simple),
+	foldl(add_bound_to_multimap(Exp),Bounded,Map,Map_aux1),
+	get_top_bounded_map(Top_exps,Map_aux1,Map_out).
 
-get_top_bounded_min([],Map,Map).
-get_top_bounded_min([bound(lb,Exp,[Bounded])|Top_exps],Map,Map_out):-
-	foldl(add_bound_to_multimap(Exp),[Bounded],Map,Map_aux),
-	get_top_bounded_min(Top_exps,Map_aux,Map_out).
-
-get_top_bounded_min([bound(lb,Exp,Bounded)|Top_exps],Map,Map_out):-
-	Bounded=[_,_|_],
-	member(Bounded1,Bounded),
-	foldl(add_bound_to_multimap(Exp),[Bounded1],Map,Map_aux),
-	get_top_bounded_min(Top_exps,Map_aux,Map_out).
-		
-add_bound_to_multimap(Exp,Var,Map,Map1):-
-	put_mm(Map,Var,Exp,Map1).
-
-
-remove_not_bounded_map(Aux_exps,Map,Map_out,Aux_exp_out,Removed):-
-	split_bounded_map(Aux_exps,Map,Map_1,Bounded,Not_bounded),
-	(Bounded=[]->
-	  Aux_exp_out=[],
-	  Removed=Not_bounded,
-	  Map_out=Map_1
+get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,Map_out):-
+	\+maximization_mode(simple),
+	exclude(already_bounded(Map),Bounded,Bounded_new),
+	(Bounded_new\=[]->
+		member(Bounded1,Bounded_new),
+		delete(Bounded_new,Bounded1,Bounded2),
+		foldl(add_bound_to_multimap(Exp),[Bounded1],Map,Map_aux1),
+		foldl(add_bound_to_multimap(0),Bounded2,Map_aux1,Map_aux2),
+		get_top_bounded_map(Top_exps,Map_aux2,Map_out)
 	;
-	  remove_not_bounded_map(Not_bounded,Map_1,Map_out,Aux_exp_aux,Removed),
-	  append(Bounded,Aux_exp_aux,Aux_exp_out)
-	  ).
-	  
-split_bounded_map([],Map,Map,[],[]).
-split_bounded_map([bound(ub,exp(Elems,Elems_neg,Exp,Exp_neg),Bounded)|Aux_exps],Map,Map_out,[bound(ub,exp(Elems,Elems_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
-	maplist(tuple,Names,Vars,Elems),
-	maplist(values_of_mm(Map),Names,Expressions),!,
-	maplist(min_expression,Expressions,Expressions2),
-	copy_term((Vars,Exp),(Vars2,Exp2)),
-	cstr_get_cexpr_from_normalform(Exp2,Exp3),
-	Vars2=Expressions2,
-	foldl(add_bound_to_multimap(Exp3),Bounded,Map,Map_aux),
-	split_bounded_map(Aux_exps,Map_aux,Map_out,Exp_Bounded,Exp_Not_bounded).
+		get_top_bounded_map(Top_exps,Map,Map_out)
+	).
 	
-
-split_bounded_map([bound(Op,Exp,Bounded)|Aux_exps],Map,Map_out,Exp_Bounded,[bound(Op,Exp,Bounded)|Exp_Not_bounded]):-
-	split_bounded_map(Aux_exps,Map,Map_out,Exp_Bounded,Exp_Not_bounded).
-	
-remove_not_bounded_min(Aux_exps,Map,Map_out,Aux_exp_out,Removed):-
-	split_bounded_min(Aux_exps,Map,Map_1,Bounded,Not_bounded),
-	(Bounded=[]->
-	  Aux_exp_out=[],
-	  Removed=Not_bounded,
-	  Map_out=Map_1
-	;
-	  remove_not_bounded_min(Not_bounded,Map_1,Map_out,Aux_exp_aux,Removed),
-	  append(Bounded,Aux_exp_aux,Aux_exp_out)
-	  ).
-	  
-split_bounded_min([],Map,Map,[],[]).
-split_bounded_min([bound(lb,exp(Elems,Elems_neg,Exp,Exp_neg),Bounded)|Aux_exps],Map,Map_out,[bound(lb,exp(Elems,Elems_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
-	Bounded=[_],
-	maplist(tuple,Names,Vars,Elems),
-	maplist(values_of_mm(Map),Names,Expressions),
-	maplist(max_expression,Expressions,Expressions2),
-	copy_term((Vars,Exp),(Vars2,Exp2)),
-	cstr_get_cexpr_from_normalform(Exp2,Exp3),
-	Vars2=Expressions2,
-	foldl(add_bound_to_multimap(Exp3),Bounded,Map,Map_aux),
-	split_bounded_min(Aux_exps,Map_aux,Map_out,Exp_Bounded,Exp_Not_bounded).
-	
-split_bounded_min([bound(lb,exp(Elems,Elems_neg,Exp,Exp_neg),Bounded)|Aux_exps],Map,Map_out,[bound(lb,exp(Elems,Elems_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
-	Bounded=[_,_|_],
-	maplist(tuple,Names,Vars,Elems),
-	maplist(values_of_mm(Map),Names,Expressions),
+get_top_bounded_map([bound(lb,Exp,Bounded)|Top_exps],Map,Map_out):-
 	member(Bounded1,Bounded),
-	maplist(max_expression,Expressions,Expressions2),
-	copy_term((Vars,Exp),(Vars2,Exp2)),
-	cstr_get_cexpr_from_normalform(Exp2,Exp3),
-	Vars2=Expressions2,
-	foldl(add_bound_to_multimap(Exp3),[Bounded1],Map,Map_aux),
-	split_bounded_min(Aux_exps,Map_aux,Map_out,Exp_Bounded,Exp_Not_bounded).
+	delete(Bounded,Bounded1,Bounded2),
+	foldl(add_bound_to_multimap(Exp),[Bounded1],Map,Map_aux1),
+	foldl(add_bound_to_multimap(0),Bounded2,Map_aux1,Map_aux2),
+	get_top_bounded_map(Top_exps,Map_aux2,Map_out).
 		
+get_aux_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out):-
+	split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_1,Lb_map_1,Not_bounded),
+	(Aux_exps==Not_bounded->
+	  Ub_map_1=Ub_map_out,
+	  Lb_map_1=Lb_map_out
+	;
+	  get_aux_bounded_map(Not_bounded,Ub_map_1,Lb_map_1,Ub_map_out,Lb_map_out)
+	).
+	 
+already_bounded(Map,Elem):-
+	lookup_lm(Map,Elem,_).
+		  
+split_bounded_map([],Ub_map_out,Lb_map_out,Ub_map_out,Lb_map_out,[]).
 
+split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded):-
+	maximization_mode(simple),
+		
+	Exp=exp(Index_pos,Index_neg,Exp_pos,Exp_neg),
+	maplist(tuple,Names_pos,Vars_pos,Index_pos),
+	maplist(tuple,Names_neg,Vars_neg,Index_neg),
+	maplist(lookup_lm(Ub_map),Names_pos,Expressions_pos),
+	maplist(lookup_lm(Lb_map),Names_neg,Expressions_neg),
+	
+	copy_term((Vars_pos,Exp_pos),(Vars_pos2,Exp_pos2)),
+	copy_term((Vars_neg,Exp_neg),(Vars_neg2,Exp_neg2)),
+	maplist(min_expression,Expressions_pos,Expressions_pos2),
+	maplist(max_expression,Expressions_neg,Expressions_neg2),
+	cstr_get_cexpr_from_normalform(Exp_pos2,Exp_pos_final),
+	Vars_pos2=Expressions_pos2,
+	cstr_get_cexpr_from_normalform(Exp_neg2,Exp_neg_final),
+	Vars_neg2=Expressions_neg2,
+	cexpr_simplify(Exp_pos_final-Exp_neg_final,[],Expr_simple),
+	foldl(add_bound_to_multimap(Expr_simple),Bounded,Ub_map,Ub_map_aux2),
+	split_bounded_map(Aux_exps,Ub_map_aux2,Lb_map,Ub_map_out,Lb_map_out,Not_bounded).	
+		
+split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded):-
+	\+maximization_mode(simple),
+%	Bounded=[_],
+	exclude(already_bounded(Ub_map),Bounded,Bounded_new),
+	(Bounded_new\=[]->
+		Exp=exp(Index_pos,Index_neg,Exp_pos,Exp_neg),
+		maplist(tuple,Names_pos,Vars_pos,Index_pos),
+		maplist(tuple,Names_neg,Vars_neg,Index_neg),
+		maplist(lookup_lm(Ub_map),Names_pos,Expressions_pos),
+		maplist(lookup_lm(Lb_map),Names_neg,Expressions_neg),
+	
+		copy_term((Vars_pos,Exp_pos),(Vars_pos2,Exp_pos2)),
+		copy_term((Vars_neg,Exp_neg),(Vars_neg2,Exp_neg2)),
+		maplist(min_expression,Expressions_pos,Expressions_pos2),
+		maplist(max_expression,Expressions_neg,Expressions_neg2),
+		cstr_get_cexpr_from_normalform(Exp_pos2,Exp_pos_final),
+		Vars_pos2=Expressions_pos2,
+		cstr_get_cexpr_from_normalform(Exp_neg2,Exp_neg_final),
+		Vars_neg2=Expressions_neg2,
+		cexpr_simplify(Exp_pos_final-Exp_neg_final,[],Expr_simple),
+		(Expr_simple==0->
+			foldl(add_bound_to_multimap(0),Bounded_new,Ub_map,Ub_map_aux2)
+			;
+			member(Bounded1,Bounded_new),
+			delete(Bounded_new,Bounded1,Bounded2),
+			foldl(add_bound_to_multimap(Expr_simple),[Bounded1],Ub_map,Ub_map_aux1),
+			foldl(add_bound_to_multimap(0),Bounded2,Ub_map_aux1,Ub_map_aux2)
+		),
+		split_bounded_map(Aux_exps,Ub_map_aux2,Lb_map,Ub_map_out,Lb_map_out,Not_bounded)
+	;
+		split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded)
+	).	
+		
+split_bounded_map([bound(lb,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded):-
+	exclude(already_bounded(Lb_map),Bounded,Bounded_new),
+	(Bounded_new=Bounded->
+		Exp=exp(Index_pos,Index_neg,Exp_pos,Exp_neg),
+		maplist(tuple,Names_pos,Vars_pos,Index_pos),
+		maplist(tuple,Names_neg,Vars_neg,Index_neg),
+		maplist(lookup_lm(Lb_map),Names_pos,Expressions_pos),
+		maplist(lookup_lm(Ub_map),Names_neg,Expressions_neg),
+	
+	
+		copy_term((Vars_pos,Exp_pos),(Vars_pos2,Exp_pos2)),
+		copy_term((Vars_neg,Exp_neg),(Vars_neg2,Exp_neg2)),
+		maplist(max_expression,Expressions_pos,Expressions_pos2),
+		maplist(min_expression,Expressions_neg,Expressions_neg2),
+		cstr_get_cexpr_from_normalform(Exp_pos2,Exp_pos_final),
+		Vars_pos2=Expressions_pos2,
+		cstr_get_cexpr_from_normalform(Exp_neg2,Exp_neg_final),
+		Vars_neg2=Expressions_neg2,
+		cexpr_simplify(Exp_pos_final-Exp_neg_final,[],Expr_simple),
+		(Expr_simple==0->
+			foldl(add_bound_to_multimap(0),Bounded_new,Lb_map,Lb_map_aux2)
+			;
+			member(Bounded1,Bounded_new),
+			delete(Bounded_new,Bounded1,Bounded2),
+			foldl(add_bound_to_multimap(Expr_simple),[Bounded1],Lb_map,Lb_map_aux1),
+			foldl(add_bound_to_multimap(0),Bounded2,Lb_map_aux1,Lb_map_aux2)
+		),
+		split_bounded_map(Aux_exps,Ub_map,Lb_map_aux2,Ub_map_out,Lb_map_out,Not_bounded)
+	;
+		split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded)
+	).
 
-split_bounded_min([bound(Op,exp(Elems,Elems_neg,Exp,Exp_neg),Bounded)|Aux_exps],Map,Map_out,Exp_Bounded,[bound(Op,exp(Elems,Elems_neg,Exp,Exp_neg),Bounded)|Exp_Not_bounded]):-
-	maplist(tuple,Names,_Vars,Elems),
-	\+maplist(values_of_mm(Map),Names,_Expressions),
-	split_bounded_min(Aux_exps,Map,Map_out,Exp_Bounded,Exp_Not_bounded).		
+split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,[bound(ub,Exp,Bounded)|Not_bounded]):-
+	Exp=exp(Index_pos,Index_neg,_,_),
+	maplist(tuple,Names,_,Index_pos),
+	maplist(tuple,Names_neg,_,Index_neg),
+	(
+	\+maplist(lookup_lm(Ub_map),Names,_)
+	;
+	\+maplist(lookup_lm(Lb_map),Names_neg,_)
+	),
+	split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded).		
+
+split_bounded_map([bound(lb,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,[bound(lb,Exp,Bounded)|Not_bounded]):-
+	Exp=exp(Index_pos,Index_neg,_,_),
+	maplist(tuple,Names,_,Index_pos),
+	maplist(tuple,Names_neg,_,Index_neg),
+	(
+	\+maplist(lookup_lm(Lb_map),Names,_)
+	;
+	\+maplist(lookup_lm(Ub_map),Names_neg,_)
+	),
+	split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded).
+	
+%split_bounded_map([bound(Op,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,[bound(lb,Exp,Bounded)|Not_bounded]):-
+%	writeln(bound(Op,Exp,Bounded)),fail.
 	
 min_expression([A],nat(A)):-!.
-min_expression(A,nat(min(A))).
+min_expression(A,min(A2)):-
+	maplist(zip_with(nat),A,A2).
 max_expression([A],nat(A)):-!.
-max_expression(A,nat(max(A))).
-
+max_expression(A,max([0|A])).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cstr_get_cexpr_from_normalform_ground(exp(Index1,Index2,add(Summands),add(Summands2)),Exp3):-
 	cstr_get_cexpr_from_normalform(add(Summands),Exp1),
 	cstr_get_cexpr_from_normalform(add(Summands2),Exp2),

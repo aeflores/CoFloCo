@@ -271,6 +271,11 @@ cexpr_simplify_N(V,_,_,V):-
 cexpr_simplify_N(c(Cost_center),_,_,c(Cost_center)):-!.
  	
 cexpr_simplify_N(nat(E),N,Cs,Res):-
+	\+var(E),
+	E=nat(E2),!,
+ 	cexpr_simplify_N(nat(E2),N,Cs,Res). 	
+ 
+cexpr_simplify_N(nat(E),N,Cs,Res):-
 	N1 is N-1,
  	cexpr_simplify_N(E,N1,Cs,ES),
 	

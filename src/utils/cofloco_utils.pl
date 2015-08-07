@@ -184,10 +184,13 @@ coeffs_rep_to_constraint(coeff_rep(Coeffs,Op,B), Constraint) :-
 % with right associativity
 write_sum([],0).
 write_sum([X|Xs],Sum):-
-	foldr(zip_with_op('+'),Xs,X,Sum).
+	exclude(zero,Xs,Xss),
+	foldr(zip_with_op('+'),Xss,X,Sum).
 write_product([],0).
 write_product([X|Xs],Sum):-
 	foldr(zip_with_op('*'),Xs,X,Sum).
+	
+zero(X):-X==0.
 
 %! normalize_constraint_wrt_var(C,Var,NC) is det
 % given C:=C1*Var+C2*X2+...CN*XN>= C0, express the constraint in terms of Var:

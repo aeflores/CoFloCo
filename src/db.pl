@@ -57,8 +57,10 @@ This module acts as a database that stores:
 	   add_closed_lower_bound/3,
 	   single_closed_upper_bound/2,
 	   add_single_closed_upper_bound/2,
-	   conditional_upper_bound/3,	  
-	   add_conditional_upper_bound/3,
+	   conditional_upper_bound/3,	
+	   conditional_lower_bound/3,
+	   conditional_bound/3,  
+	   add_conditional_bound/3,
 	  
        cofloco_aux_entry_name/1
        
@@ -157,7 +159,7 @@ This module acts as a database that stores:
 % for all possible chains.
 %
 % conditional upper bound's preconditions are mutually exclusive among each other and with any other conditional upper bound
-:- dynamic conditional_upper_bound/3.
+:- dynamic conditional_bound/3.
 
 %! non_terminating_chain(?Head:term,RefCnt:int,?Chain:chain)
 % It indicates that the chain Chain is non-terminating
@@ -183,6 +185,7 @@ init_db:-
 	retractall(closed_upper_bound(_,_,_,_)),
 	retractall(closed_lower_bound(_,_,_,_)),
 	retractall(single_closed_upper_bound(_,_)),
+	retractall(conditional_bound(_,_,_)),
 	retractall(non_terminating_stub(_,_)),
 	retractall(non_terminating_chain(_,_,_)),
 	assert((non_terminating_chain(Head,RefCnt,Chain):-
@@ -328,5 +331,10 @@ add_single_closed_upper_bound(Head,CExpr) :-
 
 %! add_conditional_upper_bound(+Head:term,+Cost_expression:cost_expression,+Preconditions:list(polyhedron)) is det
 % stores the conditional upper bound determined by the cost Cost_expression and the precondition Precondition
-add_conditional_upper_bound(Head,CExpr,Preconditions) :-	
-	  assertz(conditional_upper_bound(Head,CExpr,Preconditions)).
+add_conditional_bound(Head,CExpr,Preconditions) :-	
+	  assertz(conditional_bound(Head,CExpr,Preconditions)).
+
+conditional_upper_bound(Head,Exp,Prec):-
+	conditional_bound(Head,(Exp,_),Prec).
+conditional_lower_bound(Head,Exp,Prec):-
+	conditional_bound(Head,(_,Exp),Prec).		  

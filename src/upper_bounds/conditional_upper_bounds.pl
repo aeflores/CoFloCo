@@ -58,12 +58,9 @@ The specific "data types" used in this module are the following:
 
 :- use_module('../db',[
 		  external_call_pattern/5,
-		  add_upper_bound/3,
-		  upper_bound/4,
-		  add_external_upper_bound/3,
-		  add_closed_upper_bound/3,
 		  closed_upper_bound/4,
-		  add_conditional_upper_bound/3]).
+		  closed_lower_bound/4,
+		  add_conditional_bound/3]).
 
 :-use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../utils/cofloco_utils',[normalize_constraint/2,
@@ -87,9 +84,10 @@ The specific "data types" used in this module are the following:
 %  * Try to simplify the preconditions of the inferred conditional upper bounds
 %  * If we are debugging, check that all conditional upper bounds are in fact mutually exclusive
 compute_conditional_upper_bounds(Head):-
-	findall((Head,execution_pattern(Cost,Condition)),
+	findall((Head,execution_pattern((Cost,Lb_Cost),Condition)),
 		(
 		closed_upper_bound(Head,Chain,_,Cost),
+		closed_lower_bound(Head,Chain,_,Lb_Cost),
 		backward_invariant(Head,(Chain,_),_,Condition)
 		)
 		,Ex_pats),
@@ -108,13 +106,16 @@ compute_conditional_upper_bounds(Head):-
 	maplist(save_conditional_upper_bound(Head),Multimap_simplified).
 
 simplify_cost_of_pair(([Cost],Prec),(Cost,Prec)):-!.
-simplify_cost_of_pair((Cost_list,Prec),(Ub_simple,Prec)):-
-     Ub=max(Cost_list),
-	 cexpr_simplify(Ub,Prec,Ub_simple).
+simplify_cost_of_pair((Cost_list,Prec),((Ub_simple,Lb_simple),Prec)):-
+	 maplist(tuple,Ub_list,Lb_list,Cost_list),
+     Ub=max(Ub_list),
+     Lb=min(Lb_list),
+	 cexpr_simplify(Ub,Prec,Ub_simple),
+	 cexpr_simplify(Lb,Prec,Lb_simple).
 
 
-save_conditional_upper_bound(Head,(Cost,Precondition)):-
-	add_conditional_upper_bound(Head,Cost,Precondition).
+save_conditional_upper_bound(Head,(UB_LB,Precondition)):-
+	add_conditional_bound(Head,UB_LB,Precondition).
 	
 
 
