@@ -26,7 +26,7 @@
 :- module(cost_structures,[
 		cstr_empty/1,
 		cstr_constant/2,
-		cstr_maxminimization/3,
+		cstr_maxminimization/4,
 		cstr_name_aux_var/1,
 		cstr_get_it_name/2,
 		cstr_generate_top_exp/4,
@@ -230,33 +230,35 @@ add_bound_to_multimap(Exp,Var,Map,Map1):-
 	
 :-dynamic maximization_mode/1.		
 	
-cstr_maxminimization(Cost_long,Max_min,Bound):-
-	retractall(maximization_mode(_)),assert(maximization_mode(simple)),
+cstr_maxminimization(Cost_long,Max_min,Bound,Mode):-
+	retractall(maximization_mode(_)),assert(maximization_mode(Mode)),
 	cstr_shorten_variables_names(Cost_long,Cost_short),	
 	cstr_remove_useless_constrs_max_min(Cost_short,Max_min,cost(Ub_tops,Lb_tops,Aux_exps,Bases,Base)),
-	
-	foldl(compute_initial_reference_set(max),Bases,([],[]),(_,Ref_set1)),
 	term_variables((Ub_tops,Lb_tops),Vars),
 	findall((Vars,Max_Min_case),
 		(
-		get_top_bounded_map(Ub_tops,[],Ub_map),
-		get_top_bounded_map(Lb_tops,[],Lb_map),
-		remove_zero_constraints(Aux_exps,Ub_map,Ref_set1,Ub_map2,Aux_exps2),	
-		get_aux_bounded_map(Aux_exps2,Ub_map2,Lb_map,Ub_map_final,Lb_map_final),	
-		maplist(substitute_base(Ub_map_final,Lb_map_final,Max_min),Bases,Concrete_bases_max_min),
+		get_top_bounded_map(Ub_tops,[],extra_elems(Aux_exps,Max_min,Bases),Ub_map,extra_elems(Aux_exps2,Max_min,Bases1)),
+		get_top_bounded_map(Lb_tops,[],nothing,Lb_map,_),
+		%remove_zero_constraints(Aux_exps,Max_min,Ub_map,Bases,Ub_map2,Aux_exps2,Bases1),	
+		get_aux_bounded_map(Aux_exps2,Bases1,Ub_map,Lb_map,Ub_map_final,Lb_map_final,Bases2),	
+		maplist(substitute_base(Ub_map_final,Lb_map_final,Max_min),Bases2,Concrete_bases_max_min),
 		write_sum([Base|Concrete_bases_max_min],Max_Min_case)
 		)
 		,Maxs_Mins_list),
-		length(Maxs_Mins_list,N),writeln(N),
 	assign_right_vars(Maxs_Mins_list,Vars,Maxs_Mins_right),
 	zip_with(Max_min,Maxs_Mins_right,Bound).
 
-remove_zero_constraints(Aux_exps,Ub_map,Ref_set,Ub_map2,Aux_exps2):-
+remove_zero_constraints(Aux_exps,Max_min,Ub_map,Bases,Ub_map2,Aux_exps2,Bases2,Ref_set3):-
 	get_zero_bounded(Ub_map,Zeroes),
 	propagate_zeroes(Aux_exps,Zeroes,Aux_exps1,Zeroes2),
 	foldl(add_bound_to_multimap(0),Zeroes2,Ub_map,Ub_map2),
+	exclude(zero_base(Zeroes2),Bases,Bases1),
+	foldl(compute_initial_reference_set(Max_min),Bases1,([],[]),(Bases2,Ref_set1)),
 	reverse(Aux_exps1,Aux_exps_rev),
-	remove_useless_aux_constrs(Aux_exps_rev,Ref_set,[],_Ref_set3,Aux_exps2).
+	remove_useless_aux_constrs(Aux_exps_rev,Ref_set1,[],Ref_set3,Aux_exps2),!.
+
+zero_base(Zeroes,(Name,_)):-
+	contains_sl(Zeroes,Name).
 	
 get_zero_bounded([],[]).
 get_zero_bounded([(Name,Set)|More],[Name|More_set]):-
@@ -268,19 +270,35 @@ get_zero_bounded([_|More],More_set):-
 propagate_zeroes([],Zeroes_out,[],Zeroes_out).
 	
 propagate_zeroes([bound(ub,Exp,Bounded)|More],Zeroes,Aux_exps_out,Zeroes_out):-
-	is_made_zero(Exp,Zeroes),!,
+	is_made_zero(Exp,Zeroes,exp(Index_pos,Index_neg,add(Factors_rem),Exp_neg)),
+	(Factors_rem=[]->
 	from_list_sl(Bounded,Bounded_set),
 	union_sl(Zeroes,Bounded_set,Zeroes1),
-	propagate_zeroes(More,Zeroes1,Aux_exps_out,Zeroes_out).
+	propagate_zeroes(More,Zeroes1,Aux_exps_out,Zeroes_out)
+	;
+	Aux_exps_out=[bound(ub,exp(Index_pos,Index_neg,add(Factors_rem),Exp_neg),Bounded)|Aux_exps_out_aux],
+	propagate_zeroes(More,Zeroes,Aux_exps_out_aux,Zeroes_out)
+	).
 	
-propagate_zeroes([bound(Op,Exp,Bounded)|More],Zeroes,[bound(Op,Exp,Bounded)|Aux_exps_out],Zeroes_out):-
-	propagate_zeroes(More,Zeroes,Aux_exps_out,Zeroes_out).
+%%propagate_zeroes([bound(Op,Exp,Bounded)|More],Zeroes,[bound(Op,Exp,Bounded)|Aux_exps_out],Zeroes_out):-
+%	propagate_zeroes(More,Zeroes,Aux_exps_out,Zeroes_out).
 	
-is_made_zero(exp(Index_pos,_,add(Factors),_),Zeroes):-
+is_made_zero(exp(Index_pos,Index_neg,add(Factors),Exp_neg),Zeroes,exp(Index_pos1,Index_neg,add(Factors_rem),Exp_neg)):-
 	copy_term((Index_pos,Factors),(Index_pos2,Factors2)),
 	maplist(set_to_zero_one(Zeroes),Index_pos2),
-	maplist(zero_factor,Factors2),!.
+	exclude_zero_factor(Factors,Factors2,Factors_rem),
+	term_variables(Factors_rem,Vars),from_list_sl(Vars,Vars_set),
+	include(index_contains(Vars_set),Index_pos,Index_pos1).
 
+index_contains(Set,(_,Var)):-
+	contains_sl(Set,Var).
+exclude_zero_factor([],[],[]).
+exclude_zero_factor([mult(_F)|More],[mult(F2)|More2],More_out):-
+	member(0,F2),!,
+	exclude_zero_factor(More,More2,More_out).
+exclude_zero_factor([mult(F)|More],[_|More2],[mult(F)|More_out]):-
+	exclude_zero_factor(More,More2,More_out).	
+	
 zero_factor(mult(List)):-	
 	member(0,List),!.
 	
@@ -334,16 +352,16 @@ substitute_base(_,_,Max_min,(_Name,Val),Res):-
 	 ),!.
 
 
-get_top_bounded_map([],Map,Map).
+get_top_bounded_map([],Map,Extra_elems,Map,Extra_elems).
 
 
 %FIXME we have to be careful with bad behaved sets of constraints
-get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,Map_out):-
+get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,Extra_elems,Map_out,Extra_elems_out):-
 	maximization_mode(simple),
 	foldl(add_bound_to_multimap(Exp),Bounded,Map,Map_aux1),
-	get_top_bounded_map(Top_exps,Map_aux1,Map_out).
+	get_top_bounded_map(Top_exps,Map_aux1,Extra_elems,Map_out,Extra_elems_out).
 
-get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,Map_out):-
+get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,extra_elems(Aux_exps,Max_min,Bases),Map_out,Extra_elems_out):-
 	\+maximization_mode(simple),
 	exclude(already_bounded(Map),Bounded,Bounded_new),
 	(Bounded_new\=[]->
@@ -351,33 +369,37 @@ get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,Map_out):-
 		delete(Bounded_new,Bounded1,Bounded2),
 		foldl(add_bound_to_multimap(Exp),[Bounded1],Map,Map_aux1),
 		foldl(add_bound_to_multimap(0),Bounded2,Map_aux1,Map_aux2),
-		get_top_bounded_map(Top_exps,Map_aux2,Map_out)
+		
+		remove_zero_constraints(Aux_exps,Max_min,Map_aux2,Bases,Map_aux3,Aux_exps2,Bases2,Ref_set),	
+		exclude(useless_top_constr(Ref_set),Top_exps,Top_exps2),
+		get_top_bounded_map(Top_exps2,Map_aux3,extra_elems(Aux_exps2,Max_min,Bases2),Map_out,Extra_elems_out)
 	;
-		get_top_bounded_map(Top_exps,Map,Map_out)
+		get_top_bounded_map(Top_exps,Map,extra_elems(Aux_exps,Max_min,Bases),Map_out,Extra_elems_out)
 	).
 	
-get_top_bounded_map([bound(lb,Exp,Bounded)|Top_exps],Map,Map_out):-
+get_top_bounded_map([bound(lb,Exp,Bounded)|Top_exps],Map,Extra_elems,Map_out,Extra_elems_out):-
 	member(Bounded1,Bounded),
 	delete(Bounded,Bounded1,Bounded2),
 	foldl(add_bound_to_multimap(Exp),[Bounded1],Map,Map_aux1),
 	foldl(add_bound_to_multimap(0),Bounded2,Map_aux1,Map_aux2),
-	get_top_bounded_map(Top_exps,Map_aux2,Map_out).
+	get_top_bounded_map(Top_exps,Map_aux2,Extra_elems,Map_out,Extra_elems_out).
 		
-get_aux_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out):-
-	split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_1,Lb_map_1,Not_bounded),
+get_aux_bounded_map(Aux_exps,Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Bases_out):-
+	split_bounded_map(Aux_exps,Bases,Ub_map,Lb_map,Ub_map_1,Lb_map_1,Not_bounded,Bases1),
 	(Aux_exps==Not_bounded->
 	  Ub_map_1=Ub_map_out,
-	  Lb_map_1=Lb_map_out
+	  Lb_map_1=Lb_map_out,
+	  Bases1=Bases_out
 	;
-	  get_aux_bounded_map(Not_bounded,Ub_map_1,Lb_map_1,Ub_map_out,Lb_map_out)
+	  get_aux_bounded_map(Not_bounded,Bases1,Ub_map_1,Lb_map_1,Ub_map_out,Lb_map_out,Bases_out)
 	).
 	 
 already_bounded(Map,Elem):-
 	lookup_lm(Map,Elem,_).
 		  
-split_bounded_map([],Ub_map_out,Lb_map_out,Ub_map_out,Lb_map_out,[]).
+split_bounded_map([],Bases,Ub_map_out,Lb_map_out,Ub_map_out,Lb_map_out,[],Bases).
 
-split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded):-
+split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out):-
 	maximization_mode(simple),
 		
 	Exp=exp(Index_pos,Index_neg,Exp_pos,Exp_neg),
@@ -396,9 +418,9 @@ split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_m
 	Vars_neg2=Expressions_neg2,
 	cexpr_simplify(Exp_pos_final-Exp_neg_final,[],Expr_simple),
 	foldl(add_bound_to_multimap(Expr_simple),Bounded,Ub_map,Ub_map_aux2),
-	split_bounded_map(Aux_exps,Ub_map_aux2,Lb_map,Ub_map_out,Lb_map_out,Not_bounded).	
+	split_bounded_map(Aux_exps,Bases,Ub_map_aux2,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out).	
 		
-split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded):-
+split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out):-
 	\+maximization_mode(simple),
 %	Bounded=[_],
 	exclude(already_bounded(Ub_map),Bounded,Bounded_new),
@@ -426,12 +448,18 @@ split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_m
 			foldl(add_bound_to_multimap(Expr_simple),[Bounded1],Ub_map,Ub_map_aux1),
 			foldl(add_bound_to_multimap(0),Bounded2,Ub_map_aux1,Ub_map_aux2)
 		),
-		split_bounded_map(Aux_exps,Ub_map_aux2,Lb_map,Ub_map_out,Lb_map_out,Not_bounded)
+%		(Bounded_new=[_,_,_|_]->
+%		remove_zero_constraints(Aux_exps,max,Ub_map_aux2,Bases,Ub_map_aux3,Aux_exps2,Bases2,_Ref_set)
+%		;
+		Aux_exps=Aux_exps2,Bases2=Bases,Ub_map_aux3=Ub_map_aux2
+%		)
+	,
+		split_bounded_map(Aux_exps2,Bases2,Ub_map_aux3,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out)
 	;
-		split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded)
+		split_bounded_map(Aux_exps,Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out)
 	).	
 		
-split_bounded_map([bound(lb,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded):-
+split_bounded_map([bound(lb,Exp,Bounded)|Aux_exps],Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out):-
 	exclude(already_bounded(Lb_map),Bounded,Bounded_new),
 	(Bounded_new=Bounded->
 		Exp=exp(Index_pos,Index_neg,Exp_pos,Exp_neg),
@@ -458,12 +486,12 @@ split_bounded_map([bound(lb,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_m
 			foldl(add_bound_to_multimap(Expr_simple),[Bounded1],Lb_map,Lb_map_aux1),
 			foldl(add_bound_to_multimap(0),Bounded2,Lb_map_aux1,Lb_map_aux2)
 		),
-		split_bounded_map(Aux_exps,Ub_map,Lb_map_aux2,Ub_map_out,Lb_map_out,Not_bounded)
+		split_bounded_map(Aux_exps,Bases,Ub_map,Lb_map_aux2,Ub_map_out,Lb_map_out,Not_bounded,Bases_out)
 	;
-		split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded)
+		split_bounded_map(Aux_exps,Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out)
 	).
 
-split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,[bound(ub,Exp,Bounded)|Not_bounded]):-
+split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,[bound(ub,Exp,Bounded)|Not_bounded],Bases_out):-
 	Exp=exp(Index_pos,Index_neg,_,_),
 	maplist(tuple,Names,_,Index_pos),
 	maplist(tuple,Names_neg,_,Index_neg),
@@ -472,9 +500,9 @@ split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_m
 	;
 	\+maplist(lookup_lm(Lb_map),Names_neg,_)
 	),
-	split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded).		
+	split_bounded_map(Aux_exps,Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out).		
 
-split_bounded_map([bound(lb,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,[bound(lb,Exp,Bounded)|Not_bounded]):-
+split_bounded_map([bound(lb,Exp,Bounded)|Aux_exps],Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,[bound(lb,Exp,Bounded)|Not_bounded],Bases_out):-
 	Exp=exp(Index_pos,Index_neg,_,_),
 	maplist(tuple,Names,_,Index_pos),
 	maplist(tuple,Names_neg,_,Index_neg),
@@ -483,7 +511,7 @@ split_bounded_map([bound(lb,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_m
 	;
 	\+maplist(lookup_lm(Ub_map),Names_neg,_)
 	),
-	split_bounded_map(Aux_exps,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded).
+	split_bounded_map(Aux_exps,Bases,Ub_map,Lb_map,Ub_map_out,Lb_map_out,Not_bounded,Bases_out).
 	
 %split_bounded_map([bound(Op,Exp,Bounded)|Aux_exps],Ub_map,Lb_map,Ub_map_out,Lb_map_out,[bound(lb,Exp,Bounded)|Not_bounded]):-
 %	writeln(bound(Op,Exp,Bounded)),fail.
