@@ -36,8 +36,7 @@ the input variables and the variables of the recursive call (if there is one)
 :- use_module('../utils/cofloco_utils',[tuple/3]).
 :- use_module('../utils/cost_structures',[cstr_extend_variables_names/3,
 			cstr_empty/1,
-			cstr_join_equal_top_expressions/2,
-			cstr_constant/2]).
+			cstr_join_equal_top_expressions/2]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 
 
@@ -81,13 +80,12 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
     
  get_equation_cost_1(Head,Call,Forward_inv,Eq_id,Cost):-
      (Call==none->   
-       eq_ph(Head,(Eq_id,_),C, Base_calls,[],_,Phi,_)
+       eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,[],_,Phi,_)
        ;
-       eq_ph(Head,(Eq_id,_),C, Base_calls,[Call],_,Phi,_)
+       eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,[Call],_,Phi,_)
        ),
 	nad_glb(Forward_inv,Phi,Phi1),
 	term_variables((Head,Call),TVars),
-	cstr_constant(C,Basic_cost),
 	foldl(accumulate_calls,Base_calls,(Basic_cost,1),(cost(Ub_tops,Lb_tops,Auxs,Bases,Base),_)),
 	reverse(Base_calls,Base_calls_inv),
 	maplist(term_variables,Base_calls_inv,Base_calls_vars),

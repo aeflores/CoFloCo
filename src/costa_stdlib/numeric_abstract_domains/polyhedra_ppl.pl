@@ -32,6 +32,8 @@
     ppl_entailed_cone/6, % ( c, Cs, Vars, Mode, Params, Psi).
 	ppl_minimize/4,
 	ppl_maximize/4,
+	ppl_maximize_with_point/5,
+	ppl_minimize_with_point/5,
     ppl_pp_c_collapse/2, 
     ppl_normalize/3,
     ppl_ranking_function_MS/5,
@@ -60,6 +62,8 @@
      ppl_Polyhedron_is_empty/1,
      ppl_Pointset_Powerset_C_Polyhedron_is_empty/1,
      ppl_Polyhedron_minimize/5,
+     ppl_Polyhedron_minimize_with_point/6,
+     ppl_Polyhedron_maximize_with_point/6,
      ppl_Polyhedron_add_constraints/2,
      ppl_Pointset_Powerset_C_Polyhedron_minimize/5,
      ppl_Pointset_Powerset_C_Polyhedron_add_constraints/2,
@@ -476,6 +480,27 @@ minimize_vars(pp_c,V, Handle, C) :-
     ppl_Pointset_Powerset_C_Polyhedron_minimize(Handle, V, C1, C2, true), 
     ppl_Pointset_Powerset_C_Polyhedron_add_constraints(Handle, [C2*V=C1]), 
     C = C1/C2.
+
+
+
+ppl_minimize_with_point(Type,Cs,V,C1/C2,Point1) :-
+	term_variables((Cs,V),Vars),
+	copy_term((Vars,Cs,V),(Vars2,Cs2,V2)),	
+    numbervars(Vars2,0,Dim),
+    to_ppl_dim(Type, Dim, Cs2, Handle), 
+    ppl_Polyhedron_minimize_with_point(Handle, V2, C1, C2, true, Point),
+	from_numbervars_nu(Vars, (Vars2,Point), (_,Point1)),
+	dispose(Type,Handle).
+	
+
+ppl_maximize_with_point(Type,Cs,V,C1/C2,Point1) :-
+	term_variables((Cs,V),Vars),
+	copy_term((Vars,Cs,V),(Vars2,Cs2,V2)),	
+    numbervars(Vars2,0,Dim),
+    to_ppl_dim(Type, Dim, Cs2, Handle), 
+    ppl_Polyhedron_maximize_with_point(Handle, V2, C1, C2, true, Point),
+	from_numbervars_nu(Vars, (Vars2,Point), (_,Point1)),
+	dispose(Type,Handle).
 
 /*
 ppl_maximize(+Type,+Cs,+Vs):

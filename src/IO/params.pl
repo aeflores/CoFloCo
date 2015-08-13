@@ -88,8 +88,8 @@ clean_params:-
 %  * -maximize_fast 5
 set_default_params:-
 	parse_params(['-v',2,
-		      '-n_rankings',2,
-		      '-maximize_fast',2
+		      '-n_rankings',1,
+		      '-maximize_fast',1
 		      ]).
 		      
 %% parse_params(Params:list(atoms)) is det

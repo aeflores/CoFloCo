@@ -25,7 +25,7 @@
 
 :- module(cost_structures,[
 		cstr_empty/1,
-		cstr_constant/2,
+		cstr_from_cexpr/2,
 		cstr_maxminimization/4,
 		cstr_name_aux_var/1,
 		cstr_get_it_name/2,
@@ -41,7 +41,7 @@
 		cstr_join_equal_top_expressions/2,
 		cstr_shorten_variables_names/2]).
 :- use_module(cofloco_utils,[write_sum/2,write_product/2,tuple/3,assign_right_vars/3]).	
-:- use_module(cost_expressions,[cexpr_simplify/3]).	
+:- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1,normalize_le/2]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).	
 :- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
@@ -52,7 +52,26 @@
 :-dynamic short_db/3.
 
 cstr_empty(cost([],[],[],[],0)).
-cstr_constant(C,cost([],[],[],[],C)).
+
+cstr_from_cexpr(N,cost([],[],[],[],N)):-
+	ground(N),!.
+cstr_from_cexpr(Lin_exp,cost(Top_exps,Top_exps_neg,[],[(Aux1,1),(Aux2,-1)],0)):-
+	is_linear_exp(Lin_exp),!,
+	normalize_le(Lin_exp,Lin_exp_normalized),
+	normalize_le(-Lin_exp,Negation),
+	cstr_name_aux_var(Aux1),
+	cstr_name_aux_var(Aux2),
+	Top_exps=[bound(ub,Lin_exp_normalized,[Aux1]),bound(ub,Negation,[Aux2])],
+	Top_exps_neg=[bound(lb,Lin_exp_normalized,[Aux1]),bound(lb,Negation,[Aux2])].
+	
+cstr_from_cexpr(nat(Lin_exp),cost(Top_exps,Top_exps_neg,[],[(Aux1,1)],0)):-
+	is_linear_exp(Lin_exp),!,
+	normalize_le(Lin_exp,Lin_exp_normalized),
+	cstr_name_aux_var(Aux1),
+	Top_exps=[bound(ub,Lin_exp_normalized,[Aux1])],
+	Top_exps_neg=[bound(lb,Lin_exp_normalized,[Aux1])].
+cstr_from_cexpr(Exp,_):-
+	throw(invalid_cost_expression(Exp)).
 
 cstr_name_aux_var([aux(Num)]):-
 	counter_increase(aux_vars,1,Num).
@@ -221,8 +240,12 @@ useless_top_constr(Ref_set,bound(Op,_,Bounded)):-
 add_bound_to_multimap(Exp,Var,Map,Map1):-
 	lookup_lm(Map,Var,Vals),!,
 	insert_sl(Vals,Exp,Vals2),
-	%ut_split_at_pos(Vals1,1,Vals2,_),
-	insert_lm(Map,Var,Vals2,Map1).
+	(contains_sl(Vals2,0)->
+		insert_lm(Map,Var,[0],Map1)
+	;
+	insert_lm(Map,Var,Vals2,Map1)
+	).
+
 	
 add_bound_to_multimap(Exp,Var,Map,Map1):-
 	insert_lm(Map,Var,[Exp],Map1).
@@ -279,6 +302,8 @@ propagate_zeroes([bound(ub,Exp,Bounded)|More],Zeroes,Aux_exps_out,Zeroes_out):-
 	Aux_exps_out=[bound(ub,exp(Index_pos,Index_neg,add(Factors_rem),Exp_neg),Bounded)|Aux_exps_out_aux],
 	propagate_zeroes(More,Zeroes,Aux_exps_out_aux,Zeroes_out)
 	).
+propagate_zeroes([bound(lb,Exp,Bounded)|More],Zeroes,[bound(lb,Exp,Bounded)|Aux_exps_out_aux],Zeroes_out):-
+	propagate_zeroes(More,Zeroes,Aux_exps_out_aux,Zeroes_out).	
 	
 %%propagate_zeroes([bound(Op,Exp,Bounded)|More],Zeroes,[bound(Op,Exp,Bounded)|Aux_exps_out],Zeroes_out):-
 %	propagate_zeroes(More,Zeroes,Aux_exps_out,Zeroes_out).
@@ -439,7 +464,9 @@ split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Bases,Ub_map,Lb_map,Ub_map_ou
 		Vars_pos2=Expressions_pos2,
 		cstr_get_cexpr_from_normalform(Exp_neg2,Exp_neg_final),
 		Vars_neg2=Expressions_neg2,
+		%Expr_simple=Exp_pos_final-Exp_neg_final,
 		cexpr_simplify(Exp_pos_final-Exp_neg_final,[],Expr_simple),
+		
 		(Expr_simple==0->
 			foldl(add_bound_to_multimap(0),Bounded_new,Ub_map,Ub_map_aux2)
 			;
@@ -447,7 +474,8 @@ split_bounded_map([bound(ub,Exp,Bounded)|Aux_exps],Bases,Ub_map,Lb_map,Ub_map_ou
 			delete(Bounded_new,Bounded1,Bounded2),
 			foldl(add_bound_to_multimap(Expr_simple),[Bounded1],Ub_map,Ub_map_aux1),
 			foldl(add_bound_to_multimap(0),Bounded2,Ub_map_aux1,Ub_map_aux2)
-		),
+		)
+		,
 %		(Bounded_new=[_,_,_|_]->
 %		remove_zero_constraints(Aux_exps,max,Ub_map_aux2,Bases,Ub_map_aux3,Aux_exps2,Bases2,_Ref_set)
 %		;

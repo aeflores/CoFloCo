@@ -34,13 +34,13 @@ mutual dependencies in order to obtain lexicographic ranking functions
 :- use_module('refinement/chains',[chain/3]).	  
 
 :- use_module('IO/params',[get_param/2]).
-:- use_module('utils/cofloco_utils',[zip_with_op/4,
-						assign_right_vars/3,
+:- use_module('utils/cofloco_utils',[zip_with_op/4,repeat_n_times/3,
+						assign_right_vars/3,write_sum/2,
 						normalize_constraint/2]).
 :- use_module('utils/cost_expressions',[
 						normalize_le/2,
 						le_multiply/3]).						
-:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,
+:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,nad_maximize/3,
 						nad_consistent_constraints/1,
 						nad_entails/3, nad_lub/6,nad_list_lub/2,
 						nad_widen/5, nad_false/1,
@@ -51,7 +51,7 @@ mutual dependencies in order to obtain lexicographic ranking functions
 :- use_module(stdlib(multimap),[
     empty_mm/1,
     put_mm/4]).
-    
+   
 %! ranking_function(Head:term,Chain:chain,Phase:phase,RF:linear_expression)
 % stores a ranking function of the phase Phase that belongs to the Chain and SCC Head
 % if Chain is not specified, the ranking function is valid for all chains that contain
@@ -234,6 +234,8 @@ add_partial_ranking_function(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
 compute_iterations_ubs( Head,Call,Phi, Rfs) :-
      pr04_compute_all_rfs_ppl(Head,Call,Phi,Rfs1),
      maplist(adapt_fraction,Rfs1,Rfs).
+
+
 
 adapt_fraction(Rf,Rf_2):-
 	\+var(Rf),

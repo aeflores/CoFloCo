@@ -33,6 +33,8 @@ site: http://www.cs.unipr.it/ppl/ . */
      ppl_Polyhedron_contains_Polyhedron/2,  
      ppl_Polyhedron_is_empty/1,
      ppl_Polyhedron_minimize/5,
+     ppl_Polyhedron_minimize_with_point/6,
+     ppl_Polyhedron_maximize_with_point/6,
      ppl_Polyhedron_add_constraints/2,
      ppl_Polyhedron_maximize/5,
      ppl_new_C_Polyhedron_from_constraints/2,
