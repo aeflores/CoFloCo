@@ -51,11 +51,11 @@ the ranking functions.
 			cstr_get_it_name/2,
 			cstr_generate_top_exp/4
 			]).
-
+:- use_module(stdlib(linear_expression),[subtract_le/3,integrate_le/3,write_le/2,multiply_le/3]).	
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(list_map),[lookup_lm/3]).
-:- use_module(stdlib(fraction),[min_fr/3,max_fr/3,negate_fr/2]).
+:- use_module(stdlib(fraction),[min_fr/3,max_fr/3,negate_fr/2,inverse_fr/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3,
 						nad_list_lub/2,
 						nad_list_glb/2,
@@ -169,7 +169,8 @@ find_reset(Dep,Rf,Head,Phase,Reset):-
 		   	   
 get_difference_version(Head,Call,Rf,Rf_diff):-
 	copy_term((Head,Rf),(Call,Rfp)),
-	normalize_le(Rf-Rfp,Rf_diff).
+	subtract_le(Rf,Rfp,Rf_diff).
+
 
 
 
@@ -191,11 +192,17 @@ get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain,Top,[]):-
 get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 	ranking_function(Head,Chain,Phase,Rf),
 	copy_term((Head,Rf),(Call,Rf1)),
+	subtract_le(Rf,Rf1,Rf_diff),
+	integrate_le(Rf_diff,Den,Rf_diff_nat),
+	write_le(Rf_diff_nat,Rf_diff_nat_print),
 	phase_loop(Phase,_,Head,Call,Phi),
-	normalize_constraint( D=Rf-Rf1 ,Constraint),
+	Constraint= (Den* D = Rf_diff_nat_print),
+
 	Cs_1 = [ Constraint | Phi],
-	nad_maximize(Cs_1,[D],[Delta1]),
-	normalize_le(1/Delta1*(Rf-Rf1),LB).
+	nad_maximize(Cs_1,[D],[Delta]),
+	inverse_fr(Delta,Delta_inv),
+	multiply_le(Rf_diff,Delta_inv,LB).
+
 
 /*	
 get_lower_bound_val(Head,Call,Chain,Phase,Val):-

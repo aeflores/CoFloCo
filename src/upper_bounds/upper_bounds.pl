@@ -49,8 +49,8 @@ that can be passed on to the callers.
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3,cexpr_max/2]).
 :- use_module('../utils/cost_structures',[cstr_maxminimization/4,cstr_join_equal_top_expressions/2]).
-%				cost_structure_simplify/3,
-%				compress_cost_structures/4]).
+
+
 %! compute_upper_bound_for_scc(+Head:term,+RefCnt:int) is det
 % compute an upper bound for each chain
 % then, compress the upper bounds for the chains that have been grouped into
@@ -70,26 +70,22 @@ compute_upper_bound_for_scc(Head,RefCnt):-
 compute_chain_upper_bound(Head,Chain):-
 	compute_chain_cost(Head,Chain,UB),!,  
 	cstr_join_equal_top_expressions(UB,UB2),
-%	backward_invariant(Head,(Chain,_),_,Head_Pattern),
-%	cost_structure_simplify(UB,Head_Pattern,UB2),
 	add_upper_bound(Head,Chain,UB2).
 compute_chain_upper_bound(Head,Chain):-
 	throw(fatal_error('failed to compute chain bound',Head,Chain)).
+	
 %! compute_closed_bound(+Head:term) is det
 % compute a closed bound for each cost structure that has been previously inferred
 % and store it
 compute_closed_bound(Head):-
 	upper_bound(Head,Chain,_Vars,Cost),
-	%trace,
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
-%	cstr_simple_maximization(Cost,UB),
 	cstr_maxminimization(Cost,max,UB,simple),
-	cexpr_simplify(UB,Head_Pattern,UB1),
-	cstr_maxminimization(Cost,min,LB,complete),
 	%cexpr_simplify(UB,Head_Pattern,UB1),
-	add_closed_upper_bound(Head,Chain,UB1),
-	cexpr_simplify(LB,Head_Pattern,LB1),
-	add_closed_lower_bound(Head,Chain,LB1),
+	cstr_maxminimization(Cost,min,LB,complete),
+	add_closed_upper_bound(Head,Chain,UB),
+	%cexpr_simplify(LB,Head_Pattern,LB1),
+	add_closed_lower_bound(Head,Chain,LB),
 	fail.
 compute_closed_bound(_Head).
 

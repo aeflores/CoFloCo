@@ -59,6 +59,7 @@ cstr_get_cexpr_from_normalform_ground/2]).
 :- use_module('../IO/params',[parameter_dictionary/3,get_param/2,
 		      param_description/2]).
 
+:- use_module(stdlib(linear_expression),[write_le/2]).
 :- use_module(stdlib(profiling),[profiling_get_info/3]).
 :- use_module(stdlib(counters),[counter_get_value/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
@@ -254,7 +255,8 @@ is_ub_aux_exp(bound(ub,_,_)).
 print_top_exp(bound(Op,Exp,Bounded)):-
 	print_op(Op,Op_p),
 	write_sum(Bounded,Sum),
-	format('~p ~p ~p~n',[Sum,Op_p,Exp]).
+	write_le(Exp,Exp_print),
+	format('~p ~p ~p~n',[Sum,Op_p,Exp_print]).
 
 print_aux_exp(bound(Op,Exp_0,Bounded)):-
 	print_op(Op,Op_p),

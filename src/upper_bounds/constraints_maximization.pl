@@ -44,10 +44,7 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 			normalize_constraint_wrt_var/3,	
 			normalize_constraint_wrt_vars/3,	    
 			write_sum/2]).
-:- use_module('../utils/template_inference',[
-		   max_min_linear_expression_template/5
-	        ]).			
-			
+				
 :-use_module('../refinement/invariants',[backward_invariant/4,
 			      phase_transitive_closure/5,
 			      get_phase_star/4,
@@ -83,6 +80,13 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 						nad_list_lub/2,
 						nad_project/3,nad_entails/3,nad_normalize/2,
 						nad_consistent_constraints/1]).
+:- use_module(stdlib(linear_expression),[is_constant_le/1,
+	integrate_le/3,
+	write_le/2,
+	parse_le_fast/2,
+	elements_le/2,
+	subtract_le/3,
+	constant_le/2]).							
 :- use_module(stdlib(fraction),[greater_fr/2,geq_fr/2,negate_fr/2,multiply_fr/3]).
 :- use_module(stdlib(fraction_list),[max_frl/2,min_frl/2]).
 				
@@ -170,33 +174,34 @@ max_min_top_exprs_in_chain(Top_exps,_Chain,Phi,Head,Final_tops,[]):-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 generate_constraints([],_,Dicc,[],[],Dicc).
-generate_constraints([bound(Op,Expression,Bounded)|More],Phi,Dicc,Constraints2,Non_secure2,Dicc_out):-
+generate_constraints([bound(Op,Lin_exp,Bounded)|More],Phi,Dicc,Constraints2,Non_secure2,Dicc_out):-
 	foldl(insert_in_dicc,Bounded,(Dicc,[]),(Dicc1,Var_list)),
 	write_sum(Var_list,Sum),
 	(Op=ub->
-		(ground(Expression)->
-			Non_secure2=[Bounded =< Expression|Non_secure],
+		(is_constant_le(Lin_exp)->
+			Non_secure2=[Bounded =< Lin_exp|Non_secure],
 			Constraints2=Constraints
 		;
-		term_variables((Phi,Expression),Vars),
-		normalize_constraint(Expression >= 0,Constr_safe2),
-		(\+nad_entails_aux(Vars,Phi,[Constr_safe2])->
-			Non_secure2=[Bounded =< Expression|Non_secure],
+		term_variables((Phi,Lin_exp),Vars),
+		integrate_le(Lin_exp,Den,Lin_exp_nat),
+		write_le(Lin_exp_nat,Expression_nat),
+		(\+nad_entails_aux(Vars,Phi,[Expression_nat >=0])->
+			Non_secure2=[Bounded =< Lin_exp|Non_secure],
 			Constraints2=Constraints
 			;
-			normalize_constraint(Sum =< Expression,Constr),	
 			Non_secure2=Non_secure,		
-			Constraints2=[Constr|Constraints]
+			Constraints2=[Sum *Den=< Expression_nat|Constraints]
 		)
 		)
 	;
 	
-	(ground(Expression)->
-			Non_secure2=[Bounded =< Expression|Non_secure],
+	(is_constant_le(Lin_exp)->
+			Non_secure2=[Bounded >= Lin_exp|Non_secure],
 			Constraints2=Constraints
 			;
-			normalize_constraint(Sum >= Expression,Constr),
-			Constraints2=[Constr|Constraints],
+			integrate_le(Lin_exp,Den,Lin_exp_nat),
+			write_le(Lin_exp_nat,Expression_nat),
+			Constraints2=[Sum* Den>= Expression_nat|Constraints],
 			Non_secure2=Non_secure
 	)
 	),
@@ -232,9 +237,11 @@ limit_top_expression_selection(Top_exps,Max_min,Dicc,Top_exps2):-
 	get_filtered_top_exps(Sorted_top_exps1,Counters_dicc,Top_exps2).
 
 worse_top_exp(bound(_,Exp1,_),bound(_,Exp2,_)):-
-	number(Exp1),number(Exp2),!,Exp1 > Exp2.
+	is_constant_le(Exp1),is_constant_le(Exp2),
+	constant_le(Exp1,C1),constant_le(Exp2,C2),!,
+	greater_fr(C1,C2).
 worse_top_exp(bound(_,Exp1,_),bound(_,Exp2,_)):-
-	\+number(Exp1),number(Exp2),!.	
+	\+is_constant_le(Exp1),is_constant_le(Exp2),!.	
 worse_top_exp(bound(_,_Exp1,Bounded),bound(_,_Exp2,Bounded2)):-
 	length(Bounded,N1),
 	length(Bounded2,N2),
@@ -278,9 +285,9 @@ filter_tops_with_excluded([bound(Op,Exp,Bounded)|Tops],Excluded,Tops1):-
 	),
 	filter_tops_with_excluded(Tops,Excluded,Tops2).
 		
-get_top_exp_from_norm(Dicc,max,norm(Its,Exp),bound(ub,Exp,Bounded)):-
+get_top_exp_from_norm(Dicc,max,norm(Its,Lin_exp),bound(ub,Lin_exp,Bounded)):-
 	foldl(substitute_its_by_bounded(Dicc),Its,[],Bounded).	
-get_top_exp_from_norm(Dicc,min,norm(Its,Exp),bound(lb,Exp,Bounded)):-
+get_top_exp_from_norm(Dicc,min,norm(Its,Lin_exp),bound(lb,Lin_exp,Bounded)):-
 	foldl(substitute_its_by_bounded(Dicc),Its,[],Bounded).		
 
 substitute_its_by_bounded(Dicc,It_var,Accum,[Elem|Accum]):-
@@ -290,7 +297,8 @@ get_linear_norms_from_constraints([],_Max_min,_,[]).
 get_linear_norms_from_constraints([C|Cs],max,Its_total,Norms):-
 	normalize_constraint_wrt_vars(C,Its_total,C1),!,
 	(C1= (Its =< Exp)->
-		Norms=[norm(Its,Exp)|Norms_aux]
+		parse_le_fast(Exp,Lin_exp),
+		Norms=[norm(Its,Lin_exp)|Norms_aux]
 		;
 		Norms=Norms_aux
 	),
@@ -299,7 +307,8 @@ get_linear_norms_from_constraints([C|Cs],max,Its_total,Norms):-
 get_linear_norms_from_constraints([C|Cs],min,Its_total,Norms):-
 	normalize_constraint_wrt_vars(C,Its_total,C1),!,
 	(C1= (Its >= Exp)->
-		Norms=[norm(Its,Exp)|Norms_aux]
+		parse_le_fast(Exp,Lin_exp),
+		Norms=[norm(Its,Lin_exp)|Norms_aux]
 		;
 		Norms=Norms_aux
 	),
@@ -311,11 +320,14 @@ get_linear_norms_from_constraints([_C|Cs],Max_min,Its_total,Norms):-
 	
 maximize_insecure_constraints(Vars,Phi,Max_Min,Bounded=<Linear_Expr_to_Maximize,Tops):-
 	(Max_Min=max-> Op=ub;Op=lb),
-	term_variables(Linear_Expr_to_Maximize,Relevant_vars_ini),
+	elements_le(Linear_Expr_to_Maximize,Relevant_vars_ini),
 	slice_relevant_constraints_and_vars(Relevant_vars_ini,Vars,Phi,_Selected_vars,Selected_Cs),
 	max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars, Selected_Cs,Max_Min, Maxs),
 	maplist(cstr_generate_top_exp(Bounded,Op),Maxs,Tops).
-			
+
+maximize_insecure_constraints(_Vars,_Phi,Max_Min,Bounded >= []+Cnt,Tops):-
+	(Max_Min=max-> Op=ub;Op=lb),
+	maplist(cstr_generate_top_exp(Bounded,Op),[[]+Cnt],Tops).			
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
 max_min_costs_in_phase(Costs,Head,Call,Forward_inv,Phase,Cost_final):-
@@ -364,16 +376,16 @@ max_min_top_expressions_in_loop(Head,Call,Phase,Forward_inv,Loop,cost(Top_exps,L
 	ut_flat_list([Aux_exps_new,LAux_exps_new,Aux],Aux2).
 
 
-max_min_top_expression_in_loop(Head,Call,Phase,Forward_inv,Loop,bound(Op,Exp,Bounded),Top_exps_new,[]):-
+max_min_top_expression_in_loop(Head,Call,Phase,Forward_inv,Loop,bound(Op,Lin_exp,Bounded),Top_exps_new,[]):-
 	%get_phase_star(Head_total,Head,Phase,Cs_star_trans),
 	phase_transitive_closure(Phase,_,Head_total,Head,Cs_star_trans),
 	loop_ph(Head,(Loop,_),Call,Cs,_,_),
 	ut_flat_list([Cs_star_trans,Cs,Forward_inv],Context),
 	term_variables(Head_total,Vars_of_Interest),
 	(Op=ub->
-	max_min_linear_expression_all(Exp, Vars_of_Interest, Context,max, Maxs_out)
+	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,max, Maxs_out)
 	;
-	max_min_linear_expression_all(Exp, Vars_of_Interest, Context,min, Maxs_out)
+	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,min, Maxs_out)
 	),
 	Head_total=Head,
 	maplist(cstr_generate_top_exp(Bounded,Op),Maxs_out,Top_exps_new).
@@ -400,22 +412,22 @@ compress_differences(Head,Call,Phase,Summatories,Top,Aux,Summatories_left):-
 compress_triangles(_Head,_Call,Summatories,[],[],Summatories).
 
 get_difference_norms(_Head,_,[],_Loop,[],[]).
-get_difference_norms(Head,Call,[bound(Op,Exp,Bounded)|Tops],Loop,Summ_non_diff,Summ_diff2):-
-	is_difference(Head,Call,Exp,Loop,Exp_diff_list),!,
+get_difference_norms(Head,Call,[bound(Op,Lin_exp,Bounded)|Tops],Loop,Summ_non_diff,Summ_diff2):-
+	is_difference(Head,Call,Lin_exp,Loop,Exp_diff_list),!,
 	maplist(cstr_generate_top_exp(Bounded,Op),Exp_diff_list,New_diffs),
 	get_difference_norms(Head,Call,Tops,Loop,Summ_non_diff,Summ_diff),
 	append(New_diffs,Summ_diff,Summ_diff2).
-get_difference_norms(Head,Call,[bound(Op,Exp,Bounded)|Tops],Loop,[bound(Op,Exp,Bounded)|Summ_non_diff],Summ_diff):-
+get_difference_norms(Head,Call,[bound(Op,Lin_exp,Bounded)|Tops],Loop,[bound(Op,Lin_exp,Bounded)|Summ_non_diff],Summ_diff):-
 	get_difference_norms(Head,Call,Tops,Loop,Summ_non_diff,Summ_diff).	
 
-is_difference(Head,Call,Exp,Loop,Diff_list2):-
+is_difference(Head,Call,Lin_exp,Loop,Diff_list2):-
 	loop_ph(Head,(Loop,_),Call,Cs,_,_),
-	(difference_constraint2(Head,Call,Cs,Exp,Exp_diff)->
+	(difference_constraint2(Head,Call,Cs,Lin_exp,Exp_diff)->
 	    Diff_list=[Exp_diff]
 	    ;
 	    Diff_list=[]
 	    ),
-	((difference_constraint(Head,Call,Cs,Exp,Exp_diff2),Exp_diff2\==Exp_diff)->
+	((difference_constraint(Head,Call,Cs,Lin_exp,Exp_diff2),Exp_diff2\==Exp_diff)->
 	 Diff_list2=[Exp_diff2|Diff_list]
 	    ;
 	    Diff_list2=Diff_list
@@ -424,15 +436,15 @@ is_difference(Head,Call,Exp,Loop,Diff_list2):-
 
 
 	
-get_expressions_map(Ex_sets,Phase,Exp,Map_set):-
-	maplist(loop_contains_exp(Exp),Ex_sets,Phase,Map),
+get_expressions_map(Ex_sets,Phase,Lin_exp,Map_set):-
+	maplist(loop_contains_exp(Lin_exp),Ex_sets,Phase,Map),
 	ut_flat_list(Map,Map_flat),
 	from_list_sl(Map_flat,Map_set).
 	
-loop_contains_exp(Exp,Set,Loop,[Loop]):-
-		contains_sl(Set,Exp),!.
+loop_contains_exp(Lin_exp,Set,Loop,[Loop]):-
+		contains_sl(Set,Lin_exp),!.
 
-loop_contains_exp(_Exp,_Set,_Loop,[]).	
+loop_contains_exp(_Lin_exp,_Set,_Loop,[]).	
 
 
 generate_top_and_aux_from_compressed([],Summatories,[],[],Summatories).
@@ -449,22 +461,23 @@ remove_tops_with_exp([Summ|Summatories],Bounded_accum,Exp,Bounded,[Summ1|Summato
 	remove_tops_with_exp(Summatories,Bounded_accum1,Exp,Bounded,Summatories1).
 	
 	
-remove_tops_with_exp_1(Exp,Tops,Tops1,Bounded):-
-	partition(top_has_exp(Exp),Tops,Tops_selected,Tops1),
+remove_tops_with_exp_1(Lin_exp,Tops,Tops1,Bounded):-
+	partition(top_has_exp(Lin_exp),Tops,Tops_selected,Tops1),
 	(
 	Tops_selected=[bound(_,_,Bounded)]
 	;
 	(Tops_selected=[],Bounded=[])
 	),!.
-remove_tops_with_exp_1(_Exp,Tops,_Tops1,_Bounded):-
+remove_tops_with_exp_1(_Lin_exp,Tops,_Tops1,_Bounded):-
 	throw(implementation_error('failed assumption that a linear expression appears only once after substitution',Tops)).
 	
 
 
-top_has_exp(Exp,bound(_Op,Exp2,_)):-Exp==Exp2.
+top_has_exp(Lin_exp,bound(_Op,Lin_exp2,_)):-Lin_exp==Lin_exp2.
 
 try_inductive_compression(Head,Phase,Call,Max_Min,((L,(Bounded_var,Tops,Auxs)),Expressions_map)):-
-	get_le_without_constant(L,L_wc,Delta),
+	L=Coeffs+Delta,
+	L_wc=Coeffs+0,
 	difference_sl(Phase,Expressions_map,Other_loops),
 	(Max_Min=max->	
  	(greater_fr(Delta,0)->
@@ -582,22 +595,29 @@ get_loop_cs(Head,Call,Loop,Cs):-
 generate_loop_info(Delta,Max_min,Loop,(Max_min_loop,Delta)):-
 	Max_min_loop=..[Max_min,Loop].
 
-is_not_negative(Head,Call,L,Loop):-
+is_not_negative(Head,Call,Lin_exp,Loop):-
 	loop_ph(Head,(Loop,_),Call,Cs,_,_),
-	normalize_constraint(L>=0,Positive_constraint),
+	integrate_le(Lin_exp,_,Lin_exp_nat),
+	write_le(Lin_exp_nat,Expression_nat),
 	term_variables(Cs,Vars_constraint),
-	nad_entails(Vars_constraint,Cs,[Positive_constraint]).
+	nad_entails(Vars_constraint,Cs,[Expression_nat>=0]).
 
 
-check_bad_loops(Head,Call,Exp,Max_Min,Loop,Info):-
+check_bad_loops(Head,Call,Lin_exp,Max_Min,Loop,Info):-
 	loop_ph(Head,(Loop,_),Call,Cs,_,_),
-	term_variables(Exp,Vars_exp),from_list_sl(Vars_exp,Vars_exp_set),
+	elements_le(Lin_exp,Vars_exp_set),
 	term_variables(Call,Vars_call),from_list_sl(Vars_call,Vars_call_set),
 	(intersection_sl(Vars_exp_set,Vars_call_set,[])->
-		copy_term((Exp,Head),(Exp_p,Call)),
-		normalize_constraint( D=Exp-Exp_p ,Constraint)
+		copy_term((Lin_exp,Head),(Lin_exp_p,Call)),
+		subtract_le(Lin_exp,Lin_exp_p,Lin_exp_diff),
+		integrate_le(Lin_exp_diff,Den,Lin_exp_diff_nat),
+		write_le(Lin_exp_diff_nat,Exp_diff),
+		Constraint= (Den*D=Exp_diff)
+		
 		;
-		normalize_constraint( D=Exp ,Constraint)
+		integrate_le(Lin_exp,Den,Lin_exp_nat),
+		write_le(Lin_exp_nat,Exp),
+		Constraint= (Den*D=Exp)
 	),
 	Cs_1 = [ Constraint | Cs],
 	(Max_Min=max->
@@ -634,7 +654,7 @@ check_bad_loops(Head,Call,Exp,Max_Min,Loop,Info):-
 % The length of Maxs is limited by the input parameter -maximize_fast N.
 % If no upper bound is found, the predicate returns an empty list.
 max_min_linear_expression_all(Number,_,_,_, [Number]) :-
-	ground(Number),!.
+	is_constant_le(Number),!.
 
 /*	
 max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars_of_Interest, Context,max, [Exp_diff_1]) :-
@@ -644,19 +664,21 @@ max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars_of_Interest, Context
 	Exp_diff_1=Maxs_out,
 	Vars_of_Interest=Vars_of_Interest2,!.
 */		
-max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars_of_Interest, Context,Max_min, Maxs_out2) :-
+max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Lin_exp_out) :-
 	(get_param(maximize_fast,[N])->
 		true
 		;
 		N=1),
-	max_min_linear_expression_all_n(N,Linear_Expr_to_Maximize, Vars_of_Interest, Context,Max_min, Maxs_out2).
+	integrate_le(Lin_exp,Den,Lin_exp_nat),
+	write_le(Lin_exp_nat,Expression),
+	Constraint= (Den*R = Expression),	
+	max_min_linear_expression_all_n(N,R, Vars_of_Interest, [Constraint|Context],Max_min, Maxs_out),
+	maplist(parse_le_fast,Maxs_out,Lin_exp_out).
 	
 
-max_min_linear_expression_all_n(N,Linear_Expr_to_Maximize, Vars_of_Interest, Context,Max_Min, Maxs_out) :-
-	%Create a new variable and set it to the linear expression we want to maximize
-	normalize_constraint(R=Linear_Expr_to_Maximize,Exp),
+max_min_linear_expression_all_n(N,R, Vars_of_Interest, Context,Max_Min,Maxs_out) :-
 	% Polyhedral projection so Cs is expressed in terms of Vars_of_Interest and R
-	nad_project([R|Vars_of_Interest],[Exp|Context],Cs),
+	nad_project([R|Vars_of_Interest],Context,Cs),
 	% Extract upper bound sintactically
 	extract_all_possible(Cs, R, Max_Exprs),
 	get_right_sides(Max_Exprs,Max_Min,Maxs),

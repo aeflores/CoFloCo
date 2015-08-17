@@ -42,11 +42,13 @@
 		cstr_shorten_variables_names/2]).
 :- use_module(cofloco_utils,[write_sum/2,write_product/2,tuple/3,assign_right_vars/3]).	
 :- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1,normalize_le/2]).	
+
+:- use_module(stdlib(linear_expression),[parse_le/2,write_le/2,negate_le/2]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).	
 :- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
 :- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
-:- use_module(stdlib(fraction),[greater_fr/2]).
+:- use_module(stdlib(fraction),[greater_fr/2,sum_fr/3]).
 :- use_module(stdlib(set_list),[contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
 :-dynamic short_db/3.
@@ -55,21 +57,20 @@ cstr_empty(cost([],[],[],[],0)).
 
 cstr_from_cexpr(N,cost([],[],[],[],N)):-
 	ground(N),!.
-cstr_from_cexpr(Lin_exp,cost(Top_exps,Top_exps_neg,[],[(Aux1,1),(Aux2,-1)],0)):-
-	is_linear_exp(Lin_exp),!,
-	normalize_le(Lin_exp,Lin_exp_normalized),
-	normalize_le(-Lin_exp,Negation),
+cstr_from_cexpr(Exp,cost(Top_exps,Top_exps_neg,[],[(Aux1,1),(Aux2,-1)],0)):-
+	is_linear_exp(Exp),!,
+	parse_le(Exp,Lin_exp),
+	negate_le(Lin_exp,Lin_exp_negated),
 	cstr_name_aux_var(Aux1),
 	cstr_name_aux_var(Aux2),
-	Top_exps=[bound(ub,Lin_exp_normalized,[Aux1]),bound(ub,Negation,[Aux2])],
-	Top_exps_neg=[bound(lb,Lin_exp_normalized,[Aux1]),bound(lb,Negation,[Aux2])].
+	Top_exps=[bound(ub,Lin_exp,[Aux1]),bound(ub,Lin_exp_negated,[Aux2])],
+	Top_exps_neg=[bound(lb,Lin_exp,[Aux1]),bound(lb,Lin_exp_negated,[Aux2])].
 	
-cstr_from_cexpr(nat(Lin_exp),cost(Top_exps,Top_exps_neg,[],[(Aux1,1)],0)):-
-	is_linear_exp(Lin_exp),!,
-	normalize_le(Lin_exp,Lin_exp_normalized),
+cstr_from_cexpr(nat(Exp),cost(Top_exps,Top_exps_neg,[],[(Aux1,1)],0)):-
+	parse_le(Exp,Lin_exp),!,
 	cstr_name_aux_var(Aux1),
-	Top_exps=[bound(ub,Lin_exp_normalized,[Aux1])],
-	Top_exps_neg=[bound(lb,Lin_exp_normalized,[Aux1])].
+	Top_exps=[bound(ub,Lin_exp,[Aux1])],
+	Top_exps_neg=[bound(lb,Lin_exp,[Aux1])].
 cstr_from_cexpr(Exp,_):-
 	throw(invalid_cost_expression(Exp)).
 
@@ -233,22 +234,7 @@ useless_top_constr(Ref_set,bound(Op,_,Bounded)):-
 	\+intersection_sl(Bounded_set,Ref_set,Bounded_set)
 	).
 		
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-	
-add_bound_to_multimap(Exp,Var,Map,Map1):-
-	lookup_lm(Map,Var,Vals),!,
-	insert_sl(Vals,Exp,Vals2),
-	(contains_sl(Vals2,0)->
-		insert_lm(Map,Var,[0],Map1)
-	;
-	insert_lm(Map,Var,Vals2,Map1)
-	).
-
-	
-add_bound_to_multimap(Exp,Var,Map,Map1):-
-	insert_lm(Map,Var,[Exp],Map1).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
 :-dynamic maximization_mode/1.		
@@ -381,13 +367,15 @@ get_top_bounded_map([],Map,Extra_elems,Map,Extra_elems).
 
 
 %FIXME we have to be careful with bad behaved sets of constraints
-get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,Extra_elems,Map_out,Extra_elems_out):-
+get_top_bounded_map([bound(ub,Lin_exp,Bounded)|Top_exps],Map,Extra_elems,Map_out,Extra_elems_out):-
 	maximization_mode(simple),
+	write_le(Lin_exp,Exp),
 	foldl(add_bound_to_multimap(Exp),Bounded,Map,Map_aux1),
 	get_top_bounded_map(Top_exps,Map_aux1,Extra_elems,Map_out,Extra_elems_out).
 
-get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,extra_elems(Aux_exps,Max_min,Bases),Map_out,Extra_elems_out):-
+get_top_bounded_map([bound(ub,Lin_exp,Bounded)|Top_exps],Map,extra_elems(Aux_exps,Max_min,Bases),Map_out,Extra_elems_out):-
 	\+maximization_mode(simple),
+	write_le(Lin_exp,Exp),
 	exclude(already_bounded(Map),Bounded,Bounded_new),
 	(Bounded_new\=[]->
 		member(Bounded1,Bounded_new),
@@ -402,7 +390,8 @@ get_top_bounded_map([bound(ub,Exp,Bounded)|Top_exps],Map,extra_elems(Aux_exps,Ma
 		get_top_bounded_map(Top_exps,Map,extra_elems(Aux_exps,Max_min,Bases),Map_out,Extra_elems_out)
 	).
 	
-get_top_bounded_map([bound(lb,Exp,Bounded)|Top_exps],Map,Extra_elems,Map_out,Extra_elems_out):-
+get_top_bounded_map([bound(lb,Lin_exp,Bounded)|Top_exps],Map,Extra_elems,Map_out,Extra_elems_out):-
+	write_le(Lin_exp,Exp),
 	member(Bounded1,Bounded),
 	delete(Bounded,Bounded1,Bounded2),
 	foldl(add_bound_to_multimap(Exp),[Bounded1],Map,Map_aux1),
@@ -549,6 +538,20 @@ min_expression(A,min(A2)):-
 	maplist(zip_with(nat),A,A2).
 max_expression([A],nat(A)):-!.
 max_expression(A,max([0|A])).
+
+
+add_bound_to_multimap(Exp,Var,Map,Map1):-
+	lookup_lm(Map,Var,Vals),!,
+	insert_sl(Vals,Exp,Vals2),
+	(contains_sl(Vals2,0)->
+		insert_lm(Map,Var,[0],Map1)
+	;
+	insert_lm(Map,Var,Vals2,Map1)
+	).
+
+	
+add_bound_to_multimap(Exp,Var,Map,Map1):-
+	insert_lm(Map,Var,[Exp],Map1).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cstr_get_cexpr_from_normalform_ground(exp(Index1,Index2,add(Summands),add(Summands2)),Exp3):-
 	cstr_get_cexpr_from_normalform(add(Summands),Exp1),
@@ -624,7 +627,7 @@ cstr_join(cost(T,A,Auxs,Bs,B),cost(T2,A2,Auxs2,B2s,B2),cost(T3,A3,Auxs3,B3s,B3))
 	append(A,A2,A3),
 	append(Auxs,Auxs2,Auxs3),
 	append(Bs,B2s,B3s),
-	B3=B+B2.	 	
+	sum_fr(B,B2,B3).	
 	
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -39,7 +39,9 @@ mutual dependencies in order to obtain lexicographic ranking functions
 						normalize_constraint/2]).
 :- use_module('utils/cost_expressions',[
 						normalize_le/2,
-						le_multiply/3]).						
+						le_multiply/3]).	
+:- use_module(stdlib(linear_expression),[
+						parse_le_fast/2]).													
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,nad_maximize/3,
 						nad_consistent_constraints/1,
 						nad_entails/3, nad_lub/6,nad_list_lub/2,
@@ -199,30 +201,40 @@ check_increment(Head,Call,Cs,Rf,Delta) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-add_ranking_function(Head,Chain,Phase,RF) :-
-	ranking_function(Head,Chain,Phase,RF_1),
-	RF_1==RF,!.
+add_ranking_function(Head,Chain,Phase,Rf) :-
+	parse_le_fast(Rf,Lin_exp),
+	add_ranking_function_1(Head,Chain,Phase,Lin_exp).
 
-add_ranking_function(Head,Chain,Phase,RF) :-
+add_ranking_function_1(Head,Chain,Phase,Rf):-	
+	ranking_function(Head,Chain,Phase,RF_1),
+	RF_1==Rf,!.
+
+add_ranking_function_1(Head,Chain,Phase,RF) :-
 	assertz(ranking_function(Head,Chain,Phase,RF)),
-	copy_term((Head,RF),(PHead,PRF)),
-	numbervars(PHead,0,_),
+	
 	(get_param(debug,[])->
+	write_le(RF,Rf_print),
+	copy_term((Head,Rf_print),(PHead,PRF)),
+	numbervars(PHead,0,_),
 	 format('~p~n',ranking_function(PHead,Chain,Phase,PRF))
 	;
 	 true).
 
-
-
 add_partial_ranking_function(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
+	parse_le_fast(RF,Lin_exp),
+	add_partial_ranking_function_1(Head,_,Phase,Loop,Lin_exp,Deps,Deps_type).
+	
+
+add_partial_ranking_function_1(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
 	partial_ranking_function(Head,_,Phase,Loop,RF2,Deps,Deps_type),
 	RF==RF2,!.
 
-add_partial_ranking_function(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
+add_partial_ranking_function_1(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
 	assertz(partial_ranking_function(Head,_,Phase,Loop,RF,Deps,Deps_type)),
-	copy_term((Head,RF),(PHead,PRF)),
-	numbervars(PHead,0,_),
 	(get_param(debug,[])->
+	 write_le(RF,Rf_print),
+	 copy_term((Head,Rf_print),(PHead,PRF)),
+	 numbervars(PHead,0,_),
 	 format('~p~n',partial_ranking_function(PHead,Phase,Loop,PRF,Deps,Deps_type))
 	;
 	 true).
@@ -269,8 +281,6 @@ compute_offset(Rf,Cs,Rf_1):-
 %	).
 	
 	
-normalize_rf(F,FN) :-
-	normalize_le(F,FN).
 
 covered_by_rf(Head,Phase,Rf):-
 	ranking_function(Head,_,Phase,Rf1),

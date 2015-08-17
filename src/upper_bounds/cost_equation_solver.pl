@@ -94,7 +94,6 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 	max_min_constrs_in_cost_equation(Lb_tops,Base_calls_sets,Phi1,TVars,New_Lb_tops,New_auxs2),
 	ut_flat_list([New_auxs1,New_auxs2,Auxs],New_auxs),
 	cstr_join_equal_top_expressions(cost(New_Ub_tops,New_Lb_tops,New_auxs,Bases,Base),Cost).
-	%Cost=cost(New_Ub_cons,New_Lb_cons,Bases,Base).
 
 accumulate_calls((Call,chain(Chain)),(cost(Tops1,LTops1,Auxs1,Bases1,Base1),N),(cost([Tops2|Tops1],[LTops2|LTops1],[Auxs2|Auxs1],Bases,Base),N1)) :-
     N1 is N+1,

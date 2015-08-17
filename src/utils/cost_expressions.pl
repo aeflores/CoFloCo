@@ -312,9 +312,9 @@ cexpr_simplify_N(E/D,N,Cs,ES/D):-
 	number(D),
  	cexpr_simplify_N(E,N1,Cs,ES).
 
-cexpr_simplify_N(-(-E),N,Cs,ES):-!,
-	N1 is N-1,
- 	cexpr_simplify_N(E,N1,Cs,ES).
+%cexpr_simplify_N(-(-E),N,Cs,ES):-!,
+%	N1 is N-1,
+% 	cexpr_simplify_N(E,N1,Cs,ES).
 cexpr_simplify_N(-E,N,Cs,-ES):-!,
 	N1 is N-1,
  	cexpr_simplify_N(E,N1,Cs,ES).

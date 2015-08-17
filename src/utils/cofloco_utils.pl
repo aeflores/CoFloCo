@@ -25,7 +25,6 @@ of CoFloCo.
 
 :- module(cofloco_utils,[
 			add_equality_constraints/4,
-		    get_it_vars_in_loop/2,
 		    zip_with_op/4,
 		    tuple/3,
 		    normalize_constraint/2,
@@ -37,7 +36,6 @@ of CoFloCo.
 		    sort_with/3,
 		    write_sum/2,
 		    write_product/2,
-		    norm_contains_vars/2,
 		    normalize_constraint_wrt_var/3,
 		    normalize_constraint_wrt_vars/3]).
 
@@ -64,10 +62,10 @@ add_equality_constraints([X|Xs], [Y|Ys], Init_Cs, [X=Y|Cs]) :-
 
 %! norm_contains_vars(+Vars:list_set(var),+Norm:norm) is semidet
 % it is succesful if the expression of Norm contains some variables of the list Vars
-norm_contains_vars(Vars,norm(_Its,Exp)):-
-	term_variables(Exp,Vars_exp),
-	from_list_sl(Vars_exp,Vars_exp_set),
-	intersection_sl(Vars,Vars_exp_set,[_|_]).
+%norm_contains_vars(Vars,norm(_Its,Exp)):-
+%	term_variables(Exp,Vars_exp),
+%	from_list_sl(Vars_exp,Vars_exp_set),
+%	intersection_sl(Vars,Vars_exp_set,[_|_]).
 
 %! repeat_n_times(+N:int,+Elem:A,-Elems:list(A)) is det
 % generate a list with N copies of Elem
@@ -79,7 +77,7 @@ repeat_n_times(N,Elem,[Elem|Is]):-
 
 %! get_it_vars_in_loop(+Loop:loop_cost,-It_var:Var) is det
 % obtain the iteration variable of Loop
-get_it_vars_in_loop(loop(It_var,_,_,_,_),It_var).
+%get_it_vars_in_loop(loop(It_var,_,_,_,_),It_var).
 
 %! tuple(?A:A,?B:B,?C:(A,B))
 % C is the pair (A,B).
@@ -232,9 +230,10 @@ normalize_constraint_wrt_vars(C,Vars,NC) :-
 		foldl(gcd_fr,Factors,Factor1,GCD),
 		divide_coeffs(Coeffs_vars,GCD,Coeffs_vars_div),
 		divide_fr(B,GCD,B_div),
+		negate_fr(B_div,B_div_neg),
 		write_sum(Coeffs_vars_div,Exp),
 		reverse_op(Op,Op_aux),
-		NC =.. [Op_aux, Its, Exp-B_div]
+		NC =.. [Op_aux, Its, Exp+B_div_neg]
 	).
 
 relax_constraint_with_its(Its,Constraint,Constraint1):-

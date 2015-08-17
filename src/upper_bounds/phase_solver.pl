@@ -66,7 +66,6 @@ init_phase_solver:-
 % the constraints of the cost structure are expressed in terms of the variables at the beginnig and end of the chain (Head and Call)
 compute_phases_cost([],_,_,_,[]).
 compute_phases_cost([Phase|More],Chain,Head,Call,[Cost|Costs]):-
-	%backward_invariant(Head_total,(Chain,_),_,Head_patt),
 	forward_invariant(Head,([Phase|More],_),Forward_inv_hash,Forward_inv),
 	%obtain a cost structure in terms of the variables at the beginning and end of the phase
 	compute_phase_cost(Phase,Head,Call,(Forward_inv_hash,Forward_inv),Cost),	
