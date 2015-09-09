@@ -79,7 +79,8 @@
      ppl_Pointset_Powerset_C_Polyhedron_add_disjunct/2,
      ppl_Polyhedron_get_constraints/2,
  	 ppl_Polyhedron_get_minimized_constraints/2,
-     ppl_Polyhedron_get_generators/2,			   
+     ppl_Polyhedron_get_generators/2,		
+     ppl_Polyhedron_get_minimized_generators/2,	   
      ppl_Pointset_Powerset_C_Polyhedron_size/2,
      ppl_Pointset_Powerset_C_Polyhedron_begin_iterator/2,
      ppl_delete_Pointset_Powerset_C_Polyhedron_iterator/1,
@@ -746,7 +747,8 @@ get_generators(Type,Vars,Cs,Gen_out) :-
     copy_term( (Vars, Cs), (Vars_aux, Cs_aux) ),
     numbervars( Vars_aux,0,Dim),
     to_ppl_dim(Type,Dim, Cs_aux,Handle_Cs),
-    ppl_Polyhedron_get_generators(Handle_Cs, Gen),
+    ppl_Polyhedron_get_minimized_generators(Handle_Cs, Gen),
+  %  ppl_Polyhedron_get_generators(Handle_Cs, Gen),
     from_numbervars_nu(Vars,(Vars_aux,Gen),(_,Gen_out)),
     dispose(Type,Handle_Cs).
 

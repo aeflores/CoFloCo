@@ -25,11 +25,11 @@ It uses linear programming to infer linear expressions that satisfy a property g
 
 
 :- module(template_inference,[
-		difference_constraint/5,difference_constraint2/5,
-		max_min_linear_expression_template/5
+		difference_constraint2_farkas_dmatrix/5
+
 	]).
 
-:- use_module('cofloco_utils',[repeat_n_times/3,
+:- use_module('cofloco_utils',[repeat_n_times/3,sort_with/3,
 			normalize_constraint/2,zip_with_op/4,
 			write_sum/2]).
 :- use_module('cost_expressions',[normalize_le/2]).
@@ -54,13 +54,20 @@ It uses linear programming to infer linear expressions that satisfy a property g
 						nad_glb/3]).
 :- use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2]).		
 :- use_module(stdlib(list_map),[lookup_lm/3]).						
-:- use_module(stdlib(fraction),[leq_fr/2,negate_fr/2,multiply_fr/3]).	
+:- use_module(stdlib(fraction),[
+	leq_fr/2,
+	negate_fr/2,
+	multiply_fr/3,
+	sum_fr/3,
+	subtract_fr/3]).	
 :- use_module(stdlib(fraction_list), [naturalize_frl/3]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).   
-:- use_module(stdlib(linear_expression), [parse_le_fast/2,parse_le/2]).
-
-
-
+:- use_module(stdlib(linear_expression), [
+	parse_le_fast/2,
+	parse_le/2,
+	multiply_le/3,
+	write_le/2,
+	integrate_le/3]).
 
 
 max_min_linear_expression_template(Linear_Expr_to_Maximize,Vars, Vars_of_Interest, Context, Maxs):-
@@ -68,40 +75,24 @@ max_min_linear_expression_template(Linear_Expr_to_Maximize,Vars, Vars_of_Interes
 	length(Unknowns_1,N),
 	from_list_sl(Vars_of_Interest,Vars_of_Interest_set),
 	foldl(zero_if_not_in_set(Vars_of_Interest_set),Vars,Unknowns_1,[],Characterizing_constraints),
-	get_lin_expr_coeffs(Vars,Linear_Expr_to_Maximize,Coeffs),
-	multiply_by_factor([Coeffs],-1,[Coeffs_minus]),
+	get_lin_expr_dmatrix(Vars,Linear_Expr_to_Maximize,Coeffs),
+	multiply_by_factor_dmatrix(Coeffs,-1,Coeffs_minus),
+	get_symbolic_dmatrix(Unknowns,Template),
+	add_dmatrix_symbolically(Template,Coeffs_minus,Expression_vector),
 	append(Unknowns_1,[_],Unknowns),
-	(generalized_property(Vars,Context,Unknowns,Coeffs_minus,Characterizing_constraints,Exp)->
-		parse_le_fast(Exp,Lin_exp),
-		
-		Maxs=[Lin_exp]
-	;
-		Maxs=[]
-	).
-	
-
-difference_constraint2(Head,Call,Phi,Lin_exp,Lin_exp_out):-
-	Head=..[_|EVars],
-	Call=..[_|CVars],
-	length(EVars,N1),
-	append(EVars,CVars,Vars),
-	length(Unknowns1,N1),
-	length(Unknowns2,N1),
-	maplist(negation_constr,Unknowns1,Unknowns2,Characterizing_constraints),
-	get_lin_expr_coeffs(Vars,Lin_exp,Coeffs),
-
-	multiply_by_factor([Coeffs],-1,[Coeffs_minus]),
-
-	ut_flat_list([Unknowns1,Unknowns2,_],Unknowns),
-	generalized_property(Vars,Phi,Unknowns,Coeffs_minus,Characterizing_constraints,system(Complete_system,Ys,Objective_function)),
-	ppl_maximize_with_point(c,Complete_system,Objective_function,_Res,Point),
+	generalized_farkas_property_dmatrix(Vars,Context,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
+	append(Ys,Unknowns,All_new_vars),
+	get_generators(c,All_new_vars,Complete_system,Generators),
+	(member(point(Exp),Generators);member(point(Exp1,Div),Generators),Exp=Exp1/Div),!,
 	maplist(=(0),Ys),
-	(Point=point(Exp);Point=point(Exp1,Div),Exp=Exp1/Div),
-	copy_term((Unknowns,Exp),(Vars_extra,Exp2)),
-	append(Vars,[1],Vars_extra),
-	parse_le(Exp2,Lin_exp_out).
+	copy_term((Unknowns,Exp),([1|Vars],Exp2)),
+	parse_le(Exp2,Lin_exp_out),
+	Maxs=[Lin_exp_out].
 
-difference_constraint(Head,Call,Phi,Lin_exp,Lin_exp_out):-
+max_min_linear_expression_template(_Linear_Expr_to_Maximize,_Vars, _Vars_of_Interest, _Context,[]).	
+	
+	
+difference_constraint2_farkas_dmatrix(Head,Call,Phi,Lin_exp,Lin_exp_list_set):-
 	Head=..[_|EVars],
 	Call=..[_|CVars],
 	length(EVars,N1),
@@ -110,136 +101,303 @@ difference_constraint(Head,Call,Phi,Lin_exp,Lin_exp_out):-
 	length(Unknowns2,N1),
 	length(Unknowns3,N1),
 	maplist(negation_constr,Unknowns1,Unknowns2,Characterizing_constraints),
-	get_lin_expr_coeffs(Vars,Lin_exp,Coeffs),
-
-	multiply_by_factor([Coeffs],-1,[Coeffs_minus]),
-
-	ut_flat_list([Unknowns1,Unknowns2,Alpha_0],Unknowns),
-	ut_flat_list([Unknowns1,Unknowns3,Alpha_0],Unknowns_p),
-	generalized_property(Vars,Phi,Unknowns,Coeffs_minus,Characterizing_constraints,system(Complete_system,Ys,Objective_function)),
-	generalized_property(Vars,Phi,Unknowns_p,Coeffs_minus,[],system(Complete_system2,Ys2,Objective_function2)),
-	append(Complete_system,Complete_system2,Complete_system_final),
-	%nad_consistent_constraints(Complete_system_final),!,	
-
-	maplist(zip_with_op('=',0),Unknowns3,Cons_better),
-	append(Cons_better,Complete_system_final,Complete_system_final2),
-	normalize_le(Objective_function+Objective_function2,Objective_function3),
-	ppl_maximize_with_point(c,Complete_system_final2,Objective_function3,_,Point),
-	!,
+	get_lin_expr_dmatrix(Vars,Lin_exp,Coeffs),
+	multiply_by_factor_dmatrix(Coeffs,-1,Coeffs_minus),
+	append([Coeff_0|Unknowns1],Unknowns2,Unknowns),
+	get_symbolic_dmatrix(Unknowns,Template),
+	add_dmatrix_symbolically(Template,Coeffs_minus,Expression_vector),
+	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
 	
-		%nad_project(Unknowns,Complete_system,Projected),
-	%get_generators(c,Unknowns,Projected,Generators),
-	%(member(point(Exp),Generators);member(point(Exp1,Div),Generators),Exp=Exp1/Div),
-	(Point=point(Exp);Point=point(Exp1,Div),Exp=Exp1/Div),
+	append(Ys,Unknowns,All_new_vars),
+	get_generators(c,All_new_vars,Complete_system,Generators),
+	
+	append([Coeff_0|Unknowns1],Unknowns3,Unknowns4),
+	get_symbolic_dmatrix(Unknowns4,Template2),
+	maplist(is_zero,Unknowns3,Characterizing_constraints2),
+	generalized_farkas_property_dmatrix(Vars,Phi,Template2,Characterizing_constraints2,system(Complete_system2,Ys2)),
+	append(All_new_vars,Ys2,All_new_vars2),
+	append(All_new_vars2,Unknowns3,All_new_vars3),
+
+	append(Complete_system,Complete_system2,Complete_system_joined),
+	get_generators(c,All_new_vars3,Complete_system_joined,Generators2),
 	maplist(=(0),Ys),
 	maplist(=(0),Ys2),
+	maplist(=(0),Unknowns3),
+	get_expressions_from_points(Generators,Lin_exp_list),
+	copy_term(([Coeff_0|Unknowns1],Unknowns2,Generators2),([Coeff_0_c|Unknowns1_c],Unknowns2_c,Generators2_c)),
+	maplist(=(0),Unknowns2_c),
+	get_expressions_from_points(Generators2_c,Lin_exp_list2),
+	copy_term((Unknowns,Lin_exp_list),([1|Vars],Lin_exp_list_copy)),
+	copy_term(([Coeff_0_c|Unknowns1_c],Lin_exp_list2),([1|EVars],Lin_exp_list_copy2)),
 	
-	copy_term((Unknowns1,Unknowns2,Unknowns3,Alpha_0,Exp),(Unknowns11,Unknowns21,Unknowns31,Alpha_01,Exp2)),
-	maplist(=(0),Unknowns21),
-	append(Unknowns11,Unknowns31,Vars),
-	Alpha_01=1,
-	parse_le(Exp2,Lin_exp_out).
-	
-generalized_property(Vars,Phi,Unknowns,Expression_vector,Characterizing_constraints,system(Complete_system,Ys,Objective_function)):-
-	length(Vars,N),
-	constraints_to_mrep_1(Phi,Vars,A, B),
-	length(A,M),
-	transpose_matrix(A,At),
-	
-	N1 is N+1,
-	identity_matrix(N1,Id),
-	multiply_by_factor(Id,-1,Id_minus),
-	n_zeros(M,Zeros),
-	append(At,[Zeros],At_extra),
-	concatenate_matrix(At_extra,Id_minus,At_id),
-	
-	length(Unknowns,N1),
-	length(Ys,M),
-	append(Ys,Unknowns,Total_new_vars),
-	mrep_eq_to_constraints( At_id,Total_new_vars,'=', Expression_vector,Cs),
-	mrep_eq_to_constraints( [B],Ys,'>=', [0],[Extra_constr]),
+	append(Lin_exp_list_copy,Lin_exp_list_copy2,Lin_exp_list_out),
+	from_list_sl(Lin_exp_list_out,Lin_exp_list_set),
+	Lin_exp_list_set\=[].	
 
+
+generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)):-
+	constraints_to_dmatrix(Phi,Vars,A),
+	transpose_dmatrix(A,At),
+	get_dmatrix_y_dimension(At,M),
+	length(Ys,M),	
+	dmatrix_to_constraints( At,Ys,'=', Expression_vector,Cs),
 	maplist(greater_zero,Ys,Cs_extra),
-	ut_flat_list([Cs_extra,Extra_constr,Cs,Characterizing_constraints],Complete_system),!,
-%	nad_consistent_constraints(Complete_system),!,	
-	maplist(negate_fr,B,B_minus),
-	generate_objective_function(B_minus,Ys,Objective_function).
+	ut_flat_list([Cs_extra,Cs,Characterizing_constraints],Complete_system),!.
+	
+
+get_expressions_from_points([],[]).	
+get_expressions_from_points([point(Exp)|Generators],[Lin_exp|Lin_exps]):-!,
+		parse_le(Exp,Lin_exp),
+		get_expressions_from_points(Generators,Lin_exps).
+get_expressions_from_points([point(Exp,Div)|Generators],[Lin_exp|Lin_exps]):-!,
+		parse_le(Exp/Div,Lin_exp),
+		get_expressions_from_points(Generators,Lin_exps).		
+get_expressions_from_points([_|Generators],Lin_exps):-
+		get_expressions_from_points(Generators,Lin_exps).			
+		
+get_symbolic_dmatrix(Unknowns,dmatrix(1,X,[(1,List)])):-
+	length(Unknowns,X),
+	get_symbolic_dmatrix_1(Unknowns,1,List).
+	
+get_symbolic_dmatrix_1([],_,[]).
+get_symbolic_dmatrix_1([U|Unknowns],N,[(N,U)|List]):-
+	N1 is N+1,
+	get_symbolic_dmatrix_1(Unknowns,N1,List).
+	
+add_dmatrix_symbolically(dmatrix(X,Y,Matrix1),dmatrix(X,Y,Matrix2),dmatrix(X,Y,Matrix_sum)):-
+	add_dmatrix_symbolically_1(Matrix1,Matrix2,Matrix_sum).
+
+add_dmatrix_symbolically_1([],Matrix2,Matrix2):-!.
+add_dmatrix_symbolically_1(Matrix1,[],Matrix1):-!.
+add_dmatrix_symbolically_1([(N1,Line1)|Matrix1],[(N1,Line2)|Matrix2],[(N1,Line_sum)|Matrix_sum]):-
+	add_dline_symbolically(Line1,Line2,Line_sum),
+	add_dmatrix_symbolically_1(Matrix1,Matrix2,Matrix_sum).
+	
+add_dmatrix_symbolically_1([(N1,Line1)|Matrix1],[(N2,Line2)|Matrix2],[(N1,Line1)|Matrix_sum]):-
+	N1<N2,
+	add_dmatrix_symbolically_1(Matrix1,[(N2,Line2)|Matrix2],Matrix_sum).	
+add_dmatrix_symbolically_1([(N1,Line1)|Matrix1],[(N2,Line2)|Matrix2],[(N2,Line2)|Matrix_sum]):-
+	N2<N1,
+	add_dmatrix_symbolically_1([(N1,Line1)|Matrix1],Matrix2,Matrix_sum).	
+	
+add_dline_symbolically([],Line2,Line2):-!.
+add_dline_symbolically(Line1,[],Line1):-!.	
+
+add_dline_symbolically([(N1,Elem1)|Line1],[(N1,Elem2)|Line2],[(N1,Elem1+Elem2)|Line_sum]):-
+	add_dline_symbolically(Line1,Line2,Line_sum).
+	
+add_dline_symbolically([(N1,Elem1)|Line1],[(N2,Elem2)|Line2],[(N1,Elem1)|Line_sum]):-
+	N1<N2,
+	add_dline_symbolically(Line1,[(N2,Elem2)|Line2],Line_sum).	
+add_dline_symbolically([(N1,Elem1)|Line1],[(N2,Elem2)|Line2],[(N2,Elem2)|Line_sum]):-
+	N2<N1,
+	add_dline_symbolically([(N1,Elem1)|Line1],Line2,Line_sum).
+	
 	
 %X=-Y
 negation_constr(X,Y,(1*X+1*Y=0)).
 
+get_line_product(Vars,Mult,Line,Sum):-
+	maplist(multiply_line_by_factor(Mult),Line,Line1),
+	get_line_product_1(Vars,1,Line1,Factors),
+	(Factors=[]-> 
+	Sum=0
+	;
+	write_sum(Factors,Sum)
+	).
+
+multiply_line_by_factor(F,(I,Val),(I,Val2)):-
+	multiply_fr(Val,F,Val2).
 	
-constraints_to_mrep_1([],_Vars,[],[]).
-constraints_to_mrep_1([Expr>=C|Phi],Vars,[Line|A],[Coeff_0|B]):-
-	negate_fr(C,C_neg),
-	parse_le_fast(Expr+C_neg,Lin_exp),
-	get_lin_expr_coeffs(Vars,Lin_exp,Coeffs),
-	append(Line,[Last],Coeffs),
-	negate_fr(Last,Coeff_0),
-	constraints_to_mrep_1(Phi,Vars,A,B).	
-constraints_to_mrep_1([Expr=< C|Phi],Vars,[Line_neg|A],[Coeff_0|B]):-
-	negate_fr(C,C_neg),
-	parse_le_fast(Expr+C_neg,Lin_exp),
-	get_lin_expr_coeffs(Vars,Lin_exp,Coeffs),
-	append(Line,[Coeff_0],Coeffs),
-	maplist(negate_fr,Line,Line_neg),
-	constraints_to_mrep_1(Phi,Vars,A,B).	
-constraints_to_mrep_1([Lin_exp= C|Phi],Vars,A,B):-
-	constraints_to_mrep_1([Lin_exp=< C,Lin_exp>= C| Phi],Vars,A,B).	
+get_line_product_1([],_,_Line1,[]):-!.
+get_line_product_1(_,_,[],[]).
+get_line_product_1([Var|Vars],N,[(N,Val)|Line],[Val*Var|Factors]):-
+	N1 is N+1,
+	get_line_product_1(Vars,N1,Line,Factors).
+get_line_product_1([_Var|Vars],N,[(N2,Val)|Line],Factors):-
+	N2 > N,
+	N1 is N+1,
+	get_line_product_1(Vars,N1,[(N2,Val)|Line],Factors).
+	
+
+expand_dmatrix_y_dimension(dmatrix(X,Y,Vals),N,dmatrix(X,Y2,Vals)):-
+		N>0,
+		Y2 is Y+N.
+expand_dmatrix_x_dimension(dmatrix(X,Y,Vals),N,dmatrix(X2,Y,Vals)):-
+		N>0,
+		X2 is X+N.	
+		
+dmatrix_to_constraints(dmatrix(X,Y,Vals),Vars,Op, dmatrix(1,X,[(1,Constants)]),[C|Cs]):-
+	length(Vars,Y),
+	Vals=[(1,Line)|Vals_rest],
+	Constants=[(1,Constant)|Constants_rest],	
+	parse_le(Constant,Lin_exp_right),
+	integrate_le(Lin_exp_right,Den,Lin_exp_right_int),
+	write_le(Lin_exp_right_int,Cnt),
+	get_line_product(Vars,Den,Line,Lin_exp),
+	C=..[=<,Lin_exp,Cnt],
+	get_constraints(Vals_rest,Constants_rest,2,Vars,Op,Cs).
+	
+get_constraints([],[],_N,_Vars,_Op,[]).
+
+get_constraints([(N,Line)|Lines],[],N,Vars,Op,[C|Cs]):-
+	get_line_product(Vars,1,Line,Lin_exp),
+	C=..[Op,Lin_exp,0],
+	N1 is N+1,
+	get_constraints(Lines,[],N1,Vars,Op,Cs).
+
+get_constraints([(N_diff,Line)|Lines],[],N,Vars,Op,Cs):-
+	N_diff>N,!,
+	N1 is N+1,
+	get_constraints([(N_diff,Line)|Lines],[],N1,Vars,Op,Cs).	
+	
+get_constraints([(N,Line)|Lines],[(N,Constant)|Constants],N,Vars,Op,[C|Cs]):-!,
+	parse_le(Constant,Lin_exp_right),
+	integrate_le(Lin_exp_right,Den,Lin_exp_right_int),
+	write_le(Lin_exp_right_int,Cnt),
+	get_line_product(Vars,Den,Line,Lin_exp),
+	C=..[Op,Lin_exp,Cnt],
+	N1 is N+1,
+	get_constraints(Lines,Constants,N1,Vars,Op,Cs).
+	
+get_constraints([(N,Line)|Lines],[(N_diff,Constant)|Constants],N,Vars,Op,[C|Cs]):-
+	N_diff > N,!,
+	get_line_product(Vars,1,Line,Lin_exp),
+	C=..[Op,Lin_exp,0],
+	N1 is N+1,
+	get_constraints(Lines,[(N_diff,Constant)|Constants],N1,Vars,Op,Cs).
+	
+get_constraints([(N_diff,Line)|Lines],[(N,Constant)|Constants],N,Vars,Op,[C|Cs]):-
+	N_diff > N,!,
+	parse_le(Constant,Lin_exp_right),
+	integrate_le(Lin_exp_right,_Den,Lin_exp_right_int),
+	write_le(Lin_exp_right_int,Cnt),
+	C=..[Op,0,Cnt],
+	N1 is N+1,
+	get_constraints([(N_diff,Line)|Lines],Constants,N1,Vars,Op,Cs).	
+	
+get_constraints([(N_diff1,Line)|Lines],[(N_diff2,Constant)|Constants],N,Vars,Op,Cs):-
+	N_diff1 > N,
+	N_diff2 > N,
+	N1 is N+1,
+	get_constraints([(N_diff1,Line)|Lines],[(N_diff2,Constant)|Constants],N1,Vars,Op,Cs).		
+
+get_lin_exp_from_line(Line,Vars,Lin_exp):-
+	get_lin_exp_from_line_1(Line,1,Vars,Coeffs),
+	write_le(Coeffs+0,Lin_exp).
+	
+get_lin_exp_from_line_1([],_,_Vars,[]).
+get_lin_exp_from_line_1([(N,Val)|Line],N,[V|Vars],[(V,Val)|Coeffs]):-!,
+	N1 is N+1,
+	get_lin_exp_from_line_1(Line,N1,Vars,Coeffs).
+get_lin_exp_from_line_1([(N_diff,Val)|Line],N,Vars,Coeffs):-
+	N_diff > N,
+	N1 is N+1,
+	get_lin_exp_from_line_1([(N_diff,Val)|Line],N1,Vars,Coeffs).
+	
+
+get_dmatrix_y_dimension(dmatrix(_X,Y,_Vals),Y).
+
+transpose_dmatrix(dmatrix(X,Y,Vals),dmatrix(Y,X,Vals_transposed)):-
+	get_columns(1,Y,Vals,Vals_transposed).
+
+get_columns(Y1,Y,_Vals,[]):-Y1>Y.
+get_columns(N,Y,Vals,Columns_out):-
+	N =< Y,
+	get_column(N,Vals,Column,Vals2),
+	(Column\=[]-> 
+	    Columns_out=[(N,Column)|Columns]
+	    ;
+	    Columns_out=Columns
+	),
+	N1 is N+1,
+	get_columns(N1,Y,Vals2,Columns).
+	
+get_column(N,Vals,Column,Vals2):-
+	maplist(get_n_element(N),Vals,Column_non_flat,Vals2),
+	ut_flat_list(Column_non_flat,Column).
+get_n_element(N,(X,[(N,Val)|Vals2]),(X,Val),(X,Vals2)):-!.
+get_n_element(_N,(X,Vals2),[],(X,Vals2)).
+
+
+multiply_by_factor_dmatrix(dmatrix(X,Y,Vals),Factor,dmatrix(X,Y,Vals2)):-
+	maplist(multiply_dline(Factor),Vals,Vals2).
+
+multiply_dline(Factor,(X,Line),(X,Line2)):-
+	maplist(multiply_delement(Factor),Line,Line2).
+multiply_delement(Factor,(Y,Val),(Y,Val2)):-
+	multiply_fr(Factor,Val,Val2).
+
 
 	
-get_lin_expr_coeffs(Vars,List+Coeff_0,Coeffs):-
-	get_lin_expr_coeffs_aux(Vars,List,Coeff_0,Coeffs).
+
+constraints_to_dmatrix(Cons,Vars,dmatrix(X,Y1,Vals2)):-
+	length(Vars,Y),
+	Y1 is Y+1,
+	copy_term((Cons,Vars),(Cons1,Vars2)),
+	constraints_to_dmatrix_1(Cons1,1,X,Vals),
+	number_list(Vars2,2),
+	maplist(sort_line,Vals,Vals2).
+
+sort_line((X,Map),(X,Sorted_map)):-
+	sort_with(Map,greater_integer_map,Sorted_map).
+
+greater_integer_map((I1,_),(I2,_)):-
+	I1 > I2.
+	
+number_list([],_).
+number_list([N|Ns],N):-
+	N1 is N+1,	
+	number_list(Ns,N1).
+
+constraints_to_dmatrix_1([],N,N1,[]):-N1 is N-1.
+
+constraints_to_dmatrix_1([Expr>=C|Phi],N,N_out,[(N,Line_1)|Lines]):-
+	negate_fr(C,C_neg),
+	parse_le_fast(Expr+C_neg,Le_aux),
+	integrate_le(Le_aux,_Denom,Line+Constant),
+	N1 is N+1,
+	(Constant==0->
+		Line_1=Line
+	   ;
+	   	Line_1=[(1,Constant)|Line]
+	),
+	constraints_to_dmatrix_1(Phi,N1,N_out,Lines).
+	
+constraints_to_dmatrix_1([Expr=< C|Phi],N,N_out,[(N,Line_1)|Lines]):-
+	negate_fr(C,C_neg),
+	parse_le_fast(Expr+C_neg,Le_aux),
+	integrate_le(Le_aux,_Denom,Lin_exp),
+	multiply_le(Lin_exp,-1,Line+Constant),
+	N1 is N+1,
+	(Constant==0->
+		Line_1=Line
+	   ;
+	   	Line_1=[(1,Constant)|Line]
+	),
+	constraints_to_dmatrix_1(Phi,N1,N_out,Lines).	
+
+constraints_to_dmatrix_1([Expr= C|Phi],N,N_out,Lines):-
+	constraints_to_dmatrix_1([Expr=<C, Expr>= C|Phi],N,N_out,Lines).	
 
 
+get_lin_expr_dmatrix(Vars,List+Coeff_0,dmatrix(1,Y1,[(1,Coeffs)])):-
+	length(Vars,Y),
+	Y1 is Y+1,
+	copy_term((Vars,List),(Vars2,List2)),
+	number_list(Vars2,2),
+	(Coeff_0=0->
+		List2=Coeffs
+		;
+		[(1,Coeff_0)|List2]=Coeffs
+	).
 
-get_lin_expr_coeffs_aux([],_List,Coeff_0,[Coeff_0]).
-get_lin_expr_coeffs_aux([Var|Vars],List,Coeff_0,[Coeff_1|Coeffs]):-
-	lookup_lm(List,Var,Coeff_1),!,
-	get_lin_expr_coeffs_aux(Vars,List,Coeff_0,Coeffs).
-get_lin_expr_coeffs_aux([_Var|Vars],List,Coeff_0,[0|Coeffs]):-
-	get_lin_expr_coeffs_aux(Vars,List,Coeff_0,Coeffs).	
 	
 zero_if_not_in_set(Important_vars,Var,Un_var,Cs,[Un_var=0|Cs]):-
 	\+contains_sl(Important_vars,Var),!.
 zero_if_not_in_set(_Important_vars,_Var,_Un_var,Cs,Cs).	
 	
-mrep_eq_to_constraints([],_Vars,_Op,[],[]).
-mrep_eq_to_constraints([Line|Matrix],Vars,Op,[B|Bs],[C|Cs]):-	
-	naturalize_frl([B|Line],[B_1|Line_1],_),	
-	maplist(zip_with_op(*),Line_1,Vars,Coeffs),
-	exclude(zero_coeff,Coeffs,Coeffs1),
-	write_sum(Coeffs1,Sum),
-	C=..[Op,Sum,B_1],
-	mrep_eq_to_constraints(Matrix,Vars,Op,Bs,Cs).	
-		
-zero_coeff(0*_).
-		
-generate_objective_function(B,Ys,Objective_function):-
-	maplist(mult,B,Ys,Factors),
-	write_sum(Factors,Objective_function).
-	
-mult(B,Y,B*Y).
-
-
 greater_zero(Y,1*Y>=0).
-identity_matrix(1,[[1]]).
-identity_matrix(N,[[1|Zeros]|Id3]):-N2 is N-1,
-	identity_matrix(N2,Id2),
-	maplist(append([0]),Id2,Id3),
-	n_zeros(N2,Zeros).
-multiply_by_factor(Matrix,Factor,Matrix1):-
-		maplist(maplist(multiply_fr(Factor)),Matrix,Matrix1).
-n_zeros(N,Zeros):-
-	repeat_n_times(N,0,Zeros).
+is_zero(Y,1*Y=0).
 
-transpose_matrix([[]|_],[]).
-transpose_matrix(A,[Column1|At_aux]):-	
-	maplist(get_head_tail,A,Column1,Rest),
-	transpose_matrix(Rest,At_aux).
-get_head_tail([H|T],H,T).
-
-concatenate_matrix(A,B,AB):-
-	maplist(append,A,B,AB).		
-	
 	

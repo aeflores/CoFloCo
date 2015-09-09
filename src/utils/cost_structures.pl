@@ -25,6 +25,8 @@
 
 :- module(cost_structures,[
 		cstr_empty/1,
+		cstr_extract_top_maxs/3,
+		cstr_extract_top_mins/3,
 		cstr_from_cexpr/2,
 		cstr_maxminimization/4,
 		cstr_name_aux_var/1,
@@ -52,6 +54,10 @@
 :- use_module(stdlib(set_list),[contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
 :-dynamic short_db/3.
+
+
+cstr_extract_top_maxs(cost(Top_exps,Top_exps_min,Aux,Elems,Base),cost([],Top_exps_min,Aux,Elems,Base),Top_exps).
+cstr_extract_top_mins(cost(Top_exps,Top_exps_min,Aux,Elems,Base),cost(Top_exps,[],Aux,Elems,Base),Top_exps_min).
 
 cstr_empty(cost([],[],[],[],0)).
 
