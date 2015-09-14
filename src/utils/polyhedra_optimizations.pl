@@ -36,7 +36,7 @@
 
 
 :- module(polyhedra_optimizations,[
-	slice_relevant_constraints/4,
+			slice_relevant_constraints/4,
 		    slice_relevant_constraints_and_vars/5,
 		    nad_consistent_constraints_group/2,
 		    nad_consistent_constraints_group_aux/1,
@@ -51,7 +51,6 @@
 :- use_module(stdlib(numeric_abstract_domains),[nad_normalize/2,nad_project/3,nad_entails/3,nad_consistent_constraints/1,nad_lub/6,nad_list_lub/2]).
 :- use_module(stdlib(set_list)).	
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_var_member/2]).
-:- use_module('../IO/params',[get_param/2]).
 
 %! nad_is_bottom(+Cs:polyhedron) is semidet
 % succeeds if Cs is inconsistent (unsatisfiable) using cartesian decomposition incrementally.

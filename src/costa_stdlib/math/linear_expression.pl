@@ -426,3 +426,6 @@ parse_le_fast_1(Exp+Factor,Lin_exp):-
 parse_factor(Var,[(Var,1)]+0):-var(Var),!.
 parse_factor(Constant,[]+Cnt_fr):-parse_fr(Constant,Cnt_fr).
 parse_factor(Coeff*Var,[(Var,Coeff)]+0).
+
+
+

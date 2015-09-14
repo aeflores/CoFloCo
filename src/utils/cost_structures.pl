@@ -43,7 +43,7 @@
 		cstr_join_equal_top_expressions/2,
 		cstr_shorten_variables_names/2]).
 :- use_module(cofloco_utils,[write_sum/2,write_product/2,tuple/3,assign_right_vars/3]).	
-:- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1,normalize_le/2]).	
+:- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1]).	
 
 :- use_module(stdlib(linear_expression),[parse_le/2,write_le/2,negate_le/2]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	

@@ -35,6 +35,7 @@ of CoFloCo.
 		    foldr/4,
 		    sort_with/3,
 		    write_sum/2,
+		    write_le_internal/2,
 		    write_product/2,
 		    normalize_constraint_wrt_var/3,
 		    normalize_constraint_wrt_vars/3]).
@@ -48,6 +49,22 @@ of CoFloCo.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+write_le_internal(Coeffs+C,Le):-
+	maplist(write_coeffs,Coeffs,Coeffs1),
+	write_sum(Coeffs1,Le_aux),
+	(C==0->
+	  Le=Le_aux
+	  ;
+	  (Le_aux==0->
+	     Le=C
+	     ; 
+	     Le=Le_aux+C
+	  )
+	  ).	
+write_coeffs((Var,Coeff),Coeff*Var).
+
+
 
 %! add_equality_constraints(+Vs_1:list(var),+Vs_2:list(var),+Cs_1:polyhedron,-Cs_2:polyhedron) is det
 %

@@ -29,10 +29,9 @@ It uses linear programming to infer linear expressions that satisfy a property g
 
 	]).
 
-:- use_module('cofloco_utils',[repeat_n_times/3,sort_with/3,
-			normalize_constraint/2,zip_with_op/4,
+:- use_module('cofloco_utils',[
+			sort_with/3,	
 			write_sum/2]).
-:- use_module('cost_expressions',[normalize_le/2]).
 			
 :- use_module(stdlib(polyhedra_ppl),[
     get_generators/4,ppl_maximize_with_point/5,ppl_minimize_with_point/5

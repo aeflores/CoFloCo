@@ -49,11 +49,12 @@ This module prints the results of the analysis
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
 
-:- use_module('../utils/cost_expressions',[cexpr_add_list/2,get_asymptotic_class_name/2]).
+:- use_module('../utils/cost_expressions',[get_asymptotic_class_name/2]).
 :- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2,tuple/3]).
 
-:- use_module('../utils/cost_structures',[cstr_shorten_variables_names/2,
-cstr_get_cexpr_from_normalform_ground/2]).
+:- use_module('../utils/cost_structures',[
+	cstr_shorten_variables_names/2,
+	cstr_get_cexpr_from_normalform_ground/2]).
 
 
 :- use_module('../IO/params',[parameter_dictionary/3,get_param/2,

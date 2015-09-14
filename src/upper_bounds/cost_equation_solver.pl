@@ -37,12 +37,12 @@ the input variables and the variables of the recursive call (if there is one)
 :- use_module('../utils/cost_structures',[cstr_extend_variables_names/3,
 			cstr_empty/1,
 			cstr_join_equal_top_expressions/2]).
-:- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 
 
+:- use_module(stdlib(fraction),[sum_fr/3]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
-:- use_module(stdlib(numeric_abstract_domains),[nad_glb/3,nad_entails/3,nad_consistent_constraints/1]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_glb/3]).
 
 %! equation_cost(Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Eq_id:equation_id,Cost:cost_structure)
 % store the cost structure of a cost equation application given a local invariant
@@ -99,7 +99,7 @@ accumulate_calls((Call,chain(Chain)),(cost(Tops1,LTops1,Auxs1,Bases1,Base1),N),(
     N1 is N+1,
     upper_bound(Call,Chain,_Hash,Cost_call),
     cstr_extend_variables_names(Cost_call,n(N),cost(Tops2,LTops2,Auxs2,Bases2,Base2)),
-    cexpr_simplify_ctx_free(Base1+Base2,Base),
+    sum_fr(Base1,Base2,Base),
     append(Bases2,Bases1,Bases).
 %substitute_call((Call,external_pattern(Id)),Base_cost,Loops,(Constraints,IConstraints)) :-
 %	external_upper_bound(Call,Id,cost(Base_cost,Loops,Constraints,IConstraints)).

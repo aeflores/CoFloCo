@@ -47,7 +47,7 @@ that can be passed on to the callers.
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
-:- use_module('../utils/cost_expressions',[cexpr_simplify/3,cexpr_max/2]).
+:- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
 :- use_module('../utils/cost_structures',[cstr_maxminimization/4,cstr_join_equal_top_expressions/2]).
 
 
@@ -113,8 +113,7 @@ compress_upper_bounds_for_external_calls(_,_).
 compute_single_closed_bound(Head,SimpleExp):-
 	bagof_no_fail(CExp,
 		Chain^E1^closed_upper_bound(Head,Chain,E1,CExp),CExps),
-	cexpr_max(CExps,Max),
-	cexpr_simplify(Max,[],SimpleExp),!,
+	cexpr_simplify(max(CExps),[],SimpleExp),!,
 	add_single_closed_upper_bound(Head,SimpleExp).
 	
 

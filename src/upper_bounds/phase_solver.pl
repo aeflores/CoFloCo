@@ -60,8 +60,6 @@ at the beginning and the end of the phase.
 :-use_module('../utils/template_inference',[
 	difference_constraint2_farkas_dmatrix/5
 	]).						
-
-
 :- use_module(stdlib(numeric_abstract_domains),[
 						nad_maximize/3,
 						nad_entails/3,

@@ -23,22 +23,11 @@
 */
 
 :- module(cost_expressions,[parse_cost_expression/2,
-					   cexpr_add/3,
-					   cexpr_mul/3,
-					   cexpr_add_list/2,
-					   cexpr_maximize/4,
-					   cexpr_max/2,
-					   cexpr_min/2,
 					   cexpr_simplify/3,
-					   cexpr_simplify_aux/3,
 					   cexpr_simplify_ctx_free/2,
-					   cexpr_substitute_lin_exp_by_vars/4,
 					   get_asymptotic_class_name/2,
 					   get_asymptotic_class/2,
-					   is_linear_exp/1,
-					   get_le_without_constant/3,
-					   le_multiply/3,
-					   normalize_le/2
+					   is_linear_exp/1
 					   ]).
 
 
@@ -52,7 +41,7 @@
 :- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
 
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3]).
-:- use_module(stdlib(linear_expression), [parse_le/2,multiply_le/3]).
+:- use_module(stdlib(linear_expression), [parse_le/2,multiply_le/3,write_le/2]).
 
 
 
@@ -64,35 +53,8 @@ normalize_le(Le,Le_n):-
 	parse_le( Le, Le_x),
 	write_le(Le_x,Le_n).
 
-write_le(Coeffs+C,Le):-
-	maplist(write_coeffs,Coeffs,Coeffs1),
-	write_sum(Coeffs1,Le_aux),
-	(C==0->
-	  Le=Le_aux
-	  ;
-	  (Le_aux==0->
-	     Le=C
-	     ; 
-	     Le=Le_aux+C
-	  )
-	  ).	
-write_coeffs((Var,Coeff),Coeff*Var).
 
-%! get_le_without_constant(+X:linear_expression,-X_wc:linear_expression,-B:number) is det
-% given a linear expression C0+C1*X1+C2*X2+...Cn*Xn:
-% X_wc=C1*X1+C2*X2+...Cn*Xn and B=C0
-get_le_without_constant(X,X_wc,C):-
-	parse_le( X, Coeffs+C),
-	write_le(Coeffs+0,X_wc).
 
-%! le_multiply(+Exp:linear_expression,+Fr:number,-Exp_f:linear_expression) is det
-%given a linear expression Exp=C0+C1*X1+C2*X2+...Cn*Xn and a number Fr
-% Exp_f=C0*Fr+C1*Fr*X1+C2*Fr*X2+...Cn*Fr*Xn
-le_multiply(Exp,Fr,Exp_f):-
-	parse_le( Exp, Le_x),
-	multiply_le(Le_x,Fr,Le_x_mul),
-	write_le(Le_x_mul,Exp_f).
-	
 	
 	
 %! parse_cost_expression(+C:cost_expression, -C2:cost_expression) is semidet
@@ -109,126 +71,7 @@ le_multiply(Exp,Fr,Exp_f):-
 %constant
 cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,Exp,Lin_exp_Map):-
 	term_variables(Exp,[]),!.
-%linear expression	
-cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,Skeleton,Lin_exp_Map1):-
-	is_linear_exp(Exp),!,
-	normalize_le(Exp,Exp_normalized),
-	(lookup_lm(Lin_exp_Map,Exp_normalized,Var)->
-		Skeleton=Var,
-		Lin_exp_Map1=Lin_exp_Map
-		;
-		insert_lm(Lin_exp_Map,Exp_normalized,New_var,Lin_exp_Map1),
-		Skeleton=New_var
-	).
-	
-cexpr_substitute_lin_exp_by_vars(nat(Exp),Lin_exp_Map,nat(Skeleton),Lin_exp_Map1):-!,
-	cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,Skeleton,Lin_exp_Map1).
-cexpr_substitute_lin_exp_by_vars(A*B,Lin_exp_Map,S_A*S_B,Lin_exp_Map2):-!,
-	cexpr_substitute_lin_exp_by_vars(A,Lin_exp_Map,S_A,Lin_exp_Map1),
-	cexpr_substitute_lin_exp_by_vars(B,Lin_exp_Map1,S_B,Lin_exp_Map2).   
-cexpr_substitute_lin_exp_by_vars(A-B,Lin_exp_Map,S_A-S_B,Lin_exp_Map2):-!,
-	cexpr_substitute_lin_exp_by_vars(A,Lin_exp_Map,S_A,Lin_exp_Map1),
-	cexpr_substitute_lin_exp_by_vars(B,Lin_exp_Map1,S_B,Lin_exp_Map2).
-cexpr_substitute_lin_exp_by_vars(A+B,Lin_exp_Map,S_A+S_B,Lin_exp_Map2):-!,
-	cexpr_substitute_lin_exp_by_vars(A,Lin_exp_Map,S_A,Lin_exp_Map1),
-	cexpr_substitute_lin_exp_by_vars(B,Lin_exp_Map1,S_B,Lin_exp_Map2).
 
-cexpr_substitute_lin_exp_by_vars(max(Al),Lin_exp_Map,max(S_Al),Lin_exp_Map1):-!,
-	cexpr_substitute_lin_exp_by_vars_list(Al,S_Al,Lin_exp_Map,Lin_exp_Map1).
-cexpr_substitute_lin_exp_by_vars(min(Al),Lin_exp_Map,min(S_Al),Lin_exp_Map1):-!,
-	cexpr_substitute_lin_exp_by_vars_list(Al,S_Al,Lin_exp_Map,Lin_exp_Map1). 	   
- 
-cexpr_substitute_lin_exp_by_vars_list([],[],Lin_exp_Map,Lin_exp_Map).
-cexpr_substitute_lin_exp_by_vars_list([Exp|Exps],[S_Exp|S_Exps],Lin_exp_Map,Lin_exp_Map2):-
-	cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,S_Exp,Lin_exp_Map1),
-	cexpr_substitute_lin_exp_by_vars_list(Exps,S_Exps,Lin_exp_Map1,Lin_exp_Map2).	
-		  
-	  
-%! cexpr_min(+Exps:list(cost_expression),-Exp:cost_expression) is det
-% create a cost expression that is the minimum of the cost expressions in Exps.
- cexpr_min([Exp],Exp):-!.
- cexpr_min(Exps,min(Exps)).
-
-%! cexpr_max(+Exps:list(cost_expression),-Exp:cost_expression) is det
-% create a cost expression that is the maximum of the cost expressions in Exps.
- cexpr_max([Exp],Exp):-!.
- cexpr_max(Exps,max(Exps)).
-
-%! cexpr_add(+Exp1:cost_expression,+Exp2:cost_expression,-Exp:cost_expression) is det
-% create a cost expression that is the sum of Exp1 and Exp2
- cexpr_add(C_1,C_2,C_2):-C_1==0,!.
- cexpr_add(C_1,C_2,C_1):-C_2==0,!.
- cexpr_add(C_1,C_2,C_1+C_2).
-
-%! cexpr_mul(+Exp1:cost_expression,+Exp2:cost_expression,-Exp:cost_expression) is det
-% create a cost expression that is the product of Exp1 and Exp2
- cexpr_mul(C_1,C_2,0):-
- 	(C_1==0;C_2==0),
- 	!.
- cexpr_mul(C_1,C_2,C_1*C_2).
- 
-%! cexpr_add_list(+Exps:list(cost_expression),-Exp:cost_expression) is det
-% create a cost expression that is the sum of the cost expressions in Exps.
- cexpr_add_list([C],C):-!.
- cexpr_add_list([C|Cs],C2):-
- 	C==0,!,
- 	cexpr_add_list(Cs,C2).
- cexpr_add_list([C|Cs],C+C2):-
- 	cexpr_add_list(Cs,C2).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%! cexpr_maximize(+Ls:cost_expression,+Vs:list(var),+Cs:polyhedron,-LsM:cost_expression) is det
-% maximize Ls with respect to Vs and according to Cs.
-% The result is returned in LsM.
-cexpr_maximize(Constant,_,_,Constant) :-
-	term_variables(Constant,[]),!.
- 
-cexpr_maximize(Linear,Vs,Cs,Max1) :-
- 	is_linear_exp(Linear),!,
- 	max_min_linear_expression_all(Linear,Vs,Cs,max,ML),
- 	(ML=[] -> Max=inf;
- 	 (ML=[Max]->true;
- 	  Max=min(ML))),
-	cexpr_simplify_N(Max,1,Cs,Max1).
-	
-cexpr_maximize(c(Cost_center),_Vs,_Cs,c(Cost_center)):-!.
-
-cexpr_maximize(max(Ls),Vs,Cs,Res) :-!,
-	maplist(cexpr_maximize_aux(Vs,Cs),Ls,LsM),
- 	cexpr_simplify_N(max(LsM),1,Cs,Res).
-cexpr_maximize(min(Ls),Vs,Cs,Res) :-!,
-    maplist(cexpr_maximize_aux(Vs,Cs),Ls,LsM),
- 	cexpr_simplify_N(min(LsM),1,Cs,Res).
-
-cexpr_maximize(nat(L),Vs,Cs,Res) :-!,
- 	cexpr_maximize(L,Vs,Cs,LM),
- 	cexpr_simplify_N(nat(LM),1,Cs,Res).
-
-
-cexpr_maximize(L+R,Vs,Cs,Res):-
- 	cexpr_maximize(L,Vs,Cs,LM),
- 	cexpr_maximize(R,Vs,Cs,RM),
- 	cexpr_simplify_N(LM+RM,1,[],Res).
-cexpr_maximize(L-R,Vs,Cs,Res):-
- 	cexpr_maximize(L,Vs,Cs,LM),
- 	cexpr_maximize((-1*R),Vs,Cs,RM),
- 	cexpr_simplify_N(LM+RM,1,[],Res).
-
-cexpr_maximize(L*R,Vs,Cs,Res):-
- 	cexpr_maximize(L,Vs,Cs,LM),
- 	cexpr_maximize(R,Vs,Cs,RM),
- 	cexpr_simplify_N(LM*RM,1,[],Res).
- 	
-%! cexpr_maximize_aux(+Vs:list(var),+Cs:polyhedron,+Ls:cost_expression,-LsM:cost_expression) is det
-% maximize Ls with respect to Vs and according to Cs.
-% The result is returned in LsM.
-%
-% This predicate has an alternative order of the arguments so it can be called with maplist
-% for a list of cost expressions.
-cexpr_maximize_aux(Vs,Cs,Ls,LsM):-
-	cexpr_maximize(Ls,Vs,Cs,LsM).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -35,12 +35,14 @@ mutual dependencies in order to obtain lexicographic ranking functions
 
 :- use_module('IO/params',[get_param/2]).
 :- use_module('utils/cofloco_utils',[zip_with_op/4,repeat_n_times/3,
-						assign_right_vars/3,write_sum/2,
+						assign_right_vars/3,
+						write_sum/2,
+						write_le_internal/2,
 						normalize_constraint/2]).
-:- use_module('utils/cost_expressions',[
-						normalize_le/2,
-						le_multiply/3]).	
-:- use_module(stdlib(linear_expression),[write_le/2,
+:- use_module(stdlib(linear_expression),[
+						write_le/2,
+						multiply_le/3,
+						parse_le/2,
 						parse_le_fast/2]).													
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,nad_maximize/3,
 						nad_consistent_constraints/1,
@@ -252,7 +254,9 @@ compute_iterations_ubs( Head,Call,Phi, Rfs) :-
 adapt_fraction(Rf,Rf_2):-
 	\+var(Rf),
 	Rf=Rf_1/Div,!,
-	le_multiply(Rf_1,1/Div,Rf_2).
+	parse_le(Rf_1,Rf_lin_exp),
+	multiply_le(Rf_lin_exp,1/Div,Rf_lin_exp_2),
+	write_le_internal(Rf_lin_exp_2,Rf_2).
 
 adapt_fraction(Rf,Rf).
 
