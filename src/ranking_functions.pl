@@ -40,7 +40,7 @@ mutual dependencies in order to obtain lexicographic ranking functions
 :- use_module('utils/cost_expressions',[
 						normalize_le/2,
 						le_multiply/3]).	
-:- use_module(stdlib(linear_expression),[
+:- use_module(stdlib(linear_expression),[write_le/2,
 						parse_le_fast/2]).													
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,nad_maximize/3,
 						nad_consistent_constraints/1,

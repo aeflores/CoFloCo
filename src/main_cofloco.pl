@@ -227,7 +227,7 @@ cofloco_query(Params):-
 		refinement,
 		(get_param(only_termination,[])->
 			true
-			;	
+			;
 			upper_bounds
 		),	
 		profiling_stop_timer(analysis,T_analysis),

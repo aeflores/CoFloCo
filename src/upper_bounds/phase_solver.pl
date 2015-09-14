@@ -74,6 +74,8 @@ at the beginning and the end of the phase.
 	negate_le/2]).							
 :- use_module(stdlib(fraction),[inverse_fr/2,greater_fr/2]).
 :- use_module(stdlib(set_list)).
+:- use_module(stdlib(list_map)).
+:- use_module(stdlib(multimap)).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_stop_timer_acum/2]).
 :- use_module(stdlib(counters),[counter_increase/3]).
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).
@@ -140,7 +142,13 @@ get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost2):-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-max_min_costs_in_phase(Costs,Head,Call,_Forward_inv,Phase,Cost_final):-
+:-dynamic new_phase_top/4.
+:-dynamic new_phase_aux/4.
+:-dynamic max_found/4.
+:-dynamic forward_invariant_temp/3.
+
+max_min_costs_in_phase(Costs,Head,Call,Forward_inv,Phase,Cost_final):-
+	assert(forward_invariant_temp(Head,Call,Forward_inv)),
 	maplist(cstr_remove_cycles,Costs,Costs_simple),
 	maplist(cstr_propagate_summatory,Phase,Costs_simple,Costs_propagated,Summatories_pairs),
 	maplist(cstr_extract_top_maxs,Costs_propagated,Costs_propagated1,Maxs),
@@ -153,6 +161,7 @@ max_min_costs_in_phase(Costs,Head,Call,_Forward_inv,Phase,Cost_final):-
 	cstr_empty(Empty_cost),
 	foldl(cstr_join,Costs_propagated2,Empty_cost,cost([],[],Aux_exps,Bases,Base)),
 	compute_sums_and_max_min_in_phase(Head,Call,Phase,Maxs,Mins,Summatories_max1,Summatories_min1,Final_top_max,Final_top_min,New_auxs),
+	retractall(forward_invariant_temp(_,_,_)),
 	append(New_auxs,Aux_exps,Aux_exps_final),
 	cstr_remove_cycles(cost(Final_top_max,Final_top_min,Aux_exps_final,Bases,Base),Cost_final).
 	
@@ -163,48 +172,52 @@ get_it_sum_constraint(lb,Loop,[bound(lb,[]+1,[Loop_name])]):-
 	
 	
 compute_sums_and_max_min_in_phase(Head,Call,Phase,Maxs,Mins,Summatories_max,Summatories_min,Final_top_max,Final_top_min,New_auxs):-
-	maplist(save_pending_list(max,Head,Call),Maxs),
-	maplist(save_pending_list(min,Head,Call),Mins),
-	maplist(save_pending_list(maxsum,Head,Call),Phase,Summatories_max),
-	maplist(save_pending_list(minsum,Head,Call),Phase,Summatories_min),
-	%special treatment of ranking functions
+	empty_pending(Empty_pending),
+	retractall(max_founded(_,_,_,_)),
+	foldl(save_pending_list(max),Phase,Maxs,Empty_pending,Pending1),
+	foldl(save_pending_list(min),Phase,Mins,Pending1,Pending2),
+	foldl(save_pending_list(maxsum),Phase,Summatories_max,Pending2,Pending3),
+	foldl(save_pending_list(minsum),Phase,Summatories_min,Pending3,Pending4),
+	%special treatment of ranking functions of the whole phase
+	add_general_ranking_functions(Head,Call,Phase),
+	length(Phase,N),
+	Max_pending is 10*N,
+	compute_all_pending(Head,Call,Phase,Pending4,Max_pending),
+	collect_phase_results(Head,Call,Phase,Final_top_max,Final_top_min,New_auxs).
+
+add_general_ranking_functions(Head,Call,Phase):-
 	rf_limit(Max),
 	get_ranking_functions_constraints(Max,Head,Call,Phase,_,Top),
 	maplist(save_new_phase_top(Head,Call,Phase),Top),
 	get_ranking_functions_lower_constraints(Max,Head,Call,Phase,_,LTop),
-	maplist(save_new_phase_top(Head,Call,Phase),LTop),
-	compute_all_pending(Head,Call,Phase),
-	collect_phase_results(Head,Call,Phase,Final_top_max,Final_top_min,New_auxs).
-
+	maplist(save_new_phase_top(Head,Call,Phase),LTop).
+	
 		
-compute_all_pending(Head,Call,Phase):-
-	compute_pending(Head,Call,Phase),
-	compute_all_pending(Head,Call,Phase).
+compute_all_pending(Head,Call,Phase,Pending,Max_pending):-Max_pending > 0,Max_pending1 is Max_pending-1,
+	compute_pending(Head,Call,Phase,Pending,Pending_out),
+	compute_all_pending(Head,Call,Phase,Pending_out,Max_pending1).
 
-compute_all_pending(_,_,_).
+compute_all_pending(_,_,_,_,_).
 
-compute_pending(Head,Call,Phase):-
-	retract(pending(Type,Head,Call,bound(_Op,Exp,Bounded))),
-
-	copy_term((Head,Call,Exp),(Head2,Call2,Exp2)),
-	write_le(Exp2,Exp2_print),
-	numbervars((Head2,Call2),0,_),
-	writeln(computing(Type,Exp2_print)),
-	compute_pending_element(Type,Head,Call,Phase,Exp,Bounded,New_tops,New_auxs),
+compute_pending(Head,Call,Phase,Pending,Pending_out):-
+	get_one_pending(Pending,Type,(Lin_exp,Coeff_bounded),Pending1),
+	(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp);true),
+	compute_pending_element(Type,Head,Call,Phase,Lin_exp,Coeff_bounded,New_tops,New_auxs,Pending1,Pending_out),
 	maplist(save_new_phase_top(Head,Call,Phase),New_tops),
 	maplist(save_new_phase_aux(Head,Call,Phase),New_auxs).
 
-compute_pending_element(maxsum(Loop),Head,Call,Phase,Exp,Bounded,New_tops,New_auxs):-
-	compute_maxsum(Head,Call,Phase,Loop,Exp,Bounded,New_tops,New_auxs).
-compute_pending_element(minsum(Loop),Head,Call,Phase,Exp,Bounded,New_tops,New_auxs):-
-	compute_minsum(Head,Call,Phase,Loop,Exp,Bounded,New_tops,New_auxs).	
-compute_pending_element(max,Head,Call,Phase,Exp,Bounded,New_tops,New_auxs):-
-	compute_max(Head,Call,Phase,Exp,Bounded,New_tops,New_auxs).	
-compute_pending_element(min,Head,Call,Phase,Exp,Bounded,New_tops,New_auxs):-
-	compute_min(Head,Call,Phase,Exp,Bounded,New_tops,New_auxs).	
+
+compute_pending_element(maxsum(Loop),Head,Call,Phase,Exp,Bounded,New_tops,New_auxs,Pending,Pending_out):-
+	compute_maxsum(Head,Call,Phase,Loop,Exp,Bounded,New_tops,New_auxs,Pending,Pending_out).
+compute_pending_element(minsum(Loop),Head,Call,Phase,Exp,Bounded,New_tops,New_auxs,Pending,Pending_out):-
+	compute_minsum(Head,Call,Phase,Loop,Exp,Bounded,New_tops,New_auxs,Pending,Pending_out).	
+compute_pending_element(max,Head,Call,Phase,Exp,Bounded,New_tops,New_auxs,Pending,Pending_out):-
+	compute_max(Head,Call,Phase,Exp,Bounded,New_tops,New_auxs,Pending,Pending_out).	
+compute_pending_element(min,Head,Call,Phase,Exp,Bounded,New_tops,New_auxs,Pending,Pending_out):-
+	compute_min(Head,Call,Phase,Exp,Bounded,New_tops,New_auxs,Pending,Pending_out).	
 		
 %partial ranking function (a special case of linear sum)
-compute_maxsum(Head,Call,Phase,Loop,[]+1,Bounded,New_tops,New_auxs):-!,
+compute_maxsum(Head,Call,Phase,Loop,[]+1,Bounded,New_tops,New_auxs,Pending,Pending_out):-!,
 	bagof_no_fail(Rf,
 	Deps^Deps_type^Loops^
 	(
@@ -213,208 +226,474 @@ compute_maxsum(Head,Call,Phase,Loop,[]+1,Bounded,New_tops,New_auxs):-!,
 			),Rfs),
 	maplist(get_difference_version(Head,Call),Rfs,Rfs_diff),
 	append(Rfs,Rfs_diff,Rfs_all),
-	check_rest_loops(Rfs_all,Head,Call,Phase,Loop,Bounded,[],[],New_tops,New_auxs).
-
+	maplist(check_loops_maxsum(Head,Call,Phase,Loop,Bounded,Pending),Rfs_all,New_tops_list,New_auxs_list,Pending_out_list),
+	ut_flat_list(New_tops_list,New_tops),
+	ut_flat_list(New_auxs_list,New_auxs),
+	empty_pending(Empty_pending),
+	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out_aux),
+	(empty_pending(Pending_out_aux)->
+		Pending_out=Pending
+		;
+		Pending_out=Pending_out_aux
+	).
+	
 %linear sum
-compute_maxsum(Head,Call,Phase,Loop,Lin_exp,Bounded,New_tops,New_auxs):-
+compute_maxsum(Head,Call,Phase,Loop,Lin_exp,Bounded,New_tops,New_auxs2,Pending,Pending_out):-
 	is_difference(Head,Call,Lin_exp,Loop,Exp_list),
-	check_rest_loops(Exp_list,Head,Call,Phase,Loop,Bounded,[],[],New_tops,New_auxs),
+	maplist(check_loops_maxsum(Head,Call,Phase,Loop,Bounded,Pending),Exp_list,New_tops_list,New_auxs_list,Pending_out_list),
+	ut_flat_list(New_tops_list,New_tops),
 	%we stay with this option as long as one attempt succeeded 
 	%otherwise go to simple multiplication
-	New_tops\=[].
+	New_tops\=[],
+	ut_flat_list(New_auxs_list,New_auxs),
+	empty_pending(Empty_pending),
+	foldl(union_pending,Pending_out_list,Empty_pending,Pending_aux),
 	
+	(New_auxs\=[]->
+	simple_multiplication(Head,Call,Loop,Lin_exp,Bounded,Aux_exp,Pending_aux,Pending_out),
+	New_auxs2=[Aux_exp|New_auxs]
+	;
+	Pending_aux=Pending_out,
+	New_auxs2=New_auxs
+	).
+
 %simple multiplication
-compute_maxsum(Head,Call,_,Loop,Lin_exp,Bounded,[],[Aux_exp]):-
+compute_maxsum(Head,Call,_Phase,Loop,Lin_exp,Bounded,[],[Aux_exp],Pending,Pending_out):-
+	simple_multiplication(Head,Call,Loop,Lin_exp,Bounded,Aux_exp,Pending,Pending_out).
+
+simple_multiplication(Head,Call,Loop,Lin_exp,Bounded,Aux_exp,Pending,Pending_out):-	
+	get_enriched_loop(Loop,Head,Call,Cs),
 	cstr_name_aux_var(Aux_name),
 	cstr_get_it_name(Loop,Loop_name),
 	Internal_exp=exp([(Aux_name,Aux_var),(Loop_name,It_var)],[],add([mult([It_var,Aux_var])]),add([])),
-    Aux_exp=bound(ub,Internal_exp,Bounded),
-    save_pending(max,Head,Call,bound(ub,Lin_exp,[Aux_name])).
+	(is_head_expression(Head,Lin_exp)->
+		Max_tops=[bound(ub,Lin_exp,[Aux_name])]
+	;
+	 Head=..[_|Vars_head],
+	 max_min_linear_expression_all(Lin_exp, Vars_head, Cs,max, Maxs_exps),
+	 maplist(cstr_generate_top_exp([Aux_name],ub),Maxs_exps,Max_tops)
+	 ),
+	save_pending_list(max,Loop,Max_tops,Pending,Pending_out),
+    Aux_exp=bound(ub,Internal_exp,Bounded).
 
-check_rest_loops([],_Head,_Call,_Phase,_Loop,_Bounded,Tops,Auxs,Tops,Auxs).
-check_rest_loops([Exp|Exp_list],Head,Call,Phase,Loop,Bounded,Accum_tops,Accum_auxs,New_tops_out,New_auxs_out):-
-		check_rest_loops_1(Phase,Loop,Head,Call,Exp,exp([],[],add([]),add([])),Bounded,Accum_tops,Accum_auxs,Tops1,Auxs1),!,
-		check_rest_loops(Exp_list,Head,Call,Phase,Loop,Bounded,Tops1,Auxs1,New_tops_out,New_auxs_out).
-%if it fails, we try with the rest		
-check_rest_loops([_Exp|Exp_list],Head,Call,Phase,Loop,Bounded,Accum_tops,Accum_auxs,New_tops_out,New_auxs_out):-
-		check_rest_loops(Exp_list,Head,Call,Phase,Loop,Bounded,Accum_tops,Accum_auxs,New_tops_out,New_auxs_out).
-		
-check_rest_loops_1([],_Loop,_Head,_Call,Exp,Carry_exp,Bounded,Accum_tops,Accum_auxs,Tops,Auxs):-	
-		Carry_exp==exp([],[],add([]),add([])),
-		Tops=[bound(ub,Exp,Bounded)|Accum_tops],
-		Auxs=Accum_auxs.
-check_rest_loops_1([],_Loop,_Head,_Call,Exp,Carry_exp,Bounded,Accum_tops,Accum_auxs,Tops,Auxs):-	
-		cstr_name_aux_var(Aux_name),
-		Carry_exp=exp(Pos_Index,Neg_index,add(Summands),Add_neg),
-		New_exp=exp([(Aux_name,Aux_var)|Pos_Index],Neg_index,add([mult([Aux_var])|Summands]),Add_neg),
-		Tops=[bound(ub,Exp,[Aux_name])|Accum_tops],
-		Auxs=[bound(ub,New_exp,Bounded)|Accum_auxs].		
+
+check_loops_maxsum(Head,Call,Phase,Loop,Bounded_ini,Pending,Exp,Tops,Auxs,Pending_out):-
+	(get_param(debug,[])->print_lin_exp_in_phase(Head,Call,Exp);true),
 	
-check_rest_loops_1([Loop|Loops],Loop,Head,Call,Exp,Carry_exp,Bounded,Accum_tops,Accum_auxs,Tops,Auxs):-!,
-		check_rest_loops_1(Loops,Loop,Head,Call,Exp,Carry_exp,Bounded,Accum_tops,Accum_auxs,Tops,Auxs).
-		
-check_rest_loops_1([Loop2|Loops],Loop,Head,Call,Exp,Carry_exp,Bounded,Accum_tops,Accum_auxs,Tops,Auxs):-	
-		(is_head_expression(Head,Exp)->
-			get_difference_version(Head,Call,Exp,Exp_diff)
+	(is_head_expression(Head,Exp)->
+			get_difference_version(Head,Call,Exp,Exp_diff),
+			Flag=head
 			;
-			Exp_diff=Exp
-		),
-		loop_ph(Head,(Loop2,_),Call,Cs,_,_),
-		Carry_exp=exp(Pos_Index,Neg_index,add(Summands),Add_neg),	
-		negate_le(Exp_diff,Exp_diff_neg),
-		term_variables((Head,Call),Vars),
-		%collaborative loop
-		le_print_int(Exp_diff,Exp_diff_print_int,_),
-		(nad_entails(Vars,Cs,[Exp_diff_print_int>=0])->
-			(find_maxsum_constraint(Loop2,Head,Call,Cs,Exp_diff,New_bounded)->			
-				append(New_bounded,Bounded,Bounded1)
-				;
-				Bounded1=Bounded
-			),
-			check_rest_loops_1(Loops,Loop,Head,Call,Exp,Carry_exp,Bounded1,Accum_tops,Accum_auxs,Tops,Auxs)
+			Flag=diff,
+			Exp=Coeffs+_Cnt,
+			Exp_diff=Coeffs+0
+	),
+	check_loops_maxsum_1(Phase,Loop,Head,Call,Exp_diff,Flag,Summands,Bounded,Pending,Pending_out),!,
+	get_bounded_exp([(Loop,Bounded_ini)|Bounded],_Bounded_loops,Bounded_vars),
+	cond_add_same_loop_increment(Head,Loop,Exp,Summands,Summands1),
+	(Summands1=[]->
+		Tops=[bound(ub,Exp,Bounded_vars)],
+		Auxs=[]
 		;
-		%add a constant
-		le_print_int(Exp_diff_neg,Exp_diff_neg_int,Exp_diff_denominator),
-		(nad_maximize([Exp_diff_neg_int=Exp_diff_denominator*D|Cs],[D],[Delta])->
-			cstr_get_it_name(Loop2,Loop_name),
-			Carry_exp1=exp([(Loop_name,Loop_var)|Pos_Index],Neg_index,add([mult([Loop_var,Delta])|Summands]),Add_neg),
-			check_rest_loops_1(Loops,Loop,Head,Call,Exp,Carry_exp1,Bounded,Accum_tops,Accum_auxs,Tops,Auxs)
-		;
-		%add an expression	
-		term_variables(Head,Vars_head),from_list_sl(Vars_head,Vars_head_set),
-		term_variables(Exp_diff_neg,Vars_exp),from_list_sl(Vars_exp,Vars_exp_set),
-		difference_sl(Vars_head_set,Vars_exp_set,Vars_of_Interest),
-		((max_min_linear_expression_all(Exp_diff_neg, Vars_of_Interest, Cs,max, Maxs),Maxs\=[])->
-			cstr_name_aux_var(Aux_name),
-			Carry_exp1=exp([(Aux_name,Aux_var)|Pos_Index],Neg_index,add([mult([Aux_var])|Summands]),Add_neg),
-			maplist(cstr_generate_top_exp([Aux_name],ub),Maxs,Maxsums),
-			save_pending_list(maxsum,Head,Call,Loop2,Maxsums),
-			check_rest_loops_1(Loops,Loop,Head,Call,Exp,Carry_exp1,Bounded,Accum_tops,Accum_auxs,Tops,Auxs)
-		;
-		%reset
-		%FIXME
-		fail
-		)
-		)
-		).	
-
-			
-is_head_expression(Head,Exp):-
-	copy_term((Head,Exp),(Head2,Exp2)),
-	numbervars(Head2,0,_),
-	ground(Exp2).
+		cstr_name_aux_var(Aux_name),
+		cexpr_build_internal_exp(Summands,[Aux_name],Expression),
+		Tops=[bound(ub,Exp,[Aux_name])],
+		Auxs=[bound(ub,Expression,Bounded_vars)]
+	).
+check_loops_maxsum(_Head,_Call,_Phase,_Loop,_Bounded,_Pending,_Exp,[],[],Empty_pending):-
+	empty_pending(Empty_pending).
 	
-			
-find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded):-
-		pending(maxsum(Loop),Head,Call,bound(ub,Exp2,Bounded)),
-		term_variables((Head,Call),Vars),
-		le_print_int(Exp2,Exp2_print_int,_),
-		nad_entails(Vars,Cs,[Exp2_print_int>=0]),
-		subtract_le(Exp_diff,Exp2,Exp_diff2),
-		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
-		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!.
+
+check_loops_maxsum_1([],_,_,_,_,_Flag,[],[],Pending,Pending).		
+%ignore the loop that we started from	
+check_loops_maxsum_1([Loop|Loops],Loop,Head,Call,Exp,Flag,Summands,Bounded,Pending,Pending_out):-!,
+		check_loops_maxsum_1(Loops,Loop,Head,Call,Exp,Flag,Summands,Bounded,Pending,Pending_out).
+		
+check_loops_maxsum_1([Loop2|Loops],Loop,Head,Call,Exp_diff,Flag,Summands,Bounded,Pending,Pending_out):-	
+		check_loop_maxsum(Head,Call,Exp_diff,Flag,Loop2,Summands1,Bounded1,Pending,Pending1),!,
+		check_loops_maxsum_1(Loops,Loop,Head,Call,Exp_diff,Flag,Summands2,Bounded2,Pending1,Pending_out),
+		append(Summands1,Summands2,Summands),
+		append(Bounded1,Bounded2,Bounded).
+		
+%collaborative loop		
+check_loop_maxsum(Head,Call,Exp_diff,_Flag,Loop,[],Bounded,Pending,Pending1):-
+		get_enriched_loop(Loop,Head,Call,Cs),
+		term_variables((Head,Call),Vars),	
+		le_print_int(Exp_diff,Exp_diff_print_int,_),
+		nad_entails(Vars,Cs,[Exp_diff_print_int>=0]),!,
+		(find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,New_bounded,Pending,Pending1)->			
+			Bounded=[(Loop,New_bounded)]
+			;
+			Pending1=Pending,
+			Bounded=[]
+		),
+		(get_param(debug,[])->format('Loop ~p is collaborative~n',[Loop]);true).
+		
+%add a constant			
+check_loop_maxsum(Head,Call,Exp_diff,_Flag,Loop,Summands,[],Pending,Pending):-	
+	get_enriched_loop(Loop,Head,Call,Cs),
+	negate_le(Exp_diff,Exp_diff_neg),
+	le_print_int(Exp_diff_neg,Exp_diff_neg_int,Exp_diff_denominator),
+	nad_maximize([Exp_diff_neg_int=Exp_diff_denominator*D|Cs],[D],[Delta]),!,
+	cstr_get_it_name(Loop,Loop_name),
+	Summands=[summand(pos,[(Loop_name,Loop_var)],mult([Loop_var,Delta]))],
+	(get_param(debug,[])->format('Loop ~p adds a constant ~p ~n',[Loop,Delta]);true).
+	
+
+%add an expression	
+check_loop_maxsum(Head,Call,Exp_diff,_Flag,Loop,Summands,[],Pending,Pending1):-	
+	get_enriched_loop(Loop,Head,Call,Cs),
+	negate_le(Exp_diff,Exp_diff_neg),
+	term_variables(Head,Vars_head),from_list_sl(Vars_head,Vars_head_set),
+	term_variables(Exp_diff_neg,Vars_exp),from_list_sl(Vars_exp,Vars_exp_set),
+	difference_sl(Vars_head_set,Vars_exp_set,Vars_of_Interest),
+	max_min_linear_expression_all(Exp_diff_neg, Vars_of_Interest, Cs,max, Maxs),
+	Maxs\=[],!,
+	cstr_name_aux_var(Aux_name),
+	Summands=[summand(pos,[(Aux_name,Aux_var)],mult([Aux_var]))],
+	maplist(cstr_generate_top_exp([Aux_name],ub),Maxs,Maxsums),
+	save_pending_list(maxsum,Loop,Maxsums,Pending,Pending1),
+	(get_param(debug,[])->format('Loop ~p adds an expression ~p~n',[Loop,Maxs]);true).
+
+%reset
+check_loop_maxsum(Head,_Call,Exp_diff,head,Loop,Summands,[],Pending,Pending1):-
+	get_head_expression_part(Head,Exp_diff,Exp),
+	copy_term((Head,Exp),(Call,Exp_end)),	
+	get_enriched_loop(Loop,Head,Call,Cs),
+	term_variables(Head,Vars_head),
+%	select_important_variables(Vars_head,Lin_exp,Vars_of_Interest),
+	%max_min_linear_expression_all(Exp_end, Vars_of_Interest, Cs,max, Maxs),
+	max_min_linear_expression_all(Exp_end, Vars_head, Cs,max, Maxs),
+	Maxs\=[],!,
+	cstr_name_aux_var(Aux_name),
+	Summands=[summand(pos,[(Aux_name,Aux_var)],mult([Aux_var]))],
+	maplist(cstr_generate_top_exp([Aux_name],ub),Maxs,Maxsums),
+	save_pending_list(maxsum,Loop,Maxsums,Pending,Pending1),
+	(get_param(debug,[])->format('Loop ~p has a reset to  ~p~n',[Loop,Maxs]);true).
+
+check_loop_maxsum(_Head,_Call,_Exp_diff,_,Loop,[],[],_Pending,_Pending1):-	
+	    (get_param(debug,[])->format('Loop ~p has undefined behavior ~n',[Loop]);true),
+		fail.	
 
 
 %FIXME implement	
 %compute_minsum(Head,Call,Phase,Loop,[]+1,Bounded,New_tops,New_auxs):-!,
 %compute_minsum(Head,Call,Phase,Loop,Lin_exp,Bounded,New_tops,New_auxs):-
 
-compute_minsum(Head,Call,_,Loop,Lin_exp,Bounded,[],[Aux_exp]):-
+compute_minsum(_,_,_,Loop,Lin_exp,Bounded,[],[Aux_exp],Pending,Pending_out):-
 	cstr_name_aux_var(Aux_name),
 	cstr_get_it_name(Loop,Loop_name),
 	Internal_exp=exp([(Aux_name,Aux_var),(Loop_name,It_var)],[],add([mult([It_var,Aux_var])]),add([])),
     Aux_exp=bound(lb,Internal_exp,Bounded),
-    save_pending(min,Head,Call,bound(lb,Lin_exp,[Aux_name])).
+    save_pending(min,_,bound(lb,Lin_exp,[Aux_name]),Pending,Pending_out).
 
 
-%FIXME implement the advanced one
-compute_max(Head,Call,Phase,Lin_exp,Bounded,New_tops,[]):-
-	max_min_top_expression_in_phase(Head,Call,Phase,bound(ub,Lin_exp,Bounded),New_tops),
-	New_tops\=[].
-	
-compute_max(Head,Call,Phase,Lin_exp,Bounded,[],[Aux_exp]):-
-
-	check_loops_max(Phase,Head,Call,Lin_exp,Resets,Additions),
-	%we have to consider the case where the value is not reseted
-	generate_index([Lin_exp|Resets],[],Reset_vars,Index1),
-	generate_index(Additions,Index1,Addition_vars,Index2),
-	maplist(put_inside_mult,Addition_vars,Summands),
-	(Reset_vars=[_]->
-	Internal_exp=exp(Index2,[],add([mult(Reset_vars)|Summands]),add([]))
+%use cacheing to avoid computing things several times
+compute_max(Head,Call,_Phase,Lin_exp,Bounded,New_tops,New_auxs,Pending,Pending):-
+	max_found(Head,Call,Lin_exp2,Res),
+	Lin_exp2==Lin_exp,!,
+	(Res=top(Maxs_out)->
+		maplist(cstr_generate_top_exp(Bounded,ub),Maxs_out,New_tops),
+		New_auxs=[]
 	;
-	Internal_exp=exp(Index2,[],add([mult([max(Reset_vars)])|Summands]),add([]))
-	),
-    Aux_exp=bound(ub,Internal_exp,Bounded).
+	 (Res=aux(Internal_exp)->
+	 	New_tops=[],
+	 	New_auxs=[bound(ub,Internal_exp,Bounded)]
+	 ;
+	 	New_tops=[],
+	 	New_auxs=[]
+	)
+	).
+
+%use transitive invariant
+compute_max(Head,Call,Phase,Lin_exp,Bounded,New_tops,[],Pending,Pending):-
+	max_min_top_expression_in_phase(Head,Call,Phase,bound(ub,Lin_exp,Bounded),Maxs_out),
+	maplist(cstr_generate_top_exp(Bounded,ub),Maxs_out,New_tops),
+	New_tops\=[],!,
+	assert(max_found(Head,Call,Lin_exp,top(Maxs_out))).
+
+%use  increments and resets procedure	
+compute_max(Head,Call,Phase,Lin_exp,Bounded,[Top_exp],[Aux_exp],Pending,Pending_out):-
+	check_loops_max(Phase,Head,Call,Lin_exp,Resets,Summands,Pending,Pending_out),
+	%we have to consider the case where the value is not reseted
+	cstr_name_aux_var(Aux_name),
+	cstr_generate_top_exp([Aux_name],ub,Lin_exp,Top_exp),
+	cexpr_build_internal_exp(Summands,[Aux_name|Resets],Internal_exp),
+    Aux_exp=bound(ub,Internal_exp,Bounded),
+    assert(max_found(Head,Call,Lin_exp,aux(Internal_exp))).
     
 %failed    
-compute_max(_Head,_Call,_Phase,_Lin_exp,_Bounded,[],[]).
-	
-compute_min(Head,Call,Phase,Lin_exp,Bounded,New_tops,[]):-
-	max_min_top_expression_in_phase(Head,Call,Phase,bound(lb,Lin_exp,Bounded),New_tops).
+compute_max(Head,Call,_Phase,Lin_exp,_Bounded,[],[],Pending,Pending):-
+	 assert(max_found(Head,Call,Lin_exp,none)).
 			
 	
-check_loops_max([],_Head,_Call,_Lin_exp,[],[]).
+check_loops_max([],_Head,_Call,_Lin_exp,[],[],Pending,Pending).
 %nothing happens
-check_loops_max([Loop|Loops],Head,Call,Lin_exp,Resets,Additions):-
-	loop_ph(Head,(Loop,_),Call,Cs,_,_),
+check_loops_max([Loop|Loops],Head,Call,Lin_exp,Resets,Summands,Pending,Pending_out):-
+	get_enriched_loop(Loop,Head,Call,Cs),
 	get_difference_version(Head,Call,Lin_exp,Lin_exp_diff),
 	le_print_int(Lin_exp_diff,Exp_diff_int,_),
 	term_variables((Head,Call),Vars),
 	nad_entails(Vars,Cs,[Exp_diff_int>=0]),!,
-	check_loops_max(Loops,Head,Call,Lin_exp,Resets,Additions).
+	check_loops_max(Loops,Head,Call,Lin_exp,Resets,Summands,Pending,Pending_out).
 
 % add a constant
 %FIXME take D into account
-check_loops_max([Loop|Loops],Head,Call,Lin_exp,Resets,[Loop_name|Additions]):-
-	loop_ph(Head,(Loop,_),Call,Cs,_,_),
+check_loops_max([Loop|Loops],Head,Call,Lin_exp,Resets,[summand(pos,[(Loop_name,Loop_var)],mult([Loop_var,Delta]))|Summands],Pending,Pending_out):-
+	get_enriched_loop(Loop,Head,Call,Cs),
 	get_difference_version(Head,Call,Lin_exp,Lin_exp_diff),
 	negate_le(Lin_exp_diff,Lin_exp_diff_neg),
 	le_print_int(Lin_exp_diff_neg,Exp_diff_neg_int,Exp_diff_denominator),
 	nad_maximize([Exp_diff_neg_int=Exp_diff_denominator*D|Cs],[D],[Delta]),
 	greater_fr(Delta,0),!,
 	cstr_get_it_name(Loop,Loop_name),
-	check_loops_max(Loops,Head,Call,Lin_exp,Resets,Additions).
+	check_loops_max(Loops,Head,Call,Lin_exp,Resets,Summands,Pending,Pending_out).
 	
 %add a variable
-check_loops_max([Loop|Loops],Head,Call,Lin_exp,Resets,[Aux_name|Additions]):-
-	loop_ph(Head,(Loop,_),Call,Cs,_,_),
+check_loops_max([Loop|Loops],Head,Call,Lin_exp,Resets,[summand(pos,[(Aux_name,Var_name)],mult([Var_name]))|Summands],Pending,Pending_out):-
+	get_enriched_loop(Loop,Head,Call,Cs),
 	get_difference_version(Head,Call,Lin_exp,Lin_exp_diff),
 	negate_le(Lin_exp_diff,Lin_exp_diff_neg),
-	term_variables(Head,Vars_head),from_list_sl(Vars_head,Vars_head_set),
-	term_variables(Lin_exp_diff_neg,Vars_exp),from_list_sl(Vars_exp,Vars_exp_set),
-	difference_sl(Vars_head_set,Vars_exp_set,Vars_of_Interest),
-	max_min_linear_expression_all(Lin_exp_diff_neg, Vars_of_Interest, Cs,max, Maxs),
+	term_variables(Head,Vars_head),
+%	select_important_variables(Vars_head,Lin_exp,Vars_of_Interest),
+%	max_min_linear_expression_all(Lin_exp_diff_neg, Vars_of_Interest, Cs,max, Maxs),
+	max_min_linear_expression_all(Lin_exp_diff_neg, Vars_head, Cs,max, Maxs),
 	Maxs\=[],!,
 	cstr_name_aux_var(Aux_name),
 	maplist(cstr_generate_top_exp([Aux_name],ub),Maxs,Maxsums),
-	save_pending_list(maxsum,Head,Call,Loop,Maxsums),
-	check_loops_max(Loops,Head,Call,Lin_exp,Resets,Additions).		
+	save_pending_list(maxsum,Loop,Maxsums,Pending,Pending1),
+	check_loops_max(Loops,Head,Call,Lin_exp,Resets,Summands,Pending1,Pending_out).		
 		
 %reset			
-check_loops_max([Loop|Loops],Head,Call,Lin_exp,[Aux_name|Resets],Additions):-
-	loop_ph(Head,(Loop,_),Call,Cs,_,_),
+check_loops_max([Loop|Loops],Head,Call,Lin_exp,[Aux_name|Resets],Summands,Pending,Pending_out):-
+	get_enriched_loop(Loop,Head,Call,Cs),
 	copy_term((Head,Lin_exp),(Call,Lin_exp_p)),
-	term_variables(Head,Vars_head),from_list_sl(Vars_head,Vars_head_set),
-	term_variables(Lin_exp,Vars_exp),from_list_sl(Vars_exp,Vars_exp_set),
-	difference_sl(Vars_head_set,Vars_exp_set,Vars_of_Interest),
-	max_min_linear_expression_all(Lin_exp_p, Vars_of_Interest, Cs,max, Maxs),
+	term_variables(Head,Vars_head),
+%	select_important_variables(Vars_head,Lin_exp,Vars_of_Interest),
+%	max_min_linear_expression_all(Lin_exp_p, Vars_of_Interest, Cs,max, Maxs),
+	max_min_linear_expression_all(Lin_exp_p, Vars_head, Cs,max, Maxs),
 	Maxs\=[],!,
 	cstr_name_aux_var(Aux_name),
 	maplist(cstr_generate_top_exp([Aux_name],ub),Maxs,Maxsums),
-	save_pending_list(maxsum,Head,Call,Loop,Maxsums),
-	check_loops_max(Loops,Head,Call,Lin_exp,Resets,Additions).	
+	save_pending_list(maxsum,Loop,Maxsums,Pending,Pending1),
+	check_loops_max(Loops,Head,Call,Lin_exp,Resets,Summands,Pending1,Pending_out).	
 
 	
+compute_min(Head,Call,Phase,Lin_exp,Bounded,New_tops,[],Pending,Pending):-
+	max_min_top_expression_in_phase(Head,Call,Phase,bound(lb,Lin_exp,Bounded),Mins_out),
+	maplist(cstr_generate_top_exp(Bounded,lb),Mins_out,New_tops).	
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
+cexpr_build_internal_exp([],[Aux_name],exp([(Aux_name,Aux_var)],[],add([mult([Aux_var])]),add([]))).
+cexpr_build_internal_exp([],Resets,exp(Index,[],add([mult([max(Reset_vars)])]),add([]))):-
+	generate_index(Resets,[],Reset_vars,Index).
+	
+cexpr_build_internal_exp([summand(pos,Index,Summand)|Summands],Resets,exp(Index_pos1,Index_neg,add([Summand|Pos]),Neg)):-	
+	cexpr_build_internal_exp(Summands,Resets,exp(Index_pos,Index_neg,add(Pos),Neg)),
+	append(Index,Index_pos,Index_pos1).
+cexpr_build_internal_exp([summand(neg,Index,Summand)|Summands],Resets,exp(Index_pos,Index_neg1,Pos,add([Summand|Neg]))):-	
+	cexpr_build_internal_exp(Summands,Resets,exp(Index_pos,Index_neg,Pos,add(Neg))),
+	append(Index,Index_neg,Index_neg1).	
+
+select_important_variables(Vars_head,Lin_exp,Vars_of_Interest):-
+	from_list_sl(Vars_head,Vars_head_set),
+	term_variables(Lin_exp,Vars_exp),
+	from_list_sl(Vars_exp,Vars_exp_set),
+	difference_sl(Vars_head_set,Vars_exp_set,Vars_of_Interest).
+	
 generate_index([],Index_accum,[],Index_accum).
 generate_index([Name|Names],Index_accum,[Var|Vars],Index):-
 		generate_index(Names,[(Name,Var)|Index_accum],Vars,Index).
 put_inside_mult(Factor,mult([Factor])).
+
+
+
+get_bounded_exp([],[],[]).
+get_bounded_exp([(Loop,Bounded_in_loop)|Bounded],[Loop|Bounded_loops],Bounded_vars1):-
+	get_bounded_exp(Bounded,Bounded_loops,Bounded_vars),
+	append(Bounded_in_loop,Bounded_vars,Bounded_vars1).
+	
+
+	
+cond_add_same_loop_increment(Head,Loop,Exp,Summands,[summand(pos,[(Loop_name,Loop_var)],mult([Loop_var,Cnt]))|Summands]):-
+		\+is_head_expression(Head,Exp),
+		Exp=_Coeffs+Cnt,
+		greater_fr(Cnt,0),!,
+		cstr_get_it_name(Loop,Loop_name).	
+cond_add_same_loop_increment(_Head,_Loop,_Exp,Summands,Summands).
+
+get_enriched_loop(Loop,Head,Call,Total_cs):-
+	loop_ph(Head,(Loop,_),Call,Cs,_,_),	
+	forward_invariant_temp(Head,Call,Forward_inv),
+	append(Forward_inv,Cs,Total_cs).
+				
+get_head_expression_part(Head,Exp_diff+Cnt,Exp+Cnt):-
+	term_variables(Head,Vars_head),from_list_sl(Vars_head,Vars_head_set),
+	include(coeff_not_in_set(Vars_head_set),Exp_diff,Exp).
+	
+coeff_not_in_set(Set,(Var,_Fr)):-
+	contains_sl(Set,Var).
+
+is_head_expression(Head,Exp):-
+	copy_term((Head,Exp),(Head2,Exp2)),
+	numbervars(Head2,0,_),
+	ground(Exp2).
+	
+			
+find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded,Pending,Pending_out):-
+		extract_pending_maxsum(Loop,Pending,(Exp2,Bounded),Pending_out),
+		term_variables((Head,Call),Vars),
+		le_print_int(Exp2,Exp2_print_int,_),
+		nad_entails(Vars,Cs,[Exp2_print_int>=0]),
+		subtract_le(Exp_diff,Exp2,Exp_diff2),
+		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
+		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!.
 		
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
-:-dynamic pending/4.
-:-dynamic new_phase_top/4.
-:-dynamic new_phase_aux/4.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+
+empty_pending(pending([],[],[],[])).
+
+print_lin_exp_in_phase(Head,Call,Exp):-
+	copy_term((Head,Call,Exp),(Head2,Call2,Exp2)),
+	write_le(Exp2,Exp_print),
+	numbervars((Head2,Call2),0,_),
+	format('~p -> ~p : ~p ~n',[Head2,Call2,Exp_print]).
+
+print_pending_info(Head,Call,Type,Lin_exp):-
+	copy_term((Head,Call,Lin_exp),(Head2,Call2,Lin_exp2)),
+	write_le(Lin_exp2,Exp2_print),
+	numbervars((Head2,Call2),0,_),
+	writeln(computing(Type,Exp2_print)).
+	%print_pending_structure(Head,Call,Pending1),	
+	
+print_pending_structure(Head,Call,Pending):-
+	copy_term((Head,Call,Pending),(Head2,Call2,pending(Maxs,Mins,Maxsums,Minsums))),
+	numbervars((Head2,Call2),0,_),
+	format('Maxs:~n',[]),
+	maplist(print_pending_elem,Maxs),
+	format('Mins:~n',[]),
+	maplist(print_pending_elem,Mins),
+	format('Maxsums:~n',[]),
+	maplist(print_pending_elems_loop,Maxsums),
+	format('Minsums:~n',[]),
+	maplist(print_pending_elems_loop,Minsums).
+
+print_pending_elem((Lin_exp,Bounded)):-
+	write_le(Lin_exp,Lin_exp_print),
+	format('~p  ~p ~n',[Lin_exp_print,Bounded]).
+print_pending_elems_loop((Loop,Elems)):-
+	format('Loop:~p ~n',[Loop]),
+	maplist(print_pending_elem,Elems).
+
+save_pending_list(Type,Loop,List_tops,Pending,Pending_out):-
+	foldl(save_pending(Type,Loop),List_tops,Pending,Pending_out).
+/*
+save_pending(max,_,bound(ub,Lin_exp,Bounded),Pending,Pending_out):-
+	semi_normalize_le(Lin_exp,Coeff,Lin_exp_normalized),
+	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	put_mm(Maxs,Lin_exp_normalized,(Coeff,Bounded),Maxs1),
+	Pending_out=pending(Maxs1,Mins,Maxsums,Minsums).
+save_pending(min,_,bound(lb,Lin_exp,Bounded),Pending,Pending_out):-
+	semi_normalize_le(Lin_exp,Coeff,Lin_exp_normalized),
+	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	put_mm(Mins,Lin_exp_normalized,(Coeff,Bounded),Mins1),
+	Pending_out=pending(Maxs,Mins1,Maxsums,Minsums).	
+
+save_pending(maxsum,Loop,bound(ub,Lin_exp,Bounded),Pending,Pending_out):-
+	semi_normalize_le(Lin_exp,Coeff,Lin_exp_normalized),
+	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	(lookup_lm(Maxsums,Loop,Maxsum_multimap)->
+		true
+		;
+		empty_mm(Maxsum_multimap)
+	),	
+	put_mm(Maxsum_multimap,Lin_exp_normalized,(Coeff,Bounded),Maxsum_multimap1),
+	insert_lm(Maxsums,Loop,Maxsum_multimap1,Maxsums1),
+	Pending_out=pending(Maxs,Mins,Maxsums1,Minsums).	
+
+save_pending(minsum,Loop,bound(lb,Lin_exp,Bounded),Pending,Pending_out):-
+	semi_normalize_le(Lin_exp,Coeff,Lin_exp_normalized),
+	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	(lookup_lm(Maxsums,Loop,Maxsum_multimap)->
+		true
+		;
+		empty_mm(Maxsum_multimap)
+	),	
+	put_mm(Maxsum_multimap,Lin_exp_normalized,(Coeff,Bounded),Maxsum_multimap1),
+	insert_lm(Maxsums,Loop,Maxsum_multimap1,Maxsums1),
+	Pending_out=pending(Maxs,Mins,Maxsums1,Minsums).	
+	
+*/
+
+union_pending(pending(Maxs1,Mins1,Maxsums1,Minsums1),pending(Maxs2,Mins2,Maxsums2,Minsums2),pending(Maxs3,Mins3,Maxsums3,Minsums3)):-
+	union_sl(Maxs1,Maxs2,Maxs3),
+	union_sl(Mins1,Mins2,Mins3),
+	join_mm(Maxsums1,Maxsums2,Maxsums3),
+	join_mm(Minsums1,Minsums2,Minsums3).
+	
+	
+save_pending(max,_,bound(ub,Lin_exp,Bounded),Pending,Pending_out):-
+	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	insert_sl(Maxs,(Lin_exp,Bounded),Maxs1),
+	Pending_out=pending(Maxs1,Mins,Maxsums,Minsums).
+save_pending(min,_,bound(lb,Lin_exp,Bounded),Pending,Pending_out):-
+	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	insert_sl(Mins,(Lin_exp,Bounded),Mins1),
+	Pending_out=pending(Maxs,Mins1,Maxsums,Minsums).	
+
+save_pending(maxsum,Loop,bound(ub,Lin_exp,Bounded),Pending,Pending_out):-
+	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	(lookup_lm(Maxsums,Loop,Maxsum_set)->
+		true
+		;
+		empty_sl(Maxsum_set)
+	),	
+	insert_sl(Maxsum_set,(Lin_exp,Bounded),Maxsum_set1),
+	insert_lm(Maxsums,Loop,Maxsum_set1,Maxsums1),
+	Pending_out=pending(Maxs,Mins,Maxsums1,Minsums).	
+
+save_pending(minsum,Loop,bound(lb,Lin_exp,Bounded),Pending,Pending_out):-
+	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	(lookup_lm(Minsums,Loop,Minsum_set)->
+		true
+		;
+		empty_sl(Minsum_set)
+	),	
+	insert_sl(Minsum_set,(Lin_exp,Bounded),Minsum_set1),
+	insert_lm(Minsums,Loop,Minsum_set1,Minsums1),
+	Pending_out=pending(Maxs,Mins,Maxsums,Minsums1).
+	
+get_one_pending(pending([Element|Maxs],Mins,Maxsums,Minsums),max,Element,pending(Maxs,Mins,Maxsums,Minsums)):-!.
+get_one_pending(pending([],[Element|Mins],Maxsums,Minsums),min,Element,pending([],Mins,Maxsums,Minsums)):-!.
+get_one_pending(pending([],[],[(Loop,Multimap)|Maxsums],Minsums),maxsum(Loop),Element,pending([],[],Maxsums_out,Minsums)):-
+	get_one_pending_1(Multimap,Element,Multimap1),
+	(Multimap1=[]->
+		Maxsums_out=Maxsums
+	;
+		Maxsums_out=[(Loop,Multimap1)|Maxsums]
+	).
+get_one_pending(pending([],[],[],[(Loop,Multimap)|Minsums]),minsum(Loop),Element,pending([],[],[],Minsums_out)):-
+	get_one_pending_1(Multimap,Element,Multimap1),
+	(Multimap1=[]->
+		Minsums_out=Minsums
+	;
+		Minsums_out=[(Loop,Multimap1)|Minsums]
+	).	
+get_one_pending_1([Element|Multimap],Element,Multimap).
+
+extract_pending_maxsum(Loop,pending(Maxs,Mins,Maxsums,Minsums),Element,pending(Maxs,Mins,Maxsums1,Minsums)):-
+	lookup_lm(Maxsums,Loop,Elements),
+	select(Element,Elements,Elements1),
+	(Elements1=[]->
+		delete_lm(Maxsums,Loop,Maxsums1)
+		;
+		insert_lm(Maxsums,Loop,Elements1,Maxsums1)
+	).
+
 
 save_new_phase_top(Head,Call,Phase,Top):-
 	assert(new_phase_top(Head,Call,Phase,Top)).
@@ -430,15 +709,6 @@ collect_phase_results(Head,Call,Phase,Tops_max,Tops_min,Auxs):-
 	
 is_ub_top(bound(ub,_,_)).
 
-save_pending_list(Max_min,Head,Call,Max_top):-
-	maplist(save_pending(Max_min,Head,Call),Max_top).
-
-save_pending_list(Max_min_sum,Head,Call,Loop,Max_top):-
-	Type=..[Max_min_sum,Loop],
-	maplist(save_pending(Type,Head,Call),Max_top).
-	
-save_pending(Max_min,Head,Call,Max_top):-
-	assert(pending(Max_min,Head,Call,Max_top)).	
 
 rf_limit(N):-
 	get_param(n_rankings,[N]).
@@ -484,22 +754,15 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 	multiply_le(Rf_diff,Delta_inv,LB).	
 	
 is_difference(Head,Call,Lin_exp,Loop,Diff_list):-
-	loop_ph(Head,(Loop,_),Call,Cs,_,_),
-	
+	get_enriched_loop(Loop,Head,Call,Cs),	
 %FIXME check positivity
 	%le_print_int(Lin_exp,Exp,_Den),
 %	term_variables((Head,Call),Vars),
 	%(nad_entails(Vars,Cs,[Exp>=0])->fail;true),
-	
-	difference_constraint2_farkas_dmatrix(Head,Call,Cs,Lin_exp,Diff_list),
-	copy_term((Head,Call,Diff_list,Lin_exp),(Head2,Call2,Diff_list2,Lin_exp2)),
-	maplist(write_le,Diff_list2,Diff_list_print),
-	write_le(Lin_exp2,Lin_exp_print),
-	numbervars((Head2,Call2),0,_),
-	writeln((Lin_exp_print,Head2,Call2,Diff_list_print)).	
+	difference_constraint2_farkas_dmatrix(Head,Call,Cs,Lin_exp,Diff_list).
 	
 % provisional code		
-max_min_top_expression_in_phase(Head,Call,Phase,bound(Op,Lin_exp,Bounded),Top_exps_new):-
+max_min_top_expression_in_phase(Head,Call,Phase,bound(Op,Lin_exp,_Bounded),Maxs_out):-
 	phase_transitive_closure(Phase,_,Head_total,Head,Cs_star_trans),
 	phase_loop(Phase,_,Head,Call,Cs),
 	ut_flat_list([Cs_star_trans,Cs],Context),
@@ -509,5 +772,4 @@ max_min_top_expression_in_phase(Head,Call,Phase,bound(Op,Lin_exp,Bounded),Top_ex
 	;
 	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,min, Maxs_out)
 	),
-	Head_total=Head,
-	maplist(cstr_generate_top_exp(Bounded,Op),Maxs_out,Top_exps_new).			
+	Head_total=Head.		

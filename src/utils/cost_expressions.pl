@@ -576,7 +576,7 @@ get_class_name(N,n^N).
 get_asymptotic_class(Var,1):-
 	var(Var),!.
 
-get_asymptotic_class(inf,inf).
+get_asymptotic_class(inf,inf):-!.
 
 get_asymptotic_class(Const,0):-
 	ground(Const),!.

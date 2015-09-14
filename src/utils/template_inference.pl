@@ -109,6 +109,8 @@ difference_constraint2_farkas_dmatrix(Head,Call,Phi,Lin_exp,Lin_exp_list_set):-
 	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
 	
 	append(Ys,Unknowns,All_new_vars),
+	%nad_project(Unkowns,Complete_system,Projected),
+	%get_generators(c,Unkowns,Projected,Generators),
 	get_generators(c,All_new_vars,Complete_system,Generators),
 	
 	append([Coeff_0|Unknowns1],Unknowns3,Unknowns4),
@@ -119,18 +121,22 @@ difference_constraint2_farkas_dmatrix(Head,Call,Phi,Lin_exp,Lin_exp_list_set):-
 	append(All_new_vars2,Unknowns3,All_new_vars3),
 
 	append(Complete_system,Complete_system2,Complete_system_joined),
+%	nad_project(Unkowns,Complete_system_joined,Projected2),
+%	get_generators(c,Unkowns,Projected2,Generators2),
 	get_generators(c,All_new_vars3,Complete_system_joined,Generators2),
 	maplist(=(0),Ys),
 	maplist(=(0),Ys2),
 	maplist(=(0),Unknowns3),
-	get_expressions_from_points(Generators,Lin_exp_list),
+	
 	copy_term(([Coeff_0|Unknowns1],Unknowns2,Generators2),([Coeff_0_c|Unknowns1_c],Unknowns2_c,Generators2_c)),
 	maplist(=(0),Unknowns2_c),
-	get_expressions_from_points(Generators2_c,Lin_exp_list2),
-	copy_term((Unknowns,Lin_exp_list),([1|Vars],Lin_exp_list_copy)),
-	copy_term(([Coeff_0_c|Unknowns1_c],Lin_exp_list2),([1|EVars],Lin_exp_list_copy2)),
+	copy_term((Unknowns,Generators),([1|Vars],Generators_copy)),
+	copy_term(([Coeff_0_c|Unknowns1_c],Generators2_c),([1|EVars],Generators_copy2)),
+	get_expressions_from_points(Generators_copy,Lin_exp_list),
+	get_expressions_from_points(Generators_copy2,Lin_exp_list2),
+
 	
-	append(Lin_exp_list_copy,Lin_exp_list_copy2,Lin_exp_list_out),
+	append(Lin_exp_list,Lin_exp_list2,Lin_exp_list_out),
 	from_list_sl(Lin_exp_list_out,Lin_exp_list_set),
 	Lin_exp_list_set\=[].	
 
@@ -250,6 +256,20 @@ get_constraints([(N_diff,Line)|Lines],[],N,Vars,Op,Cs):-
 	N_diff>N,!,
 	N1 is N+1,
 	get_constraints([(N_diff,Line)|Lines],[],N1,Vars,Op,Cs).	
+	
+
+get_constraints([],[(N,Constant)|Constants],N,Vars,Op,[C|Cs]):-
+	parse_le(Constant,Lin_exp_right),
+	integrate_le(Lin_exp_right,_Den,Lin_exp_right_int),
+	write_le(Lin_exp_right_int,Cnt),
+	C=..[Op,0,Cnt],
+	N1 is N+1,
+	get_constraints([],Constants,N1,Vars,Op,Cs).	
+
+get_constraints([],[(N_diff,Constant)|Constants],N,Vars,Op,Cs):-
+	N_diff>N,!,
+	N1 is N+1,
+	get_constraints([],[(N_diff,Constant)|Constants],N1,Vars,Op,Cs).			
 	
 get_constraints([(N,Line)|Lines],[(N,Constant)|Constants],N,Vars,Op,[C|Cs]):-!,
 	parse_le(Constant,Lin_exp_right),
