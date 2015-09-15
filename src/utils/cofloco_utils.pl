@@ -34,6 +34,7 @@ of CoFloCo.
 		    bagof_no_fail/3,
 		    foldr/4,
 		    sort_with/3,
+		    ground_copy/2,
 		    write_sum/2,
 		    write_le_internal/2,
 		    write_product/2,
@@ -49,6 +50,10 @@ of CoFloCo.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ground_copy(Term,Term_ground):-
+	copy_term(Term,Term_ground),
+	numbervars(Term_ground,0,_).
 
 write_le_internal(Coeffs+C,Le):-
 	maplist(write_coeffs,Coeffs,Coeffs1),
