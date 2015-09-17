@@ -25,9 +25,8 @@ It uses linear programming to infer linear expressions that satisfy a property g
 
 
 :- module(template_inference,[
-		difference_constraint2_farkas_dmatrix/5
-
-	]).
+			difference_constraint_farkas_ub/5,
+	difference_constraint_farkas_lb/5]).
 
 :- use_module('cofloco_utils',[
 			sort_with/3,	
@@ -65,7 +64,9 @@ It uses linear programming to infer linear expressions that satisfy a property g
 	parse_le_fast/2,
 	parse_le/2,
 	multiply_le/3,
+	negate_le/2,
 	write_le/2,
+	is_constant_le/1,
 	integrate_le/3]).
 
 
@@ -91,7 +92,7 @@ max_min_linear_expression_template(Linear_Expr_to_Maximize,Vars, Vars_of_Interes
 max_min_linear_expression_template(_Linear_Expr_to_Maximize,_Vars, _Vars_of_Interest, _Context,[]).	
 	
 	
-difference_constraint2_farkas_dmatrix(Head,Call,Phi,Lin_exp,Lin_exp_list_set):-
+difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Lin_exp_list_set):-
 	Head=..[_|EVars],
 	Call=..[_|CVars],
 	length(EVars,N1),
@@ -140,6 +141,37 @@ difference_constraint2_farkas_dmatrix(Head,Call,Phi,Lin_exp,Lin_exp_list_set):-
 	Lin_exp_list_set\=[].	
 
 
+difference_constraint_farkas_lb(Head,Call,Phi,Lin_exp,Lin_exps_non_constant):-
+	Head=..[_|EVars],
+	Call=..[_|CVars],
+	length(EVars,N1),
+	append(EVars,CVars,Vars),
+	length(Unknowns1,N1),
+	length(Unknowns2,N1),
+	maplist(negation_constr,Unknowns1,Unknowns2,Characterizing_constraints),
+	get_lin_expr_dmatrix(Vars,Lin_exp,Coeffs),
+	append([_Coeff_0|Unknowns1],Unknowns2,Unknowns),
+	get_symbolic_dmatrix(Unknowns,Template),
+	get_symbolic_dmatrix_negated(Unknowns,Template_neg),
+	add_dmatrix_symbolically(Template_neg,Coeffs,Expression_vector),
+	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
+	generalized_farkas_property_dmatrix(Vars,Phi,Template,[],system(Complete_system2,Ys2)),
+
+	ut_flat_list([Ys,Unknowns,Ys2],All_new_vars),
+	append(Complete_system,Complete_system2,Complete_system_final),
+	%nad_project(Unkowns,Complete_system,Projected),
+	%get_generators(c,Unkowns,Projected,Generators),
+
+	get_generators(c,All_new_vars,Complete_system_final,Generators),
+	maplist(=(0),Ys),
+	maplist(=(0),Ys2),
+	copy_term((Unknowns,Generators),([1|Vars],Generators_copy)),	
+	get_expressions_from_points(Generators_copy,Lin_exp_list),
+	from_list_sl(Lin_exp_list,Lin_exp_list_set),
+	exclude(is_constant_le,Lin_exp_list_set,Lin_exps_non_constant),
+	Lin_exps_non_constant\=[].	
+
+
 generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)):-
 	constraints_to_dmatrix(Phi,Vars,A),
 	transpose_dmatrix(A,At),
@@ -159,7 +191,19 @@ get_expressions_from_points([point(Exp,Div)|Generators],[Lin_exp|Lin_exps]):-!,
 		get_expressions_from_points(Generators,Lin_exps).		
 get_expressions_from_points([_|Generators],Lin_exps):-
 		get_expressions_from_points(Generators,Lin_exps).			
+
+
 		
+get_symbolic_dmatrix_negated(Unknowns,dmatrix(1,X,[(1,List)])):-
+	length(Unknowns,X),
+	get_symbolic_dmatrix_negated_1(Unknowns,1,List).
+	
+get_symbolic_dmatrix_negated_1([],_,[]).
+get_symbolic_dmatrix_negated_1([U|Unknowns],N,[(N,-1*U)|List]):-
+	N1 is N+1,
+	get_symbolic_dmatrix_negated_1(Unknowns,N1,List).
+
+
 get_symbolic_dmatrix(Unknowns,dmatrix(1,X,[(1,List)])):-
 	length(Unknowns,X),
 	get_symbolic_dmatrix_1(Unknowns,1,List).

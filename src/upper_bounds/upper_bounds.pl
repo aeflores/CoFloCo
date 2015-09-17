@@ -79,13 +79,13 @@ compute_chain_upper_bound(Head,Chain):-
 % and store it
 compute_closed_bound(Head):-
 	upper_bound(Head,Chain,_Vars,Cost),
-	backward_invariant(Head,(Chain,_),_,_Head_Pattern),
+	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 	cstr_maxminimization(Cost,max,UB,simple),
-	%cexpr_simplify(UB,Head_Pattern,UB1),
+	cexpr_simplify(UB,Head_Pattern,UB1),
 	cstr_maxminimization(Cost,min,LB,complete),
-	add_closed_upper_bound(Head,Chain,UB),
-	%cexpr_simplify(LB,Head_Pattern,LB1),
-	add_closed_lower_bound(Head,Chain,LB),
+	add_closed_upper_bound(Head,Chain,UB1),
+	cexpr_simplify(LB,Head_Pattern,LB1),
+	add_closed_lower_bound(Head,Chain,LB1),
 	fail.
 compute_closed_bound(_Head).
 
