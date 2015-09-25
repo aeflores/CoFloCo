@@ -33,6 +33,7 @@ This module prints the results of the analysis
 		  print_phase_termination_argument/4,
 		  print_single_closed_result/2,
 		  print_conditional_upper_bounds/1,
+		  print_conditional_lower_bounds/1,
 		  print_closed_results/2,
 		  print_stats/0]).
 
@@ -45,6 +46,7 @@ This module prints the results of the analysis
 						closed_upper_bound/4,
 						closed_lower_bound/4,
 						conditional_upper_bound/3,
+						conditional_lower_bound/3,
 						non_terminating_chain/3]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
@@ -53,7 +55,7 @@ This module prints the results of the analysis
 :- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2,tuple/3]).
 
 :- use_module('../utils/cost_structures',[
-	cstr_shorten_variables_names/2,
+	cstr_shorten_variables_names/3,
 	cstr_get_cexpr_from_normalform_ground/2]).
 
 
@@ -240,7 +242,7 @@ print_results_1(_Entry,_).
 gen_mult_bases((A,B),A*B).
 
 print_new_cost_structure(Cost):-
-	cstr_shorten_variables_names(Cost,cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)),
+	cstr_shorten_variables_names(Cost,no_list,cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)),
 	partition(is_ub_aux_exp,Aux_exps,Ub_Aux_exps,Lb_Aux_exps),
 	maplist(gen_mult_bases,Bases,Bases1),
 	write_sum([Base|Bases1],Sum),
@@ -339,6 +341,33 @@ print_conditional_upper_bound(Head):-
 	maplist(print_partition_condition,Conditions_pretty),
 	fail.
 print_conditional_upper_bound(_).	
+
+%! print_conditional_lower_bounds(+Head:term) is det
+% print the conditional lower bounds
+print_conditional_lower_bounds(Head):-
+	copy_term(Head,Head2),
+	ground_header(Head2),
+	ansi_format([underline,bold],'Partitioned lower bound of ~p: ~n',[Head2]),
+	print_conditional_lower_bound(Head),
+	print_maximum_lower_bound(Head).
+
+print_conditional_lower_bound(Head):-
+	conditional_lower_bound(Head,Cost,[Cond1|Conditions]),
+	maplist(maplist(pretty_print_constr),[Cond1|Conditions],[Cond1_pretty|Conditions_pretty]),
+	ground_header(Head),
+	format('~p ~n if ~p~n',[Cost,Cond1_pretty]),
+	maplist(print_partition_condition,Conditions_pretty),
+	fail.
+print_conditional_lower_bound(_).
+
+print_maximum_lower_bound(Head):-
+	bagof(Cost,
+		Conds^conditional_lower_bound(Head,Cost,Conds),
+		Costs),
+	get_asymptotic_class_name(max(Costs),Asym_class),
+	ground_header(Head),
+	format('Possible lower bounds : ~p~n',[Costs]),
+	format('Maximum lower bound complexity: ~p~n',[Asym_class]).
 
 print_partition_condition(Cond):-
 	format(' or ~p~n',[Cond]).

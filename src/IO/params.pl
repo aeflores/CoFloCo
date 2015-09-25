@@ -72,7 +72,7 @@ parameter_dictionary('-only_termination','only_termination',[bool]).
 parameter_dictionary('-prolog_format','prolog_format',[bool]).
 
 parameter_dictionary('-conditional_ubs','conditional_ubs',[]).
-
+parameter_dictionary('-conditional_lbs','conditional_lbs',[]).
 
 incompatible_parameters(param(negative,[]),param(compress_chains,_)).
 

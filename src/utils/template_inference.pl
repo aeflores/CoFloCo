@@ -25,7 +25,7 @@ It uses linear programming to infer linear expressions that satisfy a property g
 
 
 :- module(template_inference,[
-			difference_constraint_farkas_ub/5,
+			difference_constraint_farkas_ub/6,
 	difference_constraint_farkas_lb/5]).
 
 :- use_module('cofloco_utils',[
@@ -92,7 +92,7 @@ max_min_linear_expression_template(Linear_Expr_to_Maximize,Vars, Vars_of_Interes
 max_min_linear_expression_template(_Linear_Expr_to_Maximize,_Vars, _Vars_of_Interest, _Context,[]).	
 	
 	
-difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Lin_exp_list_set):-
+difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Exp_set,Exp_set2):-
 	Head=..[_|EVars],
 	Call=..[_|CVars],
 	length(EVars,N1),
@@ -136,9 +136,10 @@ difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Lin_exp_list_set):-
 	get_expressions_from_points(Generators_copy2,Lin_exp_list2),
 
 	
-	append(Lin_exp_list,Lin_exp_list2,Lin_exp_list_out),
-	from_list_sl(Lin_exp_list_out,Lin_exp_list_set),
-	Lin_exp_list_set\=[].	
+	append(Lin_exp_list,Lin_exp_list2,Lin_exp_list_total),
+	from_list_sl(Lin_exp_list,Exp_set),
+	from_list_sl(Lin_exp_list2,Exp_set2),
+	Lin_exp_list_total\=[].	
 
 
 difference_constraint_farkas_lb(Head,Call,Phi,Lin_exp,Lin_exps_non_constant):-
@@ -150,18 +151,17 @@ difference_constraint_farkas_lb(Head,Call,Phi,Lin_exp,Lin_exps_non_constant):-
 	length(Unknowns2,N1),
 	maplist(negation_constr,Unknowns1,Unknowns2,Characterizing_constraints),
 	get_lin_expr_dmatrix(Vars,Lin_exp,Coeffs),
-	append([_Coeff_0|Unknowns1],Unknowns2,Unknowns),
+	append([Coeff_0|Unknowns1],Unknowns2,Unknowns),
 	get_symbolic_dmatrix(Unknowns,Template),
 	get_symbolic_dmatrix_negated(Unknowns,Template_neg),
 	add_dmatrix_symbolically(Template_neg,Coeffs,Expression_vector),
-	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
+	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,[Coeff_0=0|Characterizing_constraints],system(Complete_system,Ys)),
 	generalized_farkas_property_dmatrix(Vars,Phi,Template,[],system(Complete_system2,Ys2)),
 
 	ut_flat_list([Ys,Unknowns,Ys2],All_new_vars),
 	append(Complete_system,Complete_system2,Complete_system_final),
-	%nad_project(Unkowns,Complete_system,Projected),
-	%get_generators(c,Unkowns,Projected,Generators),
-
+%	nad_project(Unknowns,Complete_system_final,Projected),
+%	get_generators(c,Unknowns,Projected,Generators),
 	get_generators(c,All_new_vars,Complete_system_final,Generators),
 	maplist(=(0),Ys),
 	maplist(=(0),Ys2),

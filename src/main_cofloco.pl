@@ -133,13 +133,13 @@ The main "data types" used in CoFloCo are the following:
 :- use_module(ranking_functions,[init_ranking_functions/0,find_ranking_functions/2]).
 :- use_module(termination_checker,[init_termination/0,prove_termination/2]).
 
-:- use_module('upper_bounds/upper_bounds',[compute_upper_bound_for_scc/2,
+:- use_module('bound_computation/bounds_main',[compute_bound_for_scc/2,
 				  compute_closed_bound/1,
 				  compute_single_closed_bound/2]).
-:- use_module('upper_bounds/conditional_upper_bounds',[
-				  compute_conditional_upper_bounds/1]).			  
-:- use_module('upper_bounds/phase_solver',[init_phase_solver/0]).
-:- use_module('upper_bounds/cost_equation_solver',[init_cost_equation_solver/0]).    
+:- use_module('bound_computation/conditional_bounds',[
+				  compute_conditional_bounds/1]).			  
+:- use_module('bound_computation/phase_solver',[init_phase_solver/0]).
+:- use_module('bound_computation/cost_equation_solver',[init_cost_equation_solver/0]).    
 
 :- use_module('IO/output',[print_results/2,
 	          print_equations_refinement/2,
@@ -151,6 +151,7 @@ The main "data types" used in CoFloCo are the following:
 		      print_chains_entry/2,
 		      print_single_closed_result/2,
 		      print_conditional_upper_bounds/1,
+		      print_conditional_lower_bounds/1,
 		      print_stats/0,
 		      print_help/0]).
 :- use_module('IO/input',[read_cost_equations/1,store_cost_equations/1]).
@@ -396,7 +397,7 @@ bottom_up_upper_bounds(SCC_N, Max_SCC_N) :-
 	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
 	functor(Head,F,A),
 	Next_SCC_N is SCC_N+1,
-	compute_upper_bound_for_scc(Head,2),
+	compute_bound_for_scc(Head,2),
 	copy_term(Head,Head_aux),
 	conditional_call((get_param(v,[N]),N>1),
 		  print_results(Head_aux,2)
@@ -418,9 +419,10 @@ compute_closed_bound_scc(Head) :-
 	conditional_call((get_param(v,[N]),N>0),	
 		 print_closed_results(Head,2)
 		),
-	(get_param(conditional_ubs,[])->
-	   compute_conditional_upper_bounds(Head_aux),
-	   print_conditional_upper_bounds(Head_aux)
+	((get_param(conditional_ubs,[]); get_param(conditional_lbs,[]))->
+	   compute_conditional_bounds(Head_aux),
+	   (get_param(conditional_ubs,[])->print_conditional_upper_bounds(Head_aux);true),
+	   (get_param(conditional_lbs,[])->print_conditional_lower_bounds(Head_aux);true)
 	   ;
 	   compute_single_closed_bound(Head_aux,Exp),
 	   print_single_closed_result(Head_aux,Exp)

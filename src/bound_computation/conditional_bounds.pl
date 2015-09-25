@@ -1,16 +1,16 @@
-/** <module> compress_execution_patterns
+/** <module> conditional_bounds
 
-This module computes conditional upper bounds using the upper bounds of all the chains.
+This module computes conditional upper and lower bounds using the upper and lower bounds of all the chains.
 The conditions to execute different chains do not have to be mutually exclusive.
-Given an input value, there might be several feasible chains and to obtain an upper bound
-we should consider the maximum of all of them.
+Given an input value, there might be several feasible chains and to obtain an upper/lower bound
+we should consider the maximum/minimum of all of them.
 
-On the other hand, the set of conditional upper bounds computed in this module are mutually exclusive.
-That is, if we have an input, at most one conditional upper bound's precondition can be satisfied
-and the upper bound of that conditional upper bound is valid.
+On the other hand, the set of conditional bounds computed in this module are mutually exclusive.
+That is, if we have an input, at most one conditional  bound's precondition can be satisfied
+and the bound of that conditional  bound is valid.
 
-In order to compute conditional upper bounds, we partition the input space using the
-constraints that appear in the chain upper bounds. We split the input space until no more
+In order to compute conditional bounds, we partition the input space using the
+constraints that appear in the chain bounds. We split the input space until no more
 distinctions can be made. Finally, we try to simplify the conditions of each conditional
 upper bound.
 
@@ -54,7 +54,7 @@ The specific "data types" used in this module are the following:
 
 
 
-:- module(conditional_upper_bounds,[compute_conditional_upper_bounds/1]).
+:- module(conditional_bounds,[compute_conditional_bounds/1]).
 
 :- use_module('../db',[
 		  external_call_pattern/5,
@@ -75,15 +75,15 @@ The specific "data types" used in this module are the following:
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_entails/3,nad_normalize/2,nad_list_lub/2]).
 
-%! compute_conditional_upper_bounds(+Head:term) is det
-% computed the set of conditional upper bound of Head and store them in the database db.pl
+%! compute_conditional_bounds(+Head:term) is det
+% computed the set of conditional bound of Head and store them in the database db.pl
 %
 %  * Take every chain closed upper bound and its related precondition (backward invariant).
-%  * Partition the chain upper bounds (execution pattern) according to the input space using the constraints
+%  * Partition the chain upper/lower bounds (execution pattern) according to the input space using the constraints
 %    that appear in the preconditions.
-%  * Try to simplify the preconditions of the inferred conditional upper bounds
-%  * If we are debugging, check that all conditional upper bounds are in fact mutually exclusive
-compute_conditional_upper_bounds(Head):-
+%  * Try to simplify the preconditions of the inferred conditional bounds
+%  * If we are debugging, check that all conditional bounds are in fact mutually exclusive
+compute_conditional_bounds(Head):-
 	findall((Head,execution_pattern((Cost,Lb_Cost),Condition)),
 		(
 		closed_upper_bound(Head,Chain,_,Cost),
@@ -96,14 +96,14 @@ compute_conditional_upper_bounds(Head):-
     maplist(simplify_cost_of_pair,List_pairs,List_pairs1),
 	% group the partitions according to the cost expression
 	from_pair_list_mm(List_pairs1,Multimap),
-	maplist(simplify_conditional_upper_bound_precondition,Multimap,Multimap_simplified),
+	maplist(simplify_conditional_bound_precondition,Multimap,Multimap_simplified),
 	% if debugging, check that the conditional upper bounds are mutually exclusive
 	(get_param(debug,[])->
 	foldl(append_ub_cond,Multimap_simplified,[],All_paths),
 	check_2t2_incompatibility(All_paths)
 	;
 	true),
-	maplist(save_conditional_upper_bound(Head),Multimap_simplified).
+	maplist(save_conditional_bound(Head),Multimap_simplified).
 
 simplify_cost_of_pair(([Cost],Prec),(Cost,Prec)):-!.
 simplify_cost_of_pair((Cost_list,Prec),((Ub_simple,Lb_simple),Prec)):-
@@ -114,7 +114,7 @@ simplify_cost_of_pair((Cost_list,Prec),((Ub_simple,Lb_simple),Prec)):-
 	 cexpr_simplify(Lb,Prec,Lb_simple).
 
 
-save_conditional_upper_bound(Head,(UB_LB,Precondition)):-
+save_conditional_bound(Head,(UB_LB,Precondition)):-
 	add_conditional_bound(Head,UB_LB,Precondition).
 	
 
@@ -344,12 +344,12 @@ smaller_heuristic(classifier(_,_,_,_,N1,N11),classifier(_,_,_,_,N2,N22)):-
 
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% simplify conditional upper bounds
+% simplify conditional  bounds
 
-%! simplify_conditional_upper_bound_precondition(+Cond_ub:(cost_expression,list(polyhedron)),-Cond_ub1:(cost_expression,list(polyhedron))) is det
-% given a conditional upper bound defined by a cost and a disjunction of preconditions
+%! simplify_conditional_bound_precondition(+Cond_ub:(cost_expression,list(polyhedron)),-Cond_ub1:(cost_expression,list(polyhedron))) is det
+% given a conditional  bound defined by a cost and a disjunction of preconditions
 % try to compress some of those preconditions into simpler ones
-simplify_conditional_upper_bound_precondition((Cost,List_preconditions),(Cost,List_preconditions1)):-
+simplify_conditional_bound_precondition((Cost,List_preconditions),(Cost,List_preconditions1)):-
 	maplist(length,List_preconditions,Lengths),
 	% make all the constraints have standard representation so they can be sintactically compared
 	maplist(maplist(normalize_constraint),List_preconditions,List_normalized_preconditions),
