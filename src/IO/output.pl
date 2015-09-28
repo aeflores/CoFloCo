@@ -296,10 +296,10 @@ print_closed_results_1(Entry,RefCnt):-
 	format(': ~p  with precondition: ~p ~n',[CExp,EPat_pretty]),
 	format('Lower bound: ~p ~n',[CExp_lb]),
 	format('Upper Asymptotic: ~p ~n Lower Asymptotic ~p~n ',[Asym_class,Asym_class1]),
-	(Asym_class\=Asym_class1->
-		format(user_error,'Imprecise lower bound (~p, ~p)~n',[Asym_class,Asym_class1])
-		;
-		true),
+%	(Asym_class\=Asym_class1->
+%		format(user_error,'Imprecise lower bound (~p, ~p)~n',[Asym_class,Asym_class1])
+%		;
+%		true),
  	fail.
 print_closed_results_1(_Entry,_).
 

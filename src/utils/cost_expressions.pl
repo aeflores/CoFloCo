@@ -67,10 +67,7 @@ normalize_le(Le,Le_n):-
 	 	numbervars(C,0,_),
 	    throw(invalid_cost_expression(C))
 	  ).
-	  
-%constant
-cexpr_substitute_lin_exp_by_vars(Exp,Lin_exp_Map,Exp,Lin_exp_Map):-
-	term_variables(Exp,[]),!.
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -27,6 +27,9 @@ of CoFloCo.
 			add_equality_constraints/4,
 		    zip_with_op/4,
 		    tuple/3,
+		    sorted_tuple/3,
+		    same_var_tuple/1,
+		    is_rational/1,
 		    normalize_constraint/2,
 		    assign_right_vars/3,
 		    constraint_to_coeffs_rep/2,
@@ -50,6 +53,9 @@ of CoFloCo.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+is_rational(N):-nonvar(N),number(N).
+is_rational(N/M):-nonvar(N),number(N),number(M).
 
 ground_copy(Term,Term_ground):-
 	copy_term(Term,Term_ground),
@@ -105,6 +111,12 @@ repeat_n_times(N,Elem,[Elem|Is]):-
 % C is the pair (A,B).
 % It can be used in any direction.
 tuple(A,B,(A,B)).
+
+sorted_tuple(X,Y,(X,Y)):-X @< Y,!.
+sorted_tuple(X,Y,(Y,X)):-!.
+
+
+same_var_tuple((X,Y)):-X==Y.
 
 %! zip_with_op(?Op:atom,?C:A,?L:B,?Term:atom(A,B))
 % Term is Op(C,L).

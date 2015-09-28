@@ -33,7 +33,7 @@ that can be passed on to the callers.
 
 :- use_module(chain_solver,[compute_chain_cost/3]).
 %:- use_module(ub_solver,[solve_system/5]).
-
+:- use_module(cost_structure_solver,[cstr_maxminimization/3]).
 :- use_module('../db',[
 		  external_call_pattern/5,
 		  add_upper_bound/3,
@@ -48,9 +48,7 @@ that can be passed on to the callers.
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
-:- use_module('../utils/cost_structures',[
-		cstr_maxminimization/3,
-		cstr_join_equal_top_expressions/2]).
+:- use_module('../utils/cost_structures',[cstr_join_equal_top_expressions/2]).
 
 
 %! compute_bound_for_scc(+Head:term,+RefCnt:int) is det
