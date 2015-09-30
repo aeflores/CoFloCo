@@ -4,7 +4,8 @@
 		str_cost_exp_complexity/2,
 		str_cost_exp_2_cost_expression/2,
 		str_cost_exp_simplify/2,
-		str_cost_exp_get_multiplied_factors/3
+		str_cost_exp_get_multiplied_factors/3,
+		get_all_pairs/3
 	]).
 
 
@@ -74,12 +75,13 @@ str_cost_exp_get_multiplied_factors(add(Summands),Vars_set,Pairs):-
 	unions_sl(Pair_list,Pairs).
 
 get_summand_multiplied_vars(Vars_set,mult(Factors),Pairs_final):-
-	maplist(term_variables,Factors,Vars_lists),
+	from_list_sl(Factors,Factors_set),
+	maplist(term_variables,Factors_set,Vars_lists),
 	maplist(from_list_sl,Vars_lists,Vars_sets),
 	maplist(intersection_sl(Vars_set),Vars_sets,Filtered_vars_sets),
 	exclude(=([]),Filtered_vars_sets,Non_empty_vars_sets),
 	get_all_pairs(Non_empty_vars_sets,[],Pairs),
-	maplist(get_internal_pairs(Vars_set),Factors,Pairs_list),
+	maplist(get_internal_pairs(Vars_set),Factors_set,Pairs_list),
 	unions_sl([Pairs|Pairs_list],Pairs_final).
 
 get_internal_pairs(_,Exp,[]):-

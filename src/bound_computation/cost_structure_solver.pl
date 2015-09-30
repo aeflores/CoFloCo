@@ -27,6 +27,7 @@
 		str_cost_exp_complexity/2,
 		str_cost_exp_2_cost_expression/2,
 		str_cost_exp_get_multiplied_factors/3,
+		get_all_pairs/3,
 		str_cost_exp_simplify/2]).		
 		
 :- use_module('../utils/cofloco_utils',[sort_with/3,
