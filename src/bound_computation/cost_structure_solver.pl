@@ -169,8 +169,8 @@ remove_undefined_vars(Exp,Exp).
 incremental_maxminization([],Exp,Exp).
 incremental_maxminization([Group|Rest],Semi_solved_exp,Exp):-
 	Group=group(_,_,Vars),
-	check_well_formedness_of_constraints(Rest,Semi_solved_exp,Vars),
-	solve_group(Group,Map),
+	check_well_formedness_of_constraints(Rest,Semi_solved_exp,Vars,Multiplied_pairs),
+	solve_group(Group,Multiplied_pairs,Map),
 	maplist(evaluate_group(Map),Rest,Rest1),
 	simplify_partial_exp(Semi_solved_exp,Map,Semi_solved_exp1),
 	remove_unused_vars_backwards(Rest1,Semi_solved_exp1,_Used_vars,Rest2),
@@ -217,15 +217,15 @@ accum_partial_vars(bound(_,partial(Vars,_),_),Vars_set,Vars_set2):-!,
 	union_sl(Names_set,Vars_set,Vars_set2).
 accum_partial_vars(_,Vars_set,Vars_set).
 
-solve_group(group(ub,Cons,_),Map):-
+solve_group(group(ub,Cons,_),Multiplied_pairs,Map):-
 	sort_with(Cons,better_ubs,Cons_sorted),
 	simplify_group(Cons_sorted,[],Cons_sorted1),
-	solve_group_1(Cons_sorted1,[],Map).
+	solve_group_1(Cons_sorted1,[],Multiplied_pairs,Map).
 	
-solve_group(group(lb,Cons,_),Map):-
+solve_group(group(lb,Cons,_),Multiplied_pairs,Map):-
 	sort_with(Cons,better_lbs,Cons_sorted),
 	simplify_group(Cons_sorted,[],Cons_sorted1),
-	solve_group_1(Cons_sorted1,[],Map).
+	solve_group_1(Cons_sorted1,[],Multiplied_pairs,Map).
 
 %we select constraints with a greedy strategy based on the complexity and number of bounded variables
 
@@ -268,37 +268,76 @@ simplify_group([bound(lb,Exp,Bounded)|Cons],Vars,[bound(lb,Exp,Bounded)|Cons1]):
 simplify_group([bound(lb,_Exp,_Bounded)|Cons],Vars,Cons1):-
 	simplify_group(Cons,Vars,Cons1).			
 
-solve_group_1([],Map,Map).
-solve_group_1([bound(_Op,add([]),Bounded)|Cons],Map_accum,Map):-!,
+solve_group_1([],Map,_Multiplied_pairs,Map).
+solve_group_1([bound(_Op,add([]),Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-!,
 	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Map).
-solve_group_1([bound(_Op,nat(Add),Bounded)|Cons],Map_accum,Map):-
-    nonvar(Add),Add=add([]),!,
+	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
+	
+solve_group_1([bound(_Op,nat(Add),Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
+    nonvar(Add),Add==add([]),!,
 	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Map).
-solve_group_1([bound(_Op,nat(Add),Bounded)|Cons],Map_accum,Map):-
-	nonvar(Add),Add=add([mult([add([])])]),!,
+	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
+	
+solve_group_1([bound(_Op,nat(Add),Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
+	nonvar(Add),Add==add([mult([add([])])]),!,
 	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Map).	
-solve_group_1([bound(_Op,Add,Bounded)|Cons],Map_accum,Map):-
+	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
+		
+solve_group_1([bound(_Op,Add,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
 	Add==nat(add([mult([nat(add([mult([add([])])]))])])),!,
 	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Map).	
+	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).	
 
 %If we are want speed over precision we solve constraints:
 %it1+it2+...+itn\leq exp
 % by assigning it1=exp, it2=exp...itn=exp
-solve_group_1([bound(ub,Exp,Bounded)|Cons],Map_accum,Map):-
+solve_group_1([bound(ub,Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
     get_param(solve_fast,[]),!,
 	foldl(insert_value(Exp),Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Map).
+	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
 
-solve_group_1([bound(_Op,Exp,Bounded)|Cons],Map_accum,Map):-
+%otherwise
+solve_group_1([bound(ub,Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
+	join_dependent_bounded(Bounded,Multiplied_pairs,Bounded_joined),
+	select(Selected,Bounded_joined,Bounded1),
+	foldl(insert_value(Exp),Selected,Map_accum,Map_accum1),
+	ut_flat_list(Bounded1,Bounded1_flat),
+	foldl(insert_zero_value,Bounded1_flat,Map_accum1,Map_accum2),
+	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
+
+%if there are dependent constraints and it's a lower bound constraint all goes to 0
+solve_group_1([bound(lb,_Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-!,
+	Multiplied_pairs=[_|_],!,
+	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
+	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
+
+%if we are computing lower bound and there are no dependent pairs we try with each variable	
+solve_group_1([bound(lb,Exp,Bounded)|Cons],Map_accum,[],Map):-
 	select(Selected,Bounded,Bounded1),
 	insert_lm(Map_accum,Selected,Exp,Map_accum1),
 	foldl(insert_zero_value,Bounded1,Map_accum1,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Map).
+	solve_group_1(Cons,Map_accum2,[],Map).	
 
+join_dependent_bounded(Bounded,Pairs,Bounded_joined):-
+	maplist(put_in_list,Bounded,Bounded_list),
+	foldl(join_dependent,Pairs,Bounded_list,Bounded_joined).
+
+join_dependent((X,Y),Bounded_lists,Bounded_lists_joined):-
+	get_set_with(Bounded_lists,X,X_set,Bounded_lists1),
+	(contains_sl(X_set,Y)-> 
+		Bounded_lists_joined=[X_set|Bounded_lists1]
+		;
+		get_set_with(Bounded_lists1,Y,Y_set,Bounded_lists2),
+		union_sl(X_set,Y_set,XY_set),
+		Bounded_lists_joined=[XY_set|Bounded_lists2]
+	).
+
+get_set_with([Set|Sets],Elem,Set,Sets):-
+	contains_sl(Set,Elem),!.
+get_set_with([Set|Sets_rest],Elem,Set_elem,[Set|Sets]):-
+	get_set_with(Sets_rest,Elem,Set_elem,Sets).
+	
+put_in_list(X,[X]).
 insert_value(Val,Var,Map,Map1):-
 	insert_lm(Map,Var,Val,Map1).
 insert_zero_value(Var,Map,Map1):-
@@ -504,11 +543,11 @@ add_estimated_complexity(Complexity,Bounded_name,Map,Map1):-
 % make sure the constraints that we have admit greedy maximization strategy
 % this is true if there are no products of two variables that are bounded by the same constraint group
 
-check_well_formedness_of_constraints(Rest,Semi_solved_exp,Vars):-
+check_well_formedness_of_constraints(Rest,Semi_solved_exp,Vars,Multiplied_pairs):-
 	maplist(get_constraints_from_group,Rest,Cons_list),
 	ut_flat_list(Cons_list,All_cons_rest),	
 	(get_multiplied_vars(All_cons_rest,Semi_solved_exp,Vars,[],[],Multiplied_pairs)->
-	(Multiplied_pairs\=[]->throw(bad_behaving_constraints);true)
+	 true
 	;
 	throw(implementation_error(predicate_failed(get_multiplied_vars(All_cons_rest,Semi_solved_exp,Vars))))
 	).
