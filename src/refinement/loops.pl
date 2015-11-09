@@ -55,7 +55,6 @@ compute_loops_1(Head,RefCnt,Rec_Call,Term_flag) :-
 	        ),Loops_aux),
 	assign_right_vars(Loops_aux,(Head,Rec_Call),Loops),
 	maplist(normalize_loop,Loops,Normalized_loops),
-	
 	(get_param(compress_chains,[])->
 	from_pair_list_mm(Normalized_loops,Simplified_loops)
 	;

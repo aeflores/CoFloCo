@@ -36,7 +36,8 @@ the input variables and the variables of the recursive call (if there is one)
 :- use_module('../utils/cofloco_utils',[tuple/3]).
 :- use_module('../utils/cost_structures',[cstr_extend_variables_names/3,
 			cstr_empty/1,
-			cstr_join_equal_top_expressions/2]).
+			cstr_join_equal_top_expressions/2,
+			cstr_or_compress/2]).
 
 
 :- use_module(stdlib(fraction),[sum_fr/3]).
@@ -71,10 +72,11 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
     (Costs=[]->
     	cstr_empty(Final_cost)
     	;
-    	Costs=[Final_cost]
+    	cstr_or_compress(Costs,Final_cost)
+    	%Costs=[Final_cost]
     	),
   %  nad_glb(Forward_inv,Inv,Inv1),
-  %  compress_cost_structures(Costs,(Head,Call),Inv1,Final_cost),
+    
     assert(equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost)).
     
     
@@ -101,6 +103,14 @@ accumulate_calls((Call,chain(Chain)),(cost(Tops1,LTops1,Auxs1,Bases1,Base1),N),(
     cstr_extend_variables_names(Cost_call,n(N),cost(Tops2,LTops2,Auxs2,Bases2,Base2)),
     sum_fr(Base1,Base2,Base),
     append(Bases2,Bases1,Bases).
+    
+accumulate_calls((Call,external_pattern(Id)),(cost(Tops1,LTops1,Auxs1,Bases1,Base1),N),(cost([Tops2|Tops1],[LTops2|LTops1],[Auxs2|Auxs1],Bases,Base),N1)) :-
+    N1 is N+1,
+    external_upper_bound(Call,Id,Cost_call),
+    cstr_extend_variables_names(Cost_call,n(N),cost(Tops2,LTops2,Auxs2,Bases2,Base2)),
+    sum_fr(Base1,Base2,Base),
+    append(Bases2,Bases1,Bases).   
+    
 %substitute_call((Call,external_pattern(Id)),Base_cost,Loops,(Constraints,IConstraints)) :-
 %	external_upper_bound(Call,Id,cost(Base_cost,Loops,Constraints,IConstraints)).
 

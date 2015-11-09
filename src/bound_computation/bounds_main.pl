@@ -48,7 +48,7 @@ that can be passed on to the callers.
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
-:- use_module('../utils/cost_structures',[cstr_join_equal_top_expressions/2]).
+:- use_module('../utils/cost_structures',[cstr_join_equal_top_expressions/2,cstr_or_compress/2]).
 
 
 %! compute_bound_for_scc(+Head:term,+RefCnt:int) is det
@@ -74,6 +74,26 @@ compute_chain_bound(Head,Chain):-
 compute_chain_bound(Head,Chain):-
 	throw(fatal_error('failed to compute chain bound',Head,Chain)).
 	
+%! compress_upper_bounds_for_external_calls(+Head:term,+RefCnt:int) is det
+% For each external call pattern, it computes an upper bound and store it
+% as a external_upper_bound/3.
+% If there are no expternal call patterns, it does nothing.
+%
+% Each call pattern contains a set of chains. The upper bound (cost structure)
+% is obtained by compressing the upper bound of these chains into one.
+compress_bounds_for_external_calls(Head,RefCnt):-
+	external_call_pattern(Head,(Precondition_id,RefCnt),_Terminating,Components,_Inv),
+	bagof_no_fail(Cost_structure,Chain^E1^(
+		    member(Chain,Components),
+	        upper_bound(Head,Chain,E1,Cost_structure)
+	        ),Cost_structures),       
+	cstr_or_compress(Cost_structures,Final_cost_structure),
+	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),
+	fail.
+compress_bounds_for_external_calls(_,_).		
+	
+	
+	
 %! compute_closed_bound(+Head:term) is det
 % compute a closed bound for each cost structure that has been previously inferred
 % and store it
@@ -90,23 +110,7 @@ compute_closed_bound(Head):-
 compute_closed_bound(_Head).
 
 	
-%! compress_upper_bounds_for_external_calls(+Head:term,+RefCnt:int) is det
-% For each external call pattern, it computes an upper bound and store it
-% as a external_upper_bound/3.
-% If there are no expternal call patterns, it does nothing.
-%
-% Each call pattern contains a set of chains. The upper bound (cost structure)
-% is obtained by compressing the upper bound of these chains into one.
-%compress_bounds_for_external_calls(Head,RefCnt):-
-%	external_call_pattern(Head,(Precondition_id,RefCnt),_Terminating,Components,Inv),
-%	bagof_no_fail(Cost_structure,Chain^E1^(
-%		    member(Chain,Components),
-%	        upper_bound(Head,Chain,E1,Cost_structure)
-%	        ),Cost_structures),       
-%	compress_cost_structures(Cost_structures,Head,Inv,Final_cost_structure),
-%%	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),
-%	fail.
-compress_bounds_for_external_calls(_,_).	
+
 
 %! compute_single_closed_bound(+Head:term,-SimpleExp:cost_expression) is det
 % compute a closed bound that is the maximum of all the closed bounds of all the chains in a SCC Head

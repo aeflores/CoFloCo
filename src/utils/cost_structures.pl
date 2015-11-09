@@ -38,12 +38,15 @@
 		cstr_extend_variables_names/3,
 		cstr_propagate_summatory/4,
 		cstr_join/3,
+		cstr_or_compress/2,
 		cstr_get_lin_exp_from_tops/3,
 		cstr_join_equal_top_expressions/2,
 		cstr_remove_useless_constrs_max_min/3,
 		cstr_shorten_variables_names/3]).
 :- use_module(cofloco_utils,[sort_with/3,write_sum/2,write_product/2,tuple/3,assign_right_vars/3]).	
 :- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1]).	
+
+:- use_module('../IO/output',[print_aux_exp/1]).	
 
 :- use_module(stdlib(linear_expression),[parse_le/2,write_le/2,negate_le/2]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
@@ -55,7 +58,124 @@
 
 :-dynamic short_db/3.
 
+%FIXME 
+% creates inefficient structures
+% when the cost is a constant, the auxiliary expressions are not well propagated
+cstr_or_compress([Cost],Cost):-!.
+cstr_or_compress(Costs,Cost_final):-
+	from_list_sl(Costs,Costs_set),
+	get_cstr_components(Costs_set,Tops_list,Tops_min_list,Auxs_list,Elems_list,Bases),
+	maplist(get_aux_expr_from_base,Elems_list,Bases,Pos_extra,Neg_extra),
+	ut_flat_list(Pos_extra,Pos_extra_flat),
+	ut_flat_list(Neg_extra,Neg_extra_flat),
+	maplist(tuple,Pos_extra_ub,Pos_extra_lb,Pos_extra_flat),
+	maplist(tuple,Neg_extra_ub,Neg_extra_lb,Neg_extra_flat),
+	maplist(get_aux_expr_bounded,Pos_extra_ub,Bounded_pos),
+	maplist(get_aux_expr_bounded,Neg_extra_ub,Bounded_neg),
+	foldl(append,Bounded_pos,[],Bounded_pos_flat),
+	foldl(append,Bounded_neg,[],Bounded_neg_flat),
+	get_disjunction_aux(Bounded_pos_flat,Pos_disjunct_auxs,Pos_disjunct_tops),
+	get_disjunction_aux(Bounded_neg_flat,Neg_disjunct_auxs,Neg_disjunct_tops),
+	(Pos_disjunct_auxs=[bound(_,_,[Bounded_pos_final])|_]->
+	    Elems=[(Bounded_pos_final,1)]
+	    ;
+	    Elems=[]
+	 ),
+	(Neg_disjunct_auxs=[bound(_,_,[Bounded_neg_final])|_]->
+		Elems1=[(Bounded_neg_final,1)|Elems]
+	    ;
+	    Elems1=Elems
+	),
+	
 
+	ut_flat_list([Pos_extra_ub,Pos_extra_lb,Neg_extra_ub,Neg_extra_lb],Extra_total),
+	partition(is_aux_exp,Extra_total,Aux_extra,Top_extra),
+	ut_flat_list([Top_extra,Pos_disjunct_tops,Tops_list,Neg_disjunct_tops,Tops_min_list],Tops_all),
+	partition(is_ub_bound,Tops_all,Tops,Tops_min),
+	ut_flat_list([Auxs_list,Aux_extra,Pos_disjunct_auxs,Neg_disjunct_auxs],Auxs),
+	cstr_join_equal_top_expressions(cost(Tops,Tops_min,Auxs,Elems1,0),Cost_final).
+
+is_aux_exp(bound(_,exp(_,_,_,_),_)).
+is_ub_bound(bound(ub,_,_)).
+
+get_aux_expr_bounded(bound(_,_,Bounded),Bounded).
+
+get_disjunction_aux([],[],[]):-!.
+
+get_disjunction_aux(Vars,[Ub_disjunct_aux,Lb_disjunct_aux],[Ub_disjunct_top,Lb_disjunct_top]):-
+	get_summand_multiplied(Vars,Index_pos,Summands,New_vars),
+	Internal_exp=exp(Index_pos,[],add(Summands),add([])),
+	copy_term(Internal_exp,Internal_exp2),
+	cstr_name_aux_var(Aux_var),
+	Ub_disjunct_aux=bound(ub,Internal_exp,[Aux_var]),
+	Lb_disjunct_aux=bound(lb,Internal_exp2,[Aux_var]),
+	Ub_disjunct_top=bound(ub,[]+1,New_vars),
+	Lb_disjunct_top=bound(lb,[]+1,New_vars).
+
+get_summand_multiplied([],[],[],[]).
+get_summand_multiplied([Name|Names],[(Name,Var1),(Name_new,Var2)|Index_rest],[mult([Var1,Var2])|Summands],[Name_new|Names_new]):-
+	cstr_name_aux_var(Name_new),
+	get_summand_multiplied(Names,Index_rest,Summands,Names_new).
+	
+
+get_cstr_components([],[],[],[],[],[]).
+get_cstr_components([cost(Tops,Tops_min,Auxs,Elems,Base)|Rest],[Tops|Tops_rest],[Tops_min|Tops_min_rest],[Auxs|Auxs_rest],[Elems|Elems_res],[Base|Base_rest]):-
+	get_cstr_components(Rest,Tops_rest,Tops_min_rest,Auxs_rest,Elems_res,Base_rest).
+	
+
+get_aux_expr_from_base([],Base,Pos_aux,Neg_aux):-!,
+	(greater_fr(Base,0)->
+	    cstr_name_aux_var(Aux_var_pos),
+	    Pos_aux=(bound(ub,[]+Base,[Aux_var_pos]),
+	             bound(lb,[]+Base,[Aux_var_pos])),
+	     Neg_aux=[]
+
+	 ;
+	  negate_fr(Base,Base_neg),
+	  cstr_name_aux_var(Aux_var_pos),
+	    Neg_aux=(bound(ub,[]+Base_neg,[Aux_var_pos]),
+	             bound(lb,[]+Base_neg,[Aux_var_pos])),
+	     Pos_aux=[]
+	  
+	).
+
+get_aux_expr_from_base(Elems,Base,Pos_aux,Neg_aux):-
+	generate_summands_from_bases(Elems,Index_pos,Index_neg,Summands_pos,Summands_neg),
+	(greater_fr(Base,0)->
+	    Summands_pos1=[mult([Base])|Summands_pos],
+	    Summands_neg1=Summands_neg
+	 ;
+	  	negate_fr(Base,Base_neg),
+	  	Summands_pos1=Summands_pos,
+	    Summands_neg1=[mult([Base_neg])|Summands_neg]
+	),
+	(Summands_pos1\=[]->
+	cstr_name_aux_var(Aux_var_pos),
+	   Pos_aux=(bound(ub,exp(Index_pos,[],add(Summands_pos1),add([])),[Aux_var_pos]),
+	   	        bound(lb,exp(Index_pos,[],add(Summands_pos1),add([])),[Aux_var_pos]))
+	   ;
+	   Pos_aux=[]
+	   ),
+	(Summands_neg1\=[]->
+	cstr_name_aux_var(Aux_var_neg),
+	   Neg_aux=(bound(ub,exp(Index_neg,[],add(Summands_neg1),add([])),[Aux_var_neg]),
+	            bound(lb,exp(Index_neg,[],add(Summands_neg1),add([])),[Aux_var_neg]))
+	   ;
+	   Neg_aux=[]
+	   ).
+	
+generate_summands_from_bases([],[],[],[],[]).
+generate_summands_from_bases([(Name,1)|Bases],[(Name,Var)|Index_pos],Index_neg,[mult([Var])|Summands_pos],Summands_neg):-!,
+	generate_summands_from_bases(Bases,Index_pos,Index_neg,Summands_pos,Summands_neg).
+	
+generate_summands_from_bases([(Name,Coeff)|Bases],[(Name,Var)|Index_pos],Index_neg,[mult([Var,Coeff])|Summands_pos],Summands_neg):-
+	geq_fr(Coeff,0),!,
+	generate_summands_from_bases(Bases,Index_pos,Index_neg,Summands_pos,Summands_neg).
+generate_summands_from_bases([(Name,Coeff)|Bases],Index_pos,[(Name,Var)|Index_neg],Summands_pos,[mult([Var,Coeff_neg])|Summands_neg]):-
+	negate_fr(Coeff,Coeff_neg),
+	generate_summands_from_bases(Bases,Index_pos,Index_neg,Summands_pos,Summands_neg).
+		
+	
 cstr_extract_top_maxs(cost(Top_exps,Top_exps_min,Aux,Elems,Base),cost([],Top_exps_min,Aux,Elems,Base),Top_exps).
 cstr_extract_top_mins(cost(Top_exps,Top_exps_min,Aux,Elems,Base),cost(Top_exps,[],Aux,Elems,Base),Top_exps_min).
 
@@ -142,6 +262,7 @@ remove_not_bounded(Aux_exps,Ub_Set,Lb_Set,Aux_exp_out):-
 	split_bounded(Aux_exps,Ub_Set,Lb_Set,Ub_Set_1,Lb_Set_1,Bounded,Not_bounded),
 	(Bounded=[]->
 	  Aux_exp_out=[]
+	  %(Not_bounded\=[]->trace,maplist(print_aux_exp,Not_bounded);true)
 	;
 	  remove_not_bounded(Not_bounded,Ub_Set_1,Lb_Set_1,Aux_exp_aux),
 	  append(Bounded,Aux_exp_aux,Aux_exp_out)

@@ -43,7 +43,8 @@ For the constraints, this is done at the same time of the compression.
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3]).			      
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[
-		 cstr_extend_variables_names/3]).
+		 cstr_extend_variables_names/3,
+		 cstr_join_equal_top_expressions/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_list_glb/2]).
@@ -86,10 +87,11 @@ compress_chain_costs([Lg|More],[Cost_base|Costs],Head_total,Call_total,Cost_tota
 compress_chain_costs_1([],[],Cost_total,_,Head,_,Head,Cost_total).
 compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,Call_total,Call,Cost_total):-
 	copy_term((Head_total,Call_total,Cost),(Head,Call,Cost1)),
+	cstr_join_equal_top_expressions(Cost1,Cost1_simple),
 	get_all_phase_information(Head,Call,[Lg|More],Cs_list),
 	nad_list_glb([Cs_prev|Cs_list],Cs_total),
 	Cost_prev=cost(Ub_tops,Lb_tops,Auxs,Bases_prev,Base_prev),
-	Cost1=cost(Ub_tops1,Lb_tops1,Auxs1,Bases1,Base1),
+	Cost1_simple=cost(Ub_tops1,Lb_tops1,Auxs1,Bases1,Base1),
 	append(Ub_tops,Ub_tops1,Ub_tops_total),
 	append(Lb_tops,Lb_tops1,Lb_tops_total),
 	max_min_top_exprs_in_chain(Ub_tops_total,[Lg|More],Cs_total,Head,Ub_tops_new,Ub_Aux_exps_extra),
@@ -98,9 +100,10 @@ compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,C
 	append(Bases_prev,Bases1,Bases_total),
 	cexpr_simplify_ctx_free(Base_prev+Base1,Base2),
 	Cost_next=cost(Ub_tops_new,Lb_tops_new,Aux_exps_new,Bases_total,Base2),
+	cstr_join_equal_top_expressions(Cost_next,Cost_next_simple),
 	Head=..[_|EVars],
 	nad_project_group(EVars,Cs_total,Cs_next),
-	compress_chain_costs_1(More,Cost_list,Cost_next,Cs_next,Head_total,Call_total,Head,Cost_total).
+	compress_chain_costs_1(More,Cost_list,Cost_next_simple,Cs_next,Head_total,Call_total,Head,Cost_total).
 
 
 %! get_all_base_case_information(+Head:term,+Part_chain:chain,-Phi:polyhedron) is det

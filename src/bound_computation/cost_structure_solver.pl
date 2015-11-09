@@ -2,6 +2,8 @@
 		cstr_maxminimization/3
 	]).
 
+:- use_module('../IO/params',[get_param/2]).	
+
 :- use_module('../utils/cost_structures',[
 		cstr_empty/1,
 		cstr_extract_top_maxs/3,
@@ -55,7 +57,7 @@ cstr_maxminimization(Cost_long,Max_min,Cost_final):-
 	get_non_deterministic_vars(All_constrs_annotated,[],Non_det_vars),
 	compress_constraints(All_constrs_annotated,Non_det_vars,[],Remaining_constrs,[],Map),
 	%maplist(writeln,Map),
-	solve_expression(Exp_cost,Op,Non_det_vars,Map,Solved_exp),
+	solve_expression(Exp_cost,main,Op,Non_det_vars,Map,Solved_exp),
 	group_remaining_constrs(Remaining_constrs,Groups),
 	findall((Entry_vars,Cost_closed),
 	(
@@ -81,12 +83,48 @@ group_remaining_constrs(Constrs,Groups):-
 	maplist(create_group,Grouped_constrs1,Groups).
 
 split_remaining_constrs([],[]).
-split_remaining_constrs(Remaining_constrs,[Ub_group,Lb_group|Groups]):-
+split_remaining_constrs(Remaining_constrs,Final_groups):-
 		take_group(Remaining_constrs,[],Group,Rest),
 		partition(is_ub_bound,Group,Ub_group,Lb_group),
+		split_independent_vars(Ub_group,Ub_groups),
+		reverse(Ub_groups,Ub_groups_rev),
+		split_independent_vars(Lb_group,Lb_groups),
+		reverse(Lb_groups,Lb_groups_rev),
+		append(Ub_groups_rev,Lb_groups_rev,All_new_groups),
+		append(All_new_groups,Groups,Final_groups),
 		split_remaining_constrs(Rest,Groups).
-take_group([],_,[],[]).
 
+
+split_independent_vars([],[]).
+split_independent_vars([Bound|Bounds],[Group|Groups]):-
+	Bound=bound(_,_,Bounded),
+	from_list_sl(Bounded,Bounded_set),
+	take_related(Bounds,[Bound],Bounded_set,Group,Rest),
+	split_independent_vars(Rest,Groups).
+	
+take_related([],Accum,_,Accum,[]).
+take_related(List,Accum,Vars_set,Group,Rest):-
+	filter_related(List,Accum,Vars_set,Accum2,Vars_set2,Remaining),!,
+	length(Vars_set,N),
+	length(Vars_set2,N1),
+	(N1>N->
+	  take_related(Remaining,Accum2,Vars_set2,Group,Rest)
+	 ;
+	  Group=Accum2,
+	  Rest=Remaining
+	).
+filter_related([],Accum,Vars_set,Accum,Vars_set,[]).
+filter_related([Bound|Bounds],Accum,Vars_set,Group,Vars_set_out,Rest):-
+	Bound=bound(_,_,Bounded),
+	from_list_sl(Bounded,Bounded_set),
+	intersection_sl(Bounded_set,Vars_set,[_|_]),!,
+	union_sl(Bounded_set,Vars_set,Vars_set2),
+	filter_related(Bounds,[Bound|Accum],Vars_set2,Group,Vars_set_out,Rest).
+	
+filter_related([Bound|Bounds],Accum,Vars_set,Group,Vars_set_out,[Bound|Rest]):-
+	filter_related(Bounds,Accum,Vars_set,Group,Vars_set_out,Rest).
+
+take_group([],_,[],[]).
 take_group([bound(Op,partial(Index,Exp),Bounded)|Constrs],Vars,[bound(Op,partial(Index,Exp),Bounded)|Group],Rest):-
 	maplist(index_not_in_set(Vars),Index),!,
 	union_sl(Bounded,Vars,Vars1),
@@ -135,8 +173,49 @@ incremental_maxminization([Group|Rest],Semi_solved_exp,Exp):-
 	solve_group(Group,Map),
 	maplist(evaluate_group(Map),Rest,Rest1),
 	simplify_partial_exp(Semi_solved_exp,Map,Semi_solved_exp1),
-	incremental_maxminization(Rest1,Semi_solved_exp1,Exp).
+	remove_unused_vars_backwards(Rest1,Semi_solved_exp1,_Used_vars,Rest2),
+	incremental_maxminization(Rest2,Semi_solved_exp1,Exp).
 
+
+remove_unused_vars_backwards([],partial(Vars,_Exp),Names_set,[]):-!,
+	maplist(tuple,Names,_,Vars),
+	from_list_sl(Names,Names_set).
+remove_unused_vars_backwards([],_,[],[]).
+	
+remove_unused_vars_backwards([group(Op,Cons,Vars)|Rest],Main_exp,Vars_set2,Rest_out):-
+	remove_unused_vars_backwards(Rest,Main_exp,Vars_set,Rest2),
+	intersection_sl(Vars,Vars_set,Vars2),
+	(Vars2=[]->
+	   Vars_set2=Vars_set,
+	   Rest_out=Rest2
+	   ;
+	   foldl(remove_unused_var_constr(Vars_set),Cons,[],Cons2),
+	   foldl(accum_partial_vars,Cons2,Vars_set,Vars_set2),
+	   Rest_out=[group(Op,Cons2,Vars)|Rest2]
+	   ),!.
+
+remove_unused_var_constr(Var_set,bound(ub,Exp,Bounded),Accum,Accum2):-
+	intersection_sl(Var_set,Bounded,Bounded1),
+	(Bounded1=[]->
+	   Accum2=Accum
+	   ;
+	   Accum2=[bound(ub,Exp,Bounded1)|Accum]
+	  ).
+remove_unused_var_constr(Var_set,bound(lb,Exp,Bounded),Accum,Accum2):-
+	intersection_sl(Var_set,Bounded,Bounded1),
+	length(Bounded1,N1),
+	length(Bounded,N),
+	(N1< N ->
+	   Accum2=Accum
+	   ;
+	   Accum2=[bound(ub,Exp,Bounded)|Accum]
+	  ).	  
+
+accum_partial_vars(bound(_,partial(Vars,_),_),Vars_set,Vars_set2):-!,	
+	maplist(tuple,Names,_,Vars),
+	from_list_sl(Names,Names_set),
+	union_sl(Names_set,Vars_set,Vars_set2).
+accum_partial_vars(_,Vars_set,Vars_set).
 
 solve_group(group(ub,Cons,_),Map):-
 	sort_with(Cons,better_ubs,Cons_sorted),
@@ -193,6 +272,26 @@ solve_group_1([],Map,Map).
 solve_group_1([bound(_Op,add([]),Bounded)|Cons],Map_accum,Map):-!,
 	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
 	solve_group_1(Cons,Map_accum2,Map).
+solve_group_1([bound(_Op,nat(Add),Bounded)|Cons],Map_accum,Map):-
+    nonvar(Add),Add=add([]),!,
+	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
+	solve_group_1(Cons,Map_accum2,Map).
+solve_group_1([bound(_Op,nat(Add),Bounded)|Cons],Map_accum,Map):-
+	nonvar(Add),Add=add([mult([add([])])]),!,
+	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
+	solve_group_1(Cons,Map_accum2,Map).	
+solve_group_1([bound(_Op,Add,Bounded)|Cons],Map_accum,Map):-
+	Add==nat(add([mult([nat(add([mult([add([])])]))])])),!,
+	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
+	solve_group_1(Cons,Map_accum2,Map).	
+
+%If we are want speed over precision we solve constraints:
+%it1+it2+...+itn\leq exp
+% by assigning it1=exp, it2=exp...itn=exp
+solve_group_1([bound(ub,Exp,Bounded)|Cons],Map_accum,Map):-
+    get_param(solve_fast,[]),!,
+	foldl(insert_value(Exp),Bounded,Map_accum,Map_accum2),
+	solve_group_1(Cons,Map_accum2,Map).
 
 solve_group_1([bound(_Op,Exp,Bounded)|Cons],Map_accum,Map):-
 	select(Selected,Bounded,Bounded1),
@@ -200,9 +299,12 @@ solve_group_1([bound(_Op,Exp,Bounded)|Cons],Map_accum,Map):-
 	foldl(insert_zero_value,Bounded1,Map_accum1,Map_accum2),
 	solve_group_1(Cons,Map_accum2,Map).
 
+insert_value(Val,Var,Map,Map1):-
+	insert_lm(Map,Var,Val,Map1).
 insert_zero_value(Var,Map,Map1):-
 	insert_lm(Map,Var,0,Map1).
-	
+insert_one_value(Var,Map,Map1):-
+	insert_lm(Map,Var,1,Map1).	
 % given the new values assigned to the variables of the group, we substitute in the rest of the constraints and simplify
 
 evaluate_group(Map,group(Op,Constrs,Vars),group(Op,Constrs1,Vars)):-
@@ -216,14 +318,19 @@ simplify_partial_exp(partial(Index,Exp),Map,Solved_exp):-!,
 	maplist(substitute_index_by_optional(Map),Index,Extra_index),
 	ut_flat_list(Extra_index,Index_flat),
 	str_cost_exp_simplify(Exp,Simple_exp),
-	(Index_flat=[]->
+	term_variables(Simple_exp,Unknowns),
+	from_list_sl(Unknowns,Unknowns_set),
+	include(index_var_in_set(Unknowns_set),Index_flat,Index_final),
+	(Index_final=[]->
 		Solved_exp=Simple_exp
 	;
-		Solved_exp=partial(Index_flat,Simple_exp)
+		Solved_exp=partial(Index_final,Simple_exp)
 	).	
+	
 simplify_partial_exp(Exp,_Map,Exp).
 
-
+index_var_in_set(Set,(_Name,Var)):-
+	contains_sl(Set,Var),!.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %generate the main constraint from the basic costs
@@ -270,7 +377,7 @@ get_non_deterministic_vars([bound(_,_,Bounded)|Constrs],Accum_set,Non_det_vars):
 
 compress_constraints([],_,_,[],Map,Map).
 compress_constraints([bound(Op,Exp,Bounded)|Constrs],Non_det_vars,Estimated_complexity_map,Remaining_constrs,Map_accum,Map_out):-
-	solve_expression(Exp,Op,Non_det_vars,Map_accum,Solved_exp),
+	solve_expression(Exp,aux,Op,Non_det_vars,Map_accum,Solved_exp),
 	partial_str_cost_exp_estimate_complexity(Solved_exp,Estimated_complexity_map,Estimated_complexity),
 	Bounded=[Bounded1|_],
 	(contains_sl(Non_det_vars,Bounded1)->
@@ -285,7 +392,7 @@ compress_constraints([bound(Op,Exp,Bounded)|Constrs],Non_det_vars,Estimated_comp
 	compress_constraints(Constrs,Non_det_vars,Estimated_complexity_map1,Remaining_constrs1,Map_accum2,Map_out).
 
 	
-solve_expression(Exp,_Op,Non_det_vars,Map_accum,Solved_exp):-
+solve_expression(Exp,Main_flag,_Op,Non_det_vars,Map_accum,Solved_exp):-
 	copy_term(Exp,exp(Index_pos,Index_neg,Pos,Neg)),
 	append(Index_pos,Index_neg,Index_total),
 	partition(index_in_set(Non_det_vars),Index_total,Index_non_det,Index_det),
@@ -295,21 +402,25 @@ solve_expression(Exp,_Op,Non_det_vars,Map_accum,Solved_exp):-
 	Pos=add(Summands_pos),
 	maplist(negate_summand,Summands_neg,Summands_negated),
 	append(Summands_pos,Summands_negated,All_summands),
-	str_cost_exp_simplify(nat(add(All_summands)),Simple_exp),
+	(Main_flag=main->
+	str_cost_exp_simplify(add(All_summands),Simple_exp)
+	;
+	str_cost_exp_simplify(nat(add(All_summands)),Simple_exp)
+	),
 	(Index_flat=[]->
 		Solved_exp=Simple_exp
 	;
 		Solved_exp=partial(Index_flat,Simple_exp)
 	).
 	
-solve_expression(exp(_Index_pos,_Index_neg,_Pos,_Neg),ub,_Non_det_vars,_Map_accum,inf).
-solve_expression(exp(_Index_pos,_Index_neg,_Pos,_Neg),lb,_Non_det_vars,_Map_accum,0).		
+solve_expression(exp(_Index_pos,_Index_neg,_Pos,_Neg),_,ub,_Non_det_vars,_Map_accum,inf).
+solve_expression(exp(_Index_pos,_Index_neg,_Pos,_Neg),aux,lb,_Non_det_vars,_Map_accum,0).		
+solve_expression(exp(_Index_pos,_Index_neg,_Pos,_Neg),main,lb,_Non_det_vars,_Map_accum,-inf).		
 
-solve_expression([]+C,_Op,_,_Map_accum,C):-
+solve_expression([]+C,_,_Op,_,_Map_accum,C):-
 	geq_fr(C,0),!.
-solve_expression(Lin_exp,_Op,_,_Map_accum,nat(Lin_exp_print)):-	
+solve_expression(Lin_exp,_,_,_,_Map_accum,nat(Lin_exp_print)):-	
 	write_le(Lin_exp,Lin_exp_print).
-	
 
 add_to_bound_map(Map,Bounded,Solved_exp,Map2):-
 	lookup_lm(Map,Bounded,Expr),!,

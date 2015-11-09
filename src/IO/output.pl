@@ -27,6 +27,7 @@ This module prints the results of the analysis
 		  print_chain/2,
 		  print_chains_entry/2,
 		  print_results/2,
+		  print_phase_cost/4,
 		  print_equations_refinement/2,
 		  print_loops_refinement/2,
 		  print_external_pattern_refinement/2,
@@ -35,6 +36,7 @@ This module prints the results of the analysis
 		  print_conditional_upper_bounds/1,
 		  print_conditional_lower_bounds/1,
 		  print_closed_results/2,
+		  print_aux_exp/1,
 		  print_stats/0]).
 
 :- use_module('../db',[ground_equation_header/1,
@@ -270,6 +272,14 @@ print_aux_exp(bound(Op,Exp_0,Bounded)):-
 	
 print_op(ub,'=<').
 print_op(lb,'>=').
+
+
+print_phase_cost(Phase,Head,Call,Cost):-
+	copy_term((Head,Call,Cost),(Headp,Callp,Costp)),
+	ground_header(Headp),
+	(Callp==none;ground_header_prime(Callp)),
+	ansi_format([underline,bold],'Cost of phase ~p:~p -> ~p ~n',[Phase,Headp,Callp]),
+	print_new_cost_structure(Costp).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_closed_results(+Entry:term,+RefCnt:int) is det
@@ -379,7 +389,15 @@ ground_header(Head):-
  ground_header(Head):- 
     numbervars(Head,0,_).
     
-
+ground_header_prime(Head):-
+	copy_term(Head,Head2),
+	ground_header(Head2),
+	Head2=..[F|Names],
+	maplist(prime_name,Names,Namesp),
+	Head=..[F|Namesp].
+	
+prime_name(Name,Namep):-
+	atom_concat(Name,'\'',Namep).
 
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

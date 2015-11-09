@@ -44,7 +44,7 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 			write_sum/2]).
 		
 :- use_module('../utils/polyhedra_optimizations',[
-			nad_entails_aux/3,
+			nad_entails_aux/3,nad_normalize_polyhedron/2,
 			slice_relevant_constraints_and_vars/5]).			
 
 :- use_module('../utils/cost_structures',[
@@ -60,7 +60,7 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(list_map)).
-:- use_module(stdlib(numeric_abstract_domains),[nad_project/3]).								
+:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_entails/3]).								
 :- use_module(stdlib(fraction),[greater_fr/2]).
 
 				
@@ -139,7 +139,7 @@ max_min_top_exprs_in_chain(Top_exps,_Chain,Phi,Head,Final_tops,[]):-
 	from_list_sl(Extra_vars,Extra_vars_set),
 	foldl(inverse_map,Dicc,[],Dicc_inv),
 	append(Constraints,Phi,Phi1),
-	append(Extra_vars,TVars,Total_vars),	
+	append(Extra_vars,TVars,Total_vars),
 	nad_project(Total_vars,Phi1,Projected),
 	maplist(maximize_insecure_constraints(TVars,Phi,Max_min),Insecure_constraints,Extra_tops),
 	cstr_generate_top_expr_from_poly(Projected,Max_min,Dicc_inv,Extra_vars_set,New_top_exps),
@@ -169,14 +169,20 @@ generate_constraints([bound(Op,Lin_exp,Bounded)|More],Phi,Dicc,Constraints2,Non_
 		)
 	;
 	
-	(is_constant_le(Lin_exp)->
+	((is_constant_le(Lin_exp))->
 			Non_secure2=[Bounded >= Lin_exp|Non_secure],
 			Constraints2=Constraints
 			;
+			term_variables((Phi,Lin_exp),Vars),
 			integrate_le(Lin_exp,Den,Lin_exp_nat),
 			write_le(Lin_exp_nat,Expression_nat),
-			Constraints2=[Sum* Den>= Expression_nat|Constraints],
-			Non_secure2=Non_secure
+			(\+nad_entails_aux(Vars,Phi,[Expression_nat >=0])->	
+			Non_secure2=[Bounded >= Lin_exp|Non_secure],
+			Constraints2=Constraints
+			;
+			Non_secure2=Non_secure,		
+			Constraints2=[Sum *Den>= Expression_nat|Constraints]
+		)
 	)
 	),
 	generate_constraints(More,Phi,Dicc1,Constraints,Non_secure,Dicc_out).
@@ -210,13 +216,24 @@ limit_top_expression_selection(Top_exps,Max_min,Dicc,Top_exps2):-
 	maplist(tuple,Vars_set,Counters,Counters_dicc),
 	get_filtered_top_exps(Sorted_top_exps1,Counters_dicc,Top_exps2).
 
+%constant comparison
 worse_top_exp(bound(_,Exp1,_),bound(_,Exp2,_)):-
 	is_constant_le(Exp1),is_constant_le(Exp2),
 	constant_le(Exp1,C1),constant_le(Exp2,C2),!,
-	greater_fr(C1,C2).
+	greater_fr(C1,C2),!.	
+worse_top_exp(bound(_,Exp1,Bounded),bound(_,Exp2,Bounded2)):-
+	is_constant_le(Exp1),is_constant_le(Exp2),
+	constant_le(Exp1,C1),constant_le(Exp2,C2),!,
+	C1=C2,!,
+	length(Bounded,N1),
+	length(Bounded2,N2),
+	N2 > N1.	
+%constant to non-constant	  
 worse_top_exp(bound(_,Exp1,_),bound(_,Exp2,_)):-
 	\+is_constant_le(Exp1),is_constant_le(Exp2),!.	
-worse_top_exp(bound(_,_Exp1,Bounded),bound(_,_Exp2,Bounded2)):-
+%non-costant comparison
+worse_top_exp(bound(_,Exp1,Bounded),bound(_,Exp2,Bounded2)):-
+	\+is_constant_le(Exp1),\+is_constant_le(Exp2),
 	length(Bounded,N1),
 	length(Bounded2,N2),
 	N2 > N1.
@@ -298,10 +315,13 @@ maximize_insecure_constraints(Vars,Phi,Max_Min,Bounded=<Linear_Expr_to_Maximize,
 	slice_relevant_constraints_and_vars(Relevant_vars_ini,Vars,Phi,_Selected_vars,Selected_Cs),
 	max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars, Selected_Cs,Max_Min, Maxs),
 	maplist(cstr_generate_top_exp(Bounded,Op),Maxs,Tops).
-
-maximize_insecure_constraints(_Vars,_Phi,Max_Min,Bounded >= []+Cnt,Tops):-
+maximize_insecure_constraints(Vars,Phi,Max_Min,Bounded >= Linear_Expr_to_Maximize,Tops):-
 	(Max_Min=max-> Op=ub;Op=lb),
-	maplist(cstr_generate_top_exp(Bounded,Op),[[]+Cnt],Tops).			
+	elements_le(Linear_Expr_to_Maximize,Relevant_vars_ini),
+	slice_relevant_constraints_and_vars(Relevant_vars_ini,Vars,Phi,_Selected_vars,Selected_Cs),
+	max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars, Selected_Cs,Max_Min, Maxs),
+	maplist(cstr_generate_top_exp(Bounded,Op),Maxs,Tops).
+		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
 %! maximize_linear_expression_all(+Linear_Expr_to_Maximize:linear_expression,+Vars_of_Interest:list(var),+Context:polyhedron, -Maxs:list(linear_expression)) is det
@@ -320,6 +340,15 @@ max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars_of_Interest, Context
 	Exp_diff_1=Maxs_out,
 	Vars_of_Interest=Vars_of_Interest2,!.
 */		
+
+max_min_linear_expression_all(Lin_exp, Vars_of_Interest, _Context,_Max_min, Lin_exp_out) :-
+	term_variables(Lin_exp,Vars),
+	from_list_sl(Vars_of_Interest,Interest_set),
+	from_list_sl(Vars,Vars_set),
+	difference_sl(Vars_set,Interest_set,[]),!,
+	Lin_exp_out=[Lin_exp].
+	
+
 max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Lin_exp_out) :-
 	(get_param(maximize_fast,[N])->
 		true
@@ -341,7 +370,7 @@ max_min_linear_expression_all_n(N,R, Vars_of_Interest, Context,Max_Min,Maxs_out)
 	from_list_sl(Maxs,Maxs_set),
 	length(Maxs_set,Curr_length),
 	Rest is N-Curr_length,
-	% If we have not iferred enough upper bounds
+	% If we have not inferred enough upper bounds
 	(Rest > 0 ->
 	term_variables(Maxs,Used_vars),
 	from_list_sl(Used_vars,Used_vars_set),

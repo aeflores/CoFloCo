@@ -40,6 +40,8 @@ The module also takes care of parsing the input parameters and storing them.
 % @arg values is a list of values associated to each parameter
 :-dynamic param/2.
 
+
+
 %% parameter_dictionary(?External_name:atom,?Internal_name:atom,-Values:list) is nondet
 % @arg external_name is the name of the parameter that is read from the input
 % @arg internal_name is a list of values associated to each parameter
@@ -64,17 +66,16 @@ parameter_dictionary('-assume_sequential','assume_sequential',[bool]).
 parameter_dictionary('-n_rankings','n_rankings',[number]).
 
 parameter_dictionary('-maximize_fast','maximize_fast',[number]).
+parameter_dictionary('-solve_fast','solve_fast',[bool]).
 
 parameter_dictionary('-compress_chains','compress_chains',[]).
-parameter_dictionary('-negative','negative',[]).
 
 parameter_dictionary('-only_termination','only_termination',[bool]).
-parameter_dictionary('-prolog_format','prolog_format',[bool]).
 
 parameter_dictionary('-conditional_ubs','conditional_ubs',[]).
 parameter_dictionary('-conditional_lbs','conditional_lbs',[]).
 
-incompatible_parameters(param(negative,[]),param(compress_chains,_)).
+:-dynamic incompatible_parameters/2.
 
 %% clean_params is det
 % erase all the stored parameters
@@ -89,7 +90,7 @@ clean_params:-
 set_default_params:-
 	parse_params(['-v',2,
 		      '-n_rankings',1,
-		      '-maximize_fast',1
+		      '-maximize_fast',2
 		      ]).
 		      
 %% parse_params(Params:list(atoms)) is det

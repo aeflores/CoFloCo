@@ -45,9 +45,15 @@ str_cost_exp_complexity(add(Summands),N):-
 	max_list(N_list,N)
 	;
 	N=0).
-str_cost_exp_complexity(mult(Factors),N):-
+str_cost_exp_complexity(mult(Factors),N1):-
 	maplist(str_cost_exp_complexity,Factors,N_list),
-	sum_list(N_list,N).
+	sum_list(N_list,N),
+	((member(Neg,Factors),is_rational(Neg),greater_fr(0,Neg))->
+		N1 is 0-N
+		;
+		N1=N
+	).
+		
 str_cost_exp_complexity(max(Factors),N):-
 	maplist(str_cost_exp_complexity,Factors,N_list),
 	max_list(N_list,N).
@@ -66,7 +72,7 @@ str_cost_exp_complexity(N,0):-
 	is_rational(N),!.	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+	
 str_cost_exp_get_multiplied_factors(nat(add(Summands)),Vars_set,Pairs):-
 	maplist(get_summand_multiplied_vars(Vars_set),Summands,Pair_list),
 	unions_sl(Pair_list,Pairs).	
@@ -93,6 +99,13 @@ get_internal_pairs(_,nat(Exp),[]):-
 	var(Exp),!.	
 get_internal_pairs(_,nat(Exp),[]):-
 	nonvar(Exp),Exp\=add(_),!.
+	
+get_internal_pairs(Vars_set,max(Summands),Pairs):-!,
+	maplist(get_internal_pairs(Vars_set),Summands,Pair_list),
+	unions_sl(Pair_list,Pairs).	
+get_internal_pairs(Vars_set,min(Summands),Pairs):-!,
+	maplist(get_internal_pairs(Vars_set),Summands,Pair_list),
+	unions_sl(Pair_list,Pairs).		
 		
 get_internal_pairs(Vars_set,Factor,Pairs):-
 	str_cost_exp_get_multiplied_factors(Factor,Vars_set,Pairs),!.

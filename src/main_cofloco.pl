@@ -229,6 +229,7 @@ cofloco_query(Params):-
 		(get_param(only_termination,[])->
 			true
 			;
+			
 			upper_bounds
 		),	
 		profiling_stop_timer(analysis,T_analysis),
@@ -363,13 +364,13 @@ bottom_up_refinement_scc(Head) :-
 	compute_forward_invariants(Head,2),	
 	compute_invariants_for_scc(Head,2),
 	profiling_stop_timer_acum(inv,_),
-	print_chains_entry(Head_aux,2),
-	conditional_call(get_param(compress_chains,[]),
-	    (
-		  compress_chains_execution_patterns(Head,2),
-		  print_external_pattern_refinement(Head,2)
-		  )
-		 ).
+	print_chains_entry(Head_aux,2).
+	%conditional_call(get_param(compress_chains,[]),
+	%    (
+	%	  compress_chains_execution_patterns(Head,2),
+	%	  print_external_pattern_refinement(Head,2)
+	%	  )
+	%	 ).
 	
 
 %! upper_bounds is det
