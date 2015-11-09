@@ -419,14 +419,16 @@ compute_closed_bound_scc(Head) :-
 	profiling_stop_timer_acum(solver,_),
 	conditional_call((get_param(v,[N]),N>0),	
 		 print_closed_results(Head,2)
-		),
+		),	
 	((get_param(conditional_ubs,[]); get_param(conditional_lbs,[]))->
 	   compute_conditional_bounds(Head_aux),
-	   (get_param(conditional_ubs,[])->print_conditional_upper_bounds(Head_aux);true),
-	   (get_param(conditional_lbs,[])->print_conditional_lower_bounds(Head_aux);true)
+	   ((get_param(compute_ubs,[]),get_param(conditional_ubs,[]))->print_conditional_upper_bounds(Head_aux);true),
+	   ((get_param(compute_lbs,[]),get_param(conditional_lbs,[]))->print_conditional_lower_bounds(Head_aux);true)
 	   ;
-	   compute_single_closed_bound(Head_aux,Exp),
-	   print_single_closed_result(Head_aux,Exp)
+	   (get_param(compute_ubs,[])->
+	     compute_single_closed_bound(Head_aux,Exp),
+	     print_single_closed_result(Head_aux,Exp)
+	     ; true)
 	).
 	
 

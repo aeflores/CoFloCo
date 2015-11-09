@@ -50,6 +50,7 @@ that can be passed on to the callers.
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
 :- use_module('../utils/cost_structures',[cstr_join_equal_top_expressions/2,cstr_or_compress/2]).
 
+:- use_module('../IO/params',[get_param/2]).
 
 %! compute_bound_for_scc(+Head:term,+RefCnt:int) is det
 % compute a bound for each chain
@@ -100,12 +101,21 @@ compress_bounds_for_external_calls(_,_).
 compute_closed_bound(Head):-
 	upper_bound(Head,Chain,_Vars,Cost),
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
-	cstr_maxminimization(Cost,max,UB),
-	cexpr_simplify(UB,Head_Pattern,UB1),
-	cstr_maxminimization(Cost,min,LB),
-	add_closed_upper_bound(Head,Chain,UB1),
-	cexpr_simplify(LB,Head_Pattern,LB1),
-	add_closed_lower_bound(Head,Chain,LB1),
+	(get_param(compute_ubs,[])->
+	  cstr_maxminimization(Cost,max,UB),
+	  cexpr_simplify(UB,Head_Pattern,UB1),
+	  
+	  add_closed_upper_bound(Head,Chain,UB1)
+	; 
+	  true
+	),
+    (get_param(compute_lbs,[])->
+	  cstr_maxminimization(Cost,min,LB),
+	  cexpr_simplify(LB,Head_Pattern,LB1),
+	  add_closed_lower_bound(Head,Chain,LB1)
+	  ;
+	  true
+	 ),
 	fail.
 compute_closed_bound(_Head).
 

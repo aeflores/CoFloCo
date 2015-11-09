@@ -47,6 +47,7 @@ at the beginning and the end of the phase.
 :- use_module('../utils/cofloco_utils',[
 			tuple/3,
 			ground_copy/2,
+			repeat_n_times/3,
 			bagof_no_fail/3]).	
 :- use_module('../utils/cost_structures',[
 			cstr_extend_variables_names/3,
@@ -164,11 +165,21 @@ max_min_costs_in_phase(Costs,Head,Call,Forward_inv,Phase,Cost_final):-
 	maplist(cstr_extract_top_maxs,Costs_propagated,Costs_propagated1,Maxs),
 	maplist(cstr_extract_top_mins,Costs_propagated1,Costs_propagated2,Mins),
 	maplist(tuple,Summatories_max,Summatories_min,Summatories_pairs),
-	maplist(get_it_sum_constraint(ub),Phase,It_cons_max),
+%	(get_param(compute_ubs,[])->
+	      maplist(get_it_sum_constraint(ub),Phase,It_cons_max)
+%	      ;
+%	      length(Phase,N_phase),
+%	      repeat_n_times(N_phase,[],It_cons_max)
+%	 )
+	 , 
+	(get_param(compute_lbs,[])->
+	      maplist(get_it_sum_constraint(lb),Phase,It_cons_min)
+	      ;
+	      length(Phase,N_phase),
+	      repeat_n_times(N_phase,[],It_cons_min)
+	 ),    
+
 	maplist(append,It_cons_max,Summatories_max,Summatories_max1),
-	maplist(get_it_sum_constraint(lb),Phase,It_cons_min),
-	%Experiment
-	%Summatories_min=Summatories_min1,
 	maplist(append,It_cons_min,Summatories_min,Summatories_min1),
 	%
 	cstr_empty(Empty_cost),
@@ -201,10 +212,17 @@ compute_sums_and_max_min_in_phase(Head,Call,Phase,Maxs,Mins,Summatories_max,Summ
 
 add_general_ranking_functions(Head,Call,Phase):-
 	rf_limit(Max),
-	get_ranking_functions_constraints(Max,Head,Call,Phase,_,Top),
-	maplist(save_new_phase_top(Head,Call,Phase),Top),
-	get_ranking_functions_lower_constraints(Max,Head,Call,Phase,_,LTop),
-	maplist(save_new_phase_top(Head,Call,Phase),LTop).
+%	(get_param(compute_ubs,[])->
+	   get_ranking_functions_constraints(Max,Head,Call,Phase,_,Top),
+	   maplist(save_new_phase_top(Head,Call,Phase),Top)
+%	   ;
+%	   true)
+	   ,
+	(get_param(compute_lbs,[])->
+	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,_,LTop),
+	   maplist(save_new_phase_top(Head,Call,Phase),LTop)
+	   ;
+	   true).
 	
 		
 compute_all_pending(Head,Call,Phase,Pending,_Max_pending):-%Max_pending > 0,Max_pending1 is Max_pending-1,

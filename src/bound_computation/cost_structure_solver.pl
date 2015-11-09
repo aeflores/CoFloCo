@@ -306,7 +306,7 @@ solve_group_1([bound(ub,Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
 	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
 
 %if there are dependent constraints and it's a lower bound constraint all goes to 0
-solve_group_1([bound(lb,_Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-!,
+solve_group_1([bound(lb,_Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
 	Multiplied_pairs=[_|_],!,
 	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
 	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).

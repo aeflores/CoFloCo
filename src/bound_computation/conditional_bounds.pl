@@ -86,9 +86,9 @@ The specific "data types" used in this module are the following:
 compute_conditional_bounds(Head):-
 	findall((Head,execution_pattern((Cost,Lb_Cost),Condition)),
 		(
-		closed_upper_bound(Head,Chain,_,Cost),
-		closed_lower_bound(Head,Chain,_,Lb_Cost),
-		backward_invariant(Head,(Chain,_),_,Condition)
+		backward_invariant(Head,(Chain,_),_,Condition),
+		cond_get_closed_upper_bound(Head,Chain,Cost),
+		cond_get_closed_lower_bound(Head,Chain,Lb_Cost)
 		)
 		,Ex_pats),
 	assign_right_vars(Ex_pats,Head,Ex_pats1),
@@ -105,6 +105,17 @@ compute_conditional_bounds(Head):-
 	true),
 	maplist(save_conditional_bound(Head),Multimap_simplified).
 
+
+cond_get_closed_upper_bound(Head,Chain,Cost):-
+	get_param(compute_ubs,[]),!,
+	closed_upper_bound(Head,Chain,_,Cost).
+cond_get_closed_upper_bound(_Head,_Chain,inf).
+	
+cond_get_closed_lower_bound(Head,Chain,Cost):-
+	get_param(compute_lbs,[]),!,
+	closed_lower_bound(Head,Chain,_,Cost).	
+cond_get_closed_lower_bound(_Head,_Chain,0).	
+	
 simplify_cost_of_pair(([Cost],Prec),(Cost,Prec)):-!.
 simplify_cost_of_pair((Cost_list,Prec),((Ub_simple,Lb_simple),Prec)):-
 	 maplist(tuple,Ub_list,Lb_list,Cost_list),

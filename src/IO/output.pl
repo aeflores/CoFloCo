@@ -174,15 +174,7 @@ print_chains_1(_).
 
 %! print_chain(+Entry:term,Pattern:chain) is det
 % print the chain Pattern
-print_chain(Entry,Fusion):-
-	Fusion=..[fusion|Chain_list],!,
-	maplist(reverse,Chain_list,Chain_list_inv),
-	(non_terminating_chain(Entry,_,Fusion)->
-	   %Pattern=[_|Pattern1],
-	   ansi_format([fg(red)],'~p:~p...',[Entry,fusion(Chain_list_inv)])
-	 ;
-	   ansi_format([],'~p:~p',[Entry,fusion(Chain_list_inv)])
-	).
+
 print_chain(Entry,Pattern):-
 	reverse(Pattern,Pattern_inv),
 	(non_terminating_chain(Entry,_,Pattern)->
@@ -297,31 +289,30 @@ print_closed_results(Entry,RefCnt):-
 print_closed_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
 	maplist(pretty_print_constr,EPat,EPat_pretty),
- 	closed_upper_bound(Entry,Chain,_,CExp),
- 	closed_lower_bound(Entry,Chain,_,CExp_lb),
- 	get_asymptotic_class_name(CExp,Asym_class),
-	get_asymptotic_class_name(CExp_lb,Asym_class1),
+	(get_param(compute_ubs,[])->
+ 	    closed_upper_bound(Entry,Chain,_,CExp),
+ 	    get_asymptotic_class_name(CExp,Asym_class)
+ 	    ;
+ 	    true
+ 	 ),
+ 	(get_param(compute_lbs,[])->
+ 		closed_lower_bound(Entry,Chain,_,CExp_lb),
+		get_asymptotic_class_name(CExp_lb,Asym_class1)
+		;
+		true
+	),
 	ground_header(Entry),
 	print_chain(Entry,Chain),
-	format(': ~p  with precondition: ~p ~n',[CExp,EPat_pretty]),
+	format(' with precondition: ~p ~n',[EPat_pretty]),
+	(get_param(compute_ubs,[])->
+	format('Upper bound: ~p ~n',[CExp]),
+	format(' Complexity: ~p ~n',[Asym_class]);true),
+	(get_param(compute_lbs,[])->
 	format('Lower bound: ~p ~n',[CExp_lb]),
-	format('Upper Asymptotic: ~p ~n Lower Asymptotic ~p~n ',[Asym_class,Asym_class1]),
-%	(Asym_class\=Asym_class1->
-%		format(user_error,'Imprecise lower bound (~p, ~p)~n',[Asym_class,Asym_class1])
-%		;
-%		true),
+	format(' Complexity: ~p~n ',[Asym_class1]);true),
  	fail.
 print_closed_results_1(_Entry,_).
 
-%! print_closed_results_prolog_format(+Entry:term,+RefCnt:int) is det
-% print the chains, invariants and closed upper bounds of SCC Entry in the refinement phase RefCnt.  
-% It prints the results in prolog terms.
-print_closed_results_prolog_format(Entry,RefCnt):-
-	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
- 	closed_upper_bound(Entry,Chain,_,CExp),
-	format('eq(~p,~p,~p). ~n',[Entry,CExp,EPat]),
- 	fail.
-print_closed_results_prolog_format(_Entry,_).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

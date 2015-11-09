@@ -68,12 +68,14 @@ parameter_dictionary('-n_rankings','n_rankings',[number]).
 parameter_dictionary('-maximize_fast','maximize_fast',[number]).
 parameter_dictionary('-solve_fast','solve_fast',[bool]).
 
-parameter_dictionary('-compress_chains','compress_chains',[]).
+parameter_dictionary('-compress_chains','compress_chains',[bool]).
 
 parameter_dictionary('-only_termination','only_termination',[bool]).
 
-parameter_dictionary('-conditional_ubs','conditional_ubs',[]).
-parameter_dictionary('-conditional_lbs','conditional_lbs',[]).
+parameter_dictionary('-compute_ubs','compute_ubs',[bool]).
+parameter_dictionary('-compute_lbs','compute_lbs',[bool]).
+parameter_dictionary('-conditional_ubs','conditional_ubs',[bool]).
+parameter_dictionary('-conditional_lbs','conditional_lbs',[bool]).
 
 :-dynamic incompatible_parameters/2.
 
@@ -90,7 +92,9 @@ clean_params:-
 set_default_params:-
 	parse_params(['-v',2,
 		      '-n_rankings',1,
-		      '-maximize_fast',2
+		      '-maximize_fast',2,
+		      '-compute_ubs',
+		      '-compute_lbs'
 		      ]).
 		      
 %% parse_params(Params:list(atoms)) is det
@@ -100,7 +104,8 @@ parse_params([Param|Rest]):-
 	parameter_dictionary(Param,Internal_repr,ArgsOpts),!,
 	process_args(ArgsOpts,Rest,Args,New_rest),
 	(Args==[no]->
-	  true;
+	  retractall(param(Internal_repr,[]))
+	  ;
 	(Args==[yes]->
 	 add_param(Internal_repr,[])
 	;
