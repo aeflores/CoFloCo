@@ -15,13 +15,13 @@
 
 
 main:-
-        current_prolog_flag(argv, Args),
-        cfg2pubs(Args),
+    current_prolog_flag(argv, Args),
+    cfg2pubs(Args),
 	halt.
         
 main_bin:-
-        current_prolog_flag(argv, [_|Args]),
-        cfg2pubs(Args),
+    current_prolog_flag(argv, [_|Args]),
+    cfg2pubs(Args),
 	halt.
         
 save_exec:-

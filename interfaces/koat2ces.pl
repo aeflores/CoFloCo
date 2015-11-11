@@ -7,9 +7,8 @@
 :-dynamic tick_cost/0.
 
 main:-
-        current_prolog_flag(argv, Args),
+    current_prolog_flag(argv, Args),
 	Args=[File|Rest],
-	format(user_error,'~p~n',[Rest]),
 	(Rest=['tick_cost'|_]->
  	    assert(tick_cost)
 	;
@@ -19,8 +18,13 @@ main:-
 	halt.
 
 main_bin:-
-        current_prolog_flag(argv, [_|Args]),
-        Args=[File|_],
+    current_prolog_flag(argv, [_|Args]),
+    Args=[File|Rest],
+	(Rest=['tick_cost'|_]->
+ 	    assert(tick_cost)
+	;
+	    true
+	),
 	catch(read_file(File),Fail,writeln(Fail)),
 	halt.
 
@@ -39,9 +43,6 @@ read_file(File) :-
    open(New_file,write,Fd),
    pretty_print_rules(cfg(Rules2),Fd),
    close(Fd),!.
-
-
-
 
 read_file(File) :-
 	format('Failed translating: ~p~n',[File]).
@@ -104,9 +105,10 @@ var_names([Name|Names]) -->
          var_names(Names).
 var_names([]) --> [].
 
-rules([Rule|Rules])-->%{trace},
-    rule(Rule),%{writeln(Rule)},
-    !,spaces,rules(Rules).
+rules([Rule|Rules])-->
+    rule(Rule),!,
+    spaces,
+    rules(Rules).
 rules([])-->[].
 
 rule(e(Origin,Dest,0,Cons))-->{tick_cost},
@@ -168,9 +170,8 @@ constraint(C)-->spaces,
          side(none,L),spaces,
          relational_op(Op),spaces,
          side(none,R),spaces,
-	 {C=..[Op,L,R]}.
-       %   read_term_from_atom(Cons,C,[variables(_Vars)])}.
-
+	     {C=..[Op,L,R]}.
+  
 
 
 side(Prev_summand,Exp)-->factors(none,Factor),
@@ -213,6 +214,7 @@ relational_op('=<')-->"<=".
 relational_op('>=')-->">=".
 relational_op('>')-->">".
 relational_op('<')-->"<".
+
 non_ops([X|Xs])-->non_op(X),!,non_ops(Xs).
 non_ops([])-->[].
 side_1(Exp)-->non_ops_1(Chars),{ atom_codes(Exp, Chars) }.

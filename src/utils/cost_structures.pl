@@ -242,13 +242,63 @@ generate_compressed_top((Exp,Tops),New_top,New_auxs):-
 	maplist(cstr_generate_top_exp_inv(_Exp,Op),Bounded_list,Tops),
 	maplist(cstr_generate_aux_exp(exp([(Name,Var)],[],add([mult([Var])]),add([])),Op),Bounded_list,New_auxs).
 	
+cstr_propagate_zeroes(cost(Ub_tops,Lb_tops,Aux_exps,Bases,Base),Simplified):-
+	partition(negative_top,Ub_tops,Removed_ub_tops,Ub_tops1),
+	exclude(negative_top,Lb_tops,Lb_tops1),	
+	(Removed_ub_tops\=[]->
+	foldl(create_zero_set,Removed_ub_tops,[],Zero_set),
+	propagate_zeroes(Aux_exps,Zero_set,Aux_exps2,Zero_set2),
+	exclude(pair_contains_first(Zero_set2),Bases,Bases1)
+	;
+	 Aux_exps2=Aux_exps,
+	 Bases1=Bases
+	),
+	cstr_remove_useless_constrs(cost(Ub_tops1,Lb_tops1,Aux_exps2,Bases1,Base),Simplified).
 	
+negative_top(bound(_,[]+N,_Bounded)):-
+		leq_fr(N,0).
+	
+create_zero_set(bound(_,_,Bounded),Set,Set1):-
+	from_list_sl(Bounded,Bounded_set),
+	union_sl(Bounded_set,Set,Set1).
+
+
+
+propagate_zeroes([],Set,[],Set).
+propagate_zeroes([bound(Op,Exp,Bounded)|Auxs],Set,Auxs_out,Set_out):-
+	Exp=exp(Index_pos,Index_neg,Pos,Neg),
+	partition(pair_contains_first(Set),Index_pos,Index_zero,Index_pos1),
+	Index_zero\=[],!,
+	maplist(set_second_to(0),Index_zero),
+	simplify_add(Pos,Pos1),
+	(Pos1=add([])->
+	   Auxs_out=Auxs_out1,
+	   from_list_sl(Bounded,Bounded_set),
+	   union_sl(Bounded_set,Set,Set1)
+	   ;
+	   Exp1=exp(Index_pos1,Index_neg,Pos1,Neg),
+	   Auxs_out=[bound(Op,Exp1,Bounded)|Auxs_out1],
+	   Set1=Set
+	),
+	propagate_zeroes(Auxs,Set1,Auxs_out1,Set_out).
+	
+propagate_zeroes([bound(Op,Exp,Bounded)|Auxs],Set,[bound(Op,Exp,Bounded)|Auxs_out],Set_out):-
+	propagate_zeroes(Auxs,Set,Auxs_out,Set_out).	  
+	 
+set_second_to(X,(_,X)).
+simplify_add(add(Summands),add(Summands1)):-
+    exclude(zero_summand,Summands,Summands1).
+   
+zero_summand(mult(Factors)):-
+	member(F,Factors),
+	F==0,!.	
 	
 cstr_remove_cycles(cost(Ub_tops,Lb_tops,Aux_exps,Bases,Base),Short):-
 	get_top_bounded(Ub_tops,[],Ub_Bounded_set),
 	get_top_bounded(Lb_tops,[],Lb_Bounded_set),
 	remove_not_bounded(Aux_exps,Ub_Bounded_set,Lb_Bounded_set,Aux_exps2),
-	cstr_remove_useless_constrs(cost(Ub_tops,Lb_tops,Aux_exps2,Bases,Base),Simplified),
+	cstr_propagate_zeroes(cost(Ub_tops,Lb_tops,Aux_exps2,Bases,Base),Simplified),
+	%cstr_remove_useless_constrs(cost(Ub_tops,Lb_tops,Aux_exps2,Bases,Base),Simplified),
 	cstr_shorten_variables_names(Simplified,list,Short).
 
 
@@ -539,7 +589,9 @@ update_max_set(Index,Expr,Index_max,Max_set,Max_set2):-
 	maplist(tuple,Names,_,Index_max),
 	from_list_sl(Names,Names_set),
 	union_sl(Names_set,Max_set,Max_set2).
-	
+
+pair_contains_first(Set,(F,_)):-
+	contains_sl(Set,F).	
 pair_contains(Set,(_,Var)):-
 	contains_sl(Set,Var).
 get_all_but_first_factor(add(Summands),Vars):-
