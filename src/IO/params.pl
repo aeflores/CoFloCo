@@ -92,7 +92,7 @@ clean_params:-
 set_default_params:-
 	parse_params(['-v',2,
 		      '-n_rankings',1,
-		      '-maximize_fast',2,
+		      '-maximize_fast',1,
 		      '-compute_ubs',
 		      '-compute_lbs'
 		      ]).

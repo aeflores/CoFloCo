@@ -32,7 +32,7 @@ mutual dependencies in order to obtain lexicographic ranking functions
 
 :- use_module(db,[loop_ph/6,phase_loop/5]).
 :- use_module('refinement/chains',[chain/3]).	  
-
+:- use_module('refinement/invariants',[forward_invariant/4]).	
 :- use_module('IO/params',[get_param/2]).
 :- use_module('utils/cofloco_utils',[zip_with_op/4,repeat_n_times/3,
 						assign_right_vars/3,
@@ -113,11 +113,12 @@ find_chain_ranking_functions([Non_loop|Rec_elems],Head,Chain):-
 
 find_chain_ranking_functions([Phase|Rec_elems],Head,Chain):-
 	    %TODO take the chain into account to get better ranking functions
+	    forward_invariant(Head,([Phase|Rec_elems],_),_,Inv),
 	    (\+computed_ranking_functions(Head,Chain,Phase)->
-		   compute_phase_rfs(Head,Chain,Phase,[]),
+		   compute_phase_rfs(Head,Chain,Phase,Inv),
 		   %maplist(compute_loop_partial_rfs(Head,Chain,Phase,[]),Phase),
-		   compute_phase_partial_rfs(Head,Chain,Phase,[]),
-		   assert(computed_ranking_functions(Head,_,Phase))
+		   compute_phase_partial_rfs(Head,Chain,Phase,Inv),
+		   assert(computed_ranking_functions(Head,Chain,Phase))
 		;
 		   true),
 		find_chain_ranking_functions(Rec_elems,Head,Chain).
@@ -125,11 +126,11 @@ find_chain_ranking_functions([Phase|Rec_elems],Head,Chain):-
 %! compute_phase_rfs(Head:term,Chain:chain,Phase:phase,Inv:polyhedron) is det 
 % try to compute ranking functions valid for all cost equations in Phase using the invariant Inv
 %For now we ignore the chain and infer generic ranking functions for Phase in any chain (the invariant is empty)
-compute_phase_rfs(Head,_,Phase,Inv):-
+compute_phase_rfs(Head,Chain,Phase,Inv):-
 	phase_loop(Phase,_,Head,Call,Cs),
 	nad_glb(Cs,Inv,Cs_1),
 	compute_iterations_ubs( Head, Call, Cs_1, Iter_Ubs),
-	maplist(add_ranking_function(Head,_,Phase),Iter_Ubs).
+	maplist(add_ranking_function(Head,Chain,Phase),Iter_Ubs).
 
 
 %! compute_phase_partial_rfs(Head:term,Chain:chain,Phase:phase,Inv:polyhedron) is det 
@@ -140,12 +141,12 @@ compute_phase_partial_rfs(Head,Chain,Phase,Inv):-
 	%initial map with the ranking functions and the loops they cover
 	foldl(compute_1_loop_rfs(Head,Call,Inv),Phase,Empty_map,Initial_map),
 	% exclude ranking functions that are general
-	exclude(covered_by_rf_map(Head,Phase),Initial_map,Initial_map_filtered),
+	exclude(covered_by_rf_map(Head,Phase,Chain),Initial_map,Initial_map_filtered),
 	
 
 	%the initial dependencies are all phases except the covered ones
 	maplist(get_initial_deps(Phase),Initial_map_filtered,Init_deps),
-	maplist(check_lexicographic_deps_aux(Head,Call),Initial_map_filtered,Init_deps,Deps,Type_deps),
+	maplist(check_lexicographic_deps_aux(Head,Call,Inv),Initial_map_filtered,Init_deps,Deps,Type_deps),
 	maplist(add_partial_ranking_function_aux(Head,Chain,Phase),Initial_map_filtered,Deps,Type_deps).
 
 
@@ -161,11 +162,11 @@ add_rf_2_map(Loop,Rf,Map_in,Map_out):-
 get_initial_deps(Phase,(_Rf,Covered),Deps):-
 	difference_sl(Phase,Covered,Deps).
 	
-covered_by_rf_map(Head,Phase,(Rf,_Values)):-
-	covered_by_rf(Head,Phase,Rf).
+covered_by_rf_map(Head,Phase,Chain,(Rf,_Values)):-
+	covered_by_rf(Head,Phase,Chain,Rf).
 	
-check_lexicographic_deps_aux(Head,Call,(Rf,_Covered),Init_deps,Deps,Type_deps):-
-	check_lexicographic_deps(Init_deps,Head,Call,Rf,Deps,Type_deps).
+check_lexicographic_deps_aux(Head,Call,Inv,(Rf,_Covered),Init_deps,Deps,Type_deps):-
+	check_lexicographic_deps(Init_deps,Head,Call,Inv,Rf,Deps,Type_deps).
 		
 add_partial_ranking_function_aux(Head,Chain,Phase,(Rf,Covered),Deps,Type_deps):-
 	add_partial_ranking_function(Head,Chain,Phase,Covered,Rf,Deps,Type_deps).
@@ -176,10 +177,11 @@ add_partial_ranking_function_aux(Head,Chain,Phase,(Rf,Covered),Deps,Type_deps):-
 %! check_lexicographic_deps(+Loops:list(equation_id),+Head:term,+Call:term,+Rf:linear_expression,-Deps_out:list(equation_id),-Type_deps_out:list(flag)) is det
 % given a ranking function Rf, infer which other cost equations can increase Rf and by how much
 % Type_deps_out is a list of flags that can be an integer or unknown
-check_lexicographic_deps([],_Head,_Call,_Rf,[],[]).
-check_lexicographic_deps([Loop|Loops],Head,Call,Rf,Deps_out,Type_deps_out):-
+check_lexicographic_deps([],_Head,_Call,_,_Rf,[],[]).
+check_lexicographic_deps([Loop|Loops],Head,Call,Inv,Rf,Deps_out,Type_deps_out):-
 	loop_ph(Head,(Loop,_),Call,Cs_loop,_,_),
-	check_increment(Head,Call,Cs_loop,Rf,Inc),
+	nad_glb(Cs_loop,Inv,Cs_loop1),
+	check_increment(Head,Call,Cs_loop1,Rf,Inc),
 	( leq_fr(Inc,0) ->
 	    Deps_out=Deps_out_aux,
 	    Type_deps_out=Type_deps_out_aux
@@ -187,10 +189,10 @@ check_lexicographic_deps([Loop|Loops],Head,Call,Rf,Deps_out,Type_deps_out):-
 	    Deps_out=[Loop|Deps_out_aux],
 	    Type_deps_out=[Inc|Type_deps_out_aux]
 	),!,
-	check_lexicographic_deps(Loops,Head,Call,Rf,Deps_out_aux,Type_deps_out_aux).
+	check_lexicographic_deps(Loops,Head,Call,Inv,Rf,Deps_out_aux,Type_deps_out_aux).
 
-check_lexicographic_deps([Loop|Loops],Head,Call,Rf,[Loop|Deps_out],[unknown|Type_deps_out]):-
-	check_lexicographic_deps(Loops,Head,Call,Rf,Deps_out,Type_deps_out).
+check_lexicographic_deps([Loop|Loops],Head,Call,Inv,Rf,[Loop|Deps_out],[unknown|Type_deps_out]):-
+	check_lexicographic_deps(Loops,Head,Call,Inv,Rf,Deps_out,Type_deps_out).
 
 %! check_increment(+Head:term,+Call:term,+Cs:polyhedron,+F:linear_expression,-Delta:fraction) is semidet
 % try to find a costant of how much a ranking function can be increased in the loop defined by Head,Call and Cs
@@ -222,17 +224,17 @@ add_ranking_function_1(Head,Chain,Phase,RF) :-
 	;
 	 true).
 
-add_partial_ranking_function(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
+add_partial_ranking_function(Head,Chain,Phase,Loop,RF,Deps,Deps_type) :-
 	parse_le_fast(RF,Lin_exp),
-	add_partial_ranking_function_1(Head,_,Phase,Loop,Lin_exp,Deps,Deps_type).
+	add_partial_ranking_function_1(Head,Chain,Phase,Loop,Lin_exp,Deps,Deps_type).
 	
 
-add_partial_ranking_function_1(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
-	partial_ranking_function(Head,_,Phase,Loop,RF2,Deps,Deps_type),
+add_partial_ranking_function_1(Head,Chain,Phase,Loop,RF,Deps,Deps_type) :-
+	partial_ranking_function(Head,Chain,Phase,Loop,RF2,Deps,Deps_type),
 	RF==RF2,!.
 
-add_partial_ranking_function_1(Head,_,Phase,Loop,RF,Deps,Deps_type) :-
-	assertz(partial_ranking_function(Head,_,Phase,Loop,RF,Deps,Deps_type)),
+add_partial_ranking_function_1(Head,Chain,Phase,Loop,RF,Deps,Deps_type) :-
+	assertz(partial_ranking_function(Head,Chain,Phase,Loop,RF,Deps,Deps_type)),
 	(get_param(debug,[])->
 	 write_le(RF,Rf_print),
 	 copy_term((Head,Rf_print),(PHead,PRF)),
@@ -286,6 +288,6 @@ compute_offset(Rf,Cs,Rf_1):-
 	
 	
 
-covered_by_rf(Head,Phase,Rf):-
-	ranking_function(Head,_,Phase,Rf1),
+covered_by_rf(Head,Phase,Chain,Rf):-
+	ranking_function(Head,Chain,Phase,Rf1),
 	Rf1==Rf.

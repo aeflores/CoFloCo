@@ -111,8 +111,10 @@ init_phase_solver:-
 compute_phases_cost([],_,_,_,[]).
 compute_phases_cost([Phase|More],Chain,Head,Call,[Cost|Costs]):-
 	forward_invariant(Head,([Phase|More],_),Forward_inv_hash,Forward_inv),
+	assert(current_chain(Chain)),
 	%obtain a cost structure in terms of the variables at the beginning and end of the phase
 	compute_phase_cost(Phase,Head,Call,(Forward_inv_hash,Forward_inv),Cost),
+	retract(current_chain(Chain)),
 	(get_param(debug,[])->print_phase_cost(Phase,Head,Call,Cost);true),
 	compute_phases_cost(More,Chain,Head,Call,Costs).
 	
@@ -213,13 +215,14 @@ compute_sums_and_max_min_in_phase(Head,Call,Phase,Maxs,Mins,Summatories_max,Summ
 add_general_ranking_functions(Head,Call,Phase):-
 	rf_limit(Max),
 %	(get_param(compute_ubs,[])->
-	   get_ranking_functions_constraints(Max,Head,Call,Phase,_,Top),
+	current_chain(Chain),
+	   get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Top),
 	   maplist(save_new_phase_top(Head,Call,Phase),Top)
 %	   ;
 %	   true)
 	   ,
 	(get_param(compute_lbs,[])->
-	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,_,LTop),
+	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain,LTop),
 	   maplist(save_new_phase_top(Head,Call,Phase),LTop)
 	   ;
 	   true).
@@ -255,10 +258,11 @@ compute_sum(_Head,_Call,_Phase,_Loop,[]+0,Max_min,Bounded,[bound(Op,[]+0,Bounded
 %maxsum: partial ranking function (a special case of linear sum)
 
 compute_sum(Head,Call,Phase,Loop,[]+1,max,Bounded,New_tops,New_auxs,Pending,Pending_out):-!,
+    current_chain(Chain),
 	bagof_no_fail(Rf,
 	Deps^Deps_type^Loops^
 	(
-			partial_ranking_function(Head,_Chain,Phase,Loops,Rf,Deps,Deps_type),
+			partial_ranking_function(Head,Chain,Phase,Loops,Rf,Deps,Deps_type),
 			contains_sl(Loops,Loop)		
 			),Rfs),
 	maplist(get_difference_version(Head,Call),Rfs,Rfs_diff),
@@ -277,7 +281,8 @@ compute_sum(Head,Call,Phase,Loop,[]+1,max,Bounded,New_tops,New_auxs,Pending,Pend
 % minsum: partial ranking function (a special case of linear sum)
 %/*
 compute_sum(Head,Call,Phase,Loop,[]+1,min,Bounded,New_tops,New_auxs,Pending,Pending_out):-
-	bagof_no_fail(Lb,get_partial_lower_bound(Head,Call,_Chain,Loop,Lb),Lbs),
+	current_chain(Chain),
+	bagof_no_fail(Lb,get_partial_lower_bound(Head,Call,Chain,Loop,Lb),Lbs),
 	maplist(check_loops_minsum(Head,Call,Phase,Loop,Bounded,Pending),Lbs,New_tops_list,New_auxs_list,Pending_out_list),
 	ut_flat_list(New_tops_list,New_tops),
 	ut_flat_list(New_auxs_list,New_auxs),
@@ -1135,8 +1140,8 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 	inverse_fr(Delta,Delta_inv),
 	multiply_le(Rf_diff,Delta_inv,LB).		
 	
-get_partial_lower_bound(Head,Call,_Chain,Loop,Lb):-
-	partial_ranking_function(Head,_,_Phase,Loops,Rf,_,_),
+get_partial_lower_bound(Head,Call,Chain,Loop,Lb):-
+	partial_ranking_function(Head,Chain,_Phase,Loops,Rf,_,_),
 	contains_sl(Loops,Loop),	
 	get_difference_version(Head,Call,Rf,Rf_diff),
 	integrate_le(Rf_diff,Den,Rf_diff_nat),

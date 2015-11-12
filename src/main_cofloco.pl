@@ -352,6 +352,9 @@ bottom_up_refinement_scc(Head) :-
 	compute_phase_loops(Head,2),
 	profiling_stop_timer_acum(unfold,_),
 
+	profiling_start_timer(inv),
+	compute_forward_invariants(Head,2),	
+	profiling_stop_timer_acum(inv,_),
 	
 	profiling_start_timer(termination),
 	find_ranking_functions(Head,2),
@@ -361,7 +364,7 @@ bottom_up_refinement_scc(Head) :-
 	remove_terminating_non_terminating_chains(Head,2),
 	
 	profiling_start_timer(inv),
-	compute_forward_invariants(Head,2),	
+	%compute_forward_invariants(Head,2),	
 	compute_invariants_for_scc(Head,2),
 	profiling_stop_timer_acum(inv,_),
 	print_chains_entry(Head_aux,2).
