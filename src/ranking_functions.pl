@@ -79,7 +79,7 @@ mutual dependencies in order to obtain lexicographic ranking functions
 %! computed_ranking_functions(Head:term,Chain:chain,Phase:phase)
 % record that the inference of ranking functions for the corresponding Phase of Chain in Head has been already performed
 :-dynamic computed_ranking_functions/3.
-
+:-dynamic computed_partial_ranking_functions/3.
 %! init_ranking_functions is det
 %clean the stored ranking functions
 init_ranking_functions:-
@@ -89,7 +89,8 @@ init_ranking_functions:-
 clean_ranking_functions(Head):-
 	retractall(ranking_function(Head,_,_,_)),
 	retractall(partial_ranking_function(Head,_,_,_,_,_,_)),
-	retractall(computed_ranking_functions(Head,_,_)).
+	retractall(computed_ranking_functions(Head,_,_)),
+	retractall(computed_partial_ranking_functions(Head,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! find_ranking_functions(+Head:term,+RefCnt:int) is det
@@ -112,42 +113,70 @@ find_chain_ranking_functions([Non_loop|Rec_elems],Head,Chain):-
 		find_chain_ranking_functions(Rec_elems,Head,Chain).
 
 find_chain_ranking_functions([Phase|Rec_elems],Head,Chain):-
-	    %TODO take the chain into account to get better ranking functions
 	    forward_invariant(Head,([Phase|Rec_elems],_),_,Inv),
-	    (\+computed_ranking_functions(Head,Chain,Phase)->
-		   compute_phase_rfs(Head,Chain,Phase,Inv),
-		   %maplist(compute_loop_partial_rfs(Head,Chain,Phase,[]),Phase),
-		   compute_phase_partial_rfs(Head,Chain,Phase,Inv),
-		   assert(computed_ranking_functions(Head,Chain,Phase))
-		;
-		   true),
+		compute_phase_rfs(Head,Chain,Phase,Inv),
+		compute_phase_partial_rfs(Head,Chain,Phase,Inv),
 		find_chain_ranking_functions(Rec_elems,Head,Chain).
 
 %! compute_phase_rfs(Head:term,Chain:chain,Phase:phase,Inv:polyhedron) is det 
 % try to compute ranking functions valid for all cost equations in Phase using the invariant Inv
 %For now we ignore the chain and infer generic ranking functions for Phase in any chain (the invariant is empty)
+compute_phase_rfs(Head,Chain,Phase,_Inv):-
+	computed_ranking_functions(Head,Chain,Phase),!.
+
+%rf valid for any chain
+compute_phase_rfs(Head,Chain,Phase,_):-
+	%we haven't computed any rf for this phase
+	\+computed_ranking_functions(Head,_,Phase),
+	phase_loop(Phase,_,Head,Call,Cs),
+	compute_iterations_ubs( Head, Call, Cs, Iter_Ubs),
+	Iter_Ubs\=[],!,
+	maplist(add_ranking_function(Head,Chain,Phase),Iter_Ubs),
+	assert(computed_ranking_functions(Head,_,Phase)).
+
+%chain specific
 compute_phase_rfs(Head,Chain,Phase,Inv):-
 	phase_loop(Phase,_,Head,Call,Cs),
 	nad_glb(Cs,Inv,Cs_1),
 	compute_iterations_ubs( Head, Call, Cs_1, Iter_Ubs),
-	maplist(add_ranking_function(Head,Chain,Phase),Iter_Ubs).
+	maplist(add_ranking_function(Head,Chain,Phase),Iter_Ubs),
+	assert(computed_ranking_functions(Head,Chain,Phase)).
 
 
 %! compute_phase_partial_rfs(Head:term,Chain:chain,Phase:phase,Inv:polyhedron) is det 
 % try to compute ranking functions for each cost equation in the phase and infer
 % how these ranking functions can be increased in other cost equations (the dependencies)
+compute_phase_partial_rfs(Head,Chain,Phase,_Inv):-
+	computed_partial_ranking_functions(Head,Chain,Phase),!.
+
+
+compute_phase_partial_rfs(Head,Chain,Phase,_):-
+	%we haven't computed any rf for this phase
+	\+computed_partial_ranking_functions(Head,_,Phase),
+	empty_mm(Empty_map),
+	%compute without invariant
+	foldl(compute_1_loop_rfs(Head,Call,[]),Phase,Empty_map,Initial_map),
+	\+member((_,[]),Initial_map),
+	% exclude ranking functions that are general
+	exclude(covered_by_rf_map(Head,Phase,Chain),Initial_map,Initial_map_filtered),
+	%the initial dependencies are all phases except the covered ones
+	maplist(get_initial_deps(Phase),Initial_map_filtered,Init_deps),
+	maplist(check_lexicographic_deps_aux(Head,Call,[]),Initial_map_filtered,Init_deps,Deps,Type_deps),
+	maplist(add_partial_ranking_function_aux(Head,_,Phase),Initial_map_filtered,Deps,Type_deps),
+	assert(computed_ranking_functions(Head,_,Phase)).
+	
 compute_phase_partial_rfs(Head,Chain,Phase,Inv):-
 	empty_mm(Empty_map),
 	%initial map with the ranking functions and the loops they cover
 	foldl(compute_1_loop_rfs(Head,Call,Inv),Phase,Empty_map,Initial_map),
+	Chain_saved=Chain,
 	% exclude ranking functions that are general
 	exclude(covered_by_rf_map(Head,Phase,Chain),Initial_map,Initial_map_filtered),
-	
-
 	%the initial dependencies are all phases except the covered ones
 	maplist(get_initial_deps(Phase),Initial_map_filtered,Init_deps),
 	maplist(check_lexicographic_deps_aux(Head,Call,Inv),Initial_map_filtered,Init_deps,Deps,Type_deps),
-	maplist(add_partial_ranking_function_aux(Head,Chain,Phase),Initial_map_filtered,Deps,Type_deps).
+	maplist(add_partial_ranking_function_aux(Head,Chain_saved,Phase),Initial_map_filtered,Deps,Type_deps),
+	assert(computed_ranking_functions(Head,Chain_saved,Phase)).
 
 
 compute_1_loop_rfs(Head,Call,Inv,Loop,Map_in,Map_out):-
