@@ -106,7 +106,8 @@ difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Exp_set,Exp_set2):-
 	append([Coeff_0|Unknowns1],Unknowns2,Unknowns),
 	get_symbolic_dmatrix(Unknowns,Template),
 	add_dmatrix_symbolically(Template,Coeffs_minus,Expression_vector),
-	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
+	%generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
+	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,[Coeff_0=0|Characterizing_constraints],system(Complete_system,Ys)),
 	
 	append(Ys,Unknowns,All_new_vars),
 	%nad_project(Unkowns,Complete_system,Projected),

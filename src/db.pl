@@ -254,6 +254,24 @@ add_ground_equation_header(_Non_ground,Ground):-
 %! add_eq_ph(+Cost_equation:cost_equation,Previous_eqs:list(equation_id)) is det
 % stores the cost equation Cost_equation in the database
 % Previous_eqs are the cost equation ids that originated this new cost equation
+
+%the cost equation already exists
+%/*
+add_eq_ph(eq_ph(Head,0,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_eqs) :-
+	eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size2,Term_flag),
+	term_variables((P_Size,P_Size2),All_vars),
+	(P_Size==P_Size2
+	;
+	 nad_entails(All_vars,P_Size,P_Size2)
+	 ;
+	 nad_entails(All_vars,P_Size2,P_Size),
+	 retract(eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size2,Term_flag)),
+	 assert(eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)) 
+	 ),!,
+	retract(eq_refined(Previous_eqs1,Id)),
+	append(Previous_eqs,Previous_eqs1,Previous_eqs2),
+	assert(eq_refined(Previous_eqs2,Id)).
+%*/
 add_eq_ph(eq_ph(Head,RefCnt,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_eqs) :-
 	(R_Calls=[_,_|_]-> 
 	        functor(Head,Name,Arity),
