@@ -33,7 +33,7 @@ that can be passed on to the callers.
 
 :- use_module(chain_solver,[compute_chain_cost/3]).
 %:- use_module(ub_solver,[solve_system/5]).
-:- use_module(cost_structure_solver,[cstr_maxminimization/3]).
+:- use_module(cost_structure_solver,[cstr_maxminimization/5]).
 :- use_module('../db',[
 		  external_call_pattern/5,
 		  add_upper_bound/3,
@@ -102,7 +102,7 @@ compute_closed_bound(Head):-
 	upper_bound(Head,Chain,_Vars,Cost),
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 	(get_param(compute_ubs,[])->
-	  cstr_maxminimization(Cost,max,UB),
+	  cstr_maxminimization(Cost,max,Head,Head_Pattern,UB),
 	  cexpr_simplify(UB,Head_Pattern,UB1),
 	  
 	  add_closed_upper_bound(Head,Chain,UB1)
@@ -110,7 +110,7 @@ compute_closed_bound(Head):-
 	  true
 	),
     (get_param(compute_lbs,[])->
-	  cstr_maxminimization(Cost,min,LB),
+	  cstr_maxminimization(Cost,min,Head,Head_Pattern,LB),
 	  cexpr_simplify(LB,Head_Pattern,LB1),
 	  add_closed_lower_bound(Head,Chain,LB1)
 	  ;

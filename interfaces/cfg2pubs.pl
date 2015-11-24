@@ -48,7 +48,7 @@ save_exec:-
 :-dynamic exit_id/2.
 
 :- dynamic eq/4.
-
+:- dynamic ground_term/2.
 :-dynamic loop_has_new_vars/2.
 
 
@@ -65,6 +65,7 @@ init_db :-
 	retractall(pcfg_edge(_,_,_,_)),
 	retractall(cfg_entry(_)),
 	retractall(cfg_nodes(_)),
+	retractall(ground_term(_,_)),
 	assert(last_id(1)),
 	!.
 
@@ -84,17 +85,18 @@ cfg2pubs([F|Fs]) :-
 
 cfg2pubs_1(F) :-
 	open(F,read,S),
-	read(S,CFG),
+%	read(S,CFG),
+	read_term(S,CFG,[variable_names(Bindings)]),
 	close(S),
 	atom_concat(F,'.ces',Pubs_F),
 	tell(Pubs_F),
-	cfg2pubs_2(CFG),
+	cfg2pubs_2(CFG,Bindings),
 	told,
 	!.
 
-cfg2pubs_2(CFG) :-
+cfg2pubs_2(CFG,Bindings) :-
 	init_db,
-	assert_cfg_into_db(CFG),
+	assert_cfg_into_db(CFG,Bindings),
 	identify_loops,
 	(\+irreducible(_)->
 	assert(loop_header(nil)),
@@ -267,12 +269,22 @@ print_eqs:-
 	eq(Head,C,Call,Cs),
 	Head=..[Entry|_],!,
 	retract(eq(Head,C,Call,Cs)),
+	Head=..[Name|Vars],
+	(ground_term(Name,Input_vars)->
+	  append(Input_vars,_,Vars)
+	; 
+         true),
 	numbervars(eq(Head,C,Call,Cs),0,_),
 	format('~p.~n',[eq(Head,C,Call,Cs)]),
 	print_eqs_1.
 
 print_eqs_1:-
 	retract(eq(Head,C,Call,Cs)),	
+	Head=..[Name|Vars],
+	(ground_term(Name,Input_vars)->
+	  append(Input_vars,_,Vars)
+	; 
+          true),
 	numbervars(eq(Head,C,Call,Cs),0,_),
 	format('~p.~n',[eq(Head,C,Call,Cs)]),
 	fail.
@@ -280,25 +292,34 @@ print_eqs_1.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Preparing the database of rules
-assert_cfg_into_db(cfg(Edges)) :-
+assert_cfg_into_db(cfg(Edges),Bindings) :-
 	Edges=[e(StartNode,_,_,_)|_],
 	StartNode=..[Start_name|_],
 	assert(cfg_entry(Start_name)),
-	assert_cfg_into_db_1(Edges,Nodes_1),
+	assert_cfg_into_db_1(Edges,Bindings,Nodes_1),
 	sort(Nodes_1,Nodes),
 	assert(cfg_nodes(Nodes)).
 
 
-assert_cfg_into_db_1([],[]).
-assert_cfg_into_db_1([e(Head,Call,C,Cs)|Es],[S,T|Ns]) :-
+assert_cfg_into_db_1([],_,[]).
+assert_cfg_into_db_1([e(Head,Call,C,Cs)|Es],Bindings,[S,T|Ns]) :-
 	Head =.. [S|Vs],
 	Call =.. [T|PVs],
+	save_ground_name(S,Vs,Bindings),
 	assert(cfg_edge(S,T)),
 	assert(cfg_edge_rev(T,S)),
 	assert(pcfg_edge(S,T,C,cons(Vs,PVs,Cs))), 
-	assert_cfg_into_db_1(Es,Ns).
+	assert_cfg_into_db_1(Es,Bindings,Ns).
 
-
+save_ground_name(Name,_Vars,_Bindings):-
+	ground_term(Name,_),!.
+	
+save_ground_name(Name,Vars,Bindings):-
+	copy_term((Vars,Bindings),(Vars2,Bindings2)),
+	maplist(unify_eq,Bindings2),
+	assert(ground_term(Name,Vars2)).
+	
+unify_eq(X=X).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

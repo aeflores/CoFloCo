@@ -1,5 +1,5 @@
 :- module(cost_structure_solver,[
-		cstr_maxminimization/3
+		cstr_maxminimization/5
 	]).
 
 :- use_module('../IO/params',[get_param/2]).	
@@ -38,21 +38,38 @@
 		assign_right_vars/3]).	
 
 
-:- use_module(stdlib(linear_expression),[parse_le/2,write_le/2,negate_le/2]).	
+:- use_module(stdlib(linear_expression),[parse_le/2,write_le/2,negate_le/2,
+    is_constant_le/1,
+	integrate_le/3,
+	write_le/2,
+	elements_le/2,
+	constant_le/2]).	
+:- use_module('../utils/polyhedra_optimizations',[
+			nad_entails_aux/3]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4,ut_sort/2,ut_var_member/2]).	
 :- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
 :- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
 :- use_module(stdlib(fraction)).
 :- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
-		
+
+simplify_top_nats(Head,Phi,bound(Op,Lin_exp,Bounded),bound(Op,[]+0,Bounded)):-
+	Head=..[_|Vars],
+	integrate_le(Lin_exp,_Den,Lin_exp_nat),
+	write_le(Lin_exp_nat,Expression_nat),
+	nad_entails_aux(Vars,Phi,[Expression_nat =<0]),!.
 	
-cstr_maxminimization(Cost_long,Max_min,Cost_final):-
+simplify_top_nats(_Head,_Inv,Top,Top).
+
+				
+cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_final):-
 	cstr_shorten_variables_names(Cost_long,no_list,Cost_short),	
 	cstr_remove_useless_constrs_max_min(Cost_short,Max_min,cost(Ub_tops,Lb_tops,Aux_exps,Bases,Base)),
+	maplist(simplify_top_nats(Head,Inv),Ub_tops,Ub_tops1),
+	maplist(simplify_top_nats(Head,Inv),Lb_tops,Lb_tops1),
 	generate_constraint_with_base(Bases,Base,Max_min,bound(Op,Exp_cost,_)),
-	term_variables((Ub_tops,Lb_tops),Entry_vars),
-	ut_flat_list([Ub_tops,Lb_tops,Aux_exps],All_constrs),
+	term_variables((Ub_tops1,Lb_tops1),Entry_vars),
+	ut_flat_list([Ub_tops1,Lb_tops1,Aux_exps],All_constrs),
 	maplist(annotate_bounded,All_constrs,All_constrs_annotated),
 	get_non_deterministic_vars(All_constrs_annotated,[],Non_det_vars),
 	compress_constraints(All_constrs_annotated,Non_det_vars,[],Remaining_constrs,[],Map),

@@ -43,10 +43,12 @@
 		cstr_join_equal_top_expressions/2,
 		cstr_remove_useless_constrs_max_min/3,
 		cstr_shorten_variables_names/3]).
-:- use_module(cofloco_utils,[sort_with/3,write_sum/2,write_product/2,tuple/3,assign_right_vars/3]).	
+:- use_module(cofloco_utils,[is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3,assign_right_vars/3]).	
 :- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1]).	
 
+:- use_module('../IO/params',[get_param/2]).
 :- use_module('../IO/output',[print_aux_exp/1]).	
+:- use_module('../bound_computation/cost_structure_solver',[cstr_maxminimization/5]).
 
 :- use_module(stdlib(linear_expression),[parse_le/2,write_le/2,negate_le/2]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
@@ -62,6 +64,30 @@
 % creates inefficient structures
 % when the cost is a constant, the auxiliary expressions are not well propagated
 cstr_or_compress([Cost],Cost):-!.
+
+cstr_or_compress(Costs,Cost_final):-
+	\+get_param(compute_lbs,[]),!,
+	from_list_sl(Costs,Costs_set),
+	get_cstr_components(Costs_set,Tops_list,_,Auxs_list,Elems_list,Bases),
+	ut_flat_list(Tops_list,Tops_flat),
+	ut_flat_list(Auxs_list,Auxs_flat),
+	ut_flat_list(Elems_list,Elems_flat),
+	max_list(Bases,Base),
+	(maplist(is_constant_constraint,Tops_flat)->
+	    cstr_maxminimization(cost(Tops_flat,[],Auxs_flat,Elems_flat,Base),max,none,[],New_base),
+	    cexpr_simplify(New_base,[],New_base_simpl),
+	    (is_rational(New_base_simpl)->
+	        Cost_final=cost([],[],[],[],New_base_simpl)
+	        ;
+	        cstr_name_aux_var(Name),
+	        Cost_final=cost([],[],[],[(Name,1)],0)
+	        )
+	;
+	 cstr_join_equal_top_expressions(cost(Tops_flat,[],Auxs_flat,Elems_flat,Base),Cost_final)
+	 ).
+
+
+
 cstr_or_compress(Costs,Cost_final):-
 	from_list_sl(Costs,Costs_set),
 	get_cstr_components(Costs_set,Tops_list,Tops_min_list,Auxs_list,Elems_list,Bases),
@@ -95,6 +121,8 @@ cstr_or_compress(Costs,Cost_final):-
 	ut_flat_list([Auxs_list,Aux_extra,Pos_disjunct_auxs,Neg_disjunct_auxs],Auxs),
 	cstr_join_equal_top_expressions(cost(Tops,Tops_min,Auxs,Elems1,0),Cost_final).
 
+
+is_constant_constraint(bound(_Op,[]+_Cnt,_Bounded)).	
 is_aux_exp(bound(_,exp(_,_,_,_),_)).
 is_ub_bound(bound(ub,_,_)).
 
@@ -215,7 +243,6 @@ cstr_get_lin_exp_from_tops(Op,Tops,Exps_set):-
  	maplist(cstr_get_expression_from_top(Op),Tops,Exps),
  	from_list_sl(Exps,Exps_set).
 cstr_get_expression_from_top(Op,bound(Op,Exp,_),Exp).
-	
 
 
 cstr_join_equal_top_expressions(cost(Ub_tops,Lb_tops,Auxs,Bases,Base),cost(Ub_tops2,Lb_tops2,Auxs2,Bases,Base)):-
