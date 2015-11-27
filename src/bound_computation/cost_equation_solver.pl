@@ -23,7 +23,7 @@ the input variables and the variables of the recursive call (if there is one)
 */
 
 
-:- module(cost_equation_solver,[get_equation_cost/5,init_cost_equation_solver/0]).
+:- module(cost_equation_solver,[get_loop_cost/5,init_cost_equation_solver/0]).
 
 :- use_module(constraints_maximization,[
 			max_min_constrs_in_cost_equation/6]).
@@ -51,39 +51,35 @@ the input variables and the variables of the recursive call (if there is one)
 %! equation_cost(Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Eq_id:equation_id,Cost:cost_structure)
 % store the cost structure of a cost equation application given a local invariant
 % for cacheing purposes
-:- dynamic equation_cost/5.
+:- dynamic loop_cost/5.
 
 %! init_cost_equation_solver
 % clear all the stored intermediate results
 init_cost_equation_solver:-
-	retractall(equation_cost(_,_,_,_,_,_)).
+	retractall(loop_cost(_,_,_,_,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! get_equation_cost(+Head:term,+Call:term,+Forward_inv_hash:(int,polyhedron),+Eq_id:equation_id,-Cost:cost_structure) is det
-%  Given a cost equation id (Eq_id) , it accesses the definition and computes the cost of an individual equation appication:
-%  * each call in the equation is substituted by it cost expression.
-%  * the base costs are added and then expressed in terms of the variables of Head
-%  * the loops bodies are put together and expressed in terms of the variables of Head
-%  * the constraints are compressed and expressed in terms of the variables of Head.
-get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Cost):-
-	equation_cost(Head,Call,(Forward_inv_hash,Forward_inv2),Loop_id,Cost),
+%! get_loop_cost(+Head:term,+Call:term,+Forward_inv_hash:(int,polyhedron),+Loop_id:loop_id,-Cost:cost_structure) is det
+%  Given a loop id (Eq_id) , it accesses the definition and computes the cost of an individual loop application
+% a loop corresponds to one or more cost equations that behave the same way with respect to the recursive call
+get_loop_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Cost):-
+	loop_cost(Head,Call,(Forward_inv_hash,Forward_inv2),Loop_id,Cost),
 	Forward_inv==Forward_inv2,!.
 
-get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
+get_loop_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
     loop_ph(Head,(Loop_id,_),Call,_Inv,Eqs,_),
-    maplist(get_equation_cost_1(Head,Call,Forward_inv),Eqs,Costs),
+    maplist(get_equation_cost(Head,Call,Forward_inv),Eqs,Costs),
     (Costs=[]->
     	cstr_empty(Final_cost)
     	;
     	cstr_or_compress(Costs,Final_cost)
-    	%Costs=[Final_cost]
     	),
-  %  nad_glb(Forward_inv,Inv,Inv1),
+    assert(loop_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost)).
     
-    assert(equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost)).
-    
-    
- get_equation_cost_1(Head,Call,Forward_inv,Eq_id,Cost):-
+%! get_equation_cost(+Head:term,+Call:term,+Forward_inv:polyhedron,+Eq_id:eq_id,-Cost:cost_structure) is det
+%  * each call in the equation is substituted by its cost structure
+%  * the final constraints of the cost expressions are combined and the costs added 
+ get_equation_cost(Head,Call,Forward_inv,Eq_id,Cost):-
      (Call==none->   
        eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,[],_,Phi,_)
        ;
@@ -92,6 +88,8 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 	nad_glb(Forward_inv,Phi,Phi1),
 	term_variables((Head,Call),TVars),
 	foldl(accumulate_calls,Base_calls,(Basic_cost,1),(cost(Ub_tops,Lb_tops,Auxs,Bases,Base),_)),
+	% we reverse the calls in case we want to combine cost structures incrementally
+	% this is not done now but it would allow us to detect which calls make us lose precision
 	reverse(Base_calls,Base_calls_inv),
 	maplist(term_variables,Base_calls_inv,Base_calls_vars),
 	maplist(from_list_sl,Base_calls_vars,Base_calls_sets),
@@ -103,6 +101,7 @@ get_equation_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 accumulate_calls((Call,chain(Chain)),(cost(Tops1,LTops1,Auxs1,Bases1,Base1),N),(cost([Tops2|Tops1],[LTops2|LTops1],[Auxs2|Auxs1],Bases,Base),N1)) :-
     N1 is N+1,
     upper_bound(Call,Chain,_Hash,Cost_call),
+    % we extend the names of the intermediate variables to ensure they are unique
     cstr_extend_variables_names(Cost_call,n(N),cost(Tops2,LTops2,Auxs2,Bases2,Base2)),
     sum_fr(Base1,Base2,Base),
     append(Bases2,Bases1,Bases).
@@ -110,12 +109,11 @@ accumulate_calls((Call,chain(Chain)),(cost(Tops1,LTops1,Auxs1,Bases1,Base1),N),(
 accumulate_calls((Call,external_pattern(Id)),(cost(Tops1,LTops1,Auxs1,Bases1,Base1),N),(cost([Tops2|Tops1],[LTops2|LTops1],[Auxs2|Auxs1],Bases,Base),N1)) :-
     N1 is N+1,
     external_upper_bound(Call,Id,Cost_call),
+    % we extend the names of the intermediate variables to ensure they are unique
     cstr_extend_variables_names(Cost_call,n(N),cost(Tops2,LTops2,Auxs2,Bases2,Base2)),
     sum_fr(Base1,Base2,Base),
     append(Bases2,Bases1,Bases).   
     
-%substitute_call((Call,external_pattern(Id)),Base_cost,Loops,(Constraints,IConstraints)) :-
-%	external_upper_bound(Call,Id,cost(Base_cost,Loops,Constraints,IConstraints)).
 
 
 

@@ -5,8 +5,7 @@ according to a polyhedron describing the relations between variables.
 The module includes predicates to compress sets of constraints
  at the same time they are maximized. 
  
-It is used in the cost_equation_solver.pl, the phase_solver.pl
- and the chain_solver.pl.
+It is used in  cost_equation_solver.pl and chain_solver.pl.
 
 @author Antonio Flores Montoya
 
@@ -64,87 +63,49 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 :- use_module(stdlib(fraction),[greater_fr/2]).
 
 :-use_module(library(apply_macros)).
-:-use_module(library(lists)).			
-%/*										
+:-use_module(library(lists)).		
+	
+
+%! max_min_constrs_in_cost_equation(+FCons_list:list(list(final_constr)),+Base_calls:list(term),Phi:polyhedron,TVars:list(Var),FCons_out:list(final_cons),ICons_out:list(inter_cons)) is det
+% transform a list of lists of final constraints from a cost equation
+% into a simple list of final constraints expressed in terms of TVars using max_min_constrs/4
+%
+% It is prepared to originate intermediate constraints as well but not used yet
 max_min_constrs_in_cost_equation(Top_exps_list,_Base_calls,Phi,TVars,Final_tops,[]):-
 	ut_flat_list(Top_exps_list,Top_exps),
+	max_min_constrs(Top_exps,Phi,TVars,Final_tops).
+	
+%! max_min_constrs_in_cost_equation(+FCons:list(final_constr),+Chain:chain,Phi:polyhedron,TVars:list(Var),FCons_out:list(final_cons),ICons_out:list(inter_cons)) is det
+% transform a list of final constraints from two phases
+% into a simple list of final constraints expressed in terms of TVars using max_min_constrs/4	
+%
+% It is prepared to originate intermediate constraints as well but not used yet
+max_min_top_exprs_in_chain(Top_exps,_Chain,Phi,Head,Final_tops,[]):-
+	term_variables(Head,TVars),
+	max_min_constrs(Top_exps,Phi,TVars,Final_tops).
+	
+%! max_min_constrs(+FCons_list:list(final_constr),Phi:polyhedron,TVars:list(Var),FCons_out:list(final_cons)) is det
+% transform a list of final constraints into a simple list of final constraints expressed in terms of TVars using the information in Phi
+% * The final_cons that are guaranteed to be positive are transformed together
+% * The rest (the insecure constraints) are transformed one by one			
+max_min_constrs(Top_exps,Phi,TVars,Final_tops):-
 	(Top_exps=[bound(ub,_,_)|_]-> Max_min=max;Max_min=min),	
+	% separate positive constraints and insecure constraints
 	generate_constraints(Top_exps,Phi,[],Constraints,Insecure_constraints,Dicc),
+	% combine positive constraints
 	maplist(tuple,_Names_set,Extra_vars,Dicc),
 	from_list_sl(Extra_vars,Extra_vars_set),
 	foldl(inverse_map,Dicc,[],Dicc_inv),
 	append(Constraints,Phi,Phi1),
 	append(Extra_vars,TVars,Total_vars),
 	nad_project(Total_vars,Phi1,Projected),
+	cstr_generate_top_expr_from_poly(Projected,Max_min,Dicc_inv,Extra_vars_set,New_top_exps),
+	% transform insecure constraints
 	maplist(maximize_insecure_constraints(Total_vars,Phi,Max_min),Insecure_constraints,Extra_tops),
-	cstr_generate_top_expr_from_poly(Projected,Max_min,Dicc_inv,Extra_vars_set,New_top_exps),
+	% put the result together
 	ut_flat_list([Extra_tops,New_top_exps],Final_tops).
-%*/
-
-/*
-maximize_top_expressions_in_cost_equation(Top_exps_list,Base_call_vars,Phi,TVars,New_tops,New_auxs):-
-	from_list_sl(TVars,TVars_set),
-	unions_sl([TVars_set|Base_call_vars],All_vars),
-	incremental_maximization_cost_equation(Top_exps_list,Base_call_vars,carry_info([],[]),All_vars,Phi,New_tops,New_auxs).
-
-incremental_maximization_cost_equation([],[],carry_info(Dicc_inv,Extra_vars_set),_Vars,Phi,New_top_exps,[]):-
-	cstr_generate_top_expr_from_poly(Phi,Dicc_inv,Extra_vars_set,New_top_exps).
-
-incremental_maximization_cost_equation([Top_exps|Top_exp_list],[Base_vars|Base_vars_list],
-										Carry_info,Vars,Phi,New_top_exps,[]):-
-	Carry_info=carry_info(Dicc_inv,Extra_vars_set),
-	generate_constraints(Top_exps,[],Constraints,Dicc1),
-	maplist(tuple,_Names_set1,Extra_vars1,Dicc1),
-	from_list_sl(Extra_vars1,Extra_vars_set1),
-	foldl(inverse_map,Dicc1,[],Dicc_inv1),
-	append(Constraints,Phi,Phi1),
-	difference_sl(Vars,Base_vars,Vars1),
-	unions_sl([Extra_vars_set1,Extra_vars_set,Vars1],Total_vars),
-	nad_project(Total_vars,Phi1,Projected),
-	check_lost_bounds(Projected,Extra_vars_set,Lost_vars),
-	(Lost_vars\=[]->
-		throw(lost_expressions),
-		%get_needed_expressions(Lost_vars,Phi,Base_vars,Expressions),
-		writeln(lost_expressions(Lost_vars,Dicc_inv))
-	;
-		true
-		),
-	update_carry_info(Carry_info,Extra_vars_set1,Dicc_inv1,Carry_info1),
-	incremental_maximization_cost_equation(Top_exp_list,Base_vars_list,Carry_info1,Vars1,Projected,New_top_exps,[]).
-
-update_carry_info(carry_info(Dicc,Var_set),Var_set1,Dicc1,carry_info(Dicc2,Var_set2)):-
-	union_sl(Var_set,Var_set1,Var_set2),
-	join_lm(Dicc,Dicc1,Dicc2).
-
-check_lost_bounds([],Lost_vars,Lost_vars):-!.
-check_lost_bounds(_,[],[]):-!.
-check_lost_bounds([C|Cs],Vars,Lost_vars):-
-	normalize_constraint_wrt_vars(C,Vars,C1),!,
-	(C1= (Its =< _Exp)->
-		from_list_sl(Its,Its_set),
-		difference_sl(Vars,Its_set,Vars1)
-		;
-		Vars1=Vars
-	),
-	check_lost_bounds(Cs,Vars1,Lost_vars).
 	
-check_lost_bounds([_C|Cs],Vars,Lost_vars):-
-	check_lost_bounds(Cs,Vars,Lost_vars).
-*/
-	
-max_min_top_exprs_in_chain(Top_exps,_Chain,Phi,Head,Final_tops,[]):-
-	(Top_exps=[bound(ub,_,_)|_]-> Max_min=max;Max_min=min),	
-	term_variables(Head,TVars),
-	generate_constraints(Top_exps,Phi,[],Constraints,Insecure_constraints,Dicc),
-	maplist(tuple,_Names,Extra_vars,Dicc),
-	from_list_sl(Extra_vars,Extra_vars_set),
-	foldl(inverse_map,Dicc,[],Dicc_inv),
-	append(Constraints,Phi,Phi1),
-	append(Extra_vars,TVars,Total_vars),
-	nad_project(Total_vars,Phi1,Projected),
-	maplist(maximize_insecure_constraints(TVars,Phi,Max_min),Insecure_constraints,Extra_tops),
-	cstr_generate_top_expr_from_poly(Projected,Max_min,Dicc_inv,Extra_vars_set,New_top_exps),
-	ut_flat_list([Extra_tops,New_top_exps],Final_tops).
+
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -421,4 +382,55 @@ get_right_sides_1([_|Es],Max_Min,Maxs):-
 	get_right_sides_1(Es,Max_Min,Maxs).	
 	
 
+/*
+% this in an alternative implementation to detect due to which calls the transformation loses information
 
+maximize_top_expressions_in_cost_equation(Top_exps_list,Base_call_vars,Phi,TVars,New_tops,New_auxs):-
+	from_list_sl(TVars,TVars_set),
+	unions_sl([TVars_set|Base_call_vars],All_vars),
+	incremental_maximization_cost_equation(Top_exps_list,Base_call_vars,carry_info([],[]),All_vars,Phi,New_tops,New_auxs).
+
+incremental_maximization_cost_equation([],[],carry_info(Dicc_inv,Extra_vars_set),_Vars,Phi,New_top_exps,[]):-
+	cstr_generate_top_expr_from_poly(Phi,Dicc_inv,Extra_vars_set,New_top_exps).
+
+incremental_maximization_cost_equation([Top_exps|Top_exp_list],[Base_vars|Base_vars_list],
+										Carry_info,Vars,Phi,New_top_exps,[]):-
+	Carry_info=carry_info(Dicc_inv,Extra_vars_set),
+	generate_constraints(Top_exps,[],Constraints,Dicc1),
+	maplist(tuple,_Names_set1,Extra_vars1,Dicc1),
+	from_list_sl(Extra_vars1,Extra_vars_set1),
+	foldl(inverse_map,Dicc1,[],Dicc_inv1),
+	append(Constraints,Phi,Phi1),
+	difference_sl(Vars,Base_vars,Vars1),
+	unions_sl([Extra_vars_set1,Extra_vars_set,Vars1],Total_vars),
+	nad_project(Total_vars,Phi1,Projected),
+	check_lost_bounds(Projected,Extra_vars_set,Lost_vars),
+	(Lost_vars\=[]->
+		throw(lost_expressions),
+		%get_needed_expressions(Lost_vars,Phi,Base_vars,Expressions),
+		writeln(lost_expressions(Lost_vars,Dicc_inv))
+	;
+		true
+		),
+	update_carry_info(Carry_info,Extra_vars_set1,Dicc_inv1,Carry_info1),
+	incremental_maximization_cost_equation(Top_exp_list,Base_vars_list,Carry_info1,Vars1,Projected,New_top_exps,[]).
+
+update_carry_info(carry_info(Dicc,Var_set),Var_set1,Dicc1,carry_info(Dicc2,Var_set2)):-
+	union_sl(Var_set,Var_set1,Var_set2),
+	join_lm(Dicc,Dicc1,Dicc2).
+
+check_lost_bounds([],Lost_vars,Lost_vars):-!.
+check_lost_bounds(_,[],[]):-!.
+check_lost_bounds([C|Cs],Vars,Lost_vars):-
+	normalize_constraint_wrt_vars(C,Vars,C1),!,
+	(C1= (Its =< _Exp)->
+		from_list_sl(Its,Its_set),
+		difference_sl(Vars,Its_set,Vars1)
+		;
+		Vars1=Vars
+	),
+	check_lost_bounds(Cs,Vars1,Lost_vars).
+	
+check_lost_bounds([_C|Cs],Vars,Lost_vars):-
+	check_lost_bounds(Cs,Vars,Lost_vars).
+*/

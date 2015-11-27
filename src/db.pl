@@ -5,7 +5,7 @@ This module acts as a database that stores:
   * the set of cost equations in different stages of refinement
   * the external call patterns, that summarize the possible call patterns to a refined SCC
   * the loops (which are fragments of cost equations)
-  * the generated upper bounds
+  * the generated closed-form bounds
 
 @author Antonio Flores Montoya
 

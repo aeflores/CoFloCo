@@ -41,7 +41,6 @@ This module computes different kinds of invariants for the chains:
 		      backward_invariant/4,
 		      forward_invariant/4,
 		      scc_forward_invariant/3,
-		      get_phase_star/4,
 		      phase_transitive_closure/5,
 		      add_scc_forward_invariant/3]).
 
@@ -49,8 +48,7 @@ This module computes different kinds of invariants for the chains:
 :- use_module(chains,[chain/3]).
 
 
-:- use_module('../utils/cofloco_utils',[assign_right_vars/3,add_equality_constraints/4,
-normalize_constraint/2]).
+:- use_module('../utils/cofloco_utils',[assign_right_vars/3]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,
 					nad_consistent_constraints_group_aux/1,
 					nad_is_bottom/1,
@@ -457,20 +455,7 @@ compute_phase_transitive_closure(Phase,RefCnt):-
         transitive_closure_invariant_fixpoint(inv(Head,Call,Inv_0),Loops,inv(Entry_out,Call_out, Trans_closure)),
         add_phase_transitive_closure(Phase,RefCnt,Entry_out,Call_out,Trans_closure).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! get_phase_star(+Head:term,+Call:term,+Phase:phase,-Cs_star:polyhedron) is det
-% computes (if it hasn't been computed before) the transitive reflexive closure of the phase Phase in terms of Head and Call
-get_phase_star(Head,Call,Phase,Cs_star):-
-	phase_transitive_star_closure(Phase,_RefCnt,Head,Call,Cs_star),!.
-	
-	
-get_phase_star(Head,Call,Phase,Cs_star):-
-	phase_transitive_closure(Phase,RefCnt,Head,Call,Cs_transitive),
-	Head=..[_|Evars],Call=..[_|Cvars],
-	add_equality_constraints(Evars,Cvars,[], Eq_cs),
-	nad_list_lub([Eq_cs,Cs_transitive],Cs_star),
-	assert(phase_transitive_star_closure(Phase,RefCnt,Head,Call,Cs_star)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Low level fixpoint computations

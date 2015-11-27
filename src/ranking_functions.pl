@@ -1,8 +1,8 @@
 /**  <module>  ranking_functions
 
 This module computes ranking functions of cost equations and checks their  
-mutual dependencies in order to obtain lexicographic ranking functions
-
+mutual dependencies in order to obtain lexicographic ranking functions.
+These ranking functions are used to prove termination.
 
 
 @author Antonio Flores Montoya
@@ -108,7 +108,6 @@ find_ranking_functions(_,_).
 
 %! find_chain_ranking_functions(Chain:chain,Head:term,Chain:chain) is det
 % infer ranking functions for the iterative phases of a chain
-% right now we ignore the chain invariants so the ranking functions for a phase are universal
 find_chain_ranking_functions([],_,_).
 find_chain_ranking_functions([Non_loop|Rec_elems],Head,Chain):-
 		number(Non_loop),!,
@@ -122,11 +121,10 @@ find_chain_ranking_functions([Phase|Rec_elems],Head,Chain):-
 
 %! compute_phase_rfs(Head:term,Chain:chain,Phase:phase,Inv:polyhedron) is det 
 % try to compute ranking functions valid for all cost equations in Phase using the invariant Inv
-%For now we ignore the chain and infer generic ranking functions for Phase in any chain (the invariant is empty)
 compute_phase_rfs(Head,Chain,Phase,_Inv):-
 	computed_ranking_functions(Head,Chain,Phase),!.
 
-%rf valid for any chain
+% we try to infer a universal rf for the phase (ignoring the given invariant)
 compute_phase_rfs(Head,Chain,Phase,_):-
 	%we haven't computed any rf for this phase
 	\+computed_ranking_functions(Head,_,Phase),
@@ -136,7 +134,7 @@ compute_phase_rfs(Head,Chain,Phase,_):-
 	maplist(add_ranking_function(Head,Chain,Phase),Iter_Ubs),
 	assert(computed_ranking_functions(Head,_,Phase)).
 
-%chain specific
+%If we failed to compute a universal ranking function, we try to compute ranking functions using the given chain invariant
 compute_phase_rfs(Head,Chain,Phase,Inv):-
 	phase_loop(Phase,_,Head,Call,Cs),
 	nad_glb(Cs,Inv,Cs_1),
@@ -151,7 +149,11 @@ compute_phase_rfs(Head,Chain,Phase,Inv):-
 compute_phase_partial_rfs(Head,Chain,Phase,_Inv):-
 	computed_partial_ranking_functions(Head,Chain,Phase),!.
 
-
+% we try to compute universal ranking functions first. If there is a cost equation that does not
+% have any universal ranking function we fail and use the invariant.
+%
+% This is not perfect because we might have a ranking function in every cost equation of a phase and still have a cyclic dependency
+% but it's a decent heuristic.
 compute_phase_partial_rfs(Head,Chain,Phase,_):-
 	%we haven't computed any rf for this phase
 	\+computed_partial_ranking_functions(Head,_,Phase),
@@ -167,6 +169,7 @@ compute_phase_partial_rfs(Head,Chain,Phase,_):-
 	maplist(add_partial_ranking_function_aux(Head,_,Phase),Initial_map_filtered,Deps,Type_deps),
 	assert(computed_ranking_functions(Head,_,Phase)).
 	
+% same but taking the invariant into account
 compute_phase_partial_rfs(Head,Chain,Phase,Inv):-
 	empty_mm(Empty_map),
 	%initial map with the ranking functions and the loops they cover
@@ -278,11 +281,12 @@ add_partial_ranking_function_1(Head,Chain,Phase,Loop,RF,Deps,Deps_type) :-
 
 
 
-compute_iterations_ubs( Head,Call,Phi, Rfs) :-
-     pr04_compute_all_rfs_ppl(Head,Call,Phi,Rfs1),
-     maplist(adapt_fraction,Rfs1,Rfs).
-
-
+compute_iterations_ubs( Head,Call,Phi, Rfs2) :-
+     Head=..[_|EntryVars],
+	 Call=..[_|ExitVars],
+	 nad_all_ranking_functions_MS(Phi,EntryVars,ExitVars,Rfs),
+	 compute_offsets(Rfs,Phi,Rfs1),
+     maplist(adapt_fraction,Rfs1,Rfs2).
 
 adapt_fraction(Rf,Rf_2):-
 	\+var(Rf),
@@ -293,11 +297,6 @@ adapt_fraction(Rf,Rf_2):-
 
 adapt_fraction(Rf,Rf).
 
-pr04_compute_all_rfs_ppl(Head, Body, Cs, Rfs_1) :-
-	Head=..[_|EntryVars],
-	Body=..[_|ExitVars],
-	nad_all_ranking_functions_MS(Cs,EntryVars,ExitVars,Rfs),
-	compute_offsets(Rfs,Cs,Rfs_1).
 
 compute_offsets([],_,[]).
 compute_offsets([Rf/D|Rfs],Cs,[Rf_1/D|Rfs_1]):-!,
@@ -311,13 +310,7 @@ compute_offset(Rf,Cs,Rf_1):-
 	Cs_1 = [D0=Rf | Cs],
 	nad_minimize(Cs_1,[D0],[Val]),
 	Offset is ceiling(-Val+1),
-%	(Offset =< 0 ->
-%	   Rf_1=Rf
-%	   ;
-	   Rf_1=Rf+Offset.
-%	).
-	
-	
+	Rf_1=Rf+Offset.
 
 covered_by_rf(Head,Phase,Chain,Rf):-
 	ranking_function(Head,Chain,Phase,Rf1),

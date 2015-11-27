@@ -24,7 +24,6 @@ of CoFloCo.
 
 
 :- module(cofloco_utils,[
-			add_equality_constraints/4,
 		    zip_with_op/4,
 		    tuple/3,
 		    sorted_tuple/3,
@@ -76,25 +75,6 @@ write_le_internal(Coeffs+C,Le):-
 	  ).	
 write_coeffs((Var,Coeff),Coeff*Var).
 
-
-
-%! add_equality_constraints(+Vs_1:list(var),+Vs_2:list(var),+Cs_1:polyhedron,-Cs_2:polyhedron) is det
-%
-%  Vs_1 and Vs_2 are list of the same length, Cs_2 includes Cs_1 and
-%  equality constraints between the corresponding elements of Vs_1 and
-%  Vs_2.
-%
-add_equality_constraints([], [], Cs, Cs).
-add_equality_constraints([X|Xs], [Y|Ys], Init_Cs, [X=Y|Cs]) :-
-	add_equality_constraints(Xs, Ys, Init_Cs, Cs).
-
-
-%! norm_contains_vars(+Vars:list_set(var),+Norm:norm) is semidet
-% it is succesful if the expression of Norm contains some variables of the list Vars
-%norm_contains_vars(Vars,norm(_Its,Exp)):-
-%	term_variables(Exp,Vars_exp),
-%	from_list_sl(Vars_exp,Vars_exp_set),
-%	intersection_sl(Vars,Vars_exp_set,[_|_]).
 
 %! repeat_n_times(+N:int,+Elem:A,-Elems:list(A)) is det
 % generate a list with N copies of Elem
@@ -236,7 +216,7 @@ normalize_constraint_wrt_var(C,Var,NC) :-
 	get_var_coeff(Coeffs,Var,Var_Coeff,Other_Coeffs),
 	Var_Coeff_aux is -1*Var_Coeff,
 	divide_coeffs(Other_Coeffs,Var_Coeff_aux,Coeffs_aux),
-	coeff_div(B,Var_Coeff,B_aux),
+	divide_fr(B,Var_Coeff,B_aux),
 	( Var_Coeff > 0 -> Op_aux = Op ; reverse_op(Op,Op_aux)),
 	write_sum(Coeffs_aux,Exp),
 	(   B_aux == 0 -> Exp_aux = Exp
@@ -244,6 +224,8 @@ normalize_constraint_wrt_var(C,Var,NC) :-
 	;   Exp_aux = Exp+B_aux
 	),
 	NC =.. [Op_aux, Var, Exp_aux].
+	
+	
 normalize_constraint_wrt_vars(C,Vars,NC) :-
 	constraint_to_coeffs_rep(C,coeff_rep(Coeffs,Op,B)),
 	partition(coeff_contains_var(Vars),Coeffs,Coeffs_its,Coeffs_vars),
@@ -307,14 +289,14 @@ reverse_op(=,=).
 
 divide_coeffs([],_,[]).
 divide_coeffs([N*V|Vs],Factor,[NF*V|FVs]) :-
-	coeff_div(N,Factor,NF),
+	divide_fr(N,Factor,NF),
 	divide_coeffs(Vs,Factor,FVs).	
 
 
 get_var_coeff([N*V|Cs],Var,N,Cs)    :- V == Var, !.
 get_var_coeff([V|Cs],Var,N,[V|OCs]) :- get_var_coeff(Cs,Var,N,OCs).
 
-coeff_div( A, B, C) :- divide_fr( A, B, C). 
+
 
 
 

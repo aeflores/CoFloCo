@@ -32,8 +32,7 @@ For the constraints, this is done at the same time of the compression.
 :- module(chain_solver,[compute_chain_cost/3]).
 
 :- use_module(phase_solver,[compute_phases_cost/5]).
-:- use_module(constraints_maximization,[
-		max_min_top_exprs_in_chain/6]).
+:- use_module(constraints_maximization,[max_min_top_exprs_in_chain/6]).
 
 :-use_module('../db',[phase_loop/5,loop_ph/6]).
 :-use_module('../refinement/invariants',[
@@ -57,7 +56,7 @@ For the constraints, this is done at the same time of the compression.
 %! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cost_structure) is det
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
-%   * compress the norms of different phases
+%   * compress the costs of different phases
 compute_chain_cost(Head,Chain,Cost_total1):-
 	profiling_start_timer(loop_phases),
 	compute_phases_cost(Chain,Chain,Head,Call,Costs),
@@ -71,15 +70,11 @@ compute_chain_cost(Head,Chain,Cost_total1):-
 
 
 
-%! compress_chain_constraints(+Chain:chain,+Norms_list:list(list(norm)),+Head_total:term,+Call:term,-Norms_out:list(norm)) is det
-%  We have a set of norms for each phase and we want to express all of them in terms
-% of the entry variables. At the same time, we try to compress them to gain precision.
+%! compress_chain_costs(+Chain:chain,+Costs:list(cost_structure),+Head_total:term,+Call:term,-Cost_total:cost_structure) is det
+%  We have a cost structure for each phase and we want to combine them into a single cost structure
+% in terms of the input variables
 %
-% we start from the base case to the outmost phase.
-% At each step we try to compress the norms from the previous phases 
-% witht the ones of the current phase and express them in terms of the initial variables
-% of the phase.
-
+% we combine the cost structures incrementally from the last phase (base case) to the first (entry point).
 compress_chain_costs([Lg|More],[Cost_base|Costs],Head_total,Call_total,Cost_total):-
 	copy_term((Head_total,Cost_base),(Head,Cost_base1)),
 	get_all_base_case_information(Head,[Lg|More],Phi),
@@ -89,20 +84,26 @@ compress_chain_costs_1([],[],Cost_total,_,Head,_,Head,Cost_total).
 compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,Call_total,Call,Cost_total):-
 	copy_term((Head_total,Call_total,Cost),(Head,Call,Cost1)),
 	cstr_join_equal_top_expressions(Cost1,Cost1_simple),
+	%get information of the phase and later phases
 	get_all_phase_information(Head,Call,[Lg|More],Cs_list),
 	nad_list_glb([Cs_prev|Cs_list],Cs_total),
+	% combine the upper bound and lower bound final constraints separately
 	Cost_prev=cost(Ub_tops,Lb_tops,Auxs,Bases_prev,Base_prev),
 	Cost1_simple=cost(Ub_tops1,Lb_tops1,Auxs1,Bases1,Base1),
 	append(Ub_tops,Ub_tops1,Ub_tops_total),
 	append(Lb_tops,Lb_tops1,Lb_tops_total),
 	max_min_top_exprs_in_chain(Ub_tops_total,[Lg|More],Cs_total,Head,Ub_tops_new,Ub_Aux_exps_extra),
 	max_min_top_exprs_in_chain(Lb_tops_total,[Lg|More],Cs_total,Head,Lb_tops_new,Lb_Aux_exps_extra),
+	% put together the original non-final constraints (Aux_exps) and the newly created
 	ut_flat_list([Ub_Aux_exps_extra,Lb_Aux_exps_extra,Auxs,Auxs1],Aux_exps_new),
+	%the cost is the sum of the individual costs
 	append(Bases_prev,Bases1,Bases_total),
 	cexpr_simplify_ctx_free(Base_prev+Base1,Base2),
 	Cost_next=cost(Ub_tops_new,Lb_tops_new,Aux_exps_new,Bases_total,Base2),
+	% simplify resulting cost structure
 	cstr_join_equal_top_expressions(Cost_next,Cost_next_simple),
 	Head=..[_|EVars],
+	%prepare  information for next iteration
 	nad_project_group(EVars,Cs_total,Cs_next),
 	compress_chain_costs_1(More,Cost_list,Cost_next_simple,Cs_next,Head_total,Call_total,Head,Cost_total).
 

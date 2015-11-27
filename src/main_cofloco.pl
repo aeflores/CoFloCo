@@ -48,6 +48,10 @@ The main "data types" used in CoFloCo are the following:
       
   * rel_op: >= |  =< | =
    
+  * normal_linear_expression: list((Coeff,Var))+ Coeff
+    as defined in the module costa_stdlib/math/linear_expression
+    Coeff is a rational.
+    
   * linear_expression: N0+N1*X1+N1*X1+... +NN*XN where N0..NN are rationals and X1...XN variables
   
   * linear_constraint: linear_expression rel_op linear_expression
@@ -57,28 +61,6 @@ The main "data types" used in CoFloCo are the following:
   * polyhedron: list(linear_constraint)
     A polyhedron is expressed with the constraints representation
     
-  * cost_expression:
-        * nat(linear_expression)
-          Often the nat wrapping is removed if it can be proved that linear_expression must be positive
-        * cost_expression+cost_expression
-        * cost_expression*cost_expression
-        * max(list(cost_expression))
-        * min(list(cost_expression))
-        
-  * norm: norm(list_set(var),cost_expression)
-    A norm norm([It1,It2,...ItN],C) represent a constraint It1+It2+...ItN=< C that binds the values
-    of the iteration variables It1,It2...ItN.
-    
-  * loop_cost: loop(var,cost_expression,list(loop_cost),list(norm))
-    a loop cost loop(It_var,C,Loops,Norms) is a loop that has the iteration variable It_var
-    a cost per iteration of C plus the cost of the loops that has inside Loops.
-    Norms bind the iteration variable of the loops in Loops.
-    
-  * cost_structure: cost(cost_expression,list(loop_cost),list(norm),list(inorm))
-    a cost structure cost(Base,Loops,Norms) has a basic cost Base
-    plus the cost of the loops that are inside Loops.
-    Norms bind the iteration variables of the loops from the top.
-    INorms bind the iteration variables of the loops from below.
 
 
 
