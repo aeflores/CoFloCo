@@ -51,7 +51,8 @@
 :- use_module(stdlib(numeric_abstract_domains),[nad_normalize/2,nad_project/3,nad_entails/3,nad_consistent_constraints/1,nad_lub/6,nad_list_lub/2]).
 :- use_module(stdlib(set_list)).	
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_var_member/2]).
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! nad_is_bottom(+Cs:polyhedron) is semidet
 % succeeds if Cs is inconsistent (unsatisfiable) using cartesian decomposition incrementally.
 nad_is_bottom([X=Y]):-X==0,Y==1,!.

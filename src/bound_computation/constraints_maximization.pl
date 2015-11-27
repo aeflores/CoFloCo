@@ -63,7 +63,8 @@ It is used in the cost_equation_solver.pl, the phase_solver.pl
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_entails/3]).								
 :- use_module(stdlib(fraction),[greater_fr/2]).
 
-				
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).			
 %/*										
 max_min_constrs_in_cost_equation(Top_exps_list,_Base_calls,Phi,TVars,Final_tops,[]):-
 	ut_flat_list(Top_exps_list,Top_exps),

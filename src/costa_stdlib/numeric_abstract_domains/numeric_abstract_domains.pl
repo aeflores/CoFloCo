@@ -482,7 +482,7 @@ nad_all_ranking_functions_MS(Cs,EntryVars,ExitVars,Rfs):-
 	nad_current_domain( Dom ), 
 	nad_all_ranking_functions_MS_aux(Dom,EntryVars,ExitVars,Cs,Rfs).
 nad_all_ranking_functions_PR(Cs,EntryVars,ExitVars,Rfs):-
-	nad_current_domain( Dom ), 
+	nad_current_domain( Dom ),
 	nad_all_ranking_functions_PR_aux(Dom,EntryVars,ExitVars,Cs,Rfs).
 
  

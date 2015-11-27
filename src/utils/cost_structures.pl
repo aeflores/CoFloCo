@@ -59,7 +59,9 @@
 :- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
 :-dynamic short_db/3.
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
+:-use_module(library(terms)).
 %FIXME 
 % creates inefficient structures
 % when the cost is a constant, the auxiliary expressions are not well propagated

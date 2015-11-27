@@ -49,13 +49,15 @@ mutual dependencies in order to obtain lexicographic ranking functions
 						nad_entails/3, nad_lub/6,nad_list_lub/2,
 						nad_widen/5, nad_false/1,
 						nad_all_ranking_functions_PR/4,
+						nad_all_ranking_functions_MS/4,
 						nad_glb/3]).
 :- use_module(stdlib(fraction),[leq_fr/2,negate_fr/2]).						
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(multimap),[
     empty_mm/1,
     put_mm/4]).
-   
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).   
 %! ranking_function(Head:term,Chain:chain,Phase:phase,RF:linear_expression)
 % stores a ranking function of the phase Phase that belongs to the Chain and SCC Head
 % if Chain is not specified, the ranking function is valid for all chains that contain
@@ -294,7 +296,7 @@ adapt_fraction(Rf,Rf).
 pr04_compute_all_rfs_ppl(Head, Body, Cs, Rfs_1) :-
 	Head=..[_|EntryVars],
 	Body=..[_|ExitVars],
-	nad_all_ranking_functions_PR(Cs,EntryVars,ExitVars,Rfs),
+	nad_all_ranking_functions_MS(Cs,EntryVars,ExitVars,Rfs),
 	compute_offsets(Rfs,Cs,Rfs_1).
 
 compute_offsets([],_,[]).

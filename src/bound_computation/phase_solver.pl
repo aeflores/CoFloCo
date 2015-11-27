@@ -89,6 +89,8 @@ at the beginning and the end of the phase.
 :- use_module(stdlib(counters),[counter_increase/3]).
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).
 
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! phase_cost(Phase:phase,Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Cost:cost_structure)
 % store the cost structure of a phase given a local invariant
 % for cacheing purposes

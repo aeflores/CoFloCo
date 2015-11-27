@@ -50,7 +50,8 @@ Specific "data types" of this module:
 :- use_module(stdlib(set_list)).
 
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! phase_termination_argument(Head:term,Chain:chain,Phase:phase,YesNo:flag,Term_argument:termination_argument)
 % store whether a phase in a chain is guaranteed to terminate and its termination argument
 % a termination argument of a phase can be:

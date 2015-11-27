@@ -76,6 +76,10 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 :- use_module(stdlib(set_list),[from_list_sl/2,unions_sl/2,union_sl/3]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 
+
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
+:-use_module(library(terms)).
 %! reinforce_equations_with_forward_invs(Head:term,RefCnt:int) is det
 %  adds the information inferred from the forward invariants to the cost equations' definition
 %  of a SCC. At the same time, it computes the scc_forward_invariant of the  SCCs that are called from the target SCC.
@@ -95,7 +99,7 @@ reinforce_equation(Head,RefCnt,Eq_inv,Eq_id):-
 	RefCnt_1 is RefCnt+1,
 	eq_ph(Head,(Eq_id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),
 	nad_glb(Eq_inv,P_Size,P_Size_new),
-	assertz(eq_ph(Head,(Eq_id,RefCnt_1),E_Exp,NR_Calls,R_Calls,Calls,P_Size_new,Term_flag)),
+	assertz(db:eq_ph(Head,(Eq_id,RefCnt_1),E_Exp,NR_Calls,R_Calls,Calls,P_Size_new,Term_flag)),
 	reinforce_calls(NR_Calls,RefCnt,P_Size_new).
 
 %! reinforce_calls(Calls:list(term),RefCnt:int,Cs:polyhedron) is det
@@ -112,12 +116,12 @@ reinforce_calls([Head|More],RefCnt,Cs):-
 % if there is none, we initialize it with the given conditions Cs.
 %/*
 reinforce_scc_forward_inv(Head,RefCnt,Inv):-
-	retract(scc_forward_invariant(Head,RefCnt,Inv_2)),!,
+	retract(invariants:scc_forward_invariant(Head,RefCnt,Inv_2)),!,
 		Head=..[_|Vars],
 	nad_lub(Vars,Inv,Vars,Inv_2,Vars,New_Inv),
-	assertz(scc_forward_invariant(Head,RefCnt,New_Inv)).
+	assertz(invariants:scc_forward_invariant(Head,RefCnt,New_Inv)).
 reinforce_scc_forward_inv(Head,RefCnt,Inv):-
-	assertz(scc_forward_invariant(Head,RefCnt,Inv)).
+	assertz(invariants:scc_forward_invariant(Head,RefCnt,Inv)).
 %*/
 /*	
 reinforce_scc_forward_inv(Head,RefCnt,Inv):-
@@ -219,7 +223,7 @@ remove_terminating_non_terminating_chains_1(Head,RefCnt):-
 	loop_ph(Head,(Base,RefCnt),none,[],[],non_terminating),%it is really a stub, not a non-terminating call
 	termination_argument(Head,Chain,yes,_Term_arg),
 
-	retract(chain(Head,RefCnt,Chain)),
+	retract(chains:chain(Head,RefCnt,Chain)),
 	numbervars(Head,0,_),
 	(get_param(debug,[])->
 	 format('Discarded unfeasible chain ',[]),

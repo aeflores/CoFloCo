@@ -75,6 +75,8 @@ The specific "data types" used in this module are the following:
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_entails/3,nad_normalize/2,nad_list_lub/2]).
 
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! compute_conditional_bounds(+Head:term) is det
 % computed the set of conditional bound of Head and store them in the database db.pl
 %

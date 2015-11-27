@@ -75,7 +75,9 @@ This module acts as a database that stores:
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
+:-use_module(library(terms)).
 %! input_eq(?Head:term,?Id:int,-Cost:cost_expression,-Calls:list(term),-Cs:polyhedron)
 % stores a cost equation before the pre-processing
 :- dynamic input_eq/5. 

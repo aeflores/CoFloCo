@@ -68,7 +68,8 @@ It uses linear programming to infer linear expressions that satisfy a property g
 	write_le/2,
 	is_constant_le/1,
 	integrate_le/3]).
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 
 max_min_linear_expression_template(Linear_Expr_to_Maximize,Vars, Vars_of_Interest, Context, Maxs):-
 	length(Vars,N),

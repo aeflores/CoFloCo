@@ -44,7 +44,8 @@
 :- use_module(stdlib(linear_expression), [parse_le/2,multiply_le/3,write_le/2]).
 
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 
 
 %! normalize_le(+Le:linear_expression,-Le_n:linear_expression) is det

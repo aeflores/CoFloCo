@@ -66,9 +66,16 @@ normalize_constraint/2]).
 :- use_module(stdlib(utils),[ut_append/3,ut_flat_list/2, ut_member/2, ut_list_to_dlist/2,ut_split_at_pos/4]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_stop_timer_acum/2]).
 :- use_module(stdlib(polyhedra_ppl),[to_ppl_dim/4,from_ppl/5]).
-:- use_module(stdlib(ppl)).
+
+:-use_module(stdlib(polyhedra_ppl)).
+
+
+
 :- use_module(stdlib(numvars_util),[to_numbervars_nu/4]).
 
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
+:-use_module(library(terms)).
 %! backward_invariant(Head:term,Chain_RefCnt:(chain,int),Hash:int,Inv:polyhedron)
 % An invariant that relates the variables of the head of a cost equation and is computed
 %  backwards, form the base case of the chain to the first phase. This invariant reflects the input-output relation
@@ -142,7 +149,7 @@ add_forward_invariant(Head,(Chain,RefCnt),Inv):-
 	copy_term((Head,Inv_normalized),(E,IPat)),
 	numbervars(E,0,_),
 	term_hash(IPat,Hash),
-%	format('~p~n',forward_invariant(E,(Chain,RefCnt),Hash,IPat)),
+	%format('~p~n',forward_invariant(E,(Chain,RefCnt),Hash,IPat)),
 	assertz(forward_invariant(Head,(Chain,RefCnt),Hash,Inv_normalized)).
 
 %! add_scc_forward_invariant(+Phase:phase,+RefCnt:int,+Inv:polyhedron)
@@ -302,12 +309,13 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 % if we fail to compute it, then we remove the chain.
 % if we don't fail, we do nothing and the chain is not removed.
 compute_forward_invariants(Entry_Call,RefCnt):-
+
 	chain(Entry_Call,RefCnt,Chain),
 	(has_infeasible_suffix(Entry_Call,RefCnt,Chain)->
-	   retract(chain(Entry_Call,RefCnt,Chain))
+	   retract(chains:chain(Entry_Call,RefCnt,Chain))
 	;
 	\+compute_forward_invariant(Chain,RefCnt,Entry_Call,_),
-	  retract(chain(Entry_Call,RefCnt,Chain))
+	  retract(chains:chain(Entry_Call,RefCnt,Chain))
 	  ),   
 	fail.
 compute_forward_invariants(_,_).
@@ -575,7 +583,7 @@ low_level_backward_invariant_fixpoint((inv(Head_inv,Inv),Loops),Inv_out):-
 	% call the fixpoint predicate
 	low_level_backward_invariant_fixpoint_1(Inv_0_handle,Var_calls,Loops_handles,Inv_final_handle),
 	% obtain the constrants of the resulting polyhedron
-	Dim2 is Dim/2,
+	Dim2 is Dim//2,
 	length(Vars,Dim2),
 	from_ppl(c , Inv_final_handle, Dim2, Vars, Inv_out), 
 	Head_inv=..[F|Vars],
@@ -594,7 +602,7 @@ low_level_transitive_closure_invariant_fixpoint((inv(Entry_inv,Head_inv,Inv),Loo
 	% call the fixpoint predicate
 	low_level_invariant_fixpoint(0,Var_head,Inv_0_handle,Loops_handles,Inv_final_handle),
 	% obtain the constrants of the resulting polyhedron
-	Dim2 is Dim/3,
+	Dim2 is Dim//3,
 	length(Vars1,Dim2),
 	length(Vars2,Dim2),
 	append(Vars1,Vars2,Vars),
@@ -616,7 +624,7 @@ low_level_forward_invariant_fixpoint((inv(Head_inv,Inv),Loops),Inv_out):-
 	% call the fixpoint predicate
 	low_level_invariant_fixpoint(0,Var_head,Inv_0_handle,Loops_handles,Inv_final_handle),
 	% obtain the constrants of the resulting polyhedron
-	Dim2 is Dim/2,
+	Dim2 is Dim//2,
 	length(Vars,Dim2),
 	from_ppl(c , Inv_final_handle, Dim2, Vars, Inv_out), 
 	Head_inv=..[F|Vars],

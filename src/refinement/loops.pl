@@ -36,6 +36,9 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,nad_normalize_polyhedron/2]).
 :- use_module('../utils/cofloco_utils',[assign_right_vars/3]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).		
+
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! compute_loops(Head:term,RefCnt:int) is det
 % compute a loop for each cost equation that has a recursive call
 compute_loops(Head,RefCnt):-

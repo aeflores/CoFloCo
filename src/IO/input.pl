@@ -36,6 +36,8 @@ This module reads cost equations and stores them in the database after normalizi
 :- use_module(stdlib(set_list),[from_list_sl/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_normalize/2]).
 
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! read_cost_equations(+File:filename) is det
 %  read a set of cost equations from a file and call store_cost_equations/1.
 read_cost_equations(File) :-
@@ -61,13 +63,13 @@ declare_entry:-
 	   Entries=[_|_],!,
 	cofloco_aux_entry_name(Aux_Entry),
 	normalize_input_equation(eq(Aux_Entry,0,Entries,[]),eq(Aux_Entry_Normalized,Expr_Normalized,Calls_Normalized,Cs_Normalized)),
-	asserta(input_eq(Aux_Entry_Normalized,0,Expr_Normalized,Calls_Normalized,Cs_Normalized)).
+	asserta(db:input_eq(Aux_Entry_Normalized,0,Expr_Normalized,Calls_Normalized,Cs_Normalized)).
 declare_entry:-
 	input_eq(Call,_,_,_,_),
 	cofloco_aux_entry_name(Aux_Entry),
 	normalize_input_equation(eq(Aux_Entry,0,[Call],[]),eq(Aux_Entry_Normalized,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
-	asserta(input_eq(Aux_Entry_Normalized,0,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
-	assertz(entry_eq(Call,[])).
+	asserta(db:input_eq(Aux_Entry_Normalized,0,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
+	assertz(db:entry_eq(Call,[])).
 	
 
 
@@ -125,17 +127,17 @@ add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-!,
 	 true
 	;
 	counter_increase(input_eqs,1,Id),% get new id
-	assertz(input_eq(NHead,Id,NExp,NCalls,NSize_Rel_filtered))
+	assertz(db:input_eq(NHead,Id,NExp,NCalls,NSize_Rel_filtered))
 	),			% add the equation to db
 	!.
 	
 	
 add_equation(entry(Term:Size_Rel)):-!,
 	  normalize_entry(entry(Term:Size_Rel), Entry_Normalized),
-	  assertz(Entry_Normalized).
+	  assertz(db:Entry_Normalized).
 
-add_equation(reset_scc(Head,Vars,Type)):-!,
-	  assertz(reset_scc(Head,Vars,Type)).	  
+add_equation(db:reset_scc(Head,Vars,Type)):-!,
+	  assertz(db:reset_scc(Head,Vars,Type)).	  
 
 % throw an exception on failure
 add_equation(Eq) :-
@@ -162,9 +164,9 @@ unify_eq(X=X).
 %! remove_undefined_calls is det
 % remove the calls to equations that are not defined (and show a warning)
 remove_undefined_calls :-
-	retract(input_eq(Head,Id,Exp,Calls,Cs)),
+	retract(db:input_eq(Head,Id,Exp,Calls,Cs)),
 	remove_undefined_calls_1(Calls,Head,Calls_1),
-	assertz(input_eq(Head,Id,Exp,Calls_1,Cs)),
+	assertz(db:input_eq(Head,Id,Exp,Calls_1,Cs)),
 	fail.
 remove_undefined_calls.
 

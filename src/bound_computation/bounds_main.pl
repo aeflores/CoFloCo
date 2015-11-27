@@ -52,6 +52,8 @@ that can be passed on to the callers.
 
 :- use_module('../IO/params',[get_param/2]).
 
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! compute_bound_for_scc(+Head:term,+RefCnt:int) is det
 % compute a bound for each chain
 % then, compress the bounds for the chains that have been grouped into

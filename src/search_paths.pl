@@ -2,9 +2,14 @@
 :- dynamic user:file_search_path/2.
 :- multifile user:file_search_path/2.
 
-:- prolog_load_context(directory, Dir),
-	retractall(user:file_search_path(stdlib,_)),
+
+:-
+   %working_directory(Dirp, Dirp),
+   %atom_concat(Dir,'/',Dirp),
+    prolog_load_context(directory, Dir),
+    retractall(user:file_search_path(stdlib,_)),
    (\+user:file_search_path(stdlib,_)->
+  
    atom_concat(Dir,'/costa_stdlib/',Dir_basic),
    asserta(user:file_search_path(stdlib, Dir_basic)),
    
@@ -20,12 +25,17 @@
    atom_concat(Dir,'/costa_stdlib/math/',Dir_math),
    asserta(user:file_search_path(stdlib, Dir_math)),
    
-   atom_concat(Dir,'/costa_stdlib/sys_dep/swi_prolog/unix/',Dir_ppl),
-   asserta(user:file_search_path(stdlib, Dir_ppl)),
+   (current_prolog_flag(dialect,swi)->
+     atom_concat(Dir,'/costa_stdlib/sys_dep/swi_prolog/unix/',Dir_ppl),
+     asserta(user:file_search_path(stdlib, Dir_ppl))
+     ;
+     atom_concat(Dir,'/costa_stdlib/sys_dep/yap/',Dir_ppl),
+     asserta(user:file_search_path(stdlib, Dir_ppl))
+   )
+   ,
    
-   atom_concat(Dir,'/lib/',Dir_ppl_binary), 
-   asserta(user:file_search_path(foreign, Dir_ppl_binary))
-   
+  atom_concat(Dir,'/lib/',Dir_ppl_binary), 
+  asserta(user:file_search_path(foreign, Dir_ppl_binary))
    ;
    true
    ).

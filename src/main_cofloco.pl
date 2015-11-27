@@ -104,8 +104,8 @@ The main "data types" used in CoFloCo are the following:
 
 
 :- module(main_cofloco,[cofloco_shell_main/0,cofloco_query/2,cofloco_query/1]).
-
 :-include('search_paths.pl').
+
 
 :- use_module(db,[entry_eq/2,init_db/0,init_timers/0]).
 :- use_module('pre_processing/SCCs',[compute_sccs_and_btcs/0,
@@ -165,7 +165,8 @@ The main "data types" used in CoFloCo are the following:
 :- use_module(stdlib(counters),[counter_get_value/2,counter_initialize/2]).
 :-use_module(stdlib(polyhedra_ppl),[ppl_my_initialize/0]).
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! cofloco_shell_main is det
 % main predicate to be called form the console.  
 % it performs the complete analysis
@@ -185,7 +186,7 @@ save_executable:-
 	make,
 	check,
 	prolog_history(disable),
-	qsave_program('cofloco',[stand_alone(true),goal(main:cofloco_shell_main),foreign(save)]),
+	qsave_program('cofloco',[stand_alone(true),goal(main_cofloco:cofloco_shellco_main),foreign(save)]),
 	writeln('Binary package generated').
 
 
@@ -194,7 +195,6 @@ save_executable:-
 cofloco_query(Eqs,Params):-
 	set_default_params,
 	parse_params(Params),
-    ppl_my_initialize,
 	init_timers,
 	init_database,
 	profiling_start_timer(analysis),
@@ -206,7 +206,7 @@ cofloco_query(Eqs,Params):-
 			;
 			upper_bounds,
 			profiling_stop_timer(analysis,T_analysis),
-			ansi_format([underline,bold],'Time statistics:~p~n',[' ']),
+			format('Time statistics:~p~n',[' ']),
 			conditional_call(get_param(stats,[]),print_stats),		
 			format("Total analysis performed in ~0f ms.~n~n",[T_analysis])  
 	).
@@ -218,7 +218,6 @@ cofloco_query(Eqs,Params):-
 cofloco_query(Params):-
 	set_default_params,
 	parse_params(Params),
-    ppl_my_initialize,
 	init_timers,
 	init_database,
 	profiling_start_timer(analysis),
@@ -233,7 +232,7 @@ cofloco_query(Params):-
 			upper_bounds
 		),	
 		profiling_stop_timer(analysis,T_analysis),
-		ansi_format([underline,bold],'Time statistics:~p~n',[' ']),
+		format('Time statistics:~p~n',[' ']),
 		conditional_call(get_param(stats,[]),print_stats),		
 		format("Total analysis performed in ~0f ms.~n~n",[T_analysis])  
 	;

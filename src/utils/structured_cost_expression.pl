@@ -24,7 +24,8 @@
 :- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
 :- use_module(stdlib(fraction)).
 :- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 partial_str_cost_exp_complexity(partial(_,_),100).
 partial_str_cost_exp_complexity(Summand,N):-
 	str_cost_exp_complexity(Summand,N).

@@ -53,6 +53,8 @@
 :- use_module(stdlib(fraction)).
 :- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 simplify_top_nats(Head,Phi,bound(Op,Lin_exp,Bounded),bound(Op,[]+0,Bounded)):-
 	Head=..[_|Vars],
 	integrate_le(Lin_exp,_Den,Lin_exp_nat),

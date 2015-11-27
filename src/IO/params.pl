@@ -34,7 +34,8 @@ The module also takes care of parsing the input parameters and storing them.
 		  parameter_dictionary/3,
 		  param_description/2]).
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %% param(+Param:atom,-Values:list) is nondet
 % @arg Param is the name of the parameter
 % @arg values is a list of values associated to each parameter
@@ -90,9 +91,9 @@ clean_params:-
 %  * -n_rankings 2
 %  * -maximize_fast 5
 set_default_params:-
-	parse_params(['-v',2,
-		      '-n_rankings',1,
-		      '-maximize_fast',1,
+	parse_params(['-v','2',
+		      '-n_rankings','1',
+		      '-maximize_fast','1',
 		      '-compute_ubs',
 		      '-compute_lbs'
 		      ]).

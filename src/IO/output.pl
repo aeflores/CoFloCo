@@ -69,7 +69,11 @@ This module prints the results of the analysis
 :- use_module(stdlib(counters),[counter_get_value/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 
+ansi_format_aux(Options,Format,Args):-current_prolog_flag(dialect,swi),ansi_format(Options,Format,Args).
+ansi_format_aux(_,Format,Args):-current_prolog_flag(dialect,yap),format(Format,Args).
 %! print_equations_refinement(+Head:term,+RefCnt:int) is det
 % print the calls from the SCC Head in the refinement phase RefCnt
 % if the verbosity is high enough
@@ -162,7 +166,7 @@ print_phase_termination_argument(_Head,_Phase,_Term_argument,_).
 %! print_chains(+RefCnt:int) is det
 %  print the inferred chains in the refinement phase RefCnt
 print_chains(Ref_phase):-
-	ansi_format([underline,bold],'Resulting Chains:~p ~n',[' ']),
+	ansi_format_aux([underline,bold],'Resulting Chains:~p ~n',[' ']),
 	print_chains_1(Ref_phase).
 
 print_chains_1(Ref_phase):-
@@ -179,9 +183,9 @@ print_chain(Entry,Pattern):-
 	reverse(Pattern,Pattern_inv),
 	(non_terminating_chain(Entry,_,Pattern)->
 	   %Pattern=[_|Pattern1],
-	   ansi_format([fg(red)],'~p:~p...',[Entry,Pattern_inv])
+	   ansi_format_aux([fg(red)],'~p:~p...',[Entry,Pattern_inv])
 	 ;
-	   ansi_format([],'~p:~p',[Entry,Pattern_inv])
+	   ansi_format_aux([],'~p:~p',[Entry,Pattern_inv])
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,9 +210,9 @@ print_chain_simple(Pattern):-
 	reverse(Pattern,Pattern_inv),
 	(non_terminating_chain(_,_,Pattern)->
 	   %Pattern=[_|Pattern1],
-	   ansi_format([fg(red)],'~p...',[Pattern_inv])
+	   ansi_format_aux([fg(red)],'~p...',[Pattern_inv])
 	 ;
-	   ansi_format([],'~p',[Pattern_inv])
+	   ansi_format_aux([],'~p',[Pattern_inv])
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -217,7 +221,7 @@ print_chain_simple(Pattern):-
 % print the chains, invariants and uppuer bounds of SCC Entry in the refinement phase RefCnt
 print_results(Entry,RefCnt):-
 	ground_header(Entry),
-	ansi_format([underline,bold],'Inferred cost of ~p: ~n',[Entry]),
+	ansi_format_aux([underline,bold],'Inferred cost of ~p: ~n',[Entry]),
 	print_results_1(Entry,RefCnt).
 print_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
@@ -270,7 +274,7 @@ print_phase_cost(Phase,Head,Call,Cost):-
 	copy_term((Head,Call,Cost),(Headp,Callp,Costp)),
 	ground_header(Headp),
 	(Callp==none;ground_header_prime(Callp)),
-	ansi_format([underline,bold],'Cost of phase ~p:~p -> ~p ~n',[Phase,Headp,Callp]),
+	ansi_format_aux([underline,bold],'Cost of phase ~p:~p -> ~p ~n',[Phase,Headp,Callp]),
 	print_new_cost_structure(Costp).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -279,7 +283,7 @@ print_phase_cost(Phase,Head,Call,Cost):-
 print_closed_results(Entry,RefCnt):-
 	copy_term(Entry,Entry_ground),
 	ground_header(Entry_ground),
-	ansi_format([underline,bold],'Solved cost expressions of ~p: ~n',[Entry_ground]),
+	ansi_format_aux([underline,bold],'Solved cost expressions of ~p: ~n',[Entry_ground]),
 	(get_param(prolog_format,_)->
 	  print_closed_results_prolog_format(Entry,RefCnt)
 	  ;
@@ -322,7 +326,7 @@ print_single_closed_result(Entry,Expr):-
 	copy_term((Entry,Expr),(Entry2,Expr2)),
 	get_asymptotic_class_name(Expr,Asym_class),
 	ground_header(Entry2),
-	ansi_format([underline,bold],'Maximum cost of ~p: ',[Entry2]),
+	ansi_format_aux([underline,bold],'Maximum cost of ~p: ',[Entry2]),
 	format('~p ~n',[Expr2]),
 	format('Asymptotic class: ~p ~n',[Asym_class]).
 
@@ -331,7 +335,7 @@ print_single_closed_result(Entry,Expr):-
 print_conditional_upper_bounds(Head):-
 	copy_term(Head,Head2),
 	ground_header(Head2),
-	ansi_format([underline,bold],'Partitioned cost of ~p: ~n',[Head2]),
+	ansi_format_aux([underline,bold],'Partitioned cost of ~p: ~n',[Head2]),
 	print_conditional_upper_bound(Head).
 
 print_conditional_upper_bound(Head):-
@@ -348,7 +352,7 @@ print_conditional_upper_bound(_).
 print_conditional_lower_bounds(Head):-
 	copy_term(Head,Head2),
 	ground_header(Head2),
-	ansi_format([underline,bold],'Partitioned lower bound of ~p: ~n',[Head2]),
+	ansi_format_aux([underline,bold],'Partitioned lower bound of ~p: ~n',[Head2]),
 	print_conditional_lower_bound(Head),
 	print_maximum_lower_bound(Head).
 

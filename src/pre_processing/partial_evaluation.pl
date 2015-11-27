@@ -40,7 +40,8 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 :- use_module(stdlib(set_list)).
 
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 
 
 %! pe_eq(Head:term,Exp:cost_expression,Calls:list(term),Size:polyhedron)
@@ -74,7 +75,7 @@ partial_evaluation :-
 	 maplist(add_ignored_scc,Ignored_set).
 
 add_ignored_scc(X):-
-	assert(ignored_scc(X)).
+	assert('SCCs':ignored_scc(X)).
 
 pe_aux(Entry):-
 	partially_evaluate_cost_rel([Entry]),

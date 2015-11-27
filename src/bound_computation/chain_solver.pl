@@ -50,7 +50,8 @@ For the constraints, this is done at the same time of the compression.
 :- use_module(stdlib(numeric_abstract_domains),[nad_list_glb/2]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_stop_timer_acum/2]).
 	
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 
 
 %! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cost_structure) is det

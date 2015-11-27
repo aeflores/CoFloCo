@@ -51,7 +51,8 @@ of CoFloCo.
 :- use_module(stdlib(linear_expression), [parse_le/2, integrate_le/3]).
 :- use_module(stdlib(fraction),[divide_fr/3,negate_fr/2,geq_fr/2,gcd_fr/3]).
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 is_rational(N):-nonvar(N),number(N).

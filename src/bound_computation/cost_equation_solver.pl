@@ -23,7 +23,7 @@ the input variables and the variables of the recursive call (if there is one)
 */
 
 
-:- module(cost_equation_solver,[get_equation_cost/5,init_cost_equation_solver]).
+:- module(cost_equation_solver,[get_equation_cost/5,init_cost_equation_solver/0]).
 
 :- use_module(constraints_maximization,[
 			max_min_constrs_in_cost_equation/6]).
@@ -44,6 +44,9 @@ the input variables and the variables of the recursive call (if there is one)
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_glb/3]).
+
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 
 %! equation_cost(Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Eq_id:equation_id,Cost:cost_structure)
 % store the cost structure of a cost equation application given a local invariant

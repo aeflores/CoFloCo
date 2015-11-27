@@ -55,7 +55,9 @@ However, for each SCC there is a special base case that will allow us to represe
 :- use_module(stdlib(list_utils),[take_lu/3]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
-	
+
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! chain(Head:term,RefCnt:int,Chain:chain)
 % each predicate chain represent a possible pattern of execution of the SCC
 % determined by Head. 

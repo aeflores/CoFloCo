@@ -47,7 +47,8 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 :- use_module(stdlib(minimal_feedback_set),[compute_mfbs_shamir/3]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! crs_btc(Functor:atom,Arity:int)
 % the cost equation Functor/Arity is a cover point (btc)
 :- dynamic crs_btc/2.
