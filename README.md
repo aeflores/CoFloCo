@@ -8,13 +8,13 @@ as an input. The abstract representation is a set of cost equations that can be 
 other intermediate representations.
 
 CoFloCo is intended to be used as a backend. Here are some systems that use CoFloCo:
- * [CoFloCo+llvm2kittel](http://cofloco.se.informatik.tu-darmstadt.de/web-interface/clients/web/)
+ * [CoFloCo+llvm2kittel](http://cofloco.se.informatik.tu-darmstadt.de/web-interface/clients/web/):
    A web interface to analyze programs written in C with the help of [llvm2kittel](https://github.com/s-falke/llvm2kittel) and [easyinterface](https://github.com/abstools/easyinterface).
 
- * [Saco](http://costa.ls.fi.upm.es/saco/web/) A web interface to analyze ABS programs. 
+ * [Saco](http://costa.ls.fi.upm.es/saco/web/): Saco contains multiple static analyses for concurrent programs written in the ABS language. 
    CoFloCo can be selected as an alternative backend to PUBS for the resource analysis.
 
- * [SRA](http://sra.cs.unibo.it/index.html) a resource analysis tool for a concurrent language with explicit acquire and release operations for virtual machines.
+ * [SRA](http://sra.cs.unibo.it/index.html): A resource analysis tool for a concurrent language with explicit acquire and release operations for virtual machines.
 
 The main techniques used in CoFloCo are described in the paper:
  * [Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295](https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf)
