@@ -51,6 +51,7 @@ The main "data types" used in CoFloCo are the following:
   * normal_linear_expression: list((Coeff,Var))+ Coeff
     as defined in the module costa_stdlib/math/linear_expression
     Coeff is a rational.
+    we abbreviate them as nlin_exp
     
   * linear_expression: N0+N1*X1+N1*X1+... +NN*XN where N0..NN are rationals and X1...XN variables
   
@@ -61,8 +62,7 @@ The main "data types" used in CoFloCo are the following:
   * polyhedron: list(linear_constraint)
     A polyhedron is expressed with the constraints representation
     
-
-
+  * cost_structure: See 'utils/cost_structures.pl'
 
 
 @author Antonio Flores Montoya

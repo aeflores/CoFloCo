@@ -6,20 +6,17 @@
 
 :- use_module('../utils/cost_structures',[
 		cstr_empty/1,
-		cstr_extract_top_maxs/3,
-		cstr_extract_top_mins/3,
 		cstr_from_cexpr/2,	
-		cstr_name_aux_var/1,
-		cstr_get_it_name/2,
-		cstr_generate_top_exp/4,
-		cstr_generate_top_exp_inv/4,
+		new_itvar/1,
+		get_loop_itvar/2,
+		fconstr_new/4,
+		fconstr_new_inv/4,
 		cstr_get_cexpr_from_normalform/2,
 		cstr_get_cexpr_from_normalform_ground/2,
 		cstr_remove_cycles/2,
 		cstr_extend_variables_names/3,
 		cstr_propagate_summatory/4,
 		cstr_join/3,
-		cstr_get_lin_exp_from_tops/3,
 		cstr_join_equal_top_expressions/2,
 		cstr_remove_useless_constrs_max_min/3,
 		cstr_shorten_variables_names/3]).
@@ -396,7 +393,7 @@ index_var_in_set(Set,(_Name,Var)):-
 generate_constraint_with_base(Bases,Base,Max_min,Final_constraint):-
 	get_constr_op(Max_min,Op),
 	opposite_operator(Op,Op_neg),
-	cstr_name_aux_var(Bound_var),
+	new_itvar(Bound_var),
 	generate_summands_from_bases(Bases,Index_pos,Index_neg,Summands_pos,Summands_neg),
 	maplist(annotate_bounded_pair(Op),Index_pos,Index_pos1),
 	maplist(annotate_bounded_pair(Op_neg),Index_neg,Index_neg1),

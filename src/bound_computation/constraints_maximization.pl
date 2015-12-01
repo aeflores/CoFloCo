@@ -47,7 +47,7 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 			slice_relevant_constraints_and_vars/5]).			
 
 :- use_module('../utils/cost_structures',[
-			cstr_generate_top_exp/4]).			
+			fconstr_new/4]).			
 					
 :- use_module(stdlib(linear_expression),[
 	is_constant_le/1,
@@ -276,13 +276,13 @@ maximize_insecure_constraints(Vars,Phi,Max_Min,Bounded=<Linear_Expr_to_Maximize,
 	elements_le(Linear_Expr_to_Maximize,Relevant_vars_ini),
 	slice_relevant_constraints_and_vars(Relevant_vars_ini,Vars,Phi,_Selected_vars,Selected_Cs),
 	max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars, Selected_Cs,Max_Min, Maxs),
-	maplist(cstr_generate_top_exp(Bounded,Op),Maxs,Tops).
+	maplist(fconstr_new(Bounded,Op),Maxs,Tops).
 maximize_insecure_constraints(Vars,Phi,Max_Min,Bounded >= Linear_Expr_to_Maximize,Tops):-
 	(Max_Min=max-> Op=ub;Op=lb),
 	elements_le(Linear_Expr_to_Maximize,Relevant_vars_ini),
 	slice_relevant_constraints_and_vars(Relevant_vars_ini,Vars,Phi,_Selected_vars,Selected_Cs),
 	max_min_linear_expression_all(Linear_Expr_to_Maximize, Vars, Selected_Cs,Max_Min, Maxs),
-	maplist(cstr_generate_top_exp(Bounded,Op),Maxs,Tops).
+	maplist(fconstr_new(Bounded,Op),Maxs,Tops).
 		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
