@@ -32,7 +32,7 @@ For the constraints, this is done at the same time of the compression.
 :- module(chain_solver,[compute_chain_cost/3]).
 
 :- use_module(phase_solver,[compute_phases_cost/5]).
-:- use_module(constraints_maximization,[max_min_top_exprs_in_chain/6]).
+:- use_module(constraints_maximization,[max_min_fconstrs_in_chain/6]).
 
 :-use_module('../db',[phase_loop/5,loop_ph/6]).
 :-use_module('../refinement/invariants',[
@@ -53,7 +53,7 @@ For the constraints, this is done at the same time of the compression.
 :-use_module(library(lists)).
 
 
-%! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cost_structure) is det
+%! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cstr) is det
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
 %   * compress the costs of different phases
@@ -70,7 +70,7 @@ compute_chain_cost(Head,Chain,Cost_total1):-
 
 
 
-%! compress_chain_costs(+Chain:chain,+Costs:list(cost_structure),+Head_total:term,+Call:term,-Cost_total:cost_structure) is det
+%! compress_chain_costs(+Chain:chain,+Costs:list(cstr),+Head_total:term,+Call:term,-Cost_total:cstr) is det
 %  We have a cost structure for each phase and we want to combine them into a single cost structure
 % in terms of the input variables
 %
@@ -88,18 +88,18 @@ compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,C
 	get_all_phase_information(Head,Call,[Lg|More],Cs_list),
 	nad_list_glb([Cs_prev|Cs_list],Cs_total),
 	% combine the upper bound and lower bound final constraints separately
-	Cost_prev=cost(Ub_tops,Lb_tops,Auxs,Bases_prev,Base_prev),
-	Cost1_simple=cost(Ub_tops1,Lb_tops1,Auxs1,Bases1,Base1),
-	append(Ub_tops,Ub_tops1,Ub_tops_total),
-	append(Lb_tops,Lb_tops1,Lb_tops_total),
-	max_min_top_exprs_in_chain(Ub_tops_total,[Lg|More],Cs_total,Head,Ub_tops_new,Ub_Aux_exps_extra),
-	max_min_top_exprs_in_chain(Lb_tops_total,[Lg|More],Cs_total,Head,Lb_tops_new,Lb_Aux_exps_extra),
+	Cost_prev=cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands_prev,BConstant_prev),
+	Cost1_simple=cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant1),
+	append(Ub_fconstrs,Ub_fconstrs1,Ub_fconstrs_total),
+	append(Lb_fconstrs,Lb_fconstrs1,Lb_fconstrs_total),
+	max_min_fconstrs_in_chain(Ub_fconstrs_total,[Lg|More],Cs_total,Head,Ub_fconstrs_new,Ub_iconstrs_extra),
+	max_min_fconstrs_in_chain(Lb_fconstrs_total,[Lg|More],Cs_total,Head,Lb_fconstrs_new,Lb_iconstrs_extra),
 	% put together the original non-final constraints (Aux_exps) and the newly created
-	ut_flat_list([Ub_Aux_exps_extra,Lb_Aux_exps_extra,Auxs,Auxs1],Aux_exps_new),
+	ut_flat_list([Ub_iconstrs_extra,Lb_iconstrs_extra,Iconstrs,Iconstrs1],Aux_exps_new),
 	%the cost is the sum of the individual costs
-	append(Bases_prev,Bases1,Bases_total),
-	cexpr_simplify_ctx_free(Base_prev+Base1,Base2),
-	Cost_next=cost(Ub_tops_new,Lb_tops_new,Aux_exps_new,Bases_total,Base2),
+	append(Bsummands_prev,Bsummands1,Bsummands_total),
+	cexpr_simplify_ctx_free(BConstant_prev+BConstant1,BConstant2),
+	Cost_next=cost(Ub_fconstrs_new,Lb_fconstrs_new,Aux_exps_new,Bsummands_total,BConstant2),
 	% simplify resulting cost structure
 	cstr_join_equal_fconstr(Cost_next,Cost_next_simple),
 	Head=..[_|EVars],

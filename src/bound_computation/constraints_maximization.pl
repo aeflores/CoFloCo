@@ -27,8 +27,8 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 */
 
 :- module(constraints_maximization,[
-				  max_min_constrs_in_cost_equation/6,
-				  max_min_top_exprs_in_chain/6,
+				  max_min_fconstrs_in_cost_equation/6,
+				  max_min_fconstrs_in_chain/6,
 				  max_min_linear_expression_all/5]).
 				  
 :- use_module('../IO/params',[get_param/2]).
@@ -66,29 +66,29 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 :-use_module(library(lists)).		
 	
 
-%! max_min_constrs_in_cost_equation(+FCons_list:list(list(final_constr)),+Base_calls:list(term),Phi:polyhedron,TVars:list(Var),FCons_out:list(final_cons),ICons_out:list(inter_cons)) is det
+%! max_min_fconstrs_in_cost_equation(+FCons_list:list(list(final_constr)),+Base_calls:list(term),Phi:polyhedron,TVars:list(Var),FCons_out:list(final_cons),ICons_out:list(inter_cons)) is det
 % transform a list of lists of final constraints from a cost equation
 % into a simple list of final constraints expressed in terms of TVars using max_min_constrs/4
 %
 % It is prepared to originate intermediate constraints as well but not used yet
-max_min_constrs_in_cost_equation(Top_exps_list,_Base_calls,Phi,TVars,Final_tops,[]):-
+max_min_fconstrs_in_cost_equation(Top_exps_list,_Base_calls,Phi,TVars,Final_tops,[]):-
 	ut_flat_list(Top_exps_list,Top_exps),
-	max_min_constrs(Top_exps,Phi,TVars,Final_tops).
+	max_min_fconstrs(Top_exps,Phi,TVars,Final_tops).
 	
-%! max_min_constrs_in_cost_equation(+FCons:list(final_constr),+Chain:chain,Phi:polyhedron,TVars:list(Var),FCons_out:list(final_cons),ICons_out:list(inter_cons)) is det
+%! max_min_fconstrs_in_chain(+FCons:list(final_constr),+Chain:chain,Phi:polyhedron,TVars:list(Var),FCons_out:list(final_cons),ICons_out:list(inter_cons)) is det
 % transform a list of final constraints from two phases
 % into a simple list of final constraints expressed in terms of TVars using max_min_constrs/4	
 %
 % It is prepared to originate intermediate constraints as well but not used yet
-max_min_top_exprs_in_chain(Top_exps,_Chain,Phi,Head,Final_tops,[]):-
+max_min_fconstrs_in_chain(Top_exps,_Chain,Phi,Head,Final_tops,[]):-
 	term_variables(Head,TVars),
-	max_min_constrs(Top_exps,Phi,TVars,Final_tops).
+	max_min_fconstrs(Top_exps,Phi,TVars,Final_tops).
 	
 %! max_min_constrs(+FCons_list:list(final_constr),Phi:polyhedron,TVars:list(Var),FCons_out:list(final_cons)) is det
 % transform a list of final constraints into a simple list of final constraints expressed in terms of TVars using the information in Phi
 % * The final_cons that are guaranteed to be positive are transformed together
 % * The rest (the insecure constraints) are transformed one by one			
-max_min_constrs(Top_exps,Phi,TVars,Final_tops):-
+max_min_fconstrs(Top_exps,Phi,TVars,Final_tops):-
 	(Top_exps=[bound(ub,_,_)|_]-> Max_min=max;Max_min=min),	
 	% separate positive constraints and insecure constraints
 	generate_constraints(Top_exps,Phi,[],Constraints,Insecure_constraints,Dicc),
