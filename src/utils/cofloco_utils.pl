@@ -24,7 +24,8 @@ of CoFloCo.
 
 
 :- module(cofloco_utils,[
-		    zip_with_op/4,
+			zip_with_op/3,
+		    zip_with_op2/4,
 		    tuple/3,
 		    sorted_tuple/3,
 		    same_var_tuple/1,
@@ -99,10 +100,16 @@ sorted_tuple(X,Y,(Y,X)):-!.
 
 same_var_tuple((X,Y)):-X==Y.
 
-%! zip_with_op(?Op:atom,?C:A,?L:B,?Term:atom(A,B))
+%! zip_with_op(?Op:atom,?C:A,?Term:atom(A,B))
+% Term is Op(C).
+% It can be used in any direction.
+zip_with_op(Op,C,Term):-
+	Term=..[Op,C].
+
+%! zip_with_op2(?Op:atom,?C:A,?L:B,?Term:atom(A,B))
 % Term is Op(C,L).
 % It can be used in any direction.
-zip_with_op(Op,C,L,Term):-
+zip_with_op2(Op,C,L,Term):-
 	Term=..[Op,C,L].
 
 %! assign_right_vars(+Xs:list((A,B)),+Right_vars:A,-Right_Xs:list(B)) is det
@@ -177,7 +184,7 @@ constraint_to_coeffs_rep(Constr, coeff_rep(Coeffs_sorted,Rel1,B)) :-
         negate_fr( NegB, B),
         Rel1= Rel      
     ),
-    maplist(zip_with_op( '*'), Fracs1, Vars, Coeffs),
+    maplist(zip_with_op2( '*'), Fracs1, Vars, Coeffs),
     from_list_sl(Coeffs,Coeffs_sorted).
 
 
@@ -198,10 +205,10 @@ coeffs_rep_to_constraint(coeff_rep(Coeffs,Op,B), Constraint) :-
 write_sum([],0).
 write_sum([X|Xs],Sum):-
 	exclude(zero,Xs,Xss),
-	foldr(zip_with_op('+'),Xss,X,Sum).
+	foldr(zip_with_op2('+'),Xss,X,Sum).
 write_product([],0).
 write_product([X|Xs],Sum):-
-	foldr(zip_with_op('*'),Xs,X,Sum).
+	foldr(zip_with_op2('*'),Xs,X,Sum).
 	
 zero(X):-X==0.
 

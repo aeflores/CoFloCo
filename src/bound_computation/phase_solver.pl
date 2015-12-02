@@ -50,12 +50,10 @@ at the beginning and the end of the phase.
 			bagof_no_fail/3]).	
 :- use_module('../utils/cost_structures',[
 			cstr_extend_variables_names/3,
-			cstr_extract_ub_fcons/3,
-		    cstr_extract_lb_fcons/3,
 			cstr_remove_cycles/2,
 			new_itvar/1,
 			get_loop_itvar/2,
-			cstr_propagate_summatory/4,
+			cstr_propagate_sums/5,
 			fconstr_new/4,
 			cstr_empty/1,
 			cstr_join/3]).			
@@ -165,9 +163,8 @@ get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost2):-
 max_min_costs_in_phase(Costs,Head,Call,Forward_inv,Phase,Cost_final):-
 	assert(forward_invariant_temp(Head,Call,Forward_inv)),
 	maplist(cstr_remove_cycles,Costs,Costs_simple),
-	maplist(cstr_propagate_summatory,Phase,Costs_simple,Costs_propagated,Summatories_pairs),
-	maplist(cstr_extract_ub_fcons,Costs_propagated,Costs_propagated1,Maxs),
-	maplist(cstr_extract_lb_fcons,Costs_propagated1,Costs_propagated2,Mins),
+	maplist(cstr_propagate_sums,Phase,Costs_simple,Costs_propagated2,Max_min_pairs,Summatories_pairs),
+	maplist(tuple,Maxs,Mins,Max_min_pairs),
 	maplist(tuple,Summatories_max,Summatories_min,Summatories_pairs),
 	maplist(get_it_sum_constraint(ub),Phase,It_cons_max), 
     maplist(get_it_sum_constraint(lb),Phase,It_cons_min),    

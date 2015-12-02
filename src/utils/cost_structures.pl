@@ -26,7 +26,7 @@
     They can represent multiple polynomial upper and lower bounds that can be positive or negative.
     The internal representation of cost structures is the following:
     
-   - Cstr=cost(Ub_fcons,Lb_fcons,I_cons,BSummands,Constant)
+   - Cstr=cost(Ub_fcons,Lb_fcons,Iconstrs,BSummands,Constant)
     where:
      * Ub_fcons:list(fconstr)
      * Lb_fcons:list(fconstr)
@@ -52,7 +52,7 @@
      
      Ub_FCons contains the final constraints with Op=ub
      Lb_FCons contains the final constraints with Op=lb
-     I_cons contains all the intermediate constraints
+     Iconstrs contains all the intermediate constraints
      
     - Itvar: list(basic_identifiers) intermediate vars identifiers are a list of identifiers that allows to track
       the intermediate variable to the point of the analysis where it was created
@@ -74,28 +74,22 @@
 :- module(cost_structures,[
 		new_itvar/1,
 		get_loop_itvar/2,
-		
 		fconstr_new/4,
 		fconstr_new_inv/4,
-		
-		
 		cstr_empty/1,
-		cstr_extract_ub_fcons/3,
-		cstr_extract_lb_fcons/3,
+		astrexp_to_cexpr/2,
 		cstr_from_cexpr/2,
-		cstr_get_cexpr_from_normalform/2,
-		cstr_get_cexpr_from_normalform_ground/2,
 		cstr_remove_cycles/2,
 		cstr_extend_variables_names/3,
-		cstr_propagate_summatory/4,
+		cstr_propagate_sums/5,
 		cstr_join/3,
 		cstr_or_compress/2,
-		cstr_join_equal_top_expressions/2,
+		cstr_join_equal_fconstr/2,
 		cstr_remove_useless_constrs_max_min/3,
 		cstr_shorten_variables_names/3]).
 		
 		
-:- use_module(cofloco_utils,[is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3]).	
+:- use_module(cofloco_utils,[zip_with_op/3,is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3]).	
 :- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1]).	
 
 :- use_module('../IO/params',[get_param/2]).
@@ -183,12 +177,33 @@ iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp,Bounded)).
 % predicates on abstract structured expressions (astrexp)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
+%! astrexp_new_simple_itvar(Itvar:itvar,Astrexp:astrexp) is det
+% create an abstract structured cost expression (astrexp) with as single positive itvar
+astrexp_new_simple_itvar(Itvar,exp([(Itvar,Var)],[],add([mult([Var])]),add([]))).
+
+
+
+astrexp_to_cexpr(exp(Index1,Index2,add(Summands),add(Summands2)),Exp3):-
+	pstrexp_to_cexpr(add(Summands),Exp1),
+	pstrexp_to_cexpr(add(Summands2),Exp2),
+	( Exp2==0 ->
+	  Exp3=Exp1
+	  ;
+	  Exp3=Exp1-Exp2
+	 ),
+	%unify the names and the variables of the index
+	maplist(tuple,X,X,Index1),
+	maplist(tuple,X2,X2,Index2).
+	
+	
+pstrexp_to_cexpr(add(Summands),Exp3):-
+	maplist(write_product_1,Summands,Summands2),
+	write_sum(Summands2,Exp3).
+
+write_product_1(mult(List),Product):-
+	write_product(List,Product).
 
 		
-% predicates on basic summands (bsummands)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 	
 
 % predicates on cost structures (cstr)
@@ -198,10 +213,14 @@ iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp,Bounded)).
 % generate a cost structure with 0 cost
 cstr_empty(cost([],[],[],[],0)).
 
+
+
 %! cstr_infinite(Cstr:cstr) is det
 % generate a cost structure with infinite
 cstr_infinite(cost([],[],[],[(Name,1)],0)):-
 	new_itvar(Name).
+
+
 
 %! cstr_from_cexpr(Cexp:cexp,Cstr:cstr) is det
 % generate a cost structure from a cost expression
@@ -234,84 +253,97 @@ cstr_from_cexpr(Exp,_):-
 	throw(invalid_cost_expression(Exp)).
 
 
-%FIXME 
-% creates inefficient structures
-% when the cost is a constant, the auxiliary expressions are not well propagated
 
 
+%! cstr_get_components(+Costs:list(cstr),-Ub_fcons:list(list(fconstr)),-Lb_fcons:list(list(fconstr)),-Itcons:list(list(iconstr)),-BSummands:list(list(bsummands)),-BConstants:list(constant)) is det
+% obtain lists of the components of a cost structure separated
 cstr_get_components([],[],[],[],[],[]).
-cstr_get_components([cost(Ub_fcons,Lb_fcons,I_cons,BSummands,BConstant)|Rest],[Ub_fcons|Ub_fcons_rest],[Lb_fcons|Lb_fcons_rest],[I_cons|I_cons_rest],[BSummands|BSummands_res],[BConstant|BConstant_rest]):-
-	cstr_get_components(Rest,Ub_fcons_rest,Lb_fcons_rest,I_cons_rest,BSummands_res,BConstant_rest).
+cstr_get_components([cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant)|Rest],[Ub_fcons|Ub_fcons_rest],[Lb_fcons|Lb_fcons_rest],[Itcons|Itcons_rest],[BSummands|BSummands_res],[BConstant|BConstant_rest]):-
+	cstr_get_components(Rest,Ub_fcons_rest,Lb_fcons_rest,Itcons_rest,BSummands_res,BConstant_rest).
 	
-		
 	
-cstr_extract_ub_fcons(cost(Top_exps,Top_exps_min,Aux,BSummands,BConstant),cost([],Top_exps_min,Aux,BSummands,BConstant),Top_exps).
-cstr_extract_lb_fcons(cost(Top_exps,Top_exps_min,Aux,BSummands,BConstant),cost(Top_exps,[],Aux,BSummands,BConstant),Top_exps_min).
 
 
-cstr_join_equal_top_expressions(cost(Ub_tops,Lb_tops,I_cons,Bases,BConstant),cost(Ub_tops2,Lb_tops2,I_cons2,Bases,BConstant)):-
-	cstr_constrs_join_equal_top_expressions(Ub_tops,Ub_tops2,Extra_auxs1),
-	cstr_constrs_join_equal_top_expressions(Lb_tops,Lb_tops2,Extra_auxs2),
-	ut_flat_list([Extra_auxs1,Extra_auxs2,I_cons],I_cons2).
-	
-cstr_constrs_join_equal_top_expressions(Tops,Tops2,New_aux):-
-	foldl(add_top_to_expr_top_multimap,Tops,[],Exp_Tops_multimap),
-	partition(unitary_multimap_entry,Exp_Tops_multimap,Non_repeated_tops_pairs,Repeated_tops_pairs),
-	maplist(tuple,_,Non_repeated_tops,Non_repeated_tops_pairs),
-	maplist(generate_compressed_top,Repeated_tops_pairs,New_tops,New_aux),
-	ut_flat_list([Non_repeated_tops,New_tops],Tops2).
+%! cstr_join_equal_fconstr(+Cost:cstr,-Cost_simple:cstr) is det
+% join all the final bound constraints that have the same linear expression
+cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant)):-
+	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
+	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
+	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2).
 
-add_top_to_expr_top_multimap(bound(Op,Exp,Bounded),Multimap,Multimap1):-
+ %! fconstr_join_equal_expressions(Fcons:list(fconstr),Fcons2:list(fconstr),New_Iconstrs:list(iconstr)) is det
+ % group all final constraints that have the same expression and generate a single final constraint for each group
+ % the original final constraints become intermediate constraints that reference the new final constraint
+ fconstr_join_equal_expressions(Fcons,Fcons2,New_Iconstrs):-
+	% create a multimap with the linear expression as a key and the final constraints as values
+	foldl(add_fconstr_to_expr_fconstr_multimap,Fcons,[],Exp_Fcons_multimap),
+	partition(unitary_multimap_entry,Exp_Fcons_multimap,Non_repeated_fconstrs_pairs,Repeated_fconstrs_pairs),
+	maplist(tuple,_,Non_repeated_fconstrs,Non_repeated_fconstrs_pairs),
+	% for each group (that corresponds to one linear expression)
+	% that contains multiple final constraints, generate a final constraint and a list of intermediate constraints
+	maplist(generate_compressed_fconstr,Repeated_fconstrs_pairs,New_fconstrs,New_Iconstrs),
+	ut_flat_list([Non_repeated_fconstrs,New_fconstrs],Fcons2).
+
+ %! add_fconstr_to_expr_fconstr_multimap(+Fconstr:fconstr,+Multimap:multimap(nlinexp,fconstr),-Multimap1:multimap(nlinexp,fconstr)) is det
+ % add the pair (Exp,bound(Op,Exp,Bounded)) to the multimap
+ add_fconstr_to_expr_fconstr_multimap(bound(Op,Exp,Bounded),Multimap,Multimap1):-
 	put_mm( Multimap, Exp, bound(Op,Exp,Bounded), Multimap1).
 	
-unitary_multimap_entry((_,[_])).
+ unitary_multimap_entry((_,[_])).
 
-generate_compressed_top((Exp,Tops),New_top,New_auxs):-
-	Tops=[bound(Op,_,_)|_],
+ %! generate_compressed_fconstr(Exp_Fcons:(nlinexp,list_set(fconstr)),New_fconstr:fconstr,New_iconstrs:list(itconstr)) is det
+ % for each group Fcons,  generate a final constraint New_fconstr and a list of intermediate constraints New_iconstrs
+ generate_compressed_fconstr((Exp,Fcons),New_fconstr,New_iconstrs):-
+	Fcons=[bound(Op,_,_)|_],
 	new_itvar(Name),
-	fconstr_new([Name],Op,Exp,New_top),
-	maplist(fconstr_new_inv(_Exp,Op),Bounded_list,Tops),
-	maplist(iconstr_new(exp([(Name,Var)],[],add([mult([Var])]),add([])),Op),Bounded_list,New_auxs).
+	fconstr_new([Name],Op,Exp,New_fconstr),
+	maplist(fconstr_new_inv(_Exp,Op),Bounded_list,Fcons),
+	astrexp_new_simple_itvar(Name,Astrexp),
+	maplist(iconstr_new(Astrexp,Op),Bounded_list,New_iconstrs).
 	
-cstr_propagate_zeroes(cost(Ub_tops,Lb_tops,Aux_exps,Bases,BConstant),Simplified):-
-	partition(is_negative_fconstr,Ub_tops,Removed_ub_tops,Ub_tops1),
-	exclude(is_negative_fconstr,Lb_tops,Lb_tops1),	
-	(Removed_ub_tops\=[]->
-	foldl(bconstr_accum_bounded_set,Removed_ub_tops,[],Zero_set),
-	propagate_zeroes(Aux_exps,Zero_set,Aux_exps2,Zero_set2),
-	exclude(pair_contains_first(Zero_set2),Bases,Bases1)
+	
+
+	
+%! cstr_propagate_zeroes(+Cstr:cstr,-Cstr_simplified:cstr) is det
+% simplify cost structure by eliminating final constraints with expressions that are guaranteed to be
+% zero or smaller
+% the intermediate variables that are upper bounded by one of these constraints are set to zero and the effect is propagated
+% down to the basic summands	
+cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Simplified):-
+	partition(is_negative_fconstr,Ub_fconstrs,Removed_ub_fconstrs,Ub_fconstrs1),
+	exclude(is_negative_fconstr,Lb_fconstrs,Lb_fconstrs1),	
+	(Removed_ub_fconstrs\=[]->
+	foldl(bconstr_accum_bounded_set,Removed_ub_fconstrs,[],Zero_set),
+	propagate_zeroes_through_iconstrs(Iconstrs,Zero_set,Iconstrs2,Zero_set2),
+	exclude(pair_contains_first(Zero_set2),Bsummands,Bsummands1)
 	;
-	 Aux_exps2=Aux_exps,
-	 Bases1=Bases
+	 Iconstrs2=Iconstrs,
+	 Bsummands1=Bsummands
 	),
-	cstr_remove_useless_constrs(cost(Ub_tops1,Lb_tops1,Aux_exps2,Bases1,BConstant),Simplified).
-	
+	cstr_remove_useless_constrs(cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs2,Bsummands1,BConstant),Simplified).
 
-	
-
-
-
-
-propagate_zeroes([],Set,[],Set).
-propagate_zeroes([bound(Op,Exp,Bounded)|I_cons],Set,I_cons_out,Set_out):-
+%! propagate_zeroes_through_iconstrs(Iconstrs:list(iconstr),Set:list_set(itvar),Iconstrs_out:list(iconstr),Set_out:list_set(itvar)) is det	
+% propagate the intermediate variables that are zero (Set) and update any new itvars that are set to zero
+propagate_zeroes_through_iconstrs([],Set,[],Set).
+propagate_zeroes_through_iconstrs([bound(Op,Exp,Bounded)|Iconstrs],Set,Iconstrs_out,Set_out):-
 	Exp=exp(Index_pos,Index_neg,Pos,Neg),
 	partition(pair_contains_first(Set),Index_pos,Index_zero,Index_pos1),
 	Index_zero\=[],!,
 	maplist(set_second_to(0),Index_zero),
 	simplify_add(Pos,Pos1),
 	(Pos1=add([])->
-	   I_cons_out=I_cons_out1,
+	   Iconstrs_out=Iconstrs_out1,
 	   from_list_sl(Bounded,Bounded_set),
 	   union_sl(Bounded_set,Set,Set1)
 	   ;
 	   Exp1=exp(Index_pos1,Index_neg,Pos1,Neg),
-	   I_cons_out=[bound(Op,Exp1,Bounded)|I_cons_out1],
+	   Iconstrs_out=[bound(Op,Exp1,Bounded)|Iconstrs_out1],
 	   Set1=Set
 	),
-	propagate_zeroes(I_cons,Set1,I_cons_out1,Set_out).
+	propagate_zeroes_through_iconstrs(Iconstrs,Set1,Iconstrs_out1,Set_out).
 	
-propagate_zeroes([bound(Op,Exp,Bounded)|I_cons],Set,[bound(Op,Exp,Bounded)|I_cons_out],Set_out):-
-	propagate_zeroes(I_cons,Set,I_cons_out,Set_out).	  
+propagate_zeroes_through_iconstrs([bound(Op,Exp,Bounded)|Iconstrs],Set,[bound(Op,Exp,Bounded)|Iconstrs_out],Set_out):-
+	propagate_zeroes_through_iconstrs(Iconstrs,Set,Iconstrs_out,Set_out).	  
 	 
 set_second_to(X,(_,X)).
 simplify_add(add(Summands),add(Summands1)):-
@@ -321,7 +353,376 @@ zero_summand(mult(Factors)):-
 	member(F,Factors),
 	F==0,!.	
 	
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! cstr_remove_cycles(+Cost:cstr,-Short:cstr) is det
+% one of the main simplifying predicates for cost structures
+% remove constraints that depend on variables that are not bounded anywhere
+% get rid of circular dependencies	
+cstr_remove_cycles(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Short):-
+	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Ub_Bounded_set),
+	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
+	remove_not_bounded(Iconstrs,Ub_Bounded_set,Lb_Bounded_set,Iconstrs2),
+	%Some other simplifications
+	cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs2,Bsummands,BConstant),Simplified),
+	%cstr_remove_useless_constrs(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs2,Bsummands,BConstant),Simplified),
+	cstr_shorten_variables_names(Simplified,list,Short).
+
+
+
+%! remove_not_bounded(Iconstrs:list(iconstrs),Ub_Set:list_set(itvar),Lb_Set:list_set(itvar),Iconstrs_out:list(iconstrs)) is det
+%  in each iteration accumulate the iconstrs that are well defined (all the itvars in their expressions are bounded)
+%  also accumulate the itvars that become well defined by the selected iconstrs
+%  keep iterating until no more iconstrs can be included (a fixpoint has been reached)
+remove_not_bounded(Iconstrs,Ub_Set,Lb_Set,Iconstrs_out):-
+	split_bounded(Iconstrs,Ub_Set,Lb_Set,Ub_Set_1,Lb_Set_1,Bounded,Not_bounded),
+	(Bounded=[]->
+	  Iconstrs_out=[]
+	  %(Not_bounded\=[]->trace,maplist(print_aux_exp,Not_bounded);true)
+	;
+	  remove_not_bounded(Not_bounded,Ub_Set_1,Lb_Set_1,Iconstrs_aux),
+	  append(Bounded,Iconstrs_aux,Iconstrs_out)
+	  ).
+	  
+split_bounded([],Ub_Set,Lb_Set,Ub_Set,Lb_Set,[],[]).
+
+split_bounded([bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
+	% the positive summands have to be well defined
+	maplist(tuple,Names,_Vars,Index),
+	maplist(contains_sl(Ub_Set),Names),!,
+	%include Bounded into the Ub_set
+	from_list_sl(Bounded,Bounded_set),
+	union_sl(Bounded_set,Ub_Set,Ub_Set_aux),
+	split_bounded(Iconstrs,Ub_Set_aux,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).
+
+% FIXME: the positive summands do not need to be well defined in theory but it might help...make some experiments
+split_bounded([bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
+	% the negative summands have to be well defined
+	maplist(tuple,Names,_,Index),
+	maplist(contains_sl(Lb_Set),Names),
+	maplist(tuple,Names_neg,_,Index_neg),
+	maplist(contains_sl(Ub_Set),Names_neg),!,
+	%include Bounded into the Lb_set
+	from_list_sl(Bounded,Bounded_set),
+	union_sl(Bounded_set,Lb_Set,Lb_Set_aux),
+	split_bounded(Iconstrs,Ub_Set,Lb_Set_aux,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).	
+	
+% Iconstr is not well defined
+split_bounded([Iconstr|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,[Iconstr|Exp_Not_bounded]):-
+	split_bounded(Iconstrs,Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).
+
+
+
+
+
+
+%! cstr_remove_useless_constrs(+Cost:cstr,-Cost_simple:cstr) is det
+% another predicate to simplify cost structures (it is called after propagating zeroes)
+% Remove bound constraints that bound itvars that are not needed for the cost
+cstr_remove_useless_constrs(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),cost(Ub_fconstrs2,Lb_fconstrs2,Iconstrs2,Bsummands2,BConstant)):-
+	foldl(compute_initial_reference_set(max),Bsummands,([],[]),(Bsummands1,Ref_set1)),
+	foldl(compute_initial_reference_set(min),Bsummands1,([],Ref_set1),(Bsummands2,Ref_set2)),
+	reverse(Iconstrs,Aux_rev),
+	remove_useless_iconstrs(Aux_rev,Ref_set2,[],Ref_set3,Iconstrs2),
+	exclude(is_fconstr_useless(Ref_set3),Ub_fconstrs,Ub_fconstrs2),
+	exclude(is_fconstr_useless(Ref_set3),Lb_fconstrs,Lb_fconstrs2).
+
+%! cstr_remove_useless_constrs_max_min(+Cost:cstr,-Cost_simple:cstr) is det
+% a specialized version of cstr_remove_useless_constrs but to simplify a cost structure
+% that we want to either maximize or minimize
+%
+% each itvar is wrapped with ub() or lb() (or both) depending on whether we are interested in its upper bound, lower bound or both
+% starting from the basic summands we proceed upwards accumulating the necessary itvars and discarding the useless bound constraints
+cstr_remove_useless_constrs_max_min(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Max_min,cost(Ub_fconstrs2,Lb_fconstrs2,Iconstrs2,Bsummands2,BConstant)):-
+	foldl(compute_initial_reference_set(Max_min),Bsummands,([],[]),(Bsummands2,Ref_set)),
+	reverse(Iconstrs,Aux_rev),
+	remove_useless_iconstrs(Aux_rev,Ref_set,[],Ref_set1,Iconstrs2),
+	exclude(is_fconstr_useless(Ref_set1),Ub_fconstrs,Ub_fconstrs2),
+	exclude(is_fconstr_useless(Ref_set1),Lb_fconstrs,Lb_fconstrs2).
+
+	
+compute_initial_reference_set(_,(_Name,0),(Bsummands,Ref_set),(Bsummands,Ref_set)).
+compute_initial_reference_set(min,(Name,Value),(Bsummands,Ref_set),([(Name,Value)|Bsummands],Ref_set2)):-
+	(greater_fr(Value,0)->
+		insert_sl(Ref_set,lb(Name),Ref_set2)
+		;
+		insert_sl(Ref_set,ub(Name),Ref_set2)
+		).
+compute_initial_reference_set(max,(Name,Value),(Bsummands,Ref_set),([(Name,Value)|Bsummands],Ref_set2)):-
+	(greater_fr(Value,0)->
+		insert_sl(Ref_set,ub(Name),Ref_set2)
+		;
+		insert_sl(Ref_set,lb(Name),Ref_set2)
+		).	
+
+
+
+remove_useless_iconstrs([],Ref_set,Iconstrs,Ref_set,Iconstrs).
+remove_useless_iconstrs([bound(Op,Exp,Bounded)|Iconstrs],Ref_set_accum,Iconstrs_accum,Ref_set,Iconstrs_out):-
+	opposite_sign(Op,Op_neg),
+	maplist(zip_with_op(Op),Bounded,Bounded_op),	
+	from_list_sl(Bounded_op,Bounded_set),
+	(Op=ub->
+	intersection_sl(Ref_set_accum,Bounded_set,Bounded1_op),
+	Bounded1_op\=[]
+	;
+	intersection_sl(Ref_set_accum,Bounded_set,Bounded_set),
+	Bounded1_op=Bounded_set
+	),!,
+	maplist(zip_with_op(Op),Bounded1,Bounded1_op),
+	Exp=exp(Index,Index_neg,_,_),
+	add_elements_from_index(Op,Index,Ref_set_accum,Ref_set_accum1),
+	add_elements_from_index(Op_neg,Index_neg,Ref_set_accum1,Ref_set_accum2),
+	remove_useless_iconstrs(Iconstrs,Ref_set_accum2,[bound(Op,Exp,Bounded1)|Iconstrs_accum],Ref_set,Iconstrs_out).
+
+
+remove_useless_iconstrs([_|Iconstrs],Ref_set_accum,Iconstrs_accum,Ref_set,Iconstrs_out):-	
+	remove_useless_iconstrs(Iconstrs,Ref_set_accum,Iconstrs_accum,Ref_set,Iconstrs_out).		
+
+	
+add_elements_from_index(Op,Index,Set,Set1):-
+	maplist(tuple,Names,_,Index),
+	maplist(zip_with_op(Op),Names,Names_op),
+	from_list_sl(Names_op,Names_set),
+	union_sl(Names_set,Set,Set1).
+
+is_fconstr_useless(Ref_set,bound(Op,_,Bounded)):-
+	maplist(zip_with_op(Op),Bounded,Bounded_op),	
+	from_list_sl(Bounded_op,Bounded_set),
+	(Op=ub->
+	intersection_sl(Bounded_set,Ref_set,[])
+	;
+	\+intersection_sl(Bounded_set,Ref_set,Bounded_set)
+	).
+		
+
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! cstr_extend_variables_names(+Cost:cstr,+Prefix:term,-Cost_extended:cstr) is det
+% generate a new instance of a cost structure by extending all itvar names with the Prefix
+cstr_extend_variables_names(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Prefix,cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant)):-
+		maplist(fconstr_extend_name(Prefix),Ub_fconstrs,Ub_fconstrs1),
+		maplist(fconstr_extend_name(Prefix),Lb_fconstrs,Lb_fconstrs1),
+		maplist(iconstr_extend_name(Prefix),Iconstrs,Iconstrs1),
+		maplist(bfactor_extend_name(Prefix),Bsummands,Bsummands1).
+
+
+
+iconstr_extend_name(Prefix,bound(Op,Exp,Bounded),bound(Op,Exp1,Bounded2)):-
+	astrexp_extend_name(Prefix,Exp,Exp1),
+	maplist(append([Prefix]),Bounded,Bounded2).
+	
+fconstr_extend_name(Prefix,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded2)):-
+	maplist(append([Prefix]),Bounded,Bounded2).	
+	
+astrexp_extend_name(Prefix,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
+	maplist(bfactor_extend_name(Prefix),Index,Index2),
+	maplist(bfactor_extend_name(Prefix),Index_neg,Index_neg2).	
+	
+bfactor_extend_name(Prefix,(Name,Value),([Prefix|Name],Value)).	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! cstr_shorten_variables_names(+Cost:cstr,+Flag:atom,-Cost_extended:cstr) is det
+% Reduce the length of the itvar names by substituting them by their hash summary
+% the flag indicates whether the resulting names are lists or terms
+cstr_shorten_variables_names(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Flag,cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant)):-
+		maplist(fconstr_shorten_name(Flag),Ub_fconstrs,Ub_fconstrs1),
+		maplist(fconstr_shorten_name(Flag),Lb_fconstrs,Lb_fconstrs1),
+		maplist(iconstr_shorten_name(Flag),Iconstrs,Iconstrs1),
+		maplist(bfactor_shorten_name(Flag),Bsummands,Bsummands1).
+		
+
+iconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression2,Bounded2)):-
+	astrexp_shorten_name(Flag,Expression,Expression2),
+	maplist(itvar_shorten_name(Flag),Bounded,Bounded2).
+	
+fconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded2)):-
+	maplist(itvar_shorten_name(Flag),Bounded,Bounded2).		
+
+astrexp_shorten_name(Flag,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
+	maplist(bfactor_shorten_name(Flag),Index,Index2),
+	maplist(bfactor_shorten_name(Flag),Index_neg,Index_neg2).
+	
+bfactor_shorten_name(Flag,(Name,Value),(Short_name,Value)):-
+	itvar_shorten_name(Flag,Name,Short_name).	
+	
+%! itvar_shorten_name(+Flag:flag,+Itvar:itvar,-Itvar_short:itvar) is det
+% create an abbreviation of the intermediate variable name
+% the flag determines is the new name is a list or not. 
+% The name must always be a list except when we want to use it for the output
+itvar_shorten_name(list,Name,Short_name):-
+	term_hash(Name,Hash),
+	(short_db(Hash,Name,Short_name)->
+		true
+		;
+	 	counter_increase(short_terms,1,Id),
+	 	assert(short_db(Hash,Name,[s(Id)])),
+	 	Short_name=[s(Id)]
+	 	).
+itvar_shorten_name(no_list,Name,Short_name):-
+	term_hash(Name,Hash),
+	(short_db(Hash,Name,Short_name)->
+		true
+		;
+	 	counter_increase(short_terms,1,Id),
+	 	assert(short_db(Hash,Name,s(Id))),
+	 	Short_name=s(Id)
+	 	).	
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+
+%! cstr_join(+Cost1:cstr,+Cost2:cstr,-Cost3:cstr) is det
+% join Cost1 and Cost2 into Cost3
+cstr_join(cost(T,A,Iconstrs,Bs,B),cost(T2,A2,Iconstrs2,B2s,B2),cost(T3,A3,Iconstrs3,B3s,B3)):-
+	append(T,T2,T3),
+	append(A,A2,A3),
+	append(Iconstrs,Iconstrs2,Iconstrs3),
+	append(Bs,B2s,B3s),
+	sum_fr(B,B2,B3).	
+	
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! cstr_propagate_summs(+Loop:loop_id,+Cost:cstr,-Cost2:cstr,-Max_mins:(list(fconstr),list(fconstr)),-Summs:(list(fconstr),list(fconstr))) is det
+% propagate the sum of a cost structure all form the basic summands to the final constraints
+%
+% Cost_out contains the transformed cost except the final constraints that still have to be computed
+% Max_mins is a pair of set of final constraints that have to be maximized and minimized
+% Sums is a pair of set of final constraints whose sum over Loop has to be computed
+cstr_propagate_sums(Loop,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Cost2,Max_mins,Sums):-
+	%transform the basic summands into sums and record the relation between the original variable and the sum variable in Sum_map_initial
+	generate_initial_sum_map(Bsummands,[],Sum_map_initial,Bsummands1),
+	propagate_sums_backwards(Iconstrs,Sum_map_initial,Iconstrs2,Sum_map,Max_map),
+	
+	get_loop_itvar(Loop,Itvar),
+	Cost2=cost([],[],Iconstrs2,[(Itvar,BConstant)|Bsummands1],0),
+	% get the final constraints that have to be computed
+	get_maxs(Ub_fconstrs,Max_map,Ub_fconstrs2),
+	get_summatories(Ub_fconstrs,Sum_map,Ub_Summatories),
+	get_maxs(Lb_fconstrs,Max_map,Lb_fconstrs2),
+	get_summatories(Lb_fconstrs,Sum_map,Lb_Summatories),
+	Max_mins=(Ub_fconstrs2,Lb_fconstrs2),
+	Sums=(Ub_Summatories,Lb_Summatories).
+
+	
+generate_initial_sum_map([],Map,Map,[]).
+generate_initial_sum_map([(Name,Val)|Bsummands],Map,Map_out,[(Name2,Val)|Bsummands1]):-
+	lookup_lm(Map,Name,Name2),!,
+	generate_initial_sum_map(Bsummands,Map,Map_out,Bsummands1).
+generate_initial_sum_map([(Name,Val)|Bsummands],Map,Map_out,[(Name2,Val)|Bsummands1]):-
+	new_itvar(Name2),
+	insert_lm(Map,Name,Name2,Map1),
+	generate_initial_sum_map(Bsummands,Map1,Map_out,Bsummands1).
+		
+	
+get_maxs([],_,[]).
+get_maxs([bound(Op,Exp,Bounded)|Fcons],Max_set,Fcons2):-
+	include(contains_sl(Max_set),Bounded,Non_summatories),
+	(Non_summatories\=[]->
+		Fcons2=[bound(Op,Exp,Non_summatories)|Fcons1]
+		;
+		Fcons2=Fcons1
+		),
+	get_maxs(Fcons,Max_set,Fcons1).
+	
+get_summatories([],_,[]).
+get_summatories([bound(Op,Exp,Bounded)|Fcons],Sum_map,Fcons2):-
+	get_mapped(Bounded,Sum_map,New_names),
+	(New_names\=[]->
+		Fcons2=[bound(Op,Exp,New_names)|Fcons1]
+		;
+		Fcons2=Fcons1
+		),
+	get_summatories(Fcons,Sum_map,Fcons1).
+
+
+	
+	
+propagate_sums_backwards([],Sum_map,[],Sum_map,[]).
+propagate_sums_backwards([bound(Op,Astrexp,Bounded)|Iconstrs_ini],Sum_map_initial,Iconstrs3,Sum_map3,Max_map4):-	
+	Astrexp=exp(Index1,Index2,Std_exp,Std_exp_neg),
+	append(Index1,Index2,Index_total),
+	propagate_sums_backwards(Iconstrs_ini,Sum_map_initial,Iconstrs,Sum_map,Max_map),
+	get_mapped(Bounded,Sum_map,New_names),
+	include(contains_sl(Max_map),Bounded,Non_summatories),
+	(Non_summatories\=[]->
+		Iconstrs2=[bound(Op,Astrexp,Non_summatories)|Iconstrs],
+		foldl(add_indexes_to_set,Index_total,Max_map,Max_map2)
+	;
+	  Iconstrs2=Iconstrs,
+	  Max_map2=Max_map
+	),
+	(New_names\=[]->
+
+	%this means some are multiplied (the new names can be the same as the old if they did not coicide
+	update_max_set(Index1,Std_exp,Index1_max,Max_map2,Max_map3),
+	update_max_set(Index2,Std_exp_neg,Index2_max,Max_map3,Max_map4),
+	
+	update_sum_map(Index1,Std_exp,Index1_sum,Max_map4,Sum_map,Sum_map2),
+	append(Index1_max,Index1_sum,Index1_final),
+	update_sum_map(Index2,Std_exp_neg,Index2_sum,Max_map3,Sum_map2,Sum_map3),
+	append(Index2_max,Index2_sum,Index2_final),
+	Iconstrs3=[bound(Op,exp(Index1_final,Index2_final,Std_exp,Std_exp_neg),New_names)|Iconstrs2]
+	;
+	Iconstrs3=Iconstrs2,
+	Sum_map3=Sum_map,
+	Max_map4=Max_map2
+	).
+
+get_mapped([],_,[]).
+get_mapped([X|Xs],Map,[New_name|New_names]):-
+	lookup_lm(Map,X,New_name),!,
+	get_mapped(Xs,Map,New_names).
+get_mapped([_|Xs],Map,New_names):-
+	get_mapped(Xs,Map,New_names).
+	
+add_indexes_to_set((Name,_Var),Max_map,Max_map2):-
+	insert_sl(Max_map,Name,Max_map2).
+	
+update_max_set(Index,Expr,Index_max,Max_set,Max_set2):-
+	get_all_but_first_factor(Expr,Vars_set),
+	include(pair_contains(Vars_set),Index,Index_max),
+	maplist(tuple,Names,_,Index_max),
+	from_list_sl(Names,Names_set),
+	union_sl(Names_set,Max_set,Max_set2).
+
+pair_contains_first(Set,(F,_)):-
+	contains_sl(Set,F).	
+pair_contains(Set,(_,Var)):-
+	contains_sl(Set,Var).
+get_all_but_first_factor(add(Summands),Vars):-
+	maplist(get_all_but_first_factor_1,Summands,Vars_list),
+	unions_sl(Vars_list,Vars).
+get_all_but_first_factor_1(mult([_|Rest_factors]),Vars_set):-
+	term_variables(Rest_factors,Vars),
+	from_list_sl(Vars,Vars_set).
+	
+get_first_factor(add(Summands),Vars):-	
+	maplist(get_first_factor_1,Summands,Vars_list),
+	unions_sl(Vars_list,Vars).
+get_first_factor_1(mult([First|_]),Vars_set):-
+	term_variables(First,Vars),
+	from_list_sl(Vars,Vars_set).
+
+update_sum_map(Index,Expr,Index_sum_substituted,Max_map,Sum_map,Sum_map2):-
+	get_first_factor(Expr,Vars_set),
+	include(pair_contains(Vars_set),Index,Index_sum),
+	substitute_by_new_name(Index_sum,Max_map,Sum_map,Index_sum_substituted,Sum_map2).
+
+substitute_by_new_name([],_Max_map,Sum_map,[],Sum_map).
+substitute_by_new_name([(Name,Var)|Index_sum],Max_map,Sum_map,[(New_name,Var)|Index_sum_substituted],Sum_map3):-
+%	contains_sl(Max_map,Name),!,
+	(lookup_lm(Sum_map,Name,New_name),Sum_map2=Sum_map
+	;
+	new_itvar(New_name),
+	insert_lm(Sum_map,Name,New_name,Sum_map2)),
+	substitute_by_new_name(Index_sum,Max_map,Sum_map2,Index_sum_substituted,Sum_map3).
+	
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+
 
 
 %! cstr_or_compress(Costs:list(cstr),Cost_final:cstr) is det
@@ -348,9 +749,12 @@ cstr_or_compress(Costs,Cost_final):-
 	        cstr_infinite(Cost_final)
 	        )
 	;
-	 cstr_join_equal_top_expressions(cost(Ub_fcons_flat,[],Itcons_flat,BSummands_flat,BConstant),Cost_final)
+	 cstr_join_equal_fconstr(cost(Ub_fcons_flat,[],Itcons_flat,BSummands_flat,BConstant),Cost_final)
 	 ).
-	 
+
+%FIXME 
+% creates inefficient structures
+% when the cost is a constant, the auxiliary expressions are not well propagated	 
 cstr_or_compress(Costs,Cost_final):-
 	%remove duplicates
 	from_list_sl(Costs,Costs_set),
@@ -364,8 +768,8 @@ cstr_or_compress(Costs,Cost_final):-
 	maplist(bconstr_get_bounded,Neg_extra_ub,Bounded_neg),
 	foldl(append,Bounded_pos,[],Bounded_pos_flat),
 	foldl(append,Bounded_neg,[],Bounded_neg_flat),
-	get_disjunction_aux(Bounded_pos_flat,Pos_disjunct_auxs,Pos_disjunct_tops),
-	get_disjunction_aux(Bounded_neg_flat,Neg_disjunct_auxs,Neg_disjunct_tops),
+	get_disjunction_aux(Bounded_pos_flat,Pos_disjunct_auxs,Pos_disjunct_fconstrs),
+	get_disjunction_aux(Bounded_neg_flat,Neg_disjunct_auxs,Neg_disjunct_fconstrs),
 	(Pos_disjunct_auxs=[bound(_,_,[Bounded_pos_final])|_]->
 	    BSummands=[(Bounded_pos_final,1)]
 	    ;
@@ -377,24 +781,24 @@ cstr_or_compress(Costs,Cost_final):-
 	    BSummands1=BSummands
 	),
 	ut_flat_list([Pos_extra_ub,Pos_extra_lb,Neg_extra_ub,Neg_extra_lb],Extra_total),
-	partition(is_inter_bconstr,Extra_total,Aux_extra,Top_extra),
-	ut_flat_list([Top_extra,Pos_disjunct_tops,Ub_fcons_list,Neg_disjunct_tops,Lb_fcons_list],Fcons_all),
+	partition(is_inter_bconstr,Extra_total,Iconstrs_extra,Top_extra),
+	ut_flat_list([Top_extra,Pos_disjunct_fconstrs,Ub_fcons_list,Neg_disjunct_fconstrs,Lb_fcons_list],Fcons_all),
 	partition(is_ub_bconstr,Fcons_all,Ub_fcons,Lb_fcons),
-	ut_flat_list([Itcons_list,Aux_extra,Pos_disjunct_auxs,Neg_disjunct_auxs],I_cons),
-	cstr_join_equal_top_expressions(cost(Ub_fcons,Lb_fcons,I_cons,BSummands1,0),Cost_final).
+	ut_flat_list([Itcons_list,Iconstrs_extra,Pos_disjunct_auxs,Neg_disjunct_auxs],Iconstrs),
+	cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Iconstrs,BSummands1,0),Cost_final).
 
 
 get_disjunction_aux([],[],[]):-!.
 
-get_disjunction_aux(Vars,[Ub_disjunct_aux,Lb_disjunct_aux],[Ub_disjunct_top,Lb_disjunct_top]):-
+get_disjunction_aux(Vars,[Ub_disjunct_aux,Lb_disjunct_aux],[Ub_disjunct_fconstr,Lb_disjunct_fconstr]):-
 	get_summand_multiplied(Vars,Index_pos,Summands,New_vars),
 	Internal_exp=exp(Index_pos,[],add(Summands),add([])),
 	copy_term(Internal_exp,Internal_exp2),
 	new_itvar(Aux_var),
 	Ub_disjunct_aux=bound(ub,Internal_exp,[Aux_var]),
 	Lb_disjunct_aux=bound(lb,Internal_exp2,[Aux_var]),
-	Ub_disjunct_top=bound(ub,[]+1,New_vars),
-	Lb_disjunct_top=bound(lb,[]+1,New_vars).
+	Ub_disjunct_fconstr=bound(ub,[]+1,New_vars),
+	Lb_disjunct_fconstr=bound(lb,[]+1,New_vars).
 
 get_summand_multiplied([],[],[],[]).
 get_summand_multiplied([Name|Names],[(Name,Var1),(Name_new,Var2)|Index_rest],[mult([Var1,Var2])|Summands],[Name_new|Names_new]):-
@@ -452,350 +856,4 @@ generate_summands_from_bsummands([(Name,Coeff)|BConstants],[(Name,Var)|Index_pos
 	generate_summands_from_bsummands(BConstants,Index_pos,Index_neg,Summands_pos,Summands_neg).
 generate_summands_from_bsummands([(Name,Coeff)|BConstants],Index_pos,[(Name,Var)|Index_neg],Summands_pos,[mult([Var,Coeff_neg])|Summands_neg]):-
 	negate_fr(Coeff,Coeff_neg),
-	generate_summands_from_bsummands(BConstants,Index_pos,Index_neg,Summands_pos,Summands_neg).
-
-
-
-
-
-
-
-
-	
-cstr_remove_cycles(cost(Ub_tops,Lb_tops,Aux_exps,Bases,BConstant),Short):-
-	get_top_bounded(Ub_tops,[],Ub_Bounded_set),
-	get_top_bounded(Lb_tops,[],Lb_Bounded_set),
-	remove_not_bounded(Aux_exps,Ub_Bounded_set,Lb_Bounded_set,Aux_exps2),
-	cstr_propagate_zeroes(cost(Ub_tops,Lb_tops,Aux_exps2,Bases,BConstant),Simplified),
-	%cstr_remove_useless_constrs(cost(Ub_tops,Lb_tops,Aux_exps2,Bases,BConstant),Simplified),
-	cstr_shorten_variables_names(Simplified,list,Short).
-
-
-get_top_bounded([],Set,Set).
-get_top_bounded([bound(_,_Exp,Bounded)|Top_exps],Set,Set_out):-
-	from_list_sl(Bounded,Bounded_set),
-	union_sl(Bounded_set,Set,Set_aux),
-	get_top_bounded(Top_exps,Set_aux,Set_out).
-
-remove_not_bounded(Aux_exps,Ub_Set,Lb_Set,Aux_exp_out):-
-	split_bounded(Aux_exps,Ub_Set,Lb_Set,Ub_Set_1,Lb_Set_1,Bounded,Not_bounded),
-	(Bounded=[]->
-	  Aux_exp_out=[]
-	  %(Not_bounded\=[]->trace,maplist(print_aux_exp,Not_bounded);true)
-	;
-	  remove_not_bounded(Not_bounded,Ub_Set_1,Lb_Set_1,Aux_exp_aux),
-	  append(Bounded,Aux_exp_aux,Aux_exp_out)
-	  ).
-	  
-split_bounded([],Ub_Set,Lb_Set,Ub_Set,Lb_Set,[],[]).
-split_bounded([bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Aux_exps],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
-	maplist(tuple,Names,_Vars,Index),
-	maplist(contains_sl(Ub_Set),Names),!,
-	from_list_sl(Bounded,Bounded_set),
-	union_sl(Bounded_set,Ub_Set,Ub_Set_aux),
-	split_bounded(Aux_exps,Ub_Set_aux,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).
-	
-split_bounded([bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Aux_exps],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
-	maplist(tuple,Names,_,Index),
-	maplist(contains_sl(Lb_Set),Names),
-	maplist(tuple,Names_neg,_,Index_neg),
-	maplist(contains_sl(Ub_Set),Names_neg),!,
-	from_list_sl(Bounded,Bounded_set),
-	union_sl(Bounded_set,Lb_Set,Lb_Set_aux),
-	split_bounded(Aux_exps,Ub_Set,Lb_Set_aux,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).	
-
-split_bounded([Bound|Aux_exps],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,[Bound|Exp_Not_bounded]):-
-	split_bounded(Aux_exps,Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).
-
-cstr_remove_useless_constrs(cost(Ub_tops,Lb_tops,I_cons,Bases,BConstant),cost(Ub_tops2,Lb_tops2,I_cons2,Bases2,BConstant)):-
-	foldl(compute_initial_reference_set(max),Bases,([],[]),(Bases1,Ref_set1)),
-	foldl(compute_initial_reference_set(min),Bases1,([],Ref_set1),(Bases2,Ref_set2)),
-	reverse(I_cons,Aux_rev),
-	remove_useless_aux_constrs(Aux_rev,Ref_set2,[],Ref_set3,I_cons2),
-	exclude(useless_top_constr(Ref_set3),Ub_tops,Ub_tops2),
-	exclude(useless_top_constr(Ref_set3),Lb_tops,Lb_tops2).
-
-cstr_remove_useless_constrs_max_min(cost(Ub_tops,Lb_tops,I_cons,Bases,BConstant),Max_min,cost(Ub_tops2,Lb_tops2,I_cons2,Bases2,BConstant)):-
-	foldl(compute_initial_reference_set(Max_min),Bases,([],[]),(Bases2,Ref_set)),
-	reverse(I_cons,Aux_rev),
-	remove_useless_aux_constrs(Aux_rev,Ref_set,[],Ref_set1,I_cons2),
-	exclude(useless_top_constr(Ref_set1),Ub_tops,Ub_tops2),
-	exclude(useless_top_constr(Ref_set1),Lb_tops,Lb_tops2).
-
-	
-compute_initial_reference_set(_,(_Name,0),(Bases,Ref_set),(Bases,Ref_set)).
-compute_initial_reference_set(min,(Name,Value),(Bases,Ref_set),([(Name,Value)|Bases],Ref_set2)):-
-	(greater_fr(Value,0)->
-		insert_sl(Ref_set,lb(Name),Ref_set2)
-		;
-		insert_sl(Ref_set,ub(Name),Ref_set2)
-		).
-compute_initial_reference_set(max,(Name,Value),(Bases,Ref_set),([(Name,Value)|Bases],Ref_set2)):-
-	(greater_fr(Value,0)->
-		insert_sl(Ref_set,ub(Name),Ref_set2)
-		;
-		insert_sl(Ref_set,lb(Name),Ref_set2)
-		).	
-
-
-
-remove_useless_aux_constrs([],Ref_set,I_cons,Ref_set,I_cons).
-remove_useless_aux_constrs([bound(Op,Exp,Bounded)|I_cons],Ref_set_accum,I_cons_accum,Ref_set,I_cons_out):-
-	opposite_sign(Op,Op_neg),
-	maplist(zip_with(Op),Bounded,Bounded_op),	
-	from_list_sl(Bounded_op,Bounded_set),
-	(Op=ub->
-	intersection_sl(Ref_set_accum,Bounded_set,Bounded1_op),
-	Bounded1_op\=[]
-	;
-	intersection_sl(Ref_set_accum,Bounded_set,Bounded_set),
-	Bounded1_op=Bounded_set
-	),!,
-	maplist(zip_with(Op),Bounded1,Bounded1_op),
-	Exp=exp(Index,Index_neg,_,_),
-	add_elements_from_index(Op,Index,Ref_set_accum,Ref_set_accum1),
-	add_elements_from_index(Op_neg,Index_neg,Ref_set_accum1,Ref_set_accum2),
-	remove_useless_aux_constrs(I_cons,Ref_set_accum2,[bound(Op,Exp,Bounded1)|I_cons_accum],Ref_set,I_cons_out).
-
-
-remove_useless_aux_constrs([_|I_cons],Ref_set_accum,I_cons_accum,Ref_set,I_cons_out):-	
-	remove_useless_aux_constrs(I_cons,Ref_set_accum,I_cons_accum,Ref_set,I_cons_out).		
-
-zip_with(Op,Elem,Zipped):-
-	Zipped=..[Op,Elem].
-	
-add_elements_from_index(Op,Index,Set,Set1):-
-	maplist(tuple,Names,_,Index),
-	maplist(zip_with(Op),Names,Names_op),
-	from_list_sl(Names_op,Names_set),
-	union_sl(Names_set,Set,Set1).
-
-useless_top_constr(Ref_set,bound(Op,_,Bounded)):-
-	maplist(zip_with(Op),Bounded,Bounded_op),	
-	from_list_sl(Bounded_op,Bounded_set),
-	(Op=ub->
-	intersection_sl(Bounded_set,Ref_set,[])
-	;
-	\+intersection_sl(Bounded_set,Ref_set,Bounded_set)
-	).
-		
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-cstr_get_cexpr_from_normalform_ground(exp(Index1,Index2,add(Summands),add(Summands2)),Exp3):-
-	cstr_get_cexpr_from_normalform(add(Summands),Exp1),
-	cstr_get_cexpr_from_normalform(add(Summands2),Exp2),
-	( Exp2==0 ->
-	  Exp3=Exp1
-	  ;
-	  Exp3=Exp1-Exp2
-	 ),
-	maplist(tuple,X,X,Index1),
-	maplist(tuple,X2,X2,Index2).
-	
-	
-cstr_get_cexpr_from_normalform(add(Summands),Exp3):-
-	maplist(write_product_1,Summands,Summands2),
-	write_sum(Summands2,Exp3).
-
-write_product_1(mult(List),Product):-
-	write_product(List,Product).
-
-	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-cstr_extend_variables_names(cost(Ub_tops,Lb_tops,Aux_exps,Bases,BConstant),Prefix,cost(Ub_tops1,Lb_tops1,Aux_exps1,Bases1,BConstant)):-
-		maplist(fconstr_extend_name(Prefix),Ub_tops,Ub_tops1),
-		maplist(fconstr_extend_name(Prefix),Lb_tops,Lb_tops1),
-		maplist(iconstr_extend_name(Prefix),Aux_exps,Aux_exps1),
-		maplist(bfactor_extend_name(Prefix),Bases,Bases1).
-
-
-
-iconstr_extend_name(Prefix,bound(Op,Exp,Bounded),bound(Op,Exp1,Bounded2)):-
-	astrexp_extend_name(Prefix,Exp,Exp1),
-	maplist(append([Prefix]),Bounded,Bounded2).
-	
-fconstr_extend_name(Prefix,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded2)):-
-	maplist(append([Prefix]),Bounded,Bounded2).	
-	
-astrexp_extend_name(Prefix,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
-	maplist(bfactor_extend_name(Prefix),Index,Index2),
-	maplist(bfactor_extend_name(Prefix),Index_neg,Index_neg2).	
-	
-bfactor_extend_name(Prefix,(Name,Value),([Prefix|Name],Value)).	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-cstr_shorten_variables_names(cost(Ub_tops,Lb_tops,Aux_exps,Bases,BConstant),Flag,cost(Ub_tops1,Lb_tops1,Aux_exps1,Bases1,BConstant)):-
-		maplist(fconstr_shorten_name(Flag),Ub_tops,Ub_tops1),
-		maplist(fconstr_shorten_name(Flag),Lb_tops,Lb_tops1),
-		maplist(iconstr_shorten_name(Flag),Aux_exps,Aux_exps1),
-		maplist(bfactor_shorten_name(Flag),Bases,Bases1).
-		
-
-iconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression2,Bounded2)):-
-	astrexp_shorten_name(Flag,Expression,Expression2),
-	maplist(itvar_shorten_name(Flag),Bounded,Bounded2).
-	
-fconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded2)):-
-	maplist(itvar_shorten_name(Flag),Bounded,Bounded2).		
-
-astrexp_shorten_name(Flag,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
-	maplist(bfactor_shorten_name(Flag),Index,Index2),
-	maplist(bfactor_shorten_name(Flag),Index_neg,Index_neg2).
-	
-bfactor_shorten_name(Flag,(Name,Value),(Short_name,Value)):-
-	itvar_shorten_name(Flag,Name,Short_name).	
-	
-%! itvar_shorten_name(Flag:flag,Itvar:itvar,Itvar_short:itvar) is det
-% create an abbreviation of the intermediate variable name
-% the flag determines is the new name is a list or not. 
-% The name must always be a list except when we want to use it for the output
-itvar_shorten_name(list,Name,Short_name):-
-	term_hash(Name,Hash),
-	(short_db(Hash,Name,Short_name)->
-		true
-		;
-	 	counter_increase(short_terms,1,Id),
-	 	assert(short_db(Hash,Name,[s(Id)])),
-	 	Short_name=[s(Id)]
-	 	).
-itvar_shorten_name(no_list,Name,Short_name):-
-	term_hash(Name,Hash),
-	(short_db(Hash,Name,Short_name)->
-		true
-		;
-	 	counter_increase(short_terms,1,Id),
-	 	assert(short_db(Hash,Name,s(Id))),
-	 	Short_name=s(Id)
-	 	).	
-
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
-	 	
-cstr_join(cost(T,A,I_cons,Bs,B),cost(T2,A2,I_cons2,B2s,B2),cost(T3,A3,I_cons3,B3s,B3)):-
-	append(T,T2,T3),
-	append(A,A2,A3),
-	append(I_cons,I_cons2,I_cons3),
-	append(Bs,B2s,B3s),
-	sum_fr(B,B2,B3).	
-	
-	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-cstr_propagate_summatory(Loop,cost(Ub_tops,Lb_tops,I_cons,Bases,BConstant),cost(Ub_tops2,Lb_tops2,Aux2,[([it(Loop)],BConstant)|Bases1],0),(Ub_Summatories,Lb_Summatories)):-
-	generate_initial_sum_map(Bases,[],Sum_map_initial,Bases1),
-	propagate_sum_aux_backwards(I_cons,Sum_map_initial,Aux2,Sum_map,Max_map),
-	get_maxs(Ub_tops,Max_map,Ub_tops2),
-	get_summatories(Ub_tops,Sum_map,Ub_Summatories),
-	get_maxs(Lb_tops,Max_map,Lb_tops2),
-	get_summatories(Lb_tops,Sum_map,Lb_Summatories).
-
-	
-get_maxs([],_,[]).
-get_maxs([bound(Op,Exp,Bounded)|Tops],Max_set,Tops2):-
-	include(contains_sl(Max_set),Bounded,Non_summatories),
-	(Non_summatories\=[]->
-		Tops2=[bound(Op,Exp,Non_summatories)|Tops1]
-		;
-		Tops2=Tops1
-		),
-	get_maxs(Tops,Max_set,Tops1).
-	
-get_summatories([],_,[]).
-get_summatories([bound(Op,Exp,Bounded)|Tops],Sum_map,Tops2):-
-	get_mapped(Bounded,Sum_map,New_names),
-	(New_names\=[]->
-		Tops2=[bound(Op,Exp,New_names)|Tops1]
-		;
-		Tops2=Tops1
-		),
-	get_summatories(Tops,Sum_map,Tops1).
-
-generate_initial_sum_map([],Map,Map,[]).
-generate_initial_sum_map([(Name,Val)|Bases],Map,Map_out,[(Name2,Val)|Bases1]):-
-	lookup_lm(Map,Name,Name2),!,
-	generate_initial_sum_map(Bases,Map,Map_out,Bases1).
-generate_initial_sum_map([(Name,Val)|Bases],Map,Map_out,[(Name2,Val)|Bases1]):-
-	new_itvar(Name2),
-	insert_lm(Map,Name,Name2,Map1),
-	generate_initial_sum_map(Bases,Map1,Map_out,Bases1).
-	
-	
-propagate_sum_aux_backwards([],Sum_map,[],Sum_map,[]).
-propagate_sum_aux_backwards([bound(Op,Exp,Bounded)|Aux_ini],Sum_map_initial,Aux3,Sum_map3,Max_map4):-	
-	Exp=exp(Index1,Index2,Std_exp,Std_exp_neg),
-	append(Index1,Index2,Index_total),
-	propagate_sum_aux_backwards(Aux_ini,Sum_map_initial,Aux,Sum_map,Max_map),
-	get_mapped(Bounded,Sum_map,New_names),
-	include(contains_sl(Max_map),Bounded,Non_summatories),
-	(Non_summatories\=[]->
-		Aux2=[bound(Op,Exp,Non_summatories)|Aux],
-		foldl(add_indexes_to_set,Index_total,Max_map,Max_map2)
-	;
-	  Aux2=Aux,
-	  Max_map2=Max_map
-	),
-	(New_names\=[]->
-
-	%this means some are multiplied (the new names can be the same as the old if they did not coicide
-	update_max_set(Index1,Std_exp,Index1_max,Max_map2,Max_map3),
-	update_max_set(Index2,Std_exp_neg,Index2_max,Max_map3,Max_map4),
-	
-	update_sum_map(Index1,Std_exp,Index1_sum,Max_map4,Sum_map,Sum_map2),
-	append(Index1_max,Index1_sum,Index1_final),
-	update_sum_map(Index2,Std_exp_neg,Index2_sum,Max_map3,Sum_map2,Sum_map3),
-	append(Index2_max,Index2_sum,Index2_final),
-	Aux3=[bound(Op,exp(Index1_final,Index2_final,Std_exp,Std_exp_neg),New_names)|Aux2]
-	;
-	Aux3=Aux2,
-	Sum_map3=Sum_map,
-	Max_map4=Max_map2
-	).
-
-get_mapped([],_,[]).
-get_mapped([X|Xs],Map,[New_name|New_names]):-
-	lookup_lm(Map,X,New_name),!,
-	get_mapped(Xs,Map,New_names).
-get_mapped([_|Xs],Map,New_names):-
-	get_mapped(Xs,Map,New_names).
-	
-add_indexes_to_set((Name,_Var),Max_map,Max_map2):-
-	insert_sl(Max_map,Name,Max_map2).
-	
-update_max_set(Index,Expr,Index_max,Max_set,Max_set2):-
-	get_all_but_first_factor(Expr,Vars_set),
-	include(pair_contains(Vars_set),Index,Index_max),
-	maplist(tuple,Names,_,Index_max),
-	from_list_sl(Names,Names_set),
-	union_sl(Names_set,Max_set,Max_set2).
-
-pair_contains_first(Set,(F,_)):-
-	contains_sl(Set,F).	
-pair_contains(Set,(_,Var)):-
-	contains_sl(Set,Var).
-get_all_but_first_factor(add(Summands),Vars):-
-	maplist(get_all_but_first_factor_1,Summands,Vars_list),
-	unions_sl(Vars_list,Vars).
-get_all_but_first_factor_1(mult([_|Rest_factors]),Vars_set):-
-	term_variables(Rest_factors,Vars),
-	from_list_sl(Vars,Vars_set).
-	
-get_first_factor(add(Summands),Vars):-	
-	maplist(get_first_factor_1,Summands,Vars_list),
-	unions_sl(Vars_list,Vars).
-get_first_factor_1(mult([First|_]),Vars_set):-
-	term_variables(First,Vars),
-	from_list_sl(Vars,Vars_set).
-
-update_sum_map(Index,Expr,Index_sum_substituted,Max_map,Sum_map,Sum_map2):-
-	get_first_factor(Expr,Vars_set),
-	include(pair_contains(Vars_set),Index,Index_sum),
-	substitute_by_new_name(Index_sum,Max_map,Sum_map,Index_sum_substituted,Sum_map2).
-
-substitute_by_new_name([],_Max_map,Sum_map,[],Sum_map).
-substitute_by_new_name([(Name,Var)|Index_sum],Max_map,Sum_map,[(New_name,Var)|Index_sum_substituted],Sum_map3):-
-%	contains_sl(Max_map,Name),!,
-	(lookup_lm(Sum_map,Name,New_name),Sum_map2=Sum_map
-	;
-	new_itvar(New_name),
-	insert_lm(Sum_map,Name,New_name,Sum_map2)),
-	substitute_by_new_name(Index_sum,Max_map,Sum_map2,Index_sum_substituted,Sum_map3).
+	generate_summands_from_bsummands(BConstants,Index_pos,Index_neg,Summands_pos,Summands_neg).	

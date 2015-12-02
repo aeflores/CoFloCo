@@ -34,7 +34,8 @@ These ranking functions are used to prove termination.
 :- use_module('refinement/chains',[chain/3]).	  
 :- use_module('refinement/invariants',[forward_invariant/4]).	
 :- use_module('IO/params',[get_param/2]).
-:- use_module('utils/cofloco_utils',[zip_with_op/4,repeat_n_times/3,
+:- use_module('utils/cofloco_utils',[
+						repeat_n_times/3,
 						assign_right_vars/3,
 						write_sum/2,
 						write_le_internal/2,

@@ -43,7 +43,7 @@ For the constraints, this is done at the same time of the compression.
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[
 		 cstr_extend_variables_names/3,
-		 cstr_join_equal_top_expressions/2]).
+		 cstr_join_equal_fconstr/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_list_glb/2]).
@@ -83,7 +83,7 @@ compress_chain_costs([Lg|More],[Cost_base|Costs],Head_total,Call_total,Cost_tota
 compress_chain_costs_1([],[],Cost_total,_,Head,_,Head,Cost_total).
 compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,Call_total,Call,Cost_total):-
 	copy_term((Head_total,Call_total,Cost),(Head,Call,Cost1)),
-	cstr_join_equal_top_expressions(Cost1,Cost1_simple),
+	cstr_join_equal_fconstr(Cost1,Cost1_simple),
 	%get information of the phase and later phases
 	get_all_phase_information(Head,Call,[Lg|More],Cs_list),
 	nad_list_glb([Cs_prev|Cs_list],Cs_total),
@@ -101,7 +101,7 @@ compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,C
 	cexpr_simplify_ctx_free(Base_prev+Base1,Base2),
 	Cost_next=cost(Ub_tops_new,Lb_tops_new,Aux_exps_new,Bases_total,Base2),
 	% simplify resulting cost structure
-	cstr_join_equal_top_expressions(Cost_next,Cost_next_simple),
+	cstr_join_equal_fconstr(Cost_next,Cost_next_simple),
 	Head=..[_|EVars],
 	%prepare  information for next iteration
 	nad_project_group(EVars,Cs_total,Cs_next),

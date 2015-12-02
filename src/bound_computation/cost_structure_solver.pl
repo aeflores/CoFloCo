@@ -11,13 +11,9 @@
 		get_loop_itvar/2,
 		fconstr_new/4,
 		fconstr_new_inv/4,
-		cstr_get_cexpr_from_normalform/2,
-		cstr_get_cexpr_from_normalform_ground/2,
 		cstr_remove_cycles/2,
 		cstr_extend_variables_names/3,
-		cstr_propagate_summatory/4,
 		cstr_join/3,
-		cstr_join_equal_top_expressions/2,
 		cstr_remove_useless_constrs_max_min/3,
 		cstr_shorten_variables_names/3]).
 :- use_module('../utils/structured_cost_expression',[

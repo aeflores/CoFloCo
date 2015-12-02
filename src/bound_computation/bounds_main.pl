@@ -48,7 +48,7 @@ that can be passed on to the callers.
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
-:- use_module('../utils/cost_structures',[cstr_join_equal_top_expressions/2,cstr_or_compress/2]).
+:- use_module('../utils/cost_structures',[cstr_join_equal_fconstr/2,cstr_or_compress/2]).
 
 :- use_module('../IO/params',[get_param/2]).
 
@@ -73,7 +73,7 @@ compute_bound_for_scc(Head,RefCnt):-
 % and store it,
 compute_chain_bound(Head,Chain):-
 	compute_chain_cost(Head,Chain,UB),!,  
-	cstr_join_equal_top_expressions(UB,UB2),
+	cstr_join_equal_fconstr(UB,UB2),
 	add_upper_bound(Head,Chain,UB2).
 compute_chain_bound(Head,Chain):-
 	throw(fatal_error('failed to compute chain bound',Head,Chain)).

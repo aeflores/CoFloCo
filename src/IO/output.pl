@@ -58,7 +58,7 @@ This module prints the results of the analysis
 
 :- use_module('../utils/cost_structures',[
 	cstr_shorten_variables_names/3,
-	cstr_get_cexpr_from_normalform_ground/2]).
+	astrexp_to_cexpr/2]).
 
 
 :- use_module('../IO/params',[parameter_dictionary/3,get_param/2,
@@ -262,7 +262,7 @@ print_top_exp(bound(Op,Exp,Bounded)):-
 print_aux_exp(bound(Op,Exp_0,Bounded)):-
 	print_op(Op,Op_p),
 	copy_term(Exp_0,Exp),
-	cstr_get_cexpr_from_normalform_ground(Exp,Exp2),
+	astrexp_to_cexpr(Exp,Exp2),
 	write_sum(Bounded,Sum),
 	format('~p ~p ~p~n',[Sum,Op_p,Exp2]).	
 	

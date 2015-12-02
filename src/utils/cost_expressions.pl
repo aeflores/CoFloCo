@@ -31,7 +31,7 @@
 					   ]).
 
 
-:- use_module(cofloco_utils,[normalize_constraint/2,zip_with_op/4,write_sum/2]).
+:- use_module(cofloco_utils,[normalize_constraint/2,write_sum/2]).
 :- use_module(polyhedra_optimizations,[nad_entails_aux/3]).
 :- use_module('../bound_computation/constraints_maximization',[max_min_linear_expression_all/5]).
 
