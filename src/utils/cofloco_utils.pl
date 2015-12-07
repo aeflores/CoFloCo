@@ -48,7 +48,7 @@ of CoFloCo.
 :- use_module(polyhedra_optimizations,[nad_entails_aux/3]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_entails/3,nad_consistent_constraints/1,nad_lub/6,nad_list_lub/2]).
-:- use_module(stdlib(linear_expression), [parse_le/2, integrate_le/3]).
+:- use_module(stdlib(linear_expression), [parse_le_fast/2,subtract_le/3,parse_le/2, integrate_le/3]).
 :- use_module(stdlib(fraction),[divide_fr/3,negate_fr/2,geq_fr/2,gcd_fr/3]).
 
 :-use_module(library(apply_macros)).
@@ -171,8 +171,10 @@ normalize_constraint(C,CN):-
 constraint_to_coeffs_rep(Constr, coeff_rep(Coeffs_sorted,Rel1,B)) :-
     Constr =.. [ Rel, L, R],
     is_relational(Rel),
-   
-    parse_le( L-R, Le_x),
+   parse_le(L,L_exp),
+   parse_le(R,R_exp),
+   subtract_le(L_exp,R_exp,Le_x),
+   % parse_le( L-R, Le_x),
     integrate_le(  Le_x, _Den, Coeffs_x + NegB), 
     maplist(tuple, Vars, Fracs,Coeffs_x),
      (Rel= '=<'->

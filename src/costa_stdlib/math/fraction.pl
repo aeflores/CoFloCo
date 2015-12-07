@@ -399,6 +399,7 @@ Fraction::= integer
 	|	Fraction * Fraction		|	Fraction / Fraction
     |   Fraction ** Integer 
 */
+
 parse_fr( Exp, Frac) :-
 	parse_x( Exp, Num, Den ), 
 	fraction( Num, Den, Frac ).

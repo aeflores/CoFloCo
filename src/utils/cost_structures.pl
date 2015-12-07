@@ -74,14 +74,19 @@
 :- module(cost_structures,[
 		new_itvar/1,
 		get_loop_itvar/2,
+		is_ub_bconstr/1,
 		fconstr_new/4,
 		fconstr_new_inv/4,
+		iconstr_new/4,
+		astrexp_new/2,
+		pstrexp_pair_add/3,
+		pstrexp_pair_empty/1,
 		cstr_empty/1,
 		astrexp_to_cexpr/2,
 		cstr_from_cexpr/2,
 		cstr_remove_cycles/2,
 		cstr_extend_variables_names/3,
-		cstr_propagate_sums/5,
+		cstr_propagate_sums/4,
 		cstr_join/3,
 		cstr_or_compress/2,
 		cstr_join_equal_fconstr/2,
@@ -181,6 +186,32 @@ iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp,Bounded)).
 % create an abstract structured cost expression (astrexp) with as single positive itvar
 astrexp_new_simple_itvar(Itvar,exp([(Itvar,Var)],[],add([mult([Var])]),add([]))).
 
+astrexp_new(Pos-Neg,exp(Index_pos,Index_neg,Pos_pstrexp,Neg_pstrexp)):-
+	pstrexp_new(Pos,Index_pos,Pos_pstrexp),
+	pstrexp_new(Neg,Index_neg,Neg_pstrexp).
+	
+pstrexp_new(add(Summands),Index,add(Summands_var)):-
+	pstrexp_summand(Summands,[],Index,Summands_var).
+	
+pstrexp_summand([],Index,Index,[]).
+pstrexp_summand([mult(Summand)|Summands],Index_accum,Index,[mult(Factors_simplified)|Summands_var]):-
+	partition(is_rational,Summand,Fractions,Factors),
+	foldl(substitute_itvar_by_var,Factors,Factors_vars,Index_accum,Index_accum2),
+	product_frl(Fractions,Product),
+	((Product=1,Factors_vars\=[])->
+	  Factors_vars=Factors_simplified
+	  ;
+	append(Factors_vars,[Product],Factors_simplified)
+	),
+	pstrexp_summand(Summands,Index_accum2,Index,Summands_var).
+
+substitute_itvar_by_var(max(Itvars),max(Vars),Index,Index_out):-!,
+	foldl(substitute_itvar_by_var,Itvars,Vars,Index,Index_out).
+	
+substitute_itvar_by_var(min(Itvars),min(Vars),Index,Index_out):-!,
+	foldl(substitute_itvar_by_var,Itvars,Vars,Index,Index_out).	
+	
+substitute_itvar_by_var(Itvar,Var,Index,[(Itvar,Var)|Index]).
 
 
 astrexp_to_cexpr(exp(Index1,Index2,add(Summands),add(Summands2)),Exp3):-
@@ -200,10 +231,16 @@ pstrexp_to_cexpr(add(Summands),Exp3):-
 	maplist(write_product_1,Summands,Summands2),
 	write_sum(Summands2,Exp3).
 
+
+
 write_product_1(mult(List),Product):-
 	write_product(List,Product).
 
-		
+pstrexp_pair_empty(add([])-add([])).
+
+pstrexp_pair_add(add(Pos_summands1)-add(Neg_summands1),add(Pos_summands2)-add(Neg_summands2),add(Pos_summands)-add(Neg_summands)):-
+	append(Pos_summands1,Pos_summands2,Pos_summands),
+	append(Neg_summands1,Neg_summands2,Neg_summands).		
 	
 
 % predicates on cost structures (cstr)
@@ -585,13 +622,13 @@ cstr_join(cost(T,A,Iconstrs,Bs,B),cost(T2,A2,Iconstrs2,B2s,B2),cost(T3,A3,Iconst
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! cstr_propagate_summs(+Loop:loop_id,+Cost:cstr,-Cost2:cstr,-Max_mins:(list(fconstr),list(fconstr)),-Summs:(list(fconstr),list(fconstr))) is det
+%! cstr_propagate_sums(+Loop:loop_id,+Cost:cstr,-Cost2:cstr,-Max_mins:(list(fconstr),list(fconstr)),-Summs:(list(fconstr),list(fconstr))) is det
 % propagate the sum of a cost structure all form the basic summands to the final constraints
 %
 % Cost_out contains the transformed cost except the final constraints that still have to be computed
 % Max_mins is a pair of set of final constraints that have to be maximized and minimized
 % Sums is a pair of set of final constraints whose sum over Loop has to be computed
-cstr_propagate_sums(Loop,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Cost2,Max_mins,Sums):-
+cstr_propagate_sums(Loop,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Cost2,(Max_mins,Sums)):-
 	%transform the basic summands into sums and record the relation between the original variable and the sum variable in Sum_map_initial
 	generate_initial_sum_map(Bsummands,[],Sum_map_initial,Bsummands1),
 	propagate_sums_backwards(Iconstrs,Sum_map_initial,Iconstrs2,Sum_map,Max_map),
