@@ -1,3 +1,36 @@
+/** <module> cost_structure_solver
+
+ This module solves cost structures into cost expressions
+
+@author Antonio Flores Montoya
+
+@copyright Copyright (C) 2014,2015 Antonio Flores Montoya
+
+@license This file is part of CoFloCo. 
+    CoFloCo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    CoFloCo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
+    
+
+This module uses the following auxiliary cost structures:
+
+ * partial_strexp: partial(index,strexp) | strexp
+   represents a cost but strexp can still contain variables that correspond to intermediate variables
+   this correspondence is recorded in index
+ * partial_bconstr: bound(op,partial_strexp,list(itvar))
+   It is like a bconstr but contains a partial_strexp
+
+*/
+
 :- module(cost_structure_solver,[
 		cstr_maxminimization/5
 	]).
@@ -5,25 +38,29 @@
 :- use_module('../IO/params',[get_param/2]).	
 
 :- use_module('../utils/cost_structures',[
+		max_min_ub_lb/2,
 		cstr_empty/1,
 		cstr_from_cexpr/2,	
 		new_itvar/1,
 		get_loop_itvar/2,
 		fconstr_new/4,
 		fconstr_new_inv/4,
+		is_ub_bconstr/1,
+		bconstr_get_bounded/2,
+		bconstr_annotate_bounded/2,
+		basic_cost_to_astrexp/4,
 		cstr_remove_cycles/2,
 		cstr_extend_variables_names/3,
 		cstr_join/3,
-		cstr_remove_useless_constrs_max_min/3,
-		cstr_shorten_variables_names/3]).
+		cstr_shorten_variables_names/3,
+		cstr_simplify/5]).
 :- use_module('../utils/structured_cost_expression',[
-		partial_str_cost_exp_estimate_complexity/3,
-		partial_str_cost_exp_complexity/2,
-		str_cost_exp_complexity/2,
-		str_cost_exp_2_cost_expression/2,
-		str_cost_exp_get_multiplied_factors/3,
+		partial_strexp_estimate_complexity/3,
+		partial_strexp_complexity/2,
+		strexp_to_cost_expression/2,
+		strexp_get_multiplied_factors/3,
 		get_all_pairs/3,
-		str_cost_exp_simplify/2]).		
+		strexp_simplify/2]).		
 		
 :- use_module('../utils/cofloco_utils',[sort_with/3,
 		tuple/3,
@@ -37,8 +74,7 @@
 	write_le/2,
 	elements_le/2,
 	constant_le/2]).	
-:- use_module('../utils/polyhedra_optimizations',[
-			nad_entails_aux/3]).	
+
 :- use_module(stdlib(counters),[counter_increase/3]).	
 :- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4,ut_sort/2,ut_var_member/2]).	
 :- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
@@ -48,44 +84,167 @@
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
-simplify_top_nats(Head,Phi,bound(Op,Lin_exp,Bounded),bound(Op,[]+0,Bounded)):-
-	Head=..[_|Vars],
-	integrate_le(Lin_exp,_Den,Lin_exp_nat),
-	write_le(Lin_exp_nat,Expression_nat),
-	nad_entails_aux(Vars,Phi,[Expression_nat =<0]),!.
-	
-simplify_top_nats(_Head,_Inv,Top,Top).
 
-				
+			
 cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_final):-
+	Head=..[_|Vars],
+	max_min_ub_lb(Max_min,Op),
 	cstr_shorten_variables_names(Cost_long,no_list,Cost_short),	
-	cstr_remove_useless_constrs_max_min(Cost_short,Max_min,cost(Ub_tops,Lb_tops,Aux_exps,Bases,Base)),
-	maplist(simplify_top_nats(Head,Inv),Ub_tops,Ub_tops1),
-	maplist(simplify_top_nats(Head,Inv),Lb_tops,Lb_tops1),
-	generate_constraint_with_base(Bases,Base,Max_min,bound(Op,Exp_cost,_)),
-	term_variables((Ub_tops1,Lb_tops1),Entry_vars),
-	ut_flat_list([Ub_tops1,Lb_tops1,Aux_exps],All_constrs),
-	maplist(annotate_bounded,All_constrs,All_constrs_annotated),
-	get_non_deterministic_vars(All_constrs_annotated,[],Non_det_vars),
-	compress_constraints(All_constrs_annotated,Non_det_vars,[],Remaining_constrs,[],Map),
-	%maplist(writeln,Map),
-	solve_expression(Exp_cost,main,Op,Non_det_vars,Map,Solved_exp),
+	cstr_simplify(Cost_short,Vars,Inv,Max_min,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,BSummands,BConstant)),
+	basic_cost_to_astrexp(BSummands,BConstant,Max_min,Exp_cost),
+	%join all constraints
+	ut_flat_list([Ub_fconstrs,Lb_fconstrs,Iconstrs],All_bconstrs),
+	
+	maplist(bconstr_annotate_bounded,All_bconstrs,All_bconstrs_annotated),
+	%obtain the itvars that have to be assigned incrementally
+	foldl(get_non_deterministic_vars,All_bconstrs_annotated,[],Non_det_vars),
+	%solve all constraints with a single bounded itvar
+	compress_constraints(All_bconstrs_annotated,Non_det_vars,Remaining_constrs,[],Map),
+	astrexp_to_partial_strexp(Exp_cost,main,Op,Non_det_vars,Map,Solved_exp),
+	% group itvars and constraints that depend on each other
 	group_remaining_constrs(Remaining_constrs,Groups),
-	findall((Entry_vars,Cost_closed),
-	(
-	incremental_maxminization(Groups,Solved_exp,Cost),
-	remove_undefined_vars(Cost,Cost_closed))
+	% generate all possible maximizations or minimizations
+	findall((Vars,Cost_closed),
+		(
+		incremental_maxminization(Groups,Solved_exp,Cost),
+		remove_undefined_vars(Cost,Cost_closed)
+		)
 	,Costs_list),
-	assign_right_vars(Costs_list,Entry_vars,Costs_list_right),
+	assign_right_vars(Costs_list,Vars,Costs_list_right),
 	from_list_sl(Costs_list_right,Cost_set),!,
+	%tranform into cost expressions
 	%maplist(writeln,Cost_set),
-	maplist(str_cost_exp_2_cost_expression,Cost_set,Cost_set_p),
+	maplist(strexp_to_cost_expression,Cost_set,Cost_set_p),
 	%maplist(writeln,Cost_set_p),
+	%take the maximum or minimum of all the possibilities
 	Cost_final=..[Max_min,Cost_set_p],!.
 
 %this predicate should never fail
 cstr_maxminimization(Cost_long,Max_min,_):-
 	throw(maximization_failed(Cost_long,Max_min)).	
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+get_non_deterministic_vars(bound(_,_,[_Bounded]),Accum_set,Accum_set):-!.
+get_non_deterministic_vars(bound(_,_,Bounded),Accum_set,Accum_set2):-
+	union_sl(Bounded,Accum_set,Accum_set2).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%!compress_constraints(Bconstrs:list(bconstr),Non_det_vars:list_set(itvar),Remaining_constrs:list(partial_bconstr),Map_accum:list_map(itvar,(int,partial_strexp)),Map_out:list_map(itvar,(int,partial_strexp)))
+% assign all the itvars that are bounded alone in the Bconstrs
+% Remaining_constrs are the Bconstrs that bound multiple itvar, they contain partial_strexp which are strexp with some unknown variables
+% the Max_out maps itvars to pairs (Estimated_complexity:int,Solved_exp:partial_strexp)
+compress_constraints([],_,[],Map,Map).
+compress_constraints([bound(Op,Exp,Bounded)|Bconstrs],Non_det_vars,Remaining_constrs,Map_accum,Map_out):-
+	% transform a astrexp into a partial_strexp
+	astrexp_to_partial_strexp(Exp,aux,Op,Non_det_vars,Map_accum,Partial_strexp),
+	partial_strexp_estimate_complexity(Partial_strexp,Map_accum,Estimated_complexity),
+	%check if the constraint is non-deterministic or not
+	Bounded=[Bounded1|_],
+	(contains_sl(Non_det_vars,Bounded1)->
+		%if non-deterministic accumulate to solve later
+		Remaining_constrs=[bound(Op,Partial_strexp,Bounded)|Remaining_constrs1],
+		% store the estimated complexity of the bounded vars
+		foldl(add_to_bound_map((Estimated_complexity,unknown)),Bounded,Map_accum,Map_accum2)
+	;
+		%update the map that stores the resulting expressions and their estimated complexity
+	 	add_to_bound_map((Estimated_complexity,Partial_strexp),Bounded1,Map_accum,Map_accum2),
+	 	Remaining_constrs=Remaining_constrs1
+	),
+	compress_constraints(Bconstrs,Non_det_vars,Remaining_constrs1,Map_accum2,Map_out).
+
+%! astrexp_to_partial_strexp(+Exp:exp,+Main_flag:flag,+Op:flag,+Non_det_vars:list_set(itvar),+Map_itvars:list_map(itvar,(int,partial_strexp)),-Partial_strexp:partial_strexp)
+% solve an expression Exp that can be a nlinexp or a astrexp into a partial_strexp
+% using Map_itvars for the deterministic itvars and Non_det_vars to detect the non-deterministic ones
+%
+% Main_flag indicates if we are solving the main expression or an intermediate one
+% the main expression can be between -inf and +inf while an intermediate expression is always non-negative
+astrexp_to_partial_strexp(Exp,Main_flag,_Op,Non_det_vars,Map_accum,Partial_strexp):-
+	% Exp is a astrexp
+	% make a copy
+	copy_term(Exp,exp(Index_pos,Index_neg,Pos,Neg)),
+	% join the indexes
+	append(Index_pos,Index_neg,Index_total),
+	% split between solved itvars and non-deterministic itvars
+	partition(index_in_set(Non_det_vars),Index_total,Index_non_det,Index_det),
+	% substitute deterministic itvars by their partial expressions 
+	%(the partial expressions might had their own indexes that we have to add)
+	maplist(substitute_index_by(Map_accum),Index_det,Extra_index),!,
+	ut_flat_list([Index_non_det,Extra_index],Index_flat),
+	Neg=add(Summands_neg),
+	Pos=add(Summands_pos),
+	maplist(negate_summand,Summands_neg,Summands_negated),
+	append(Summands_pos,Summands_negated,All_summands),
+
+	(Main_flag=main->
+		strexp_simplify(add(All_summands),Simple_exp)
+	;
+		strexp_simplify(nat(add(All_summands)),Simple_exp)
+	),
+	(Index_flat=[]->
+		Partial_strexp=Simple_exp
+	;
+		Partial_strexp=partial(Index_flat,Simple_exp)
+	).
+
+%these are the cases where there is an unbounded element in the expression	
+astrexp_to_partial_strexp(exp(_Index_pos,_Index_neg,_Pos,_Neg),_,ub,_Non_det_vars,_Map_accum,inf).
+% only the main expression can be negative
+astrexp_to_partial_strexp(exp(_Index_pos,_Index_neg,_Pos,_Neg),aux,lb,_Non_det_vars,_Map_accum,0).		
+astrexp_to_partial_strexp(exp(_Index_pos,_Index_neg,_Pos,_Neg),main,lb,_Non_det_vars,_Map_accum,-inf).		
+
+% the cases where we have a alinexp
+% the main expression can never be a alinexp
+astrexp_to_partial_strexp([]+C,aux,_Op,_,_Map_accum,C):-
+	geq_fr(C,0),!.
+astrexp_to_partial_strexp(Lin_exp,aux,_,_,_Map_accum,nat(Lin_exp_print)):-	
+	write_le(Lin_exp,Lin_exp_print).
+
+%! add_to_bound_map(Solved_exp:(int,partial_strexp),Itvar:itvar,Map:list_map(itvar,(int,partial_strexp)),Map2:list_map(itvar,(int,partial_strexp)))
+% add the pair Solved_exp to the Map
+% we only keep one solution for each itvar according to the estimated complexity
+add_to_bound_map(Solved_exp,Itvar,Map,Map2):-
+	lookup_lm(Map,Itvar,Expr),!,
+	Itvar=..[Op|_],
+	select_best_expr(Op,Expr,Solved_exp,New_exp),
+	insert_lm(Map,Itvar,New_exp,Map2).
+add_to_bound_map(Solved_exp,Itvar,Map,Map2):-
+	insert_lm(Map,Itvar,Solved_exp,Map2).	
+
+select_best_expr(ub,(C1,Exp1),(C2,Exp2),Selected):-
+	(C1<C2->
+		Selected=(C1,Exp1)
+	;
+		(C2<C1->	
+			Selected=(C2,Exp2)
+		;
+			(Exp1=partial(_,_)->
+				Selected=(C2,Exp2)
+				
+			;
+				Selected=(C1,Exp1)
+			)
+		)
+	).
+
+select_best_expr(lb,(C1,Exp1),(C2,Exp2),Selected):-
+	(C1<C2->
+		Selected=(C2,Exp2)
+	;
+		(C2<C1->	
+			Selected=(C1,Exp1)
+		;
+			(Exp1=partial(_,_)->
+				Selected=(C2,Exp2)
+				
+			;
+				Selected=(C1,Exp1)
+			)
+		)
+	).	
+
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % create groups of variables that are defined together
@@ -97,7 +256,7 @@ group_remaining_constrs(Constrs,Groups):-
 split_remaining_constrs([],[]).
 split_remaining_constrs(Remaining_constrs,Final_groups):-
 		take_group(Remaining_constrs,[],Group,Rest),
-		partition(is_ub_bound,Group,Ub_group,Lb_group),
+		partition(is_ub_bconstr,Group,Ub_group,Lb_group),
 		split_independent_vars(Ub_group,Ub_groups),
 		reverse(Ub_groups,Ub_groups_rev),
 		split_independent_vars(Lb_group,Lb_groups),
@@ -150,31 +309,11 @@ take_group([bound(Op,Not_partial,Bounded)|Constrs],Vars,[bound(Op,Not_partial,Bo
 		
 create_group(Group,group(Op,Group,Bounded_vars)):-
 	Group=[bound(Op,_,_)|_],
-	maplist(get_constr_bounded,Group,Bounded_lists),
+	maplist(bconstr_get_bounded,Group,Bounded_lists),
 	unions_sl(Bounded_lists,Bounded_vars).	
 	
-annotate_bounded(bound(Op,exp(Pos_index,Neg_index,Pos,Neg),Bounded),bound(Op,exp(Pos_index1,Neg_index1,Pos,Neg),Bounded_set)):-!,
-	opposite_operator(Op,Op_neg),
-	maplist(annotate_bounded_vars(Op),Bounded,Bounded1),
-	from_list_sl(Bounded1,Bounded_set),
-	maplist(annotate_bounded_pair(Op),Pos_index,Pos_index1),
-	maplist(annotate_bounded_pair(Op_neg),Neg_index,Neg_index1).
-annotate_bounded(bound(Op,Top,Bounded),bound(Op,Top,Bounded_set)):-
-	maplist(annotate_bounded_vars(Op),Bounded,Bounded1),
-	from_list_sl(Bounded1,Bounded_set).
-
-annotate_bounded_vars(Op,Var,Var1):-
-	Var1=..[Op,Var].
-annotate_bounded_pair(Op,(Name,Var),(Name1,Var)):-
-	Name1=..[Op,Name].	
-	
-remove_undefined_vars(partial(Index,Exp),Exp):-!,
-	maplist(substitute_index_by_default,Index).
-remove_undefined_vars(Exp,Exp).
-		
 
 	
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % solve one group after another in a non-determinisitic manner		
@@ -242,25 +381,25 @@ solve_group(group(lb,Cons,_),Multiplied_pairs,Map):-
 %we select constraints with a greedy strategy based on the complexity and number of bounded variables
 
 better_ubs(bound(ub,Exp,_Bounded),bound(ub,Exp2,_Bounded2)):-
-	partial_str_cost_exp_complexity(Exp,C1),
-	partial_str_cost_exp_complexity(Exp2,C2),
+	partial_strexp_complexity(Exp,C1),
+	partial_strexp_complexity(Exp2,C2),
 	C1>C2,!.
 	
 better_ubs(bound(ub,Exp,Bounded),bound(ub,Exp2,Bounded2)):-
-	partial_str_cost_exp_complexity(Exp,C1),
-	partial_str_cost_exp_complexity(Exp2,C2),
+	partial_strexp_complexity(Exp,C1),
+	partial_strexp_complexity(Exp2,C2),
 	C1=C2,
 	length(Bounded,N),length(Bounded2,N2),N<N2.
 
 	
 better_lbs(bound(lb,Exp,_Bounded),bound(lb,Exp2,_Bounded2)):-
-	partial_str_cost_exp_complexity(Exp,C1),
-	partial_str_cost_exp_complexity(Exp2,C2),
+	partial_strexp_complexity(Exp,C1),
+	partial_strexp_complexity(Exp2,C2),
 	C1<C2,!.
 	
 better_lbs(bound(lb,Exp,Bounded),bound(lb,Exp2,Bounded2)):-
-	partial_str_cost_exp_complexity(Exp,C1),
-	partial_str_cost_exp_complexity(Exp2,C2),
+	partial_strexp_complexity(Exp,C1),
+	partial_strexp_complexity(Exp2,C2),
 	C1=C2,
 	length(Bounded,N),length(Bounded2,N2),N>N2.	
 	
@@ -368,7 +507,7 @@ evaluate_constr(Map,bound(Op,Exp,Bounded),bound(Op,Exp1,Bounded)):-
 simplify_partial_exp(partial(Index,Exp),Map,Solved_exp):-!,
 	maplist(substitute_index_by_optional(Map),Index,Extra_index),
 	ut_flat_list(Extra_index,Index_flat),
-	str_cost_exp_simplify(Exp,Simple_exp),
+	strexp_simplify(Exp,Simple_exp),
 	term_variables(Simple_exp,Unknowns),
 	from_list_sl(Unknowns,Unknowns_set),
 	include(index_var_in_set(Unknowns_set),Index_flat,Index_final),
@@ -380,138 +519,14 @@ simplify_partial_exp(partial(Index,Exp),Map,Solved_exp):-!,
 	
 simplify_partial_exp(Exp,_Map,Exp).
 
-index_var_in_set(Set,(_Name,Var)):-
-	contains_sl(Set,Var),!.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%generate the main constraint from the basic costs
-
-generate_constraint_with_base(Bases,Base,Max_min,Final_constraint):-
-	get_constr_op(Max_min,Op),
-	opposite_operator(Op,Op_neg),
-	new_itvar(Bound_var),
-	generate_summands_from_bases(Bases,Index_pos,Index_neg,Summands_pos,Summands_neg),
-	maplist(annotate_bounded_pair(Op),Index_pos,Index_pos1),
-	maplist(annotate_bounded_pair(Op_neg),Index_neg,Index_neg1),
-	(geq_fr(Base,0)->
-		Exp=exp(Index_pos1,Index_neg1,add([mult([Base])|Summands_pos]),add(Summands_neg))
-	;
-		negate_fr(Base,Base_neg),
-		Exp=exp(Index_pos1,Index_neg1,add(Summands_pos),add([mult([Base_neg])|Summands_neg]))
-	),
-	Final_constraint=bound(Op,Exp,[Bound_var]).
-	
-	
-generate_summands_from_bases([],[],[],[],[]).
-generate_summands_from_bases([(Name,1)|Bases],[(Name,Var)|Index_pos],Index_neg,[mult([Var])|Summands_pos],Summands_neg):-!,
-	generate_summands_from_bases(Bases,Index_pos,Index_neg,Summands_pos,Summands_neg).
-	
-generate_summands_from_bases([(Name,Coeff)|Bases],[(Name,Var)|Index_pos],Index_neg,[mult([Var,Coeff])|Summands_pos],Summands_neg):-
-	geq_fr(Coeff,0),!,
-	generate_summands_from_bases(Bases,Index_pos,Index_neg,Summands_pos,Summands_neg).
-generate_summands_from_bases([(Name,Coeff)|Bases],Index_pos,[(Name,Var)|Index_neg],Summands_pos,[mult([Var,Coeff_neg])|Summands_neg]):-
-	negate_fr(Coeff,Coeff_neg),
-	generate_summands_from_bases(Bases,Index_pos,Index_neg,Summands_pos,Summands_neg).	
+remove_undefined_vars(partial(Index,Exp),Exp):-!,
+	maplist(substitute_index_by_default,Index).
+remove_undefined_vars(Exp,Exp).
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-get_non_deterministic_vars([],Accum_set,Accum_set).
-get_non_deterministic_vars([bound(_,_,[_Bounded])|Constrs],Accum_set,Non_det_vars):-!,
-	get_non_deterministic_vars(Constrs,Accum_set,Non_det_vars).
-get_non_deterministic_vars([bound(_,_,Bounded)|Constrs],Accum_set,Non_det_vars):-
-	union_sl(Bounded,Accum_set,Accum_set2),
-	get_non_deterministic_vars(Constrs,Accum_set2,Non_det_vars).	
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%get rid of all the single variable constraints and substitute the rest and the main expression for their corresponding partially solved expressions
 
-compress_constraints([],_,_,[],Map,Map).
-compress_constraints([bound(Op,Exp,Bounded)|Constrs],Non_det_vars,Estimated_complexity_map,Remaining_constrs,Map_accum,Map_out):-
-	solve_expression(Exp,aux,Op,Non_det_vars,Map_accum,Solved_exp),
-	partial_str_cost_exp_estimate_complexity(Solved_exp,Estimated_complexity_map,Estimated_complexity),
-	Bounded=[Bounded1|_],
-	(contains_sl(Non_det_vars,Bounded1)->
-		Remaining_constrs=[bound(Op,Solved_exp,Bounded)|Remaining_constrs1],
-		foldl(add_estimated_complexity(Estimated_complexity),Bounded,Estimated_complexity_map,Estimated_complexity_map1),
-		Map_accum2=Map_accum
-	;
-	 	add_to_bound_map(Map_accum,Bounded1,(Estimated_complexity,Solved_exp),Map_accum2),
-	 	Estimated_complexity_map1=Estimated_complexity_map,
-	 	Remaining_constrs=Remaining_constrs1
-	),
-	compress_constraints(Constrs,Non_det_vars,Estimated_complexity_map1,Remaining_constrs1,Map_accum2,Map_out).
-
-	
-solve_expression(Exp,Main_flag,_Op,Non_det_vars,Map_accum,Solved_exp):-
-	copy_term(Exp,exp(Index_pos,Index_neg,Pos,Neg)),
-	append(Index_pos,Index_neg,Index_total),
-	partition(index_in_set(Non_det_vars),Index_total,Index_non_det,Index_det),
-	maplist(substitute_index_by(Map_accum),Index_det,Extra_index),!,
-	ut_flat_list([Index_non_det,Extra_index],Index_flat),
-	Neg=add(Summands_neg),
-	Pos=add(Summands_pos),
-	maplist(negate_summand,Summands_neg,Summands_negated),
-	append(Summands_pos,Summands_negated,All_summands),
-	(Main_flag=main->
-	str_cost_exp_simplify(add(All_summands),Simple_exp)
-	;
-	str_cost_exp_simplify(nat(add(All_summands)),Simple_exp)
-	),
-	(Index_flat=[]->
-		Solved_exp=Simple_exp
-	;
-		Solved_exp=partial(Index_flat,Simple_exp)
-	).
-	
-solve_expression(exp(_Index_pos,_Index_neg,_Pos,_Neg),_,ub,_Non_det_vars,_Map_accum,inf).
-solve_expression(exp(_Index_pos,_Index_neg,_Pos,_Neg),aux,lb,_Non_det_vars,_Map_accum,0).		
-solve_expression(exp(_Index_pos,_Index_neg,_Pos,_Neg),main,lb,_Non_det_vars,_Map_accum,-inf).		
-
-solve_expression([]+C,_,_Op,_,_Map_accum,C):-
-	geq_fr(C,0),!.
-solve_expression(Lin_exp,_,_,_,_Map_accum,nat(Lin_exp_print)):-	
-	write_le(Lin_exp,Lin_exp_print).
-
-add_to_bound_map(Map,Bounded,Solved_exp,Map2):-
-	lookup_lm(Map,Bounded,Expr),!,
-	Bounded=..[Op|_],
-	select_best_expr(Op,Expr,Solved_exp,New_exp),
-	insert_lm(Map,Bounded,New_exp,Map2).
-add_to_bound_map(Map,Bounded,Solved_exp,Map2):-
-	insert_lm(Map,Bounded,Solved_exp,Map2).	
-
-select_best_expr(ub,(C1,Exp1),(C2,Exp2),Selected):-
-	(C1<C2->
-		Selected=(C1,Exp1)
-	;
-		(C2<C1->	
-			Selected=(C2,Exp2)
-		;
-			(Exp1=partial(_,_)->
-				Selected=(C2,Exp2)
-				
-			;
-				Selected=(C1,Exp1)
-			)
-		)
-	).
-
-select_best_expr(lb,(C1,Exp1),(C2,Exp2),Selected):-
-	(C1<C2->
-		Selected=(C2,Exp2)
-	;
-		(C2<C1->	
-			Selected=(C1,Exp1)
-		;
-			(Exp1=partial(_,_)->
-				Selected=(C2,Exp2)
-				
-			;
-				Selected=(C1,Exp1)
-			)
-		)
-	).	
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -536,18 +551,6 @@ substitute_index_by(Map_accum,(Name,Var1),Index1):-
 		
 substitute_index_by(_Map_accum,(lb(_Name),add([])),[]).
 
-	
-	
-add_estimated_complexity(Complexity,Bounded_name,Map,Map1):-
-	lookup_lm(Map,Bounded_name,Complexity_old),!,
-	(Bounded_name=ub(_)->
-	New_complx is min(Complexity,Complexity_old)
-	;
-	New_complx is max(Complexity,Complexity_old)
-	),
-	insert_lm(Map,Bounded_name,New_complx,Map1).
-add_estimated_complexity(Complexity,Bounded_name,Map,Map1):-
-	insert_lm(Map,Bounded_name,Complexity,Map1).	
 
 
 
@@ -602,7 +605,7 @@ get_exp_multiplied_vars(partial(Index,Exp),Important_vars,Name_pairs):-!,
 	include(index_in_set(Important_vars),Index,Index_selected),
 	maplist(tuple,_,Vars,Index_selected),
 	from_list_sl(Vars,Vars_set),
-	str_cost_exp_get_multiplied_factors(Exp,Vars_set,Var_pairs),
+	strexp_get_multiplied_factors(Exp,Vars_set,Var_pairs),
 	copy_term((Index_selected,Var_pairs),(Index2,Name_pairs)),
 	maplist(unify_pair,Index2).
 get_exp_multiplied_vars(_,_,[]).
@@ -615,17 +618,10 @@ index_in_set(Set,(Elem,_)):-
 index_not_in_set(Set,(Elem,_)):-
 	\+contains_sl(Set,Elem).	
 	
+index_var_in_set(Set,(_Name,Var)):-
+	contains_sl(Set,Var),!.	
+	
 unify_pair((X,X)).
 
-get_constr_op(max,ub).
-get_constr_op(min,lb).
-	
-opposite_operator(ub,lb).
-opposite_operator(lb,ub).
 
-is_ub_bound(bound(ub,_,_)).		
-	
-get_constr_bounded(bound(_,_,Bounded),Bounded).
-	
-	
 negate_summand(mult(Factors),mult([-1|Factors])).

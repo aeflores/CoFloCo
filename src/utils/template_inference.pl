@@ -1,6 +1,6 @@
 /** <module> template_inference
 
-This module generates constraints that express an upper bound of the summatory of a linear expression.
+This module generates constraints that express an upper bound of the sum of a linear expression.
 It uses linear programming to infer linear expressions that satisfy a property given a template.
 
     
@@ -25,12 +25,14 @@ It uses linear programming to infer linear expressions that satisfy a property g
 
 
 :- module(template_inference,[
-			difference_constraint_farkas_ub/6,
+	difference_constraint_farkas_ub/6,
 	difference_constraint_farkas_lb/5]).
 
 :- use_module('cofloco_utils',[
-			sort_with/3,	
+			sort_with/3,write_le_internal/2,	
 			write_sum/2]).
+:- use_module('polyhedra_optimizations',[
+			nad_normalize_polyhedron/2]).			
 			
 :- use_module(stdlib(polyhedra_ppl),[
     get_generators/4,ppl_maximize_with_point/5,ppl_minimize_with_point/5
@@ -66,34 +68,17 @@ It uses linear programming to infer linear expressions that satisfy a property g
 	multiply_le/3,
 	negate_le/2,
 	write_le/2,
+	subtract_le/3,
 	is_constant_le/1,
 	integrate_le/3]).
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
-max_min_linear_expression_template(Linear_Expr_to_Maximize,Vars, Vars_of_Interest, Context, Maxs):-
-	length(Vars,N),
-	length(Unknowns_1,N),
-	from_list_sl(Vars_of_Interest,Vars_of_Interest_set),
-	foldl(zero_if_not_in_set(Vars_of_Interest_set),Vars,Unknowns_1,[],Characterizing_constraints),
-	get_lin_expr_dmatrix(Vars,Linear_Expr_to_Maximize,Coeffs),
-	multiply_by_factor_dmatrix(Coeffs,-1,Coeffs_minus),
-	get_symbolic_dmatrix(Unknowns,Template),
-	add_dmatrix_symbolically(Template,Coeffs_minus,Expression_vector),
-	append(Unknowns_1,[_],Unknowns),
-	generalized_farkas_property_dmatrix(Vars,Context,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
-	append(Ys,Unknowns,All_new_vars),
-	get_generators(c,All_new_vars,Complete_system,Generators),
-	(member(point(Exp),Generators);member(point(Exp1,Div),Generators),Exp=Exp1/Div),!,
-	maplist(=(0),Ys),
-	copy_term((Unknowns,Exp),([1|Vars],Exp2)),
-	parse_le(Exp2,Lin_exp_out),
-	Maxs=[Lin_exp_out].
-
-max_min_linear_expression_template(_Linear_Expr_to_Maximize,_Vars, _Vars_of_Interest, _Context,[]).	
-	
-	
-difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Exp_set,Exp_set2):-
+%! difference_constraint_farkas_ub(Head:term,Call:term,Phi:polyhedron,Lin_exp:nlinexp,Lin_exp_list:list(nlinexp),Lin_exp_list2:list(nlinexp))
+% generate a set of Head-tail upper bound candidates Lin_exp_list2 and Head upper bound candidates Lin_exp_list
+% for the linear expression Lin_exp in the loop defined as Phi
+difference_constraint_farkas_ub(Head,Call,Phi_1,Lin_exp,Lin_exp_list,Lin_exp_list2):-
+	nad_normalize_polyhedron(Phi_1,Phi),
 	Head=..[_|EVars],
 	Call=..[_|CVars],
 	length(EVars,N1),
@@ -101,49 +86,80 @@ difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Exp_set,Exp_set2):-
 	length(Unknowns1,N1),
 	length(Unknowns2,N1),
 	length(Unknowns3,N1),
+	% the call coefficients are the opposite of the head coefficients
 	maplist(negation_constr,Unknowns1,Unknowns2,Characterizing_constraints),
+	% the negative version of the linear expression
 	get_lin_expr_dmatrix(Vars,Lin_exp,Coeffs),
 	multiply_by_factor_dmatrix(Coeffs,-1,Coeffs_minus),
 	append([Coeff_0|Unknowns1],Unknowns2,Unknowns),
+	% l(x)-l(x')
 	get_symbolic_dmatrix(Unknowns,Template),
+	% l(x)-l(x')-Lin_exp(xx')
 	add_dmatrix_symbolically(Template,Coeffs_minus,Expression_vector),
-	%generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)),
-	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,[Coeff_0=0|Characterizing_constraints],system(Complete_system,Ys)),
-	
-	append(Ys,Unknowns,All_new_vars),
-	%nad_project(Unkowns,Complete_system,Projected),
-	%get_generators(c,Unkowns,Projected,Generators),
-	get_generators(c,All_new_vars,Complete_system,Generators),
 	
 	append([Coeff_0|Unknowns1],Unknowns3,Unknowns4),
+	% l(x)+0
 	get_symbolic_dmatrix(Unknowns4,Template2),
-	maplist(is_zero,Unknowns3,Characterizing_constraints2),
-	generalized_farkas_property_dmatrix(Vars,Phi,Template2,Characterizing_constraints2,system(Complete_system2,Ys2)),
-	append(All_new_vars,Ys2,All_new_vars2),
-	append(All_new_vars2,Unknowns3,All_new_vars3),
-
-	append(Complete_system,Complete_system2,Complete_system_joined),
-%	nad_project(Unkowns,Complete_system_joined,Projected2),
-%	get_generators(c,Unkowns,Projected2,Generators2),
-	get_generators(c,All_new_vars3,Complete_system_joined,Generators2),
-	maplist(=(0),Ys),
-	maplist(=(0),Ys2),
-	maplist(=(0),Unknowns3),
+	% l(x)-Lin_exp(xx')
+	add_dmatrix_symbolically(Template2,Coeffs_minus,Expression_vector2),
 	
+	le_print_int(Lin_exp,Exp,_Den),
+	%generate constraints for head tail candidates
+	generalized_farkas_property_dmatrix(Vars,[Exp>=0|Phi],Expression_vector,[Coeff_0=0|Characterizing_constraints],system(Complete_system1,Ys1)),
+	%generate constraints for head candidates
+	generalized_farkas_property_dmatrix(Vars,[Exp>=0|Phi],Expression_vector2,[],system(Complete_system3,Ys3)),
+	%if feasible consider the case where Lin_exp is negative
+	(\+nad_entails(Vars,Phi,[Exp>=0])->
+	  generalized_farkas_property_dmatrix(Vars,[Exp=<0|Phi],Template,[],system(Complete_system2,Ys2)),
+	  generalized_farkas_property_dmatrix(Vars,[Exp=<0|Phi],Template2,[],system(Complete_system4,Ys4))
+	  ;
+	  system(Complete_system2,Ys2)=system([],[]),
+	  system(Complete_system4,Ys4)=system([],[])
+	),
+	%simplify constraints in Complete_system2 to avoid having too many variables
+	nad_project(Unknowns1,Complete_system2,Projected2),
+	% put together the constraints corresponding to Exp>=0 and Exp=<0
+	nad_glb(Complete_system1,Projected2,Complete_system_part1),
+	Ys1=[Var|_],!,
+	%obtain a point of the resulting polyhedron
+	(ppl_minimize_with_point(c,Complete_system_part1,Var,_,Point1)->
+		%set the call coefficients of the template to 0
+		maplist(=(0),Unknowns3),
+		%join the constraints sets
+		nad_project(Unknowns1,Complete_system4,Projected4),
+    	nad_glb(Complete_system3,Projected4,Complete_system_part2),
+		nad_glb(Complete_system_part1,Complete_system_part2,Complete_system_joined),
+		Generators=[Point1],
+		%obtain a point of the resulting polyhedron
+		(ppl_minimize_with_point(c,Complete_system_joined,Var,_,Point2)->
+		Generators2=[Point2]
+		;
+		Generators2=[]
+		)
+		;
+	Generators=[],
+	Generators2=[]
+	),
+	%once we have the point, we can set all the coefficients variables to 0 and obtain the point in terms of Unknowns
+	maplist(=(0),Ys1),
+	maplist(=(0),Ys2),
+	maplist(=(0),Ys3),
+	maplist(=(0),Ys4),
+	
+	%extract the linear expressions from the points
 	copy_term(([Coeff_0|Unknowns1],Unknowns2,Generators2),([Coeff_0_c|Unknowns1_c],Unknowns2_c,Generators2_c)),
 	maplist(=(0),Unknowns2_c),
 	copy_term((Unknowns,Generators),([1|Vars],Generators_copy)),
 	copy_term(([Coeff_0_c|Unknowns1_c],Generators2_c),([1|EVars],Generators_copy2)),
+	
 	get_expressions_from_points(Generators_copy,Lin_exp_list),
 	get_expressions_from_points(Generators_copy2,Lin_exp_list2),
-
-	
 	append(Lin_exp_list,Lin_exp_list2,Lin_exp_list_total),
-	from_list_sl(Lin_exp_list,Exp_set),
-	from_list_sl(Lin_exp_list2,Exp_set2),
-	Lin_exp_list_total\=[].	
+	Lin_exp_list_total\=[].
 
-
+%! difference_constraint_farkas_lb(Head:term,Call:term,Phi:polyhedron,Lin_exp:nlinexp,Lin_exps_non_constant:list(nlinexp))
+% generate a set of Head-tail lower bound candidates Lin_exps_non_constant 
+% for the linear expression Lin_exp in the loop defined as Phi
 difference_constraint_farkas_lb(Head,Call,Phi,Lin_exp,Lin_exps_non_constant):-
 	Head=..[_|EVars],
 	Call=..[_|CVars],
@@ -152,28 +168,44 @@ difference_constraint_farkas_lb(Head,Call,Phi,Lin_exp,Lin_exps_non_constant):-
 	length(Unknowns1,N1),
 	length(Unknowns2,N1),
 	maplist(negation_constr,Unknowns1,Unknowns2,Characterizing_constraints),
+	% lin_exp
 	get_lin_expr_dmatrix(Vars,Lin_exp,Coeffs),
 	append([Coeff_0|Unknowns1],Unknowns2,Unknowns),
-	get_symbolic_dmatrix(Unknowns,Template),
+	% -le(xx')
 	get_symbolic_dmatrix_negated(Unknowns,Template_neg),
+	% lin_exp(xx')-le(xx')
 	add_dmatrix_symbolically(Template_neg,Coeffs,Expression_vector),
-	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,[Coeff_0=0|Characterizing_constraints],system(Complete_system,Ys)),
-	generalized_farkas_property_dmatrix(Vars,Phi,Template,[],system(Complete_system2,Ys2)),
+	le_print_int(Lin_exp,Exp,_Den),
+	% lin_exp(xx')-le(xx')>=0
+	generalized_farkas_property_dmatrix(Vars,[Exp>=0|Phi],Expression_vector,[Coeff_0=0|Characterizing_constraints],system(Complete_system,Ys)),
+	(\+nad_entails(Vars,Phi,[Exp>=0])->
+		generalized_farkas_property_dmatrix(Vars,[Exp=<0|Phi],Template_neg,[],system(Complete_system2,Ys2))
+		;
+		system(Complete_system2,Ys2)=system([],[])
+	),
 
 	ut_flat_list([Ys,Unknowns,Ys2],All_new_vars),
 	append(Complete_system,Complete_system2,Complete_system_final),
-%	nad_project(Unknowns,Complete_system_final,Projected),
-%	get_generators(c,Unknowns,Projected,Generators),
+	% here we get multiple candidates
 	get_generators(c,All_new_vars,Complete_system_final,Generators),
 	maplist(=(0),Ys),
 	maplist(=(0),Ys2),
+	%obtain linear expressions form the candidates
 	copy_term((Unknowns,Generators),([1|Vars],Generators_copy)),	
 	get_expressions_from_points(Generators_copy,Lin_exp_list),
 	from_list_sl(Lin_exp_list,Lin_exp_list_set),
 	exclude(is_constant_le,Lin_exp_list_set,Lin_exps_non_constant),
 	Lin_exps_non_constant\=[].	
 
+le_print_int(Lin_exp,Exp,Den):-
+		integrate_le(Lin_exp,Den,Lin_exp_nat),
+		write_le_internal(Lin_exp_nat,Exp).
 
+%! generalized_farkas_property_dmatrix(Vars:list(var),Phi:polyhedron,Expression_vector:dvector,Characterizing_constraints:polyhedron,System:system(polyhedron,list(var)))
+% given a polyhedron Phi and a property Expressions_vector>=0 generate a polyhedron
+% that represent the linear combinations of the constraints of Phi to obtain Expression_vector
+% Characterizing_constraints are additional constraints that are included in the result
+% The variables Ys are the coefficients that multiply the constraints of Phi
 generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_constraints,system(Complete_system,Ys)):-
 	constraints_to_dmatrix(Phi,Vars,A),
 	transpose_dmatrix(A,At),
@@ -183,7 +215,13 @@ generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,Characterizing_co
 	maplist(greater_zero,Ys,Cs_extra),
 	ut_flat_list([Cs_extra,Cs,Characterizing_constraints],Complete_system),!.
 	
+%check_obtained_constraints(Exp2,Vars,Cs,Exp_diff):-%
+%		subtract_le(Exp_diff,Exp2,Exp_diff2),
+%		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
+%		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]).
 
+%! get_expressions_from_points(Generators:list(generator),Lin_exps:list(nlinexp))	
+% obtain a list of linear expressions from the points of a polyhedron generator system
 get_expressions_from_points([],[]).	
 get_expressions_from_points([point(Exp)|Generators],[Lin_exp|Lin_exps]):-!,
 		parse_le(Exp,Lin_exp),
@@ -194,8 +232,23 @@ get_expressions_from_points([point(Exp,Div)|Generators],[Lin_exp|Lin_exps]):-!,
 get_expressions_from_points([_|Generators],Lin_exps):-
 		get_expressions_from_points(Generators,Lin_exps).			
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% predicates to deal with dmatrix (disperse matrix)
+% maybe we should put it in a separate module at some point
 
-		
+%! get_symbolic_dmatrix(Unknowns,Dmatrix:dmatrix)
+% given a list of variables, obtain a disperse vector (disperse matrix with one line) of those variables
+get_symbolic_dmatrix(Unknowns,dmatrix(1,X,[(1,List)])):-
+	length(Unknowns,X),
+	get_symbolic_dmatrix_1(Unknowns,1,List).
+	
+get_symbolic_dmatrix_1([],_,[]).
+get_symbolic_dmatrix_1([U|Unknowns],N,[(N,U)|List]):-
+	N1 is N+1,
+	get_symbolic_dmatrix_1(Unknowns,N1,List).
+
+%! get_symbolic_dmatrix_negated(Unknowns,Dmatrix:dmatrix)
+% given a list of variables, obtain a disperse vector (disperse matrix with one line) of those variables multiplied by -1			
 get_symbolic_dmatrix_negated(Unknowns,dmatrix(1,X,[(1,List)])):-
 	length(Unknowns,X),
 	get_symbolic_dmatrix_negated_1(Unknowns,1,List).
@@ -206,15 +259,10 @@ get_symbolic_dmatrix_negated_1([U|Unknowns],N,[(N,-1*U)|List]):-
 	get_symbolic_dmatrix_negated_1(Unknowns,N1,List).
 
 
-get_symbolic_dmatrix(Unknowns,dmatrix(1,X,[(1,List)])):-
-	length(Unknowns,X),
-	get_symbolic_dmatrix_1(Unknowns,1,List).
-	
-get_symbolic_dmatrix_1([],_,[]).
-get_symbolic_dmatrix_1([U|Unknowns],N,[(N,U)|List]):-
-	N1 is N+1,
-	get_symbolic_dmatrix_1(Unknowns,N1,List).
-	
+
+%! add_dmatrix_symbolically(Dmatrix1:dmatrix,Dmatrix2:dmatrix,Dmatrix_sum:dmatrix)
+%compute the sum of two matrix simbolically
+% instead of adding the values x_ij and y_ij we obtain the term: x_ij+y_ij
 add_dmatrix_symbolically(dmatrix(X,Y,Matrix1),dmatrix(X,Y,Matrix2),dmatrix(X,Y,Matrix_sum)):-
 	add_dmatrix_symbolically_1(Matrix1,Matrix2,Matrix_sum).
 
@@ -248,36 +296,13 @@ add_dline_symbolically([(N1,Elem1)|Line1],[(N2,Elem2)|Line2],[(N2,Elem2)|Line_su
 %X=-Y
 negation_constr(X,Y,(1*X+1*Y=0)).
 
-get_line_product(Vars,Mult,Line,Sum):-
-	maplist(multiply_line_by_factor(Mult),Line,Line1),
-	get_line_product_1(Vars,1,Line1,Factors),
-	(Factors=[]-> 
-	Sum=0
-	;
-	write_sum(Factors,Sum)
-	).
 
-multiply_line_by_factor(F,(I,Val),(I,Val2)):-
-	multiply_fr(Val,F,Val2).
-	
-get_line_product_1([],_,_Line1,[]):-!.
-get_line_product_1(_,_,[],[]).
-get_line_product_1([Var|Vars],N,[(N,Val)|Line],[Val*Var|Factors]):-
-	N1 is N+1,
-	get_line_product_1(Vars,N1,Line,Factors).
-get_line_product_1([_Var|Vars],N,[(N2,Val)|Line],Factors):-
-	N2 > N,
-	N1 is N+1,
-	get_line_product_1(Vars,N1,[(N2,Val)|Line],Factors).
 	
 
-expand_dmatrix_y_dimension(dmatrix(X,Y,Vals),N,dmatrix(X,Y2,Vals)):-
-		N>0,
-		Y2 is Y+N.
-expand_dmatrix_x_dimension(dmatrix(X,Y,Vals),N,dmatrix(X2,Y,Vals)):-
-		N>0,
-		X2 is X+N.	
-		
+%! dmatrix_to_constraints(Matrix1:dmatrix,Vars:list(var),Op:operator, Matrix2:dmatrix,Cs:polyhedron)
+% generate a constraint set Cs that represents
+% Matrix1*Vars Op Matrix2
+% with the exception of the first line that has =< operator		
 dmatrix_to_constraints(dmatrix(X,Y,Vals),Vars,Op, dmatrix(1,X,[(1,Constants)]),[C|Cs]):-
 	length(Vars,Y),
 	Vals=[(1,Line)|Vals_rest],
@@ -346,7 +371,7 @@ get_constraints([(N_diff1,Line)|Lines],[(N_diff2,Constant)|Constants],N,Vars,Op,
 	N_diff2 > N,
 	N1 is N+1,
 	get_constraints([(N_diff1,Line)|Lines],[(N_diff2,Constant)|Constants],N1,Vars,Op,Cs).		
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 get_lin_exp_from_line(Line,Vars,Lin_exp):-
 	get_lin_exp_from_line_1(Line,1,Vars,Coeffs),
 	write_le(Coeffs+0,Lin_exp).
@@ -359,7 +384,30 @@ get_lin_exp_from_line_1([(N_diff,Val)|Line],N,Vars,Coeffs):-
 	N_diff > N,
 	N1 is N+1,
 	get_lin_exp_from_line_1([(N_diff,Val)|Line],N1,Vars,Coeffs).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+get_line_product(Vars,Mult,Line,Sum):-
+	maplist(multiply_line_by_factor(Mult),Line,Line1),
+	get_line_product_1(Vars,1,Line1,Factors),
+	(Factors=[]-> 
+	Sum=0
+	;
+	write_sum(Factors,Sum)
+	).
+
+multiply_line_by_factor(F,(I,Val),(I,Val2)):-
+	multiply_fr(Val,F,Val2).
 	
+get_line_product_1([],_,_Line1,[]):-!.
+get_line_product_1(_,_,[],[]).
+get_line_product_1([Var|Vars],N,[(N,Val)|Line],[Val*Var|Factors]):-
+	N1 is N+1,
+	get_line_product_1(Vars,N1,Line,Factors).
+get_line_product_1([_Var|Vars],N,[(N2,Val)|Line],Factors):-
+	N2 > N,
+	N1 is N+1,
+	get_line_product_1(Vars,N1,[(N2,Val)|Line],Factors).
+
+
 
 get_dmatrix_y_dimension(dmatrix(_X,Y,_Vals),Y).
 
@@ -458,11 +506,5 @@ get_lin_expr_dmatrix(Vars,List+Coeff_0,dmatrix(1,Y1,[(1,Coeffs)])):-
 	).
 
 	
-zero_if_not_in_set(Important_vars,Var,Un_var,Cs,[Un_var=0|Cs]):-
-	\+contains_sl(Important_vars,Var),!.
-zero_if_not_in_set(_Important_vars,_Var,_Un_var,Cs,Cs).	
-	
 greater_zero(Y,1*Y>=0).
-is_zero(Y,1*Y=0).
-
-	
+		

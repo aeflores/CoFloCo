@@ -72,17 +72,22 @@
 
 
 :- module(cost_structures,[
+		opposite_ub_lb/2,
+		max_min_ub_lb/2,
 		new_itvar/1,
 		get_loop_itvar/2,
 		is_ub_bconstr/1,
 		fconstr_new/4,
 		fconstr_new_inv/4,
 		iconstr_new/4,
+		bconstr_get_bounded/2,
+		bconstr_annotate_bounded/2,
 		astrexp_new/2,
 		pstrexp_pair_add/3,
 		pstrexp_pair_empty/1,
 		cstr_empty/1,
 		astrexp_to_cexpr/2,
+		basic_cost_to_astrexp/4,
 		cstr_from_cexpr/2,
 		cstr_remove_cycles/2,
 		cstr_extend_variables_names/3,
@@ -90,18 +95,26 @@
 		cstr_join/3,
 		cstr_or_compress/2,
 		cstr_join_equal_fconstr/2,
-		cstr_remove_useless_constrs_max_min/3,
+		cstr_simplify/5,
 		cstr_shorten_variables_names/3]).
 		
 		
 :- use_module(cofloco_utils,[zip_with_op/3,is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3]).	
 :- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1]).	
-
+:- use_module(polyhedra_optimizations,[nad_entails_aux/3]).	
 :- use_module('../IO/params',[get_param/2]).
 :- use_module('../IO/output',[print_aux_exp/1]).	
 :- use_module('../bound_computation/cost_structure_solver',[cstr_maxminimization/5]).
 
-:- use_module(stdlib(linear_expression),[parse_le/2,write_le/2,negate_le/2]).	
+
+:- use_module(stdlib(linear_expression),[
+	parse_le/2,
+	write_le/2,
+	negate_le/2,
+    is_constant_le/1,
+	integrate_le/3,
+	elements_le/2,
+	constant_le/2]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
 :- use_module(stdlib(utils),[ut_flat_list/2]).	
 :- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
@@ -118,9 +131,11 @@
 
 
 
-opposite_sign(ub,lb).
-opposite_sign(lb,ub).
+opposite_ub_lb(ub,lb).
+opposite_ub_lb(lb,ub).
 
+max_min_ub_lb(max,ub).
+max_min_ub_lb(min,lb).
 
 %predicates for intermediate variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,6 +149,16 @@ new_itvar([aux(Num)]):-
 %! get_loop_itvar(Loop:loop_id,Itvar:itvar) is det
 % get the itvar corresponding to a loop identifier
 get_loop_itvar(Loop,[it(Loop)]).
+
+%! annotate_itvar(Op:atom,Itvar:itvar,Var:op(itvar))
+% wrap an intermediate variable inside Op
+annotate_itvar(Op,Itvar,Var):-
+	Var=..[Op,Itvar].
+
+%! annotate_index_itvar(Op:atom,Index_elem:(itvar,Var),Index_elem1:(op(itvar),Var))
+% wrap the left element of an index pair inside Op	
+annotate_index_itvar(Op,(Name,Var),(Name1,Var)):-
+	Name1=..[Op,Name].	
 
 % predicates on bound constraints (bconstraints)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -160,6 +185,8 @@ is_negative_fconstr(bound(_,[]+N,_Bounded)):-
 % return the bounded intermediate variables of Bconstr
 bconstr_get_bounded(bound(_,_,Bounded),Bounded).
 
+bconstr_empty_bounded(bound(_,_,[])).
+
 %bconstr_accum_bounded_set(Bconstr:bconstr,Set:list_set(itvar),Set1:list_set(itvar)) is det
 % add the bounded itvars of Bconstr to Set
 bconstr_accum_bounded_set(bound(_,_,Bounded),Set,Set1):-
@@ -171,14 +198,29 @@ bconstr_accum_bounded_set(bound(_,_,Bounded),Set,Set1):-
 fconstr_new(Bounded,Op,NLin_exp,bound(Op,NLin_exp,Bounded)).
 fconstr_new_inv(NLin_exp,Op,Bounded,bound(Op,NLin_exp,Bounded)).
 
-
-
-
 %! iconstr_new(Astrexp:astrexp,Bounded:list(itvar),Op:op,Iconstr:iconstr) is det
 % create a new intermediate constraint
 iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp,Bounded)).
 
 
+%! bconstr_annotate_bounded(+Bconstr:bconstr,-Bconstr1:bconstr)
+% annotate the intermediate variables of a Bconstr with ub or lb according to the operator Op of the constraint and their sign
+bconstr_annotate_bounded(bound(Op,exp(Pos_index,Neg_index,Pos,Neg),Bounded),bound(Op,exp(Pos_index1,Neg_index1,Pos,Neg),Bounded_set)):-!,
+	opposite_ub_lb(Op,Op_neg),
+	maplist(annotate_itvar(Op),Bounded,Bounded1),
+	from_list_sl(Bounded1,Bounded_set),
+	maplist(annotate_index_itvar(Op),Pos_index,Pos_index1),
+	maplist(annotate_index_itvar(Op_neg),Neg_index,Neg_index1).
+bconstr_annotate_bounded(bound(Op,Top,Bounded),bound(Op,Top,Bounded_set)):-
+	maplist(annotate_itvar(Op),Bounded,Bounded1),
+	from_list_sl(Bounded1,Bounded_set).
+
+%! bconstr_remove_bounded(Set:list_set(itvar),Bconstr:bconstr,Bconstr:bconstr)
+%  remove the itvars in Set from bounded itvars of Bconstr
+bconstr_remove_bounded(Set,bound(Op,Exp,Bounded),bound(Op,Exp,Bounded_set1)):-
+	from_list_sl(Bounded,Bounded_set),
+	difference_sl(Bounded_set,Set,Bounded_set1).
+	
 % predicates on abstract structured expressions (astrexp)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
@@ -243,6 +285,26 @@ pstrexp_pair_add(add(Pos_summands1)-add(Neg_summands1),add(Pos_summands2)-add(Ne
 	append(Neg_summands1,Neg_summands2,Neg_summands).		
 	
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! basic_cost_to_astrexp(BSummands,BConstant,Max_min,Final_constraint)
+%generate an astrexp from the basic cost of a cost structure
+basic_cost_to_astrexp(BSummands,BConstant,Max_min,Exp):-
+	max_min_ub_lb(Max_min,Op),
+	opposite_ub_lb(Op,Op_neg),
+	generate_summands_from_bsummands(BSummands,Index_pos,Index_neg,Summands_pos,Summands_neg),
+	maplist(annotate_index_itvar(Op),Index_pos,Index_pos1),
+	maplist(annotate_index_itvar(Op_neg),Index_neg,Index_neg1),
+	%add the constant
+	(geq_fr(BConstant,0)->
+		Exp=exp(Index_pos1,Index_neg1,add([mult([BConstant])|Summands_pos]),add(Summands_neg))
+	;
+		negate_fr(BConstant,BConstant_neg),
+		Exp=exp(Index_pos1,Index_neg1,add(Summands_pos),add([mult([BConstant_neg])|Summands_neg]))
+	).
+	
+	
+
 % predicates on cost structures (cstr)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -289,7 +351,29 @@ cstr_from_cexpr(nat(Exp),cost(Ub_fconstrs,Lb_fconstrs,[],[(Aux1,1)],0)):-
 cstr_from_cexpr(Exp,_):-
 	throw(invalid_cost_expression(Exp)).
 
+%! cstr_simplify(+Cstr:cstr,+Vars:list(var),+Phi:polyhedron,+Max_min:flag,-Cstr_simple:cstr)
+% simplify the cost structure Cstr taking Phi into account
+% Max_min_both can be 'max','min' or 'both' and indicates whether we want to obtain a maximum cost, minimum or both
+cstr_simplify(Cstr,Vars,Phi,Max_min_both,Cstr_simple):-
+	cstr_join_equal_fconstr(Cstr,Cstr1),
+	cstr_simplify_fconstr_nats(Cstr1,Vars,Phi,Cstr2),
+	cstr_propagate_zeroes(Cstr2,Cstr3),
+	cstr_remove_useless_constrs(Cstr3,Max_min_both,Cstr4),
+	Cstr4=Cstr_simple.
 
+	
+cstr_simplify_fconstr_nats(Cstr,Vars,Phi,Cstr_simple):-
+	Cstr=cost(Ub_fconstrs,Lb_fconstrs,Itcons,BSummands,BConstant),
+	maplist(simplify_fconstr_nats(Vars,Phi),Ub_fconstrs,Ub_fconstrs1),
+	maplist(simplify_fconstr_nats(Vars,Phi),Lb_fconstrs,Lb_fconstrs1),
+	Cstr_simple=cost(Ub_fconstrs1,Lb_fconstrs1,Itcons,BSummands,BConstant).
+	
+simplify_fconstr_nats(Vars,Phi,bound(Op,Lin_exp,Bounded),bound(Op,[]+0,Bounded)):-
+	integrate_le(Lin_exp,_Den,Lin_exp_nat),
+	write_le(Lin_exp_nat,Expression_nat),
+	nad_entails_aux(Vars,Phi,[Expression_nat =<0]),!.
+	
+simplify_fconstr_nats(_,_,Fconstr,Fconstr).
 
 
 %! cstr_get_components(+Costs:list(cstr),-Ub_fcons:list(list(fconstr)),-Lb_fcons:list(list(fconstr)),-Itcons:list(list(iconstr)),-BSummands:list(list(bsummands)),-BConstants:list(constant)) is det
@@ -338,7 +422,6 @@ cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(
 	astrexp_new_simple_itvar(Name,Astrexp),
 	maplist(iconstr_new(Astrexp,Op),Bounded_list,New_iconstrs).
 	
-	
 
 	
 %! cstr_propagate_zeroes(+Cstr:cstr,-Cstr_simplified:cstr) is det
@@ -352,12 +435,19 @@ cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant)
 	(Removed_ub_fconstrs\=[]->
 	foldl(bconstr_accum_bounded_set,Removed_ub_fconstrs,[],Zero_set),
 	propagate_zeroes_through_iconstrs(Iconstrs,Zero_set,Iconstrs2,Zero_set2),
+	%remove the zeroes from the bounded of the lb_fconstrs
+	maplist(bconstr_remove_bounded(Zero_set2),Lb_fconstrs1,Lb_fconstrs2),
+	%check that there are no bconsts with 0 bounded itvars
+	%FIXME
+	exclude(bconstr_empty_bounded,Lb_fconstrs2,Lb_fconstrs3),
+	exclude(bconstr_empty_bounded,Iconstrs2,Iconstrs3),
 	exclude(pair_contains_first(Zero_set2),Bsummands,Bsummands1)
 	;
-	 Iconstrs2=Iconstrs,
+	 Iconstrs3=Iconstrs,
+	 Lb_fconstrs3=Lb_fconstrs1,
 	 Bsummands1=Bsummands
 	),
-	cstr_remove_useless_constrs(cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs2,Bsummands1,BConstant),Simplified).
+	Simplified=cost(Ub_fconstrs1,Lb_fconstrs3,Iconstrs3,Bsummands1,BConstant).
 
 %! propagate_zeroes_through_iconstrs(Iconstrs:list(iconstr),Set:list_set(itvar),Iconstrs_out:list(iconstr),Set_out:list_set(itvar)) is det	
 % propagate the intermediate variables that are zero (Set) and update any new itvars that are set to zero
@@ -374,12 +464,14 @@ propagate_zeroes_through_iconstrs([bound(Op,Exp,Bounded)|Iconstrs],Set,Iconstrs_
 	   union_sl(Bounded_set,Set,Set1)
 	   ;
 	   Exp1=exp(Index_pos1,Index_neg,Pos1,Neg),
-	   Iconstrs_out=[bound(Op,Exp1,Bounded)|Iconstrs_out1],
+	   bconstr_remove_bounded(Set,bound(Op,Exp1,Bounded),Iconstr),
+	   Iconstrs_out=[Iconstr|Iconstrs_out1],
 	   Set1=Set
 	),
 	propagate_zeroes_through_iconstrs(Iconstrs,Set1,Iconstrs_out1,Set_out).
 	
-propagate_zeroes_through_iconstrs([bound(Op,Exp,Bounded)|Iconstrs],Set,[bound(Op,Exp,Bounded)|Iconstrs_out],Set_out):-
+propagate_zeroes_through_iconstrs([Iconstr1|Iconstrs],Set,[Iconstr2|Iconstrs_out],Set_out):-
+	bconstr_remove_bounded(Set,Iconstr1,Iconstr2),
 	propagate_zeroes_through_iconstrs(Iconstrs,Set,Iconstrs_out,Set_out).	  
 	 
 set_second_to(X,(_,X)).
@@ -402,8 +494,8 @@ cstr_remove_cycles(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Sh
 	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
 	remove_not_bounded(Iconstrs,Ub_Bounded_set,Lb_Bounded_set,Iconstrs2),
 	%Some other simplifications
-	cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs2,Bsummands,BConstant),Simplified),
-	%cstr_remove_useless_constrs(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs2,Bsummands,BConstant),Simplified),
+	cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs2,Bsummands,BConstant),Simplified1),
+	cstr_remove_useless_constrs(Simplified1,both,Simplified),
 	cstr_shorten_variables_names(Simplified,list,Short).
 
 
@@ -451,28 +543,16 @@ split_bounded([Iconstr|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded
 
 
 
-
-
-
 %! cstr_remove_useless_constrs(+Cost:cstr,-Cost_simple:cstr) is det
-% another predicate to simplify cost structures (it is called after propagating zeroes)
 % Remove bound constraints that bound itvars that are not needed for the cost
-cstr_remove_useless_constrs(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),cost(Ub_fconstrs2,Lb_fconstrs2,Iconstrs2,Bsummands2,BConstant)):-
-	foldl(compute_initial_reference_set(max),Bsummands,([],[]),(Bsummands1,Ref_set1)),
-	foldl(compute_initial_reference_set(min),Bsummands1,([],Ref_set1),(Bsummands2,Ref_set2)),
-	reverse(Iconstrs,Aux_rev),
-	remove_useless_iconstrs(Aux_rev,Ref_set2,[],Ref_set3,Iconstrs2),
-	exclude(is_fconstr_useless(Ref_set3),Ub_fconstrs,Ub_fconstrs2),
-	exclude(is_fconstr_useless(Ref_set3),Lb_fconstrs,Lb_fconstrs2).
-
-%! cstr_remove_useless_constrs_max_min(+Cost:cstr,-Cost_simple:cstr) is det
-% a specialized version of cstr_remove_useless_constrs but to simplify a cost structure
-% that we want to either maximize or minimize
-%
-% each itvar is wrapped with ub() or lb() (or both) depending on whether we are interested in its upper bound, lower bound or both
-% starting from the basic summands we proceed upwards accumulating the necessary itvars and discarding the useless bound constraints
-cstr_remove_useless_constrs_max_min(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Max_min,cost(Ub_fconstrs2,Lb_fconstrs2,Iconstrs2,Bsummands2,BConstant)):-
-	foldl(compute_initial_reference_set(Max_min),Bsummands,([],[]),(Bsummands2,Ref_set)),
+% Max_min_both can be 'max','min' or 'both' and indicates whether we want to obtain a maximum cost, minimum or both
+cstr_remove_useless_constrs(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Max_min_both,cost(Ub_fconstrs2,Lb_fconstrs2,Iconstrs2,Bsummands2,BConstant)):-
+	(Max_min_both=both->
+		foldl(compute_initial_reference_set(max),Bsummands,([],[]),(Bsummands1,Ref_set_aux)),
+	    foldl(compute_initial_reference_set(min),Bsummands1,([],Ref_set_aux),(Bsummands2,Ref_set))
+	    ;
+	    foldl(compute_initial_reference_set(Max_min_both),Bsummands,([],[]),(Bsummands2,Ref_set))
+	),
 	reverse(Iconstrs,Aux_rev),
 	remove_useless_iconstrs(Aux_rev,Ref_set,[],Ref_set1,Iconstrs2),
 	exclude(is_fconstr_useless(Ref_set1),Ub_fconstrs,Ub_fconstrs2),
@@ -497,7 +577,7 @@ compute_initial_reference_set(max,(Name,Value),(Bsummands,Ref_set),([(Name,Value
 
 remove_useless_iconstrs([],Ref_set,Iconstrs,Ref_set,Iconstrs).
 remove_useless_iconstrs([bound(Op,Exp,Bounded)|Iconstrs],Ref_set_accum,Iconstrs_accum,Ref_set,Iconstrs_out):-
-	opposite_sign(Op,Op_neg),
+	opposite_ub_lb(Op,Op_neg),
 	maplist(zip_with_op(Op),Bounded,Bounded_op),	
 	from_list_sl(Bounded_op,Bounded_set),
 	(Op=ub->
@@ -894,3 +974,4 @@ generate_summands_from_bsummands([(Name,Coeff)|BConstants],[(Name,Var)|Index_pos
 generate_summands_from_bsummands([(Name,Coeff)|BConstants],Index_pos,[(Name,Var)|Index_neg],Summands_pos,[mult([Var,Coeff_neg])|Summands_neg]):-
 	negate_fr(Coeff,Coeff_neg),
 	generate_summands_from_bsummands(BConstants,Index_pos,Index_neg,Summands_pos,Summands_neg).	
+	

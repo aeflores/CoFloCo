@@ -1,10 +1,10 @@
 :- module(structured_cost_expression,[
-		partial_str_cost_exp_estimate_complexity/3,
-		partial_str_cost_exp_complexity/2,
+		partial_strexp_estimate_complexity/3,
+		partial_strexp_complexity/2,
 		str_cost_exp_complexity/2,
-		str_cost_exp_2_cost_expression/2,
-		str_cost_exp_simplify/2,
-		str_cost_exp_get_multiplied_factors/3,
+		strexp_to_cost_expression/2,
+		strexp_simplify/2,
+		strexp_get_multiplied_factors/3,
 		get_all_pairs/3
 	]).
 
@@ -26,16 +26,16 @@
 :- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
-partial_str_cost_exp_complexity(partial(_,_),100).
-partial_str_cost_exp_complexity(Summand,N):-
+partial_strexp_complexity(partial(_,_),100).
+partial_strexp_complexity(Summand,N):-
 	str_cost_exp_complexity(Summand,N).
 	
 	
-partial_str_cost_exp_estimate_complexity(partial(Index,Exp),Complexity_map,Complexity):-!,
+partial_strexp_estimate_complexity(partial(Index,Exp),Complexity_map,Complexity):-!,
 	copy_term(partial(Index,Exp),partial(Index_c,Exp_c)),
 	maplist(substitute_by_dummy_complex_term(Complexity_map),Index_c),
 	str_cost_exp_complexity(Exp_c,Complexity).
-partial_str_cost_exp_estimate_complexity(Exp,_,Complexity):-
+partial_strexp_estimate_complexity(Exp,_,Complexity):-
 	str_cost_exp_complexity(Exp,Complexity).
 
 	
@@ -74,10 +74,10 @@ str_cost_exp_complexity(N,0):-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 	
-str_cost_exp_get_multiplied_factors(nat(add(Summands)),Vars_set,Pairs):-
+strexp_get_multiplied_factors(nat(add(Summands)),Vars_set,Pairs):-
 	maplist(get_summand_multiplied_vars(Vars_set),Summands,Pair_list),
 	unions_sl(Pair_list,Pairs).	
-str_cost_exp_get_multiplied_factors(add(Summands),Vars_set,Pairs):-
+strexp_get_multiplied_factors(add(Summands),Vars_set,Pairs):-
 	maplist(get_summand_multiplied_vars(Vars_set),Summands,Pair_list),
 	unions_sl(Pair_list,Pairs).
 
@@ -109,7 +109,7 @@ get_internal_pairs(Vars_set,min(Summands),Pairs):-!,
 	unions_sl(Pair_list,Pairs).		
 		
 get_internal_pairs(Vars_set,Factor,Pairs):-
-	str_cost_exp_get_multiplied_factors(Factor,Vars_set,Pairs),!.
+	strexp_get_multiplied_factors(Factor,Vars_set,Pairs),!.
 get_internal_pairs(_Vars_set,Factor,_Pairs):-
 	throw(unexpected_factor(Factor)).
 	
@@ -129,36 +129,36 @@ get_all_pairs_2(Elem,Set,Set_pairs):-
 	
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
-str_cost_exp_2_cost_expression(add(Summands),Exp3):-
+strexp_to_cost_expression(add(Summands),Exp3):-
 	maplist(write_product_deep,Summands,Summands2),
 	write_sum(Summands2,Exp3).
-str_cost_exp_2_cost_expression(nat(Lin_exp),nat(Lin_exp)):-var(Lin_exp),!.
+strexp_to_cost_expression(nat(Lin_exp),nat(Lin_exp)):-var(Lin_exp),!.
 
-str_cost_exp_2_cost_expression(nat(add(Summands)),nat(Exp3)):-!,
+strexp_to_cost_expression(nat(add(Summands)),nat(Exp3)):-!,
 	maplist(write_product_deep,Summands,Summands2),
 	write_sum(Summands2,Exp3).
 	
-str_cost_exp_2_cost_expression(Else,Else).	
+strexp_to_cost_expression(Else,Else).	
 	
 write_product_deep(mult(List),Product):-
 	maplist(write_factor_deep,List,List_p),
 	write_product(List_p,Product).
 
 write_factor_deep(max(Elems),max(Elems_p)):-!,
-	maplist(str_cost_exp_2_cost_expression,Elems,Elems_p).
+	maplist(strexp_to_cost_expression,Elems,Elems_p).
 write_factor_deep(min(Elems),min(Elems_p)):-!,
-	maplist(str_cost_exp_2_cost_expression,Elems,Elems_p).	
+	maplist(strexp_to_cost_expression,Elems,Elems_p).	
 
 write_factor_deep(nat(Elem),nat(Exp)):-nonvar(Elem),
 	functor(Elem,add,1),!,
-	str_cost_exp_2_cost_expression(Elem,Exp).
+	strexp_to_cost_expression(Elem,Exp).
 write_factor_deep(add(Elem),Exp):-!,
-	str_cost_exp_2_cost_expression(add(Elem),Exp).	
+	strexp_to_cost_expression(add(Elem),Exp).	
 write_factor_deep(X,X).
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
-str_cost_exp_simplify(Exp,Exp):-var(Exp),!.
-str_cost_exp_simplify(Exp,Simple_exp):-
+strexp_simplify(Exp,Exp):-var(Exp),!.
+strexp_simplify(Exp,Simple_exp):-
 	nonvar(Exp),
 	Exp=nat(Exp_internal),
 	nonvar(Exp_internal),
@@ -170,13 +170,13 @@ str_cost_exp_simplify(Exp,Simple_exp):-
 	;
 		Simple_exp=nat(add(Summands_simple))
 	).
-str_cost_exp_simplify(Exp,Simple_exp):-
+strexp_simplify(Exp,Simple_exp):-
 	nonvar(Exp),
 	Exp=add(Summands),!,
 	simplify_summands(Summands,Summands_simple),
 	Simple_exp=add(Summands_simple).	
 	
-str_cost_exp_simplify(Exp,Exp).
+strexp_simplify(Exp,Exp).
 	
 
 simplify_summands(Summands,Summands_compressed):-
@@ -229,7 +229,7 @@ multiply_by_factors(Factors1,mult(Summand),mult(Factors2)):-
 simplify_factor_internal(Var,Var):-var(Var),!.
 
 simplify_factor_internal(min(List),Res):-!,
-	maplist(str_cost_exp_simplify,List,List_simplified),
+	maplist(strexp_simplify,List,List_simplified),
 	from_list_sl(List_simplified,Set),
 	(Set=[One]->
 		Res=One
@@ -237,7 +237,7 @@ simplify_factor_internal(min(List),Res):-!,
 		Res=min(Set)
 	).
 simplify_factor_internal(max(List),Res):-!,
-	maplist(str_cost_exp_simplify,List,List_simplified),
+	maplist(strexp_simplify,List,List_simplified),
 	from_list_sl(List_simplified,Set),
 	(Set=[One]->
 		Res=One
@@ -245,7 +245,7 @@ simplify_factor_internal(max(List),Res):-!,
 		Res=max(Set)
 	).
 simplify_factor_internal(Factor,Factor_simple):-
-	str_cost_exp_simplify(Factor,Factor_simple),!.
+	strexp_simplify(Factor,Factor_simple),!.
 	
 	
 	
@@ -260,7 +260,7 @@ select_not_var([Factor|Factors],Factor1,[Factor|Factors1]):-
 	select_not_var(Factors,Factor1,Factors1).
 
 substitute_by_dummy_complex_term(Map,(Name,Var)):-
-	lookup_lm(Map,Name,N),
+	lookup_lm(Map,Name,(N,_)),
 	get_dummy_factors(N,Factors),
 	Var=add([mult([1|Factors])]).
 get_dummy_factors(0,[]).

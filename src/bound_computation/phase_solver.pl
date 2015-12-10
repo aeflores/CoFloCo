@@ -133,7 +133,7 @@ compute_phases_cost([Phase|More],Chain,Head,Call,[Cost|Costs]):-
 	%obtain a cost structure in terms of the variableUb_fconstrsnning and end of the phase
 	compute_phase_cost(Phase,Head,Call,(Forward_inv_hash,Forward_inv),Cost),
 	retract(current_chain(Chain)),
-	(get_param(debug,[])->print_phase_cost(Phase,Head,Call,Cost);true),
+	%(get_param(debug,[])->print_phase_cost(Phase,Head,Call,Cost);true),
 	compute_phases_cost(More,Chain,Head,Call,Costs).
 	
 
@@ -310,7 +310,7 @@ compute_all_pending(_,_,_,_).
 % that are stored in the database
 compute_pending(Head,Call,Phase,Pending,Pending_out):-
 	get_one_pending(Pending,Type,(Depth,Lin_exp,Coeff_bounded),Pending1),
-	(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
+	%(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
 	assert(current_pending_depth(Depth)),
 	compute_pending_element(Type,Head,Call,Phase,Lin_exp,Coeff_bounded,New_fconstrs,New_iconstrs,Pending1,Pending_out),
 	retract(current_pending_depth(Depth)),
@@ -475,7 +475,7 @@ compute_sum(Head,Call,Phase,Loop,Lin_exp,Max_min,Bounded,New_fconstrs,New_iconst
 	foldl(union_pending,Pending_out_list,Empty_pending,Pending_aux),
 	% this is an heuristic
 	% if we are computing a minsum or we have created some intermediate constraints, we apply the basic product strategy as well
-	((New_iconstrs\=[]; Max_min=min)->
+	((New_iconstrs\=[];Exp_list=[_]; Max_min=min)->
 	basic_product(Head,Call,Loop,Lin_exp,Bounded,Iconstr_extra,Max_min,Pending_aux,Pending_out),
 	New_iconstrs2=[Iconstr_extra|New_iconstrs]
 	;
@@ -981,8 +981,8 @@ basic_product(Head,Call,Loop,Lin_exp,Bounded,Aux_exp,Max_min,Pending,Pending_out
 % try to find a pending maxsum that can be bounded by Exp_diff
 % we check that Exp_diff>= Exp2 and in case we are dealing with a head candidate
 % we also check Exp_original>=Exp2
-find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending):-
-		extract_pending(Loop,maxsum,Pending,(_Depth,Exp2,Bounded),_Pending_out),
+find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending_out):-
+		extract_pending(Loop,maxsum,Pending,(_Depth,Exp2,Bounded),Pending_out),
 		term_variables((Head,Call),Vars),
 		subtract_le(Exp_diff,Exp2,Exp_diff2),
 		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
@@ -1064,32 +1064,19 @@ get_partial_lower_bound(Head,Call,Chain,Loop,Lb):-
 % use Farkas lemma
 generate_lecandidates(Head,Call,Lin_exp,max,Loop,Total_exps):-
 	get_enriched_loop(Loop,Head,Call,Cs),	
-	term_variables((Head,Call),Vars),
 	rf_limit(Max_candidates),
-	%FIXME
 	difference_constraint_farkas_ub(Head,Call,Cs,Lin_exp,Diff_list,Diff_list2),
-	get_N_positive_candidates(Diff_list,Max_candidates,Vars,Cs,Diff_list_selected),
+	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	ut_split_at_pos(Diff_list2,Max_candidates,Diff_list_selected2,_),
 	append(Diff_list_selected,Diff_list_selected2,Total_exps).
 	
 	
-generate_lecandidates(Head,Call,Lin_exp,min,Loop,Diff_list):-
+generate_lecandidates(Head,Call,Lin_exp,min,Loop,Diff_list_selected):-
 	get_enriched_loop(Loop,Head,Call,Cs),	
-	%rf_limit(Max_candidates),
-	difference_constraint_farkas_lb(Head,Call,Cs,Lin_exp,Diff_list).
-	%ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_).	
+	rf_limit(Max_candidates),
+	difference_constraint_farkas_lb(Head,Call,Cs,Lin_exp,Diff_list),
+	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_).	
 
-%FIXME remove
-get_N_positive_candidates([],_,_,_,[]).
-get_N_positive_candidates(_,0,_,_,[]).
-get_N_positive_candidates([Lin_exp|List],N,Vars,Cs,[Lin_exp|Selected]):-
-	N>0,N1 is N-1,
-	le_print_int(Lin_exp,Exp,_Den),
-	nad_entails(Vars,Cs,[Exp>=0]),
-	get_N_positive_candidates(List,N1,Vars,Cs,Selected).
-get_N_positive_candidates([_Lin_exp|List],N,Vars,Cs,Selected):-
-	N>0,N1 is N-1,
-	get_N_positive_candidates(List,N1,Vars,Cs,Selected).
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %! max_min_top_expression_in_phase(Head:term,Call:term,Phase:phase,bound(Op,Lin_exp,_Bounded),Maxs_out)
