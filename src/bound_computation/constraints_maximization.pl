@@ -110,7 +110,7 @@ max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs):-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! generate_constraints(Fconstrs:list(fconstr),Phi:polyhedron,Dicc:maplist(itvar,Var),Positive_constr:list(linear_constraint),Insecure_constrs:'=<'(list(list(itvar),linexp),Dicc_out:maplist(itvar,Var))
+%! generate_constraints(Fconstrs:list(fconstr),Phi:polyhedron,Dicc:maplist(itvar,Var),Positive_constr:list(linear_constraint),Insecure_constrs:'=<'(list(list(itvar),linexp)),Dicc_out:maplist(itvar,Var))
 % for each final constraint, check if its linear expression is guaranteed to be positive.
 % If it is positive, we generate a corresponding linear constraint in which the itvars have been
 % substituted by variables. The relation between the itvars and the variables used is recorded in a dicctionry Dicc

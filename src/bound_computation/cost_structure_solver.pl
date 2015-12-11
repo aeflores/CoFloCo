@@ -28,7 +28,12 @@ This module uses the following auxiliary cost structures:
    this correspondence is recorded in index
  * partial_bconstr: bound(op,partial_strexp,list(itvar))
    It is like a bconstr but contains a partial_strexp
-
+ * constr_group: group(Op:flag,Bconstrs:list(bconstr),Bounded_vars:list_set(itvar))
+   A set of constraints that refer to the same itvars and have to be solved together
+   - Op is ub or lb
+   - Bconstrs are the bound constraints of the group
+   - Bounded_vars are the itvars that appear in the group
+   
 */
 
 :- module(cost_structure_solver,[
@@ -59,6 +64,7 @@ This module uses the following auxiliary cost structures:
 		partial_strexp_complexity/2,
 		strexp_to_cost_expression/2,
 		strexp_get_multiplied_factors/3,
+		strexp_is_zero/1,
 		get_all_pairs/3,
 		strexp_simplify/2]).		
 		
@@ -248,15 +254,32 @@ select_best_expr(lb,(C1,Exp1),(C2,Exp2),Selected):-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % create groups of variables that are defined together
+
+%! group_remaining_constrs(Constrs:list(bconstr),Groups:list(constr_group))
+% group constraints that refer to the same variable together so they can be solved together
 group_remaining_constrs(Constrs,Groups):-
 	split_remaining_constrs(Constrs,Grouped_constrs),
 	exclude(=([]),Grouped_constrs,Grouped_constrs1),
 	maplist(create_group,Grouped_constrs1,Groups).
 
+create_group(Constr_list,group(Op,Constr_list,Bounded_vars)):-
+	Constr_list=[bound(Op,_,_)|_],
+	maplist(bconstr_get_bounded,Constr_list,Bounded_lists),
+	unions_sl(Bounded_lists,Bounded_vars).	
+
+%! split_remaining_constrs(Remaining_constrs:list(bconstr),Final_groups:list(list(bconstr)))
+% group a list of constraints into sublists of constraints that are related to each other
+% this process is done in three steps:
+%  1- take constraints that do not depend on the previous constraints
+%  2- separate the taken constraint into ub and lb constraints
+%  3- split this group into subgroups that do not share common itvars
 split_remaining_constrs([],[]).
 split_remaining_constrs(Remaining_constrs,Final_groups):-
+		%Step 1
 		take_group(Remaining_constrs,[],Group,Rest),
+		%Step 2
 		partition(is_ub_bconstr,Group,Ub_group,Lb_group),
+		%Step 3
 		split_independent_vars(Ub_group,Ub_groups),
 		reverse(Ub_groups,Ub_groups_rev),
 		split_independent_vars(Lb_group,Lb_groups),
@@ -264,8 +287,25 @@ split_remaining_constrs(Remaining_constrs,Final_groups):-
 		append(Ub_groups_rev,Lb_groups_rev,All_new_groups),
 		append(All_new_groups,Groups,Final_groups),
 		split_remaining_constrs(Rest,Groups).
+% take_group(+Constrs:list(bconstr),+Vars:list_set(itvar),-Group:list(bconstr),-Rest:list(bconstr))
+% put constraints from Constrs into group until we find one that depends on the variables Vars
+% for each constraint that we add to Group, we update the set Vars
+take_group([],_,[],[]).
+take_group([bound(Op,partial(Index,Exp),Bounded)|Constrs],Vars,[bound(Op,partial(Index,Exp),Bounded)|Group],Rest):-
+	maplist(index_not_in_set(Vars),Index),!,
+	union_sl(Bounded,Vars,Vars1),
+	take_group(Constrs,Vars1,Group,Rest).
+	
+take_group([bound(Op,partial(Index,Exp),Bounded)|Constrs],_Vars,[],[bound(Op,partial(Index,Exp),Bounded)|Constrs]):-!.
 
+take_group([bound(Op,Not_partial,Bounded)|Constrs],Vars,[bound(Op,Not_partial,Bounded)|Group],Rest):-
+	union_sl(Bounded,Vars,Vars1),
+	take_group(Constrs,Vars1,Group,Rest).
 
+%! split_independent_vars(+Bconstrs:list(bconstr),-Groups:list(list(bconstr)))
+% this is basically a algorithm to detect the connected components of a graph
+% the nodes would be the bconstrs and the edges the bounded itvars that they contain
+% TODO: maybe we should generalize it
 split_independent_vars([],[]).
 split_independent_vars([Bound|Bounds],[Group|Groups]):-
 	Bound=bound(_,_,Bounded),
@@ -295,36 +335,36 @@ filter_related([Bound|Bounds],Accum,Vars_set,Group,Vars_set_out,Rest):-
 filter_related([Bound|Bounds],Accum,Vars_set,Group,Vars_set_out,[Bound|Rest]):-
 	filter_related(Bounds,Accum,Vars_set,Group,Vars_set_out,Rest).
 
-take_group([],_,[],[]).
-take_group([bound(Op,partial(Index,Exp),Bounded)|Constrs],Vars,[bound(Op,partial(Index,Exp),Bounded)|Group],Rest):-
-	maplist(index_not_in_set(Vars),Index),!,
-	union_sl(Bounded,Vars,Vars1),
-	take_group(Constrs,Vars1,Group,Rest).
-	
-take_group([bound(Op,partial(Index,Exp),Bounded)|Constrs],_Vars,[],[bound(Op,partial(Index,Exp),Bounded)|Constrs]):-!.
 
-take_group([bound(Op,Not_partial,Bounded)|Constrs],Vars,[bound(Op,Not_partial,Bounded)|Group],Rest):-
-	union_sl(Bounded,Vars,Vars1),
-	take_group(Constrs,Vars1,Group,Rest).
 		
-create_group(Group,group(Op,Group,Bounded_vars)):-
-	Group=[bound(Op,_,_)|_],
-	maplist(bconstr_get_bounded,Group,Bounded_lists),
-	unions_sl(Bounded_lists,Bounded_vars).	
+
 	
 
 	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % solve one group after another in a non-determinisitic manner		
+
+%! incremental_maxminization(+Groups:list(constr_group),+Semi_solved_exp:partial_strexp,-Exp:partial_strexp)
+% solve the constraint groups incrementally and apply the itvar assignments to the rest of the groups
+% and the final expression. In the end we have a solved expression
+%
+% this predicate is non-determinisitic and all the solutions are obtained
 incremental_maxminization([],Exp,Exp).
 incremental_maxminization([Group|Rest],Semi_solved_exp,Exp):-
-	Group=group(_,_,Vars),
-	check_well_formedness_of_constraints(Rest,Semi_solved_exp,Vars,Multiplied_pairs),
-	solve_group(Group,Multiplied_pairs,Map),
-	maplist(evaluate_group(Map),Rest,Rest1),
-	simplify_partial_exp(Semi_solved_exp,Map,Semi_solved_exp1),
+	Group=group(_,_,Itvars),
+	%check itvars that appear multiplied in the rest of the expression
+	% if so, we cannot maximize them separately
+	check_well_formedness_of_constraints(Rest,Semi_solved_exp,Itvars,Multiplied_pairs),
+	% create assignment of itvars to partial_strexps
+	solve_group(Group,Multiplied_pairs,Partial_assignment),
+	% apply the assignment to the remaining groups
+	maplist(constr_group_apply_partial_assignment(Partial_assignment),Rest,Rest1),
+	% apply the assignment to the main cost expression
+	partial_strexp_apply_partial_assignment(Semi_solved_exp,Partial_assignment,Semi_solved_exp1),
+	% simplify the remaining groups (remove itvars that are unnecessary)
 	remove_unused_vars_backwards(Rest1,Semi_solved_exp1,_Used_vars,Rest2),
+	%next group
 	incremental_maxminization(Rest2,Semi_solved_exp1,Exp).
 
 
@@ -367,19 +407,64 @@ accum_partial_vars(bound(_,partial(Vars,_),_),Vars_set,Vars_set2):-!,
 	from_list_sl(Names,Names_set),
 	union_sl(Names_set,Vars_set,Vars_set2).
 accum_partial_vars(_,Vars_set,Vars_set).
-
-solve_group(group(ub,Cons,_),Multiplied_pairs,Map):-
-	sort_with(Cons,better_ubs,Cons_sorted),
-	simplify_group(Cons_sorted,[],Cons_sorted1),
-	solve_group_1(Cons_sorted1,[],Multiplied_pairs,Map).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%! solve_group(Group:constr_group,Multiplied_pairs:list((itvar,itvar)),Partial_assignment:list_map(itvar,strexp))
+% create a partial assignment from the itvars of group to strexp using the constraints of the group
+%  * sort the constraints heuristically
+%  * select the neccesary constraints (and simplify some of them)
+%  * create the assignment
+solve_group(group(ub,Bconstrs,_),Multiplied_pairs,Partial_assignment):-
+	sort_with(Bconstrs,better_ubs,Bconstrs_sorted),
+	simplify_group(Bconstrs_sorted,[],Bconstrs_sorted1),
+	solve_group_1(Bconstrs_sorted1,[],Multiplied_pairs,Partial_assignment).
 	
-solve_group(group(lb,Cons,_),Multiplied_pairs,Map):-
-	sort_with(Cons,better_lbs,Cons_sorted),
-	simplify_group(Cons_sorted,[],Cons_sorted1),
-	solve_group_1(Cons_sorted1,[],Multiplied_pairs,Map).
+solve_group(group(lb,Bconstrs,_),Multiplied_pairs,Partial_assignment):-
+	sort_with(Bconstrs,better_lbs,Bconstrs_sorted),
+	simplify_group(Bconstrs_sorted,[],Bconstrs_sorted1),
+	solve_group_1(Bconstrs_sorted1,[],Multiplied_pairs,Partial_assignment).
+
+solve_group_1([],Partial_assignment,_Multiplied_pairs,Partial_assignment).	
+solve_group_1([bound(_Op,Strexp,Bounded)|Cons],Partial_assignment_accum,Multiplied_pairs,Partial_assignment):-
+	strexp_is_zero(Strexp),!,
+	foldl(insert_zero_value,Bounded,Partial_assignment_accum,Partial_assignment_accum2),
+	solve_group_1(Cons,Partial_assignment_accum2,Multiplied_pairs,Partial_assignment).	
+
+%If we are want speed over precision we solve constraints:
+%it1+it2+...+itn\leq exp
+% by assigning it1=exp, it2=exp...itn=exp
+solve_group_1([bound(ub,Exp,Bounded)|Cons],Partial_assignment_accum,Multiplied_pairs,Partial_assignment):-
+    get_param(solve_fast,[]),!,
+	foldl(insert_value(Exp),Bounded,Partial_assignment_accum,Partial_assignment_accum2),
+	solve_group_1(Cons,Partial_assignment_accum2,Multiplied_pairs,Partial_assignment).
+
+%otherwise
+solve_group_1([bound(ub,Exp,Bounded)|Cons],Partial_assignment_accum,Multiplied_pairs,Partial_assignment):-
+	join_dependent_itvars(Bounded,Multiplied_pairs,Bounded_joined),
+	select(Selected,Bounded_joined,Bounded1),
+	foldl(insert_value(Exp),Selected,Partial_assignment_accum,Partial_assignment_accum1),
+	ut_flat_list(Bounded1,Bounded1_flat),
+	foldl(insert_zero_value,Bounded1_flat,Partial_assignment_accum1,Partial_assignment_accum2),
+	solve_group_1(Cons,Partial_assignment_accum2,Multiplied_pairs,Partial_assignment).
+
+%if there are dependent constraints and it's a lower bound constraint all goes to 0
+solve_group_1([bound(lb,_Exp,Bounded)|Cons],Partial_assignment_accum,Multiplied_pairs,Partial_assignment):-
+	Multiplied_pairs=[_|_],!,
+	foldl(insert_zero_value,Bounded,Partial_assignment_accum,Partial_assignment_accum2),
+	solve_group_1(Cons,Partial_assignment_accum2,Multiplied_pairs,Partial_assignment).
+
+%if we are computing lower bound and there are no dependent pairs we try with each variable	
+solve_group_1([bound(lb,Exp,Bounded)|Cons],Partial_assignment_accum,[],Partial_assignment):-
+	select(Selected,Bounded,Bounded1),
+	insert_lm(Partial_assignment_accum,Selected,Exp,Partial_assignment_accum1),
+	foldl(insert_zero_value,Bounded1,Partial_assignment_accum1,Partial_assignment_accum2),
+	solve_group_1(Cons,Partial_assignment_accum2,[],Partial_assignment).	
+
+insert_value(Val,Var,Partial_assignment,Partial_assignment1):-
+	insert_lm(Partial_assignment,Var,Val,Partial_assignment1).
+insert_zero_value(Var,Partial_assignment,Partial_assignment1):-
+	insert_lm(Partial_assignment,Var,0,Partial_assignment1).
 
 %we select constraints with a greedy strategy based on the complexity and number of bounded variables
-
 better_ubs(bound(ub,Exp,_Bounded),bound(ub,Exp2,_Bounded2)):-
 	partial_strexp_complexity(Exp,C1),
 	partial_strexp_complexity(Exp2,C2),
@@ -391,7 +476,6 @@ better_ubs(bound(ub,Exp,Bounded),bound(ub,Exp2,Bounded2)):-
 	C1=C2,
 	length(Bounded,N),length(Bounded2,N2),N<N2.
 
-	
 better_lbs(bound(lb,Exp,_Bounded),bound(lb,Exp2,_Bounded2)):-
 	partial_strexp_complexity(Exp,C1),
 	partial_strexp_complexity(Exp2,C2),
@@ -403,75 +487,37 @@ better_lbs(bound(lb,Exp,Bounded),bound(lb,Exp2,Bounded2)):-
 	C1=C2,
 	length(Bounded,N),length(Bounded2,N2),N>N2.	
 	
-	
+%! simplify_group(Bconstrs:list(bconstr),Itvars:list_set(itvar),Bconstrs1:list(bconstr))
+% take constraints from Bconstrs and accumulate the itvars in  Itvars 
+% if a bconstr has variables that have been covered (they belong to Itvars)
+%   * if bconstr is a ub bconstr, we remove the itvars that have been already covered
+%   * if bconstr is a lb bconstr, we discard it
 simplify_group([],_,[]):-!.
-simplify_group([bound(ub,_Exp,Bounded)|Cons],Vars,Cons1):-
-	difference_sl(Bounded,Vars,[]),!,
-	simplify_group(Cons,Vars,Cons1).
-simplify_group([bound(ub,Exp,Bounded)|Cons],Vars,[bound(ub,Exp,Bounded1)|Cons1]):-
-	difference_sl(Bounded,Vars,Bounded1),!,
-	union_sl(Bounded1,Vars,Vars1),
-	simplify_group(Cons,Vars1,Cons1).
-simplify_group([bound(lb,Exp,Bounded)|Cons],Vars,[bound(lb,Exp,Bounded)|Cons1]):-
-	intersection_sl(Bounded,Vars,[]),!,
-	union_sl(Bounded,Vars,Vars1),
-	simplify_group(Cons,Vars1,Cons1).
-simplify_group([bound(lb,_Exp,_Bounded)|Cons],Vars,Cons1):-
-	simplify_group(Cons,Vars,Cons1).			
-
-solve_group_1([],Map,_Multiplied_pairs,Map).
-solve_group_1([bound(_Op,add([]),Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-!,
-	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
+simplify_group([bound(ub,_Exp,Bounded)|Cons],Itvars,Cons1):-
+	difference_sl(Bounded,Itvars,[]),!,
+	simplify_group(Cons,Itvars,Cons1).
+simplify_group([bound(ub,Exp,Bounded)|Cons],Itvars,[bound(ub,Exp,Bounded1)|Cons1]):-
+	difference_sl(Bounded,Itvars,Bounded1),!,
+	union_sl(Bounded1,Itvars,Itvars1),
+	simplify_group(Cons,Itvars1,Cons1).
 	
-solve_group_1([bound(_Op,nat(Add),Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
-    nonvar(Add),Add==add([]),!,
-	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
+simplify_group([bound(lb,Exp,Bounded)|Cons],Itvars,[bound(lb,Exp,Bounded)|Cons1]):-
+	intersection_sl(Bounded,Itvars,[]),!,
+	union_sl(Bounded,Itvars,Itvars1),
+	simplify_group(Cons,Itvars1,Cons1).
+simplify_group([bound(lb,_Exp,_Bounded)|Cons],Itvars,Cons1):-
+	simplify_group(Cons,Itvars,Cons1).			
 	
-solve_group_1([bound(_Op,nat(Add),Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
-	nonvar(Add),Add==add([mult([add([])])]),!,
-	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
 		
-solve_group_1([bound(_Op,Add,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
-	Add==nat(add([mult([nat(add([mult([add([])])]))])])),!,
-	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).	
-
-%If we are want speed over precision we solve constraints:
-%it1+it2+...+itn\leq exp
-% by assigning it1=exp, it2=exp...itn=exp
-solve_group_1([bound(ub,Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
-    get_param(solve_fast,[]),!,
-	foldl(insert_value(Exp),Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
-
-%otherwise
-solve_group_1([bound(ub,Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
-	join_dependent_bounded(Bounded,Multiplied_pairs,Bounded_joined),
-	select(Selected,Bounded_joined,Bounded1),
-	foldl(insert_value(Exp),Selected,Map_accum,Map_accum1),
-	ut_flat_list(Bounded1,Bounded1_flat),
-	foldl(insert_zero_value,Bounded1_flat,Map_accum1,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
-
-%if there are dependent constraints and it's a lower bound constraint all goes to 0
-solve_group_1([bound(lb,_Exp,Bounded)|Cons],Map_accum,Multiplied_pairs,Map):-
-	Multiplied_pairs=[_|_],!,
-	foldl(insert_zero_value,Bounded,Map_accum,Map_accum2),
-	solve_group_1(Cons,Map_accum2,Multiplied_pairs,Map).
-
-%if we are computing lower bound and there are no dependent pairs we try with each variable	
-solve_group_1([bound(lb,Exp,Bounded)|Cons],Map_accum,[],Map):-
-	select(Selected,Bounded,Bounded1),
-	insert_lm(Map_accum,Selected,Exp,Map_accum1),
-	foldl(insert_zero_value,Bounded1,Map_accum1,Map_accum2),
-	solve_group_1(Cons,Map_accum2,[],Map).	
-
-join_dependent_bounded(Bounded,Pairs,Bounded_joined):-
+%! join_dependent_itvars(Bounded:list(itvar),Pairs:list((itvar,itvar)),Bounded_joined:list(list(itvar)))
+% group itvars that have to be maximized/minimized together as indicated by Pairs
+join_dependent_itvars(Bounded,Pairs,Bounded_joined):-
+	%start from unitary lists
 	maplist(put_in_list,Bounded,Bounded_list),
+	% join lists according to each of the pairs
 	foldl(join_dependent,Pairs,Bounded_list,Bounded_joined).
+
+put_in_list(X,[X]).
 
 join_dependent((X,Y),Bounded_lists,Bounded_lists_joined):-
 	get_set_with(Bounded_lists,X,X_set,Bounded_lists1),
@@ -488,24 +534,18 @@ get_set_with([Set|Sets],Elem,Set,Sets):-
 get_set_with([Set|Sets_rest],Elem,Set_elem,[Set|Sets]):-
 	get_set_with(Sets_rest,Elem,Set_elem,Sets).
 	
-put_in_list(X,[X]).
-insert_value(Val,Var,Map,Map1):-
-	insert_lm(Map,Var,Val,Map1).
-insert_zero_value(Var,Map,Map1):-
-	insert_lm(Map,Var,0,Map1).
-insert_one_value(Var,Map,Map1):-
-	insert_lm(Map,Var,1,Map1).	
+
 % given the new values assigned to the variables of the group, we substitute in the rest of the constraints and simplify
 
-evaluate_group(Map,group(Op,Constrs,Vars),group(Op,Constrs1,Vars)):-
-	maplist(evaluate_constr(Map),Constrs,Constrs1).
+constr_group_apply_partial_assignment(Partial_assignment,group(Op,Constrs,Itvars),group(Op,Constrs1,Itvars)):-
+	maplist(partial_bconstr_apply_partial_assignment(Partial_assignment),Constrs,Constrs1).
 	
-evaluate_constr(Map,bound(Op,Exp,Bounded),bound(Op,Exp1,Bounded)):-
-	simplify_partial_exp(Exp,Map,Exp1).
+partial_bconstr_apply_partial_assignment(Partial_assignment,bound(Op,Exp,Bounded),bound(Op,Exp1,Bounded)):-
+	partial_strexp_apply_partial_assignment(Exp,Partial_assignment,Exp1).
 	
 
-simplify_partial_exp(partial(Index,Exp),Map,Solved_exp):-!,
-	maplist(substitute_index_by_optional(Map),Index,Extra_index),
+partial_strexp_apply_partial_assignment(partial(Index,Exp),Partial_assignment,Solved_exp):-!,
+	maplist(substitute_index_by_optional(Partial_assignment),Index,Extra_index),
 	ut_flat_list(Extra_index,Index_flat),
 	strexp_simplify(Exp,Simple_exp),
 	term_variables(Simple_exp,Unknowns),
@@ -517,7 +557,7 @@ simplify_partial_exp(partial(Index,Exp),Map,Solved_exp):-!,
 		Solved_exp=partial(Index_final,Simple_exp)
 	).	
 	
-simplify_partial_exp(Exp,_Map,Exp).
+partial_strexp_apply_partial_assignment(Exp,_Partial_assignment,Exp).
 
 remove_undefined_vars(partial(Index,Exp),Exp):-!,
 	maplist(substitute_index_by_default,Index).
@@ -525,56 +565,39 @@ remove_undefined_vars(Exp,Exp).
 
 
 
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% accesing and updating different maps
-
-substitute_index_by_default((lb(_),0)).
-substitute_index_by_default((ub(_),inf)).
-
-substitute_index_by_optional(Map_accum,(Name,Var),[]):-
-		lookup_lm(Map_accum,Name,Var),!.
-substitute_index_by_optional(_Map_accum,(Name,Var),[(Name,Var)]).
-
-substitute_index_by(Map_accum,(Name,Var1),Index1):-
-		lookup_lm(Map_accum,Name,(_,Exp)),!,
-		(Exp=partial(Index,Var)->	
-			Index1=Index,
-			Var1=Var
-			;
-			Var1=Exp,
-			Index1=[]
-		).
-		
-substitute_index_by(_Map_accum,(lb(_Name),add([])),[]).
-
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % make sure the constraints that we have admit greedy maximization strategy
 % this is true if there are no products of two variables that are bounded by the same constraint group
 
-check_well_formedness_of_constraints(Rest,Semi_solved_exp,Vars,Multiplied_pairs):-
+check_well_formedness_of_constraints(Rest,Semi_solved_exp,Itvars,Multiplied_pairs):-
+	%put all the constraints together
 	maplist(get_constraints_from_group,Rest,Cons_list),
 	ut_flat_list(Cons_list,All_cons_rest),	
-	(get_multiplied_vars(All_cons_rest,Semi_solved_exp,Vars,[],[],Multiplied_pairs)->
+	%get the pairs of itvars that appear multiplied
+	(get_multiplied_vars(All_cons_rest,Semi_solved_exp,Itvars,[],[],Multiplied_pairs)->
 	 true
 	;
-	throw(implementation_error(predicate_failed(get_multiplied_vars(All_cons_rest,Semi_solved_exp,Vars))))
+	%this is for debugging purposes
+	%TODO remove
+	throw(implementation_error(predicate_failed(get_multiplied_vars(All_cons_rest,Semi_solved_exp,Itvars))))
 	).
 
 get_constraints_from_group(group(_,Cons,_),Cons).
 
+%! get_multiplied_vars(Constrs:list(partial_bconstr),Exp:partial_strexp,Important_vars:list_set(itvar),Pairs_accum:list((itvar,itvar)),Dep_map:list_map(itvar,list_set(itvar)),Final_pairs:list((itvar,itvar)))
+% obtain the pairs of itvars that appear multiplied in the whole cost structure
+% for each constraint check the itvars that appear multiplied
+% this constraints might not belong to our "Important_vars" but their value might depend on them
+% to detect that we maintain a map that maps each itvar to a set of itvars that might influence its value
+% for instance: if we have it1>= it2+it3 the map will have it2->it1 and it3->it1
 get_multiplied_vars([],Exp,Important_vars,Pairs_accum,Dep_map,Final_pairs):-
 	get_exp_multiplied_vars(Exp,Important_vars,Var_pairs),
 	foldl(accumulate_pairs_of_original_vars(Dep_map),Var_pairs,Pairs_accum,Final_pairs).
 	
 get_multiplied_vars([bound(_,Exp,Bounded)|Constrs],Exp_final,Important_vars,Pairs_accum,Dep_map,Final_pairs):-
+	%get the multiplied pairs
 	get_exp_multiplied_vars(Exp,Important_vars,Var_pairs),!,
+	% transform the pairs or 'local' variables into pairs of Important variables using the map
 	foldl(accumulate_pairs_of_original_vars(Dep_map),Var_pairs,Pairs_accum,Pairs_accum1),
 	update_dependency_map(Exp,Bounded,Important_vars,Dep_map,Important_vars1,Dep_map1),
 	get_multiplied_vars(Constrs,Exp_final,Important_vars1,Pairs_accum1,Dep_map1,Final_pairs).
@@ -612,7 +635,30 @@ get_exp_multiplied_vars(_,_,[]).
 
 
 	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% accesing and updating different maps
+
+substitute_index_by_default((lb(_),0)).
+substitute_index_by_default((ub(_),inf)).
+
+substitute_index_by_optional(Map,(Name,Var),[]):-
+		lookup_lm(Map,Name,Var),!.
+substitute_index_by_optional(_Map,(Name,Var),[(Name,Var)]).
+
+substitute_index_by(Map,(Name,Var1),Index1):-
+		lookup_lm(Map,Name,(_,Exp)),!,
+		(Exp=partial(Index,Var)->	
+			Index1=Index,
+			Var1=Var
+			;
+			Var1=Exp,
+			Index1=[]
+		).
+		
+substitute_index_by(_Map,(lb(_Name),add([])),[]).
+
+% other auxiliary predicates
 index_in_set(Set,(Elem,_)):-
 	contains_sl(Set,Elem).
 index_not_in_set(Set,(Elem,_)):-

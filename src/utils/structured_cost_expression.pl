@@ -5,6 +5,7 @@
 		strexp_to_cost_expression/2,
 		strexp_simplify/2,
 		strexp_get_multiplied_factors/3,
+		strexp_is_zero/1,
 		get_all_pairs/3
 	]).
 
@@ -157,6 +158,21 @@ write_factor_deep(add(Elem),Exp):-!,
 write_factor_deep(X,X).
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+strexp_is_zero(Strexp):-
+	Strexp=add([]),!.
+strexp_is_zero(Strexp):-
+	Strexp=nat(Add),
+	nonvar(Add),
+	Add==add([]),!.
+strexp_is_zero(Strexp):-
+	Strexp=nat(Add),
+	nonvar(Add),
+	Add==add([mult([add([])])]).
+strexp_is_zero(Strexp):-
+	Strexp==nat(add([mult([nat(add([mult([add([])])]))])])).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 strexp_simplify(Exp,Exp):-var(Exp),!.
 strexp_simplify(Exp,Simple_exp):-
 	nonvar(Exp),
