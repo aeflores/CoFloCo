@@ -63,14 +63,15 @@ This module uses the following auxiliary cost structures:
 		partial_strexp_estimate_complexity/3,
 		partial_strexp_complexity/2,
 		strexp_to_cost_expression/2,
-		strexp_get_multiplied_factors/3,
+		strexp_var_get_multiplied_factors/3,
 		strexp_is_zero/1,
-		get_all_pairs/3,
-		strexp_simplify/2]).		
+		strexp_transform_summand/2,
+		strexp_var_simplify/2]).		
 		
 :- use_module('../utils/cofloco_utils',[sort_with/3,
 		tuple/3,
 		is_rational/1,
+		get_all_pairs/3,
 		assign_right_vars/3]).	
 
 
@@ -113,7 +114,7 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_final):-
 	findall((Vars,Cost_closed),
 		(
 		incremental_maxminization(Groups,Solved_exp,Cost),
-		remove_undefined_vars(Cost,Cost_closed)
+		partial_strexp_to_strexp(Cost,Cost_closed)
 		)
 	,Costs_list),
 	assign_right_vars(Costs_list,Vars,Costs_list_right),
@@ -183,11 +184,11 @@ astrexp_to_partial_strexp(Exp,Main_flag,_Op,Non_det_vars,Map_accum,Partial_strex
 	Pos=add(Summands_pos),
 	maplist(negate_summand,Summands_neg,Summands_negated),
 	append(Summands_pos,Summands_negated,All_summands),
-
+	maplist(strexp_transform_summand,All_summands,All_summands_transformed),
 	(Main_flag=main->
-		strexp_simplify(add(All_summands),Simple_exp)
+		strexp_var_simplify(add(All_summands_transformed),Simple_exp)
 	;
-		strexp_simplify(nat(add(All_summands)),Simple_exp)
+		strexp_var_simplify(nat(add(All_summands_transformed)),Simple_exp)
 	),
 	(Index_flat=[]->
 		Partial_strexp=Simple_exp
@@ -195,15 +196,16 @@ astrexp_to_partial_strexp(Exp,Main_flag,_Op,Non_det_vars,Map_accum,Partial_strex
 		Partial_strexp=partial(Index_flat,Simple_exp)
 	).
 
+
 %these are the cases where there is an unbounded element in the expression	
 astrexp_to_partial_strexp(exp(_Index_pos,_Index_neg,_Pos,_Neg),_,ub,_Non_det_vars,_Map_accum,inf).
 % only the main expression can be negative
-astrexp_to_partial_strexp(exp(_Index_pos,_Index_neg,_Pos,_Neg),aux,lb,_Non_det_vars,_Map_accum,0).		
+astrexp_to_partial_strexp(exp(_Index_pos,_Index_neg,_Pos,_Neg),aux,lb,_Non_det_vars,_Map_accum,add([])).		
 astrexp_to_partial_strexp(exp(_Index_pos,_Index_neg,_Pos,_Neg),main,lb,_Non_det_vars,_Map_accum,-inf).		
 
 % the cases where we have a alinexp
 % the main expression can never be a alinexp
-astrexp_to_partial_strexp([]+C,aux,_Op,_,_Map_accum,C):-
+astrexp_to_partial_strexp([]+C,aux,_Op,_,_Map_accum,add([mult([],C)])):-
 	geq_fr(C,0),!.
 astrexp_to_partial_strexp(Lin_exp,aux,_,_,_Map_accum,nat(Lin_exp_print)):-	
 	write_le(Lin_exp,Lin_exp_print).
@@ -424,8 +426,9 @@ solve_group(group(lb,Bconstrs,_),Multiplied_pairs,Partial_assignment):-
 	solve_group_1(Bconstrs_sorted1,[],Multiplied_pairs,Partial_assignment).
 
 solve_group_1([],Partial_assignment,_Multiplied_pairs,Partial_assignment).	
-solve_group_1([bound(_Op,Strexp,Bounded)|Cons],Partial_assignment_accum,Multiplied_pairs,Partial_assignment):-
-	strexp_is_zero(Strexp),!,
+solve_group_1([bound(_Op,Exp,Bounded)|Cons],Partial_assignment_accum,Multiplied_pairs,Partial_assignment):-
+	partial_strexp_to_strexp(Exp,Exp_ground),
+	strexp_is_zero(Exp_ground),!,
 	foldl(insert_zero_value,Bounded,Partial_assignment_accum,Partial_assignment_accum2),
 	solve_group_1(Cons,Partial_assignment_accum2,Multiplied_pairs,Partial_assignment).	
 
@@ -434,14 +437,16 @@ solve_group_1([bound(_Op,Strexp,Bounded)|Cons],Partial_assignment_accum,Multipli
 % by assigning it1=exp, it2=exp...itn=exp
 solve_group_1([bound(ub,Exp,Bounded)|Cons],Partial_assignment_accum,Multiplied_pairs,Partial_assignment):-
     get_param(solve_fast,[]),!,
-	foldl(insert_value(Exp),Bounded,Partial_assignment_accum,Partial_assignment_accum2),
+    partial_strexp_to_strexp(Exp,Exp_ground),
+	foldl(insert_value(Exp_ground),Bounded,Partial_assignment_accum,Partial_assignment_accum2),
 	solve_group_1(Cons,Partial_assignment_accum2,Multiplied_pairs,Partial_assignment).
 
 %otherwise
 solve_group_1([bound(ub,Exp,Bounded)|Cons],Partial_assignment_accum,Multiplied_pairs,Partial_assignment):-
+	partial_strexp_to_strexp(Exp,Exp_ground),
 	join_dependent_itvars(Bounded,Multiplied_pairs,Bounded_joined),
 	select(Selected,Bounded_joined,Bounded1),
-	foldl(insert_value(Exp),Selected,Partial_assignment_accum,Partial_assignment_accum1),
+	foldl(insert_value(Exp_ground),Selected,Partial_assignment_accum,Partial_assignment_accum1),
 	ut_flat_list(Bounded1,Bounded1_flat),
 	foldl(insert_zero_value,Bounded1_flat,Partial_assignment_accum1,Partial_assignment_accum2),
 	solve_group_1(Cons,Partial_assignment_accum2,Multiplied_pairs,Partial_assignment).
@@ -454,15 +459,17 @@ solve_group_1([bound(lb,_Exp,Bounded)|Cons],Partial_assignment_accum,Multiplied_
 
 %if we are computing lower bound and there are no dependent pairs we try with each variable	
 solve_group_1([bound(lb,Exp,Bounded)|Cons],Partial_assignment_accum,[],Partial_assignment):-
+	partial_strexp_to_strexp(Exp,Exp_ground),
 	select(Selected,Bounded,Bounded1),
-	insert_lm(Partial_assignment_accum,Selected,Exp,Partial_assignment_accum1),
+	insert_lm(Partial_assignment_accum,Selected,Exp_ground,Partial_assignment_accum1),
 	foldl(insert_zero_value,Bounded1,Partial_assignment_accum1,Partial_assignment_accum2),
 	solve_group_1(Cons,Partial_assignment_accum2,[],Partial_assignment).	
+
 
 insert_value(Val,Var,Partial_assignment,Partial_assignment1):-
 	insert_lm(Partial_assignment,Var,Val,Partial_assignment1).
 insert_zero_value(Var,Partial_assignment,Partial_assignment1):-
-	insert_lm(Partial_assignment,Var,0,Partial_assignment1).
+	insert_lm(Partial_assignment,Var,add([]),Partial_assignment1).
 
 %we select constraints with a greedy strategy based on the complexity and number of bounded variables
 better_ubs(bound(ub,Exp,_Bounded),bound(ub,Exp2,_Bounded2)):-
@@ -529,6 +536,7 @@ join_dependent((X,Y),Bounded_lists,Bounded_lists_joined):-
 		Bounded_lists_joined=[XY_set|Bounded_lists2]
 	).
 
+get_set_with([],_Elem,[],[]).
 get_set_with([Set|Sets],Elem,Set,Sets):-
 	contains_sl(Set,Elem),!.
 get_set_with([Set|Sets_rest],Elem,Set_elem,[Set|Sets]):-
@@ -547,7 +555,7 @@ partial_bconstr_apply_partial_assignment(Partial_assignment,bound(Op,Exp,Bounded
 partial_strexp_apply_partial_assignment(partial(Index,Exp),Partial_assignment,Solved_exp):-!,
 	maplist(substitute_index_by_optional(Partial_assignment),Index,Extra_index),
 	ut_flat_list(Extra_index,Index_flat),
-	strexp_simplify(Exp,Simple_exp),
+	strexp_var_simplify(Exp,Simple_exp),
 	term_variables(Simple_exp,Unknowns),
 	from_list_sl(Unknowns,Unknowns_set),
 	include(index_var_in_set(Unknowns_set),Index_flat,Index_final),
@@ -559,9 +567,9 @@ partial_strexp_apply_partial_assignment(partial(Index,Exp),Partial_assignment,So
 	
 partial_strexp_apply_partial_assignment(Exp,_Partial_assignment,Exp).
 
-remove_undefined_vars(partial(Index,Exp),Exp):-!,
+partial_strexp_to_strexp(partial(Index,Exp),Exp):-!,
 	maplist(substitute_index_by_default,Index).
-remove_undefined_vars(Exp,Exp).
+partial_strexp_to_strexp(Exp,Exp).
 
 
 
@@ -628,7 +636,7 @@ get_exp_multiplied_vars(partial(Index,Exp),Important_vars,Name_pairs):-!,
 	include(index_in_set(Important_vars),Index,Index_selected),
 	maplist(tuple,_,Vars,Index_selected),
 	from_list_sl(Vars,Vars_set),
-	strexp_get_multiplied_factors(Exp,Vars_set,Var_pairs),
+	strexp_var_get_multiplied_factors(Exp,Vars_set,Var_pairs),
 	copy_term((Index_selected,Var_pairs),(Index2,Name_pairs)),
 	maplist(unify_pair,Index2).
 get_exp_multiplied_vars(_,_,[]).
@@ -639,7 +647,7 @@ get_exp_multiplied_vars(_,_,[]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % accesing and updating different maps
 
-substitute_index_by_default((lb(_),0)).
+substitute_index_by_default((lb(_),add([]))).
 substitute_index_by_default((ub(_),inf)).
 
 substitute_index_by_optional(Map,(Name,Var),[]):-

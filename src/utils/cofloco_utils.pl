@@ -41,6 +41,7 @@ of CoFloCo.
 		    write_sum/2,
 		    write_le_internal/2,
 		    write_product/2,
+		    get_all_pairs/3,
 		    normalize_constraint_wrt_var/3,
 		    normalize_constraint_wrt_vars/3]).
 
@@ -54,6 +55,22 @@ of CoFloCo.
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+get_all_pairs([],Accum_pairs,Accum_pairs).
+get_all_pairs([Var_set|Vars_sets],Accum_pairs,All_pairs):-
+	maplist(get_all_pairs_1(Vars_sets),Var_set,Sets),
+	unions_sl([Accum_pairs|Sets],Accum_pairs1),
+	get_all_pairs(Vars_sets,Accum_pairs1,All_pairs).
+
+get_all_pairs_1(Set_list,Elem,Set_pairs):-
+	maplist(get_all_pairs_2(Elem),Set_list,Sets_pairs),
+	unions_sl(Sets_pairs,Set_pairs).
+get_all_pairs_2(Elem,Set,Set_pairs):-
+	maplist(sorted_tuple(Elem),Set,Pair_list),
+	exclude(same_var_tuple,Pair_list,Pair_list1),
+	from_list_sl(Pair_list1,Set_pairs).	
+
+
 
 is_rational(N):-nonvar(N),number(N).
 is_rational(N/M):-nonvar(N),number(N),number(M).
