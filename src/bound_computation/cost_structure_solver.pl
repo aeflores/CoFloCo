@@ -65,6 +65,7 @@ This module uses the following auxiliary cost structures:
 		strexp_to_cost_expression/2,
 		strexp_var_get_multiplied_factors/3,
 		strexp_is_zero/1,
+		strexp_simplify_max_min/2,
 		strexp_transform_summand/2,
 		strexp_var_simplify/2]).		
 		
@@ -120,11 +121,12 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_final):-
 	assign_right_vars(Costs_list,Vars,Costs_list_right),
 	from_list_sl(Costs_list_right,Cost_set),!,
 	%tranform into cost expressions
-	%maplist(writeln,Cost_set),
-	maplist(strexp_to_cost_expression,Cost_set,Cost_set_p),
-	%maplist(writeln,Cost_set_p),
-	%take the maximum or minimum of all the possibilities
-	Cost_final=..[Max_min,Cost_set_p],!.
+	Cost_max_min=..[Max_min,Cost_set],
+	%maplist(writeln,Cost_set),nl,
+	strexp_simplify_max_min(Cost_max_min,Cost_max_min_simple),
+	%writeln(Cost_max_min_simple),nl,nl,
+	strexp_to_cost_expression(Cost_max_min_simple,Cost_final),!.
+
 
 %this predicate should never fail
 cstr_maxminimization(Cost_long,Max_min,_):-

@@ -41,6 +41,7 @@ This module uses the following auxiliary cost structures:
 		strexp_to_cost_expression/2,
 		strexp_var_simplify/2,
 		strexp_var_get_multiplied_factors/3,
+		strexp_simplify_max_min/2,
 		strexp_is_zero/1,
 		get_all_pairs/3,
 		strexp_transform_summand/2
@@ -51,6 +52,7 @@ This module uses the following auxiliary cost structures:
 		write_sum/2,
 		write_product/2,
 		get_all_pairs/3,
+		zip_with_op/3,
 		is_rational/1]).	
 :- use_module(cost_expressions,[
 		is_linear_exp/1]).			
@@ -61,7 +63,7 @@ This module uses the following auxiliary cost structures:
 :- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
 :- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
 :- use_module(stdlib(fraction)).
-:- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
+:- use_module(stdlib(set_list),[element_sl/2,remove_sl/3,difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
@@ -176,7 +178,7 @@ get_internal_pairs(_Vars_set,Factor,_Pairs):-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 strexp_to_cost_expression(add(Summands),Exp3):-
-	maplist(write_product_deep,Summands,Summands2),
+	maplist(write_product_deep,Summands,Summands2),!,
 	write_sum(Summands2,Exp3).
 strexp_to_cost_expression(nat(Lin_exp),nat(Lin_exp)):-var(Lin_exp),!.
 
@@ -251,10 +253,15 @@ strexp_var_simplify_summands(Summands,Sign,Summands_sorted):-
 	foldl(compress_summands,Summands_simple_flat,[],Summands_compressed),
 	from_list_sl(Summands_compressed,Summands_sorted),
 	%Summands_simple_flat=Summands_compressed,
-	maplist(get_summand_sign,Summands_compressed,Signs),
+	strexp_get_sign(add(Summands_compressed),Sign).
+
+
+strexp_get_sign(add(Summands),Sign):-
+	maplist(get_summand_sign,Summands,Signs),
 	foldl(sign_or,Signs,pos,Sign).
-
-
+	
+strexp_get_sign(nat(_),pos).
+	
 compress_summands(mult(Content,Coeff),Compressed,Compressed1):-
 	add_content(Compressed,Content,Coeff,Compressed1).
 
@@ -313,12 +320,115 @@ strexp_var_simplify_factor(Factor,Factor_simple):-
 	strexp_var_simplify(Factor,Factor_simple),!.
 	
 %HERE	
-%strexp_extract_common_summands(Strexp_list,Common_strexp,Rest):-
-%	member(add(Summands),Strexp_list),
-%	select(Summands,OneSummand,Rest_summands),
+strexp_simplify_max_min(Expr,add(Common_summands_compressed)):-
+	Expr=..[Max_min,Strexp_list],
+	strexp_extract_common_summands(Strexp_list,Max_min,Common_summands),
+	foldl(compress_summands,Common_summands,[],Common_summands_compressed).
 	
+
+strexp_extract_common_summands(Strexp_list,Max_min,Common_summands):-
+	get_best_summand_candidate(Strexp_list,Summand),!,
+	foldl(extract_summand(Summand),Strexp_list,([],[]),(Strexp_with,Strexp_without)),
+	(Strexp_without\=[]->
+		strexp_extract_common_summands(Strexp_with,Max_min,Summands_with),
+		strexp_extract_common_summands(Strexp_without,Max_min,Summands_without),
+		foldl(compress_summands,[Summand|Summands_with],[],Summands_with_compressed),
+		foldl(compress_summands,Summands_without,[],Summands_without_compressed),
+		strexp_simplify_easy_maxmin([add(Summands_with_compressed),add(Summands_without_compressed)],Max_min,Max_min_expression),
+		create_simple_maxmin_summand(Max_min_expression,Max_min,Common_summands)
+	;
+		strexp_extract_common_summands(Strexp_with,Max_min,Summands_with),
+		Common_summands=[Summand|Summands_with]
+	).
 	
-%get_summands_map
+strexp_extract_common_summands(Strexp_list,Max_min,Res):-
+	strexp_simplify_easy_maxmin(Strexp_list,Max_min,Strexp_list1),
+	create_simple_maxmin_summand(Strexp_list1,Max_min,Res).
+
+
+create_simple_maxmin_summand(Strexp_list,Max_min,Res):-
+	(Strexp_list=[]->
+	   Res=[]
+	   ;
+	   (Strexp_list=[One]->
+	   	    Res=[mult([One],1)]
+	   ;
+	   		Expr=..[Max_min,Strexp_list],
+	        Res=[mult([Expr],1)]
+	   )
+	 ).
+	
+strexp_simplify_easy_maxmin(Strexp_list,Max_min,Strexp_list1):-
+	partition(strexp_is_zero,Strexp_list,[_|_],Non_zero),
+	maplist(strexp_get_sign,Non_zero,Signs),
+	foldl(sign_or,Signs,pos,pos),
+	(Max_min=max->
+		Strexp_list1=Non_zero
+		;
+		Strexp_list1=[]
+	).
+strexp_simplify_easy_maxmin(Strexp_list,_Max_min,Strexp_list).	
+/*	   
+extract_summand(Summand,add(Summands),(Sm_with,Sm_without),([add(Summands1)|Sm_with],Sm_without)):-
+	contains_sl(Summands,Summand),!,
+	remove_sl(Summands,Summand,Summands1).	
+extract_summand(_Summand,add(Summands),(Sm_with,Sm_without),(Sm_with,[add(Summands)|Sm_without])).
+
+get_best_summand_candidate(Strexp_list,Selected_summand):-
+	maplist(zip_with_op(_),Summands_list,Strexp_list),
+	ut_flat_list(Summands_list,All_summands),
+	foldl(count_summand_occurrences,All_summands,[],Summands_count),
+	Summands_count=[Pair1|Summands_count1],
+	foldl(get_highest_occurrence_summand,Summands_count1,Pair1,(Selected_summand,N)),
+	N > 1.
+	
+count_summand_occurrences(S,S_map,S_map1):-
+	lookup_lm(S_map,S,N),!,
+	N1 is N+1,
+	insert_lm(S_map,S,N1,S_map1).
+count_summand_occurrences(S,S_map,S_map1):-
+	insert_lm(S_map,S,1,S_map1).	
+
+get_highest_occurrence_summand((_Summand,N),(Summand2,N2),(Summand2,N2)):-
+	N2 >= N,!.
+get_highest_occurrence_summand((Summand,N),(_Summand2,_N2),(Summand,N)).
+
+*/
+extract_summand(Summand,add(Summands),(Sm_with,Sm_without),([add(Summands1)|Sm_with],Sm_without)):-
+	remove_summand(Summands,Summand,Summands1),!.
+extract_summand(_Summand,add(Summands),(Sm_with,Sm_without),(Sm_with,[add(Summands)|Sm_without])).
+
+remove_summand([mult(X,Coeff)|Summands],mult(X2,Coeff2),Res):-
+	X2==X,!,
+	subtract_fr(Coeff,Coeff2,Coeff3),
+	(leq_fr(Coeff3,0)->
+	 	Res=Summands
+	;
+		Res=[mult(X,Coeff3)|Summands]
+	).
+remove_summand([mult(X,Coeff)|Summands],mult(X2,Coeff2),[mult(X,Coeff)|Res]):-
+	remove_summand(Summands,mult(X2,Coeff2),Res).
+
+
+get_best_summand_candidate(Strexp_list,mult(Selected_summand,Coeff)):-
+	maplist(zip_with_op(_),Summands_list,Strexp_list),
+	ut_flat_list(Summands_list,All_summands),
+	foldl(count_summand_occurrences,All_summands,[],Summands_count),
+	Summands_count=[Pair1|Summands_count1],
+	foldl(get_highest_occurrence_summand,Summands_count1,Pair1,(Selected_summand,(Coeff,N))),
+	N > 1.
+	
+count_summand_occurrences(mult(X,Coeff),S_map,S_map1):-
+	lookup_lm(S_map,X,(Coeff2,N)),!,
+	N1 is N+1,
+	min_fr(Coeff,Coeff2,Coeff3),
+	insert_lm(S_map,X,(Coeff3,N1),S_map1).
+count_summand_occurrences(mult(X,Coeff),S_map,S_map1):-
+	insert_lm(S_map,X,(Coeff,1),S_map1).	
+
+get_highest_occurrence_summand((_Summand,(_Coeff,N)),(Summand2,(Coeff2,N2)),(Summand2,(Coeff2,N2))):-
+	N2 >= N,!.
+get_highest_occurrence_summand((Summand,(Coeff,N)),(_Summand2,_),(Summand,(Coeff,N))).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 zero_factor_var(mult([Zero])):-nonvar(Zero),Zero==0.	
