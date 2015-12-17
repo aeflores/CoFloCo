@@ -303,19 +303,13 @@ strexp_var_simplify_factor(Var,Var):-var(Var),!.
 strexp_var_simplify_factor(min(List),Res):-!,
 	maplist(strexp_var_simplify,List,List_simplified),
 	from_list_sl(List_simplified,Set),
-	(Set=[One]->
-		Res=One
-	;
-		Res=min(Set)
-	).
+	strexp_simplify_max_min(max(Set),Res).
+
 strexp_var_simplify_factor(max(List),Res):-!,
 	maplist(strexp_var_simplify,List,List_simplified),
 	from_list_sl(List_simplified,Set),
-	(Set=[One]->
-		Res=One
-	;
-		Res=max(Set)
-	).
+	strexp_simplify_max_min(max(Set),Res).
+
 strexp_var_simplify_factor(Factor,Factor_simple):-
 	strexp_var_simplify(Factor,Factor_simple),!.
 	
@@ -334,8 +328,7 @@ strexp_extract_common_summands(Strexp_list,Max_min,Common_summands):-
 		strexp_extract_common_summands(Strexp_without,Max_min,Summands_without),
 		foldl(compress_summands,[Summand|Summands_with],[],Summands_with_compressed),
 		foldl(compress_summands,Summands_without,[],Summands_without_compressed),
-		strexp_simplify_easy_maxmin([add(Summands_with_compressed),add(Summands_without_compressed)],Max_min,Max_min_expression),
-		create_simple_maxmin_summand(Max_min_expression,Max_min,Common_summands)
+		strexp_extract_common_summands([add(Summands_with_compressed),add(Summands_without_compressed)],Max_min,Common_summands)
 	;
 		strexp_extract_common_summands(Strexp_with,Max_min,Summands_with),
 		Common_summands=[Summand|Summands_with]
@@ -351,7 +344,11 @@ create_simple_maxmin_summand(Strexp_list,Max_min,Res):-
 	   Res=[]
 	   ;
 	   (Strexp_list=[One]->
-	   	    Res=[mult([One],1)]
+	   		(One=add([Summand])->
+	   			Res=[Summand]
+	   			;
+	   	    	Res=[mult([One],1)]
+	   	    	)
 	   ;
 	   		Expr=..[Max_min,Strexp_list],
 	        Res=[mult([Expr],1)]
@@ -368,32 +365,9 @@ strexp_simplify_easy_maxmin(Strexp_list,Max_min,Strexp_list1):-
 		Strexp_list1=[]
 	).
 strexp_simplify_easy_maxmin(Strexp_list,_Max_min,Strexp_list).	
-/*	   
-extract_summand(Summand,add(Summands),(Sm_with,Sm_without),([add(Summands1)|Sm_with],Sm_without)):-
-	contains_sl(Summands,Summand),!,
-	remove_sl(Summands,Summand,Summands1).	
-extract_summand(_Summand,add(Summands),(Sm_with,Sm_without),(Sm_with,[add(Summands)|Sm_without])).
 
-get_best_summand_candidate(Strexp_list,Selected_summand):-
-	maplist(zip_with_op(_),Summands_list,Strexp_list),
-	ut_flat_list(Summands_list,All_summands),
-	foldl(count_summand_occurrences,All_summands,[],Summands_count),
-	Summands_count=[Pair1|Summands_count1],
-	foldl(get_highest_occurrence_summand,Summands_count1,Pair1,(Selected_summand,N)),
-	N > 1.
-	
-count_summand_occurrences(S,S_map,S_map1):-
-	lookup_lm(S_map,S,N),!,
-	N1 is N+1,
-	insert_lm(S_map,S,N1,S_map1).
-count_summand_occurrences(S,S_map,S_map1):-
-	insert_lm(S_map,S,1,S_map1).	
+extract_summand(_Summand,Var,(Sm_with,Sm_without),(Sm_with,[Var|Sm_without])):-var(Var),!.
 
-get_highest_occurrence_summand((_Summand,N),(Summand2,N2),(Summand2,N2)):-
-	N2 >= N,!.
-get_highest_occurrence_summand((Summand,N),(_Summand2,_N2),(Summand,N)).
-
-*/
 extract_summand(Summand,add(Summands),(Sm_with,Sm_without),([add(Summands1)|Sm_with],Sm_without)):-
 	remove_summand(Summands,Summand,Summands1),!.
 extract_summand(_Summand,add(Summands),(Sm_with,Sm_without),(Sm_with,[add(Summands)|Sm_without])).
@@ -411,13 +385,19 @@ remove_summand([mult(X,Coeff)|Summands],mult(X2,Coeff2),[mult(X,Coeff)|Res]):-
 
 
 get_best_summand_candidate(Strexp_list,mult(Selected_summand,Coeff)):-
-	maplist(zip_with_op(_),Summands_list,Strexp_list),
+	exclude(var,Strexp_list,Strexp_list_without_vars),
+	maplist(zip_with_op(_),Summands_list,Strexp_list_without_vars),
+	length(Strexp_list,N_total),
 	ut_flat_list(Summands_list,All_summands),
 	foldl(count_summand_occurrences,All_summands,[],Summands_count),
-	Summands_count=[Pair1|Summands_count1],
+	exclude(constant_not_total(N_total),Summands_count,Summands_count_non_cnt),
+	Summands_count_non_cnt=[Pair1|Summands_count1],
 	foldl(get_highest_occurrence_summand,Summands_count1,Pair1,(Selected_summand,(Coeff,N))),
-	N > 1.
-	
+	N > 1,!.
+
+constant_not_total(N_total,([],(_,N))):-
+	N < N_total.
+		
 count_summand_occurrences(mult(X,Coeff),S_map,S_map1):-
 	lookup_lm(S_map,X,(Coeff2,N)),!,
 	N1 is N+1,

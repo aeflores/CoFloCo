@@ -45,8 +45,8 @@ This module prints the results of the analysis
 						loop_ph/6,
 						external_call_pattern/5,
 						upper_bound/4,
-						closed_upper_bound/4,
-						closed_lower_bound/4,
+						closed_upper_bound_print/3,
+						closed_lower_bound_print/3,
 						conditional_upper_bound/3,
 						conditional_lower_bound/3,
 						non_terminating_chain/3]).
@@ -294,13 +294,13 @@ print_closed_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
 	maplist(pretty_print_constr,EPat,EPat_pretty),
 	(get_param(compute_ubs,[])->
- 	    closed_upper_bound(Entry,Chain,_,CExp),
+ 	    closed_upper_bound_print(Entry,Chain,CExp),
  	    get_asymptotic_class_name(CExp,Asym_class)
  	    ;
  	    true
  	 ),
  	(get_param(compute_lbs,[])->
- 		closed_lower_bound(Entry,Chain,_,CExp_lb),
+ 		closed_lower_bound_print(Entry,Chain,CExp_lb),
 		get_asymptotic_class_name(CExp_lb,Asym_class1)
 		;
 		true

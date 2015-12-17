@@ -58,8 +58,8 @@ The specific "data types" used in this module are the following:
 
 :- use_module('../db',[
 		  external_call_pattern/5,
-		  closed_upper_bound/4,
-		  closed_lower_bound/4,
+		  closed_upper_bound/3,
+		  closed_lower_bound/3,
 		  add_conditional_bound/3]).
 
 :-use_module('../refinement/invariants',[backward_invariant/4]).
@@ -67,13 +67,17 @@ The specific "data types" used in this module are the following:
 						constraint_to_coeffs_rep/2,
 						tuple/3,
 						sort_with/3,
+						zip_with_op/3,
 						assign_right_vars/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
+:- use_module('../utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
 :- use_module('../utils/polyhedra_optimizations',[group_relevant_vars/4]).	
 :- use_module('../IO/params',[get_param/2]).					
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).	
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_entails/3,nad_normalize/2,nad_list_lub/2]).
+:- use_module(stdlib(utils),[ut_flat_list/2]).
+
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -110,21 +114,40 @@ compute_conditional_bounds(Head):-
 
 cond_get_closed_upper_bound(Head,Chain,Cost):-
 	get_param(compute_ubs,[]),!,
-	closed_upper_bound(Head,Chain,_,Cost).
-cond_get_closed_upper_bound(_Head,_Chain,inf).
+	closed_upper_bound(Head,Chain,Cost).
+cond_get_closed_upper_bound(_Head,_Chain,max([inf])).
 	
 cond_get_closed_lower_bound(Head,Chain,Cost):-
 	get_param(compute_lbs,[]),!,
-	closed_lower_bound(Head,Chain,_,Cost).	
-cond_get_closed_lower_bound(_Head,_Chain,0).	
+	closed_lower_bound(Head,Chain,Cost).	
+cond_get_closed_lower_bound(_Head,_Chain,min([add([])])).	
 	
-simplify_cost_of_pair(([Cost],Prec),(Cost,Prec)):-!.
+simplify_cost_of_pair(([Cost],Prec),((Ub_simple,Lb_simple),Prec)):-!,
+	Cost=(Ub_max_min,Lb_max_min),
+
+	strexp_simplify_max_min(Ub_max_min,Ub_Cost_max_min_simple),
+	strexp_to_cost_expression(Ub_Cost_max_min_simple,Ub),
+	cexpr_simplify(Ub,Prec,Ub_simple),
+	strexp_simplify_max_min(Lb_max_min,Lb_Cost_max_min_simple),
+	strexp_to_cost_expression(Lb_Cost_max_min_simple,Lb),
+	cexpr_simplify(Lb,Prec,Lb_simple).
+	
 simplify_cost_of_pair((Cost_list,Prec),((Ub_simple,Lb_simple),Prec)):-
 	 maplist(tuple,Ub_list,Lb_list,Cost_list),
-     Ub=max(Ub_list),
-     Lb=min(Lb_list),
-	 cexpr_simplify(Ub,Prec,Ub_simple),
-	 cexpr_simplify(Lb,Prec,Lb_simple).
+
+	maplist(zip_with_op(_),Ub_list_list,Ub_list),
+	ut_flat_list(Ub_list_list,Ub_list_flat),
+	from_list_sl(Ub_list_flat,Ub_set),
+	strexp_simplify_max_min(max(Ub_set),Ub_Cost_max_min_simple),
+	strexp_to_cost_expression(Ub_Cost_max_min_simple,Ub),
+	cexpr_simplify(Ub,Prec,Ub_simple),
+	
+	maplist(zip_with_op(_),Lb_list_list,Lb_list),
+	ut_flat_list(Lb_list_list,Lb_list_flat),
+	from_list_sl(Lb_list_flat,Lb_set),
+	strexp_simplify_max_min(min(Lb_set),Lb_Cost_max_min_simple),
+	strexp_to_cost_expression(Lb_Cost_max_min_simple,Lb),
+	cexpr_simplify(Lb,Prec,Lb_simple).
 
 
 save_conditional_bound(Head,(UB_LB,Precondition)):-

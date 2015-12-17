@@ -42,15 +42,19 @@ that can be passed on to the callers.
 		  add_closed_upper_bound/3,
 		  add_closed_lower_bound/3,
 		  add_single_closed_upper_bound/2,
-		  closed_upper_bound/4]).
+		  closed_upper_bound/3]).
 
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
-:- use_module('../utils/cofloco_utils',[bagof_no_fail/3]).
+:- use_module('../utils/cofloco_utils',[bagof_no_fail/3,zip_with_op/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
+:- use_module('../utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
 :- use_module('../utils/cost_structures',[cstr_join_equal_fconstr/2,cstr_or_compress/2]).
 
 :- use_module('../IO/params',[get_param/2]).
+
+:- use_module(stdlib(utils),[ut_flat_list/2]).
+:- use_module(stdlib(set_list),[from_list_sl/2]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -105,17 +109,14 @@ compute_closed_bound(Head):-
 	upper_bound(Head,Chain,_Vars,Cost),
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 	(get_param(compute_ubs,[])->
-	  cstr_maxminimization(Cost,max,Head,Head_Pattern,UB),
-	  cexpr_simplify(UB,Head_Pattern,UB1),
-	  
-	  add_closed_upper_bound(Head,Chain,UB1)
+	  cstr_maxminimization(Cost,max,Head,Head_Pattern,UB),  
+	  add_closed_upper_bound(Head,Chain,UB)
 	; 
 	  true
 	),
     (get_param(compute_lbs,[])->
 	  cstr_maxminimization(Cost,min,Head,Head_Pattern,LB),
-	  cexpr_simplify(LB,Head_Pattern,LB1),
-	  add_closed_lower_bound(Head,Chain,LB1)
+	  add_closed_lower_bound(Head,Chain,LB)
 	  ;
 	  true
 	 ),
@@ -127,10 +128,16 @@ compute_closed_bound(_Head).
 
 %! compute_single_closed_bound(+Head:term,-SimpleExp:cost_expression) is det
 % compute a closed bound that is the maximum of all the closed bounds of all the chains in a SCC Head
-compute_single_closed_bound(Head,SimpleExp):-
+compute_single_closed_bound(Head,UB1):-
 	bagof_no_fail(CExp,
-		Chain^E1^closed_upper_bound(Head,Chain,E1,CExp),CExps),
-	cexpr_simplify(max(CExps),[],SimpleExp),!,
-	add_single_closed_upper_bound(Head,SimpleExp).
+		Chain^closed_upper_bound(Head,Chain,CExp),CExps),
+	maplist(zip_with_op(_),Lists,CExps),
+	ut_flat_list(Lists,List),
+	from_list_sl(List,Set_costs),
+
+	strexp_simplify_max_min(max(Set_costs),Cost_max_min_simple),
+	strexp_to_cost_expression(Cost_max_min_simple,UB),
+	cexpr_simplify(UB,[],UB1),
+	add_single_closed_upper_bound(Head,UB1).
 	
 

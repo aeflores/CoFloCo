@@ -51,8 +51,10 @@ This module acts as a database that stores:
 	   add_upper_bound/3,
 	   external_upper_bound/3,
 	   add_external_upper_bound/3,
-	   closed_upper_bound/4,
-	   closed_lower_bound/4,
+	   closed_upper_bound/3,
+	   closed_lower_bound/3,
+	   closed_upper_bound_print/3,
+	   closed_lower_bound_print/3,
 	   add_closed_upper_bound/3,
 	   add_closed_lower_bound/3,
 	   single_closed_upper_bound/2,
@@ -67,7 +69,10 @@ This module acts as a database that stores:
 ]).
 :- use_module('IO/params',[get_param/2]).
 :- use_module('utils/cofloco_utils',[assign_right_vars/3]).
+:- use_module('utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
+:- use_module('utils/cost_expressions',[cexpr_simplify/3]).
 :- use_module('refinement/chains',[chain/3]).
+:- use_module('refinement/invariants',[backward_invariant/4]).
 
 :- use_module(stdlib(utils),[ut_var_member/2]).
 :- use_module(stdlib(counters),[counter_initialize/2,counter_increase/3,counter_get_value/2]).
@@ -142,15 +147,13 @@ This module acts as a database that stores:
 % Hash is the hash of part of the cost structure and can be used to compress similar cost structures
 :- dynamic external_upper_bound/3.
 
-%! closed_upper_bound(?Head:term,?Chain:chain,-Hash:int,-Cost_expression:cost_expression)
+%! closed_upper_bound(?Head:term,?Chain:chain,-Cost_expression:cost_expression)
 % an cost expression that represents an upper bound of the chain Chain that belongs to the SCC Head.  
-% Hash is the hash of part of the cost structure and can be used to compress similar cost structures
-:- dynamic closed_upper_bound/4.
+:- dynamic closed_upper_bound/3.
 
-%! closed_lower_bound(?Head:term,?Chain:chain,-Hash:int,-Cost_expression:cost_expression)
+%! closed_lower_bound(?Head:term,?Chain:chain,-Cost_expression:cost_expression)
 % an cost expression that represents an lower bound of the chain Chain that belongs to the SCC Head.  
-% Hash is the hash of part of the cost structure and can be used to compress similar cost structures
-:- dynamic closed_lower_bound/4.
+:- dynamic closed_lower_bound/3.
 
 %! single_closed_upper_bound(?Head:term,-Cost_expression:cost_expression)
 % an cost expression that represents an upper bound of the SCC Head.  
@@ -324,24 +327,18 @@ add_external_upper_bound(Head,Precondition_id,CExpr) :-
 %! add_closed_upper_bound(+Head:term,+Chain:chain,+Cost_expression:cost_expression) is det
 % stores the closed upper bound of chain Chain. It computes the hash of the cost expression
 add_closed_upper_bound(Head,Chain,CExpr) :-	
-	(closed_upper_bound(Head,Chain,_,CExpr)->
+	(closed_upper_bound(Head,Chain,CExpr)->
 	 true
 	;
-	  copy_term((Head,CExpr),(E,C)),
-	  numbervars(E,0,_),
-	  term_hash(C,Hash),
-	  assertz(closed_upper_bound(Head,Chain,Hash,CExpr))
+	  assertz(closed_upper_bound(Head,Chain,CExpr))
 	),!.
 %! add_closed_lower_bound(+Head:term,+Chain:chain,+Cost_expression:cost_expression) is det
 % stores the closed lower bound of chain Chain. It computes the hash of the cost expression
 add_closed_lower_bound(Head,Chain,CExpr) :-	
-	(closed_lower_bound(Head,Chain,_,CExpr)->
+	(closed_lower_bound(Head,Chain,CExpr)->
 	 true
 	;
-	  copy_term((Head,CExpr),(E,C)),
-	  numbervars(E,0,_),
-	  term_hash(C,Hash),
-	  assertz(closed_lower_bound(Head,Chain,Hash,CExpr))
+	  assertz(closed_lower_bound(Head,Chain,CExpr))
 	),!.	
 	
 %! add_single_closed_upper_bound(+Head:term,+Cost_expression:cost_expression) is det
@@ -353,6 +350,21 @@ add_single_closed_upper_bound(Head,CExpr) :-
 % stores the conditional upper bound determined by the cost Cost_expression and the precondition Precondition
 add_conditional_bound(Head,CExpr,Preconditions) :-	
 	  assertz(conditional_bound(Head,CExpr,Preconditions)).
+
+
+closed_upper_bound_print(Head,Chain,UB1):-
+	closed_upper_bound(Head,Chain,Cost_max_min),
+	backward_invariant(Head,(Chain,_),_,Head_Pattern),
+	strexp_simplify_max_min(Cost_max_min,Cost_max_min_simple),
+	strexp_to_cost_expression(Cost_max_min_simple,UB),
+	cexpr_simplify(UB,Head_Pattern,UB1),!.
+	
+closed_lower_bound_print(Head,Chain,UB1):-
+	closed_lower_bound(Head,Chain,Cost_max_min),
+	backward_invariant(Head,(Chain,_),_,Head_Pattern),
+	strexp_simplify_max_min(Cost_max_min,Cost_max_min_simple),
+	strexp_to_cost_expression(Cost_max_min_simple,UB),
+	cexpr_simplify(UB,Head_Pattern,UB1),!.
 
 conditional_upper_bound(Head,Exp,Prec):-
 	conditional_bound(Head,(Exp,_),Prec).

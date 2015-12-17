@@ -94,7 +94,7 @@ This module uses the following auxiliary cost structures:
 :-use_module(library(lists)).
 
 			
-cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_final):-
+cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 	Head=..[_|Vars],
 	max_min_ub_lb(Max_min,Op),
 	cstr_shorten_variables_names(Cost_long,no_list,Cost_short),	
@@ -120,12 +120,9 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_final):-
 	,Costs_list),
 	assign_right_vars(Costs_list,Vars,Costs_list_right),
 	from_list_sl(Costs_list_right,Cost_set),!,
+	%maplist(writeln,Cost_set),
 	%tranform into cost expressions
-	Cost_max_min=..[Max_min,Cost_set],
-	%maplist(writeln,Cost_set),nl,
-	strexp_simplify_max_min(Cost_max_min,Cost_max_min_simple),
-	%writeln(Cost_max_min_simple),nl,nl,
-	strexp_to_cost_expression(Cost_max_min_simple,Cost_final),!.
+	Cost_max_min=..[Max_min,Cost_set],!.
 
 
 %this predicate should never fail
