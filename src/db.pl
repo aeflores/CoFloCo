@@ -147,12 +147,12 @@ This module acts as a database that stores:
 % Hash is the hash of part of the cost structure and can be used to compress similar cost structures
 :- dynamic external_upper_bound/3.
 
-%! closed_upper_bound(?Head:term,?Chain:chain,-Cost_expression:cost_expression)
-% an cost expression that represents an upper bound of the chain Chain that belongs to the SCC Head.  
+%! closed_upper_bound(?Head:term,?Chain:chain,-Max_strexp:max(list(strexp)))
+% an max(list(strexp))  that represents an upper bound of the chain Chain that belongs to the SCC Head.  
 :- dynamic closed_upper_bound/3.
 
-%! closed_lower_bound(?Head:term,?Chain:chain,-Cost_expression:cost_expression)
-% an cost expression that represents an lower bound of the chain Chain that belongs to the SCC Head.  
+%! closed_lower_bound(?Head:term,?Chain:chain,-Min_strexp:min(list(strexp)))
+% an min(list(strexp))  that represents an lower bound of the chain Chain that belongs to the SCC Head.  
 :- dynamic closed_lower_bound/3.
 
 %! single_closed_upper_bound(?Head:term,-Cost_expression:cost_expression)
@@ -351,14 +351,17 @@ add_single_closed_upper_bound(Head,CExpr) :-
 add_conditional_bound(Head,CExpr,Preconditions) :-	
 	  assertz(conditional_bound(Head,CExpr,Preconditions)).
 
-
+%! closed_upper_bound_print(Head:term,Chain:chain,UB1:cost_expression)
+% obtain a printable simplified cost expression from the corresponding closed upper bound
 closed_upper_bound_print(Head,Chain,UB1):-
 	closed_upper_bound(Head,Chain,Cost_max_min),
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),
 	strexp_simplify_max_min(Cost_max_min,Cost_max_min_simple),
 	strexp_to_cost_expression(Cost_max_min_simple,UB),
 	cexpr_simplify(UB,Head_Pattern,UB1),!.
-	
+
+%! closed_lower_bound_print(Head:term,Chain:chain,UB1:cost_expression)
+% obtain a printable simplified cost expression from the corresponding closed lower bound	
 closed_lower_bound_print(Head,Chain,UB1):-
 	closed_lower_bound(Head,Chain,Cost_max_min),
 	backward_invariant(Head,(Chain,_),_,Head_Pattern),

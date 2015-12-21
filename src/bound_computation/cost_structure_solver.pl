@@ -23,11 +23,10 @@
 
 This module uses the following auxiliary cost structures:
 
- * partial_strexp: partial(index,strexp) | strexp
-   represents a cost but strexp can still contain variables that correspond to intermediate variables
-   this correspondence is recorded in index
  * partial_bconstr: bound(op,partial_strexp,list(itvar))
    It is like a bconstr but contains a partial_strexp
+   See utils/structured_cost_expressions for the definition of partial_strexp
+   and strexp
  * constr_group: group(Op:flag,Bconstrs:list(bconstr),Bounded_vars:list_set(itvar))
    A set of constraints that refer to the same itvars and have to be solved together
    - Op is ub or lb
@@ -61,7 +60,7 @@ This module uses the following auxiliary cost structures:
 		cstr_simplify/5]).
 :- use_module('../utils/structured_cost_expression',[
 		partial_strexp_estimate_complexity/3,
-		partial_strexp_complexity/2,
+		partial_strexp_complexity/3,
 		strexp_to_cost_expression/2,
 		strexp_var_get_multiplied_factors/3,
 		strexp_is_zero/1,
@@ -93,7 +92,9 @@ This module uses the following auxiliary cost structures:
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
-			
+%! 	cstr_maxminimization(Cost_long:cost_structure,Max_min:flag,Head:term,Inv:polyhedron,Cost_max_min:max_min(list(strexp)))
+% where max_min is 'max' or 'min' and equal to Max_min
+% solve a cost structure Cost_long into the maximum or minimum of a list of strexp
 cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 	Head=..[_|Vars],
 	max_min_ub_lb(Max_min,Op),
@@ -121,7 +122,6 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 	assign_right_vars(Costs_list,Vars,Costs_list_right),
 	from_list_sl(Costs_list_right,Cost_set),!,
 	%maplist(writeln,Cost_set),
-	%tranform into cost expressions
 	Cost_max_min=..[Max_min,Cost_set],!.
 
 
@@ -472,24 +472,24 @@ insert_zero_value(Var,Partial_assignment,Partial_assignment1):-
 
 %we select constraints with a greedy strategy based on the complexity and number of bounded variables
 better_ubs(bound(ub,Exp,_Bounded),bound(ub,Exp2,_Bounded2)):-
-	partial_strexp_complexity(Exp,C1),
-	partial_strexp_complexity(Exp2,C2),
+	partial_strexp_complexity(Exp,ub,C1),
+	partial_strexp_complexity(Exp2,ub,C2),
 	C1>C2,!.
 	
 better_ubs(bound(ub,Exp,Bounded),bound(ub,Exp2,Bounded2)):-
-	partial_strexp_complexity(Exp,C1),
-	partial_strexp_complexity(Exp2,C2),
+	partial_strexp_complexity(Exp,ub,C1),
+	partial_strexp_complexity(Exp2,ub,C2),
 	C1=C2,
 	length(Bounded,N),length(Bounded2,N2),N<N2.
 
 better_lbs(bound(lb,Exp,_Bounded),bound(lb,Exp2,_Bounded2)):-
-	partial_strexp_complexity(Exp,C1),
-	partial_strexp_complexity(Exp2,C2),
+	partial_strexp_complexity(Exp,lb,C1),
+	partial_strexp_complexity(Exp2,lb,C2),
 	C1<C2,!.
 	
 better_lbs(bound(lb,Exp,Bounded),bound(lb,Exp2,Bounded2)):-
-	partial_strexp_complexity(Exp,C1),
-	partial_strexp_complexity(Exp2,C2),
+	partial_strexp_complexity(Exp,lb,C1),
+	partial_strexp_complexity(Exp2,lb,C2),
 	C1=C2,
 	length(Bounded,N),length(Bounded2,N2),N>N2.	
 	

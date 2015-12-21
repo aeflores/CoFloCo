@@ -37,7 +37,7 @@ This module uses the following auxiliary cost structures:
 */
 :- module(structured_cost_expression,[
 		partial_strexp_estimate_complexity/3,
-		partial_strexp_complexity/2,
+		partial_strexp_complexity/3,
 		strexp_to_cost_expression/2,
 		strexp_var_simplify/2,
 		strexp_var_get_multiplied_factors/3,
@@ -68,19 +68,29 @@ This module uses the following auxiliary cost structures:
 :-use_module(library(lists)).
 
 
-strexp_transform_summand(mult(Factors),mult(Not_numbers_sorted,Amount)):-
-	partition(is_rational,Factors,Numbers,Not_numbers),
-	ut_sort(Not_numbers,Not_numbers_sorted),
-	foldl(multiply_fr,Numbers,1,Amount).
+%! strexp_is_zero(Strexp:strexp)
+% succeeds if Strexp is zero. It expects a simplified strexp
+strexp_is_zero(add([])):-!.
+strexp_is_zero(nat(Add)):-
+	nonvar(Add),
+	Add==add([]),!.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % obtain complexity of strexp and partial_strexp
 
-partial_strexp_complexity(partial(_,_),100).
-partial_strexp_complexity(Strexp,N):-
+%! partial_strexp_complexity(Strexp:partial_strexp,N:int)
+% obtain the complexity of a partial_strexp. If the partial_strexp has 
+% undefined variables, the complexity is maximal or minimal depending on
+% whether we want to over-approximate or under-approximate
+partial_strexp_complexity(partial(_,_),ub,100).
+partial_strexp_complexity(partial(_,_),lb,0).
+partial_strexp_complexity(Strexp,_,N):-
 	strexp_complexity(Strexp,N).
 	
-	
+%! partial_strexp_estimate_complexity(PStrexp:partial_strexp,N:int)
+% Estimate the complexity of a PStrexp by substituting any undefined variable in PStrexp
+% by a dummy expression with the estimated complexity.
+% the estimated complexity of each variable is given by Complexity_map
 partial_strexp_estimate_complexity(partial(Index,Exp),Complexity_map,Complexity):-!,
 	copy_term(partial(Index,Exp),partial(Index_c,Exp_c)),
 	maplist(substitute_by_dummy_complex_term(Complexity_map),Index_c),
@@ -88,7 +98,8 @@ partial_strexp_estimate_complexity(partial(Index,Exp),Complexity_map,Complexity)
 partial_strexp_estimate_complexity(Exp,_,Complexity):-
 	strexp_complexity(Exp,Complexity).
 
-	
+%! strexp_complexity(Strexp:strexp,N:int)
+% compute the asymptotic complexity of a strexp
 strexp_complexity(inf,100):-!.
 strexp_complexity(-inf,100):-!.
 
@@ -135,7 +146,8 @@ strexp_factor_complexity(Factor,N):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-	
+%! 	strexp_var_get_multiplied_factors(+Strexp:strexp_var,+Vars_set:list_set(var),-Pairs:list((var,var))
+% given a strexp_var, obtain the pairs of variables that appear multiplied
 strexp_var_get_multiplied_factors(nat(add(Summands)),Vars_set,Pairs):-
 	maplist(get_summand_multiplied_vars(Vars_set),Summands,Pair_list),
 	unions_sl(Pair_list,Pairs).	
@@ -177,6 +189,9 @@ get_internal_pairs(_Vars_set,Factor,_Pairs):-
 	
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+
+%! strexp_to_cost_expression(+Strexp:strexp,-Exp:cost_expression)
+% transform a strexp into a cost_expression that can be printed
 strexp_to_cost_expression(add(Summands),Exp3):-
 	maplist(write_product_deep,Summands,Summands2),!,
 	write_sum(Summands2,Exp3).
@@ -203,17 +218,32 @@ write_factor_deep(nat(Elem),nat(Exp)):-nonvar(Elem),
 write_factor_deep(add(Elem),Exp):-!,
 	strexp_to_cost_expression(add(Elem),Exp).	
 write_factor_deep(X,X).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% predicates to obtain combine the sign of strexp and summands
+% a sign can be 'pos' or 'unknown'
+strexp_get_sign(add(Summands),Sign):-
+	maplist(get_summand_sign,Summands,Signs),
+	foldl(sign_or,Signs,pos,Sign).
+	
+strexp_get_sign(nat(_),pos).
+
+sign_or(unknown,_,unknown).
+sign_or(pos,unknown,unknown).
+sign_or(pos,pos,pos).
+
+get_summand_sign(mult(_,X),pos):-
+	geq_fr(X,0),!.
+get_summand_sign(_X,unknown).
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
-strexp_is_zero(add([])):-!.
-strexp_is_zero(nat(Add)):-
-	nonvar(Add),
-	Add==add([]),!.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
+%! strexp_var_simplify(Strexp:strexp_var,Strexp_simple:strexp_var)
+% Simplify a strexp that might contain variables
+%  * attempt to express Strexp as a sum of products
+%  * group all summands with the same symbolic expression
+%  * simplify expressions of the form max([Strexp1,Strexp2..Strexpn]) and min([Strexp1,Strexp2..Strexpn])
 strexp_var_simplify(inf,inf):-!.
 strexp_var_simplify(-inf,-inf):-!.
 strexp_var_simplify(0,add([])):-!.
@@ -239,29 +269,15 @@ strexp_var_simplify(Else,Else):-
 	throw(found_bad_formed_strexp(Else)).
 		
 
-sign_or(unknown,_,unknown).
-sign_or(pos,unknown,unknown).
-sign_or(pos,pos,pos).
-
-get_summand_sign(mult(_,X),pos):-
-	geq_fr(X,0),!.
-get_summand_sign(_X,unknown).
-
 strexp_var_simplify_summands(Summands,Sign,Summands_sorted):-
 	maplist(strexp_var_simplify_summand,Summands,Summands_simple),
 	ut_flat_list(Summands_simple,Summands_simple_flat),
 	foldl(compress_summands,Summands_simple_flat,[],Summands_compressed),
 	from_list_sl(Summands_compressed,Summands_sorted),
-	%Summands_simple_flat=Summands_compressed,
 	strexp_get_sign(add(Summands_compressed),Sign).
 
-
-strexp_get_sign(add(Summands),Sign):-
-	maplist(get_summand_sign,Summands,Signs),
-	foldl(sign_or,Signs,pos,Sign).
-	
-strexp_get_sign(nat(_),pos).
-	
+%! compress_summands(Summand:summand,Compressed:list(summand),Compressed1:list(summand))
+% add the Summand to the list of summands Compressed and return Compressed1 
 compress_summands(mult(Content,Coeff),Compressed,Compressed1):-
 	add_content(Compressed,Content,Coeff,Compressed1).
 
@@ -312,33 +328,70 @@ strexp_var_simplify_factor(max(List),Res):-!,
 
 strexp_var_simplify_factor(Factor,Factor_simple):-
 	strexp_var_simplify(Factor,Factor_simple),!.
+
+
 	
-%HERE	
+%! strexp_simplify_max_min(Expr:op(list(strexp_var)),Strexp:strexp_var)
+% where op is 'max' or 'min'
+% simplify an expression max([Strexp1,Strexp2..Strexpn]) and min([Strexp1,Strexp2..Strexpn])
+% by extracting common summands of several internal expressions
+%
+% for example: max(3*nat(x)+2*nat(y),2*nat(y))= 2nat(x)+ max(nat(x)+2*nat(y),0)
+% and simplify trivial max/min expressions
+% 2nat(x)+ max(nat(x)+2*nat(y),0)=2nat(x)+ nat(x)+2*nat(y)=3*nat(x)+2*nat(y)
 strexp_simplify_max_min(Expr,add(Common_summands_compressed)):-
 	Expr=..[Max_min,Strexp_list],
 	strexp_extract_common_summands(Strexp_list,Max_min,Common_summands),
 	foldl(compress_summands,Common_summands,[],Common_summands_compressed).
 	
-
+%! strexp_extract_common_summands(Strexp_list:list(strexp_var),Max_min:flag,Common_summands:list(summand))
+% Given a list of strexp that we want to obtain the maximum or minimum accroding ot Max_min,
+% extract common summands and simplify the expressions
+%
+% if no summand can be extracted, we create a summand that contains
+% max(Strexp_list) or min(Strexp_list)
 strexp_extract_common_summands(Strexp_list,Max_min,Common_summands):-
+	% get a summand that appears in multiple elements of the list
 	get_best_summand_candidate(Strexp_list,Summand),!,
 	foldl(extract_summand(Summand),Strexp_list,([],[]),(Strexp_with,Strexp_without)),
+	% if the summand was not contained in all the elements of Strexp_list
 	(Strexp_without\=[]->
+	    % we create a summand max/min(summand+Summands_with,Summands_without)
+	    % where Summands_with and Summands_without are the result of extracting the common
+	    % summands to the strexp that used to contain summand and the ones that did not
 		strexp_extract_common_summands(Strexp_with,Max_min,Summands_with),
 		strexp_extract_common_summands(Strexp_without,Max_min,Summands_without),
+		% add summands with the same symbolic expression
 		foldl(compress_summands,[Summand|Summands_with],[],Summands_with_compressed),
 		foldl(compress_summands,Summands_without,[],Summands_without_compressed),
+		% simplify this resulting expression again
 		strexp_extract_common_summands([add(Summands_with_compressed),add(Summands_without_compressed)],Max_min,Common_summands)
 	;
+	% if the summand was contained in all Strexp, we have Summand+Summands_with
 		strexp_extract_common_summands(Strexp_with,Max_min,Summands_with),
 		Common_summands=[Summand|Summands_with]
 	).
-	
+
+%base case (we cannot extract more common summands)	
 strexp_extract_common_summands(Strexp_list,Max_min,Res):-
 	strexp_simplify_easy_maxmin(Strexp_list,Max_min,Strexp_list1),
 	create_simple_maxmin_summand(Strexp_list1,Max_min,Res).
 
+% if the max min expression contains a zero we can simplify according to 
+% whether it is max or min
+strexp_simplify_easy_maxmin(Strexp_list,Max_min,Strexp_list1):-
+	partition(strexp_is_zero,Strexp_list,[_|_],Non_zero),
+	maplist(strexp_get_sign,Non_zero,Signs),
+	foldl(sign_or,Signs,pos,pos),
+	(Max_min=max->
+		Strexp_list1=Non_zero
+		;
+		Strexp_list1=[]
+	).
+strexp_simplify_easy_maxmin(Strexp_list,_Max_min,Strexp_list).	
 
+%! create_simple_maxmin_summand(Strexp_list:list(strexp_var
+% given a list of strexp Strexp_list, create a summand with max/min(Strexp_list)
 create_simple_maxmin_summand(Strexp_list,Max_min,Res):-
 	(Strexp_list=[]->
 	   Res=[]
@@ -355,22 +408,20 @@ create_simple_maxmin_summand(Strexp_list,Max_min,Res):-
 	   )
 	 ).
 	
-strexp_simplify_easy_maxmin(Strexp_list,Max_min,Strexp_list1):-
-	partition(strexp_is_zero,Strexp_list,[_|_],Non_zero),
-	maplist(strexp_get_sign,Non_zero,Signs),
-	foldl(sign_or,Signs,pos,pos),
-	(Max_min=max->
-		Strexp_list1=Non_zero
-		;
-		Strexp_list1=[]
-	).
-strexp_simplify_easy_maxmin(Strexp_list,_Max_min,Strexp_list).	
 
+
+%! extract_summand(Summand:summand,Strexp:strexp_var,Sm_with_Sm_without:(list(strexp),list(strexp)),Sm_with_Sm_without1:(list(strexp),list(strexp)))
+%  extract Summand from Strexp  and add the result to the first list of Sm_with_Sm_without
+% if Summand is not in Strexp, add Strexp to the second list of Sm_with_Sm_without
+% if a Strexp is a variable, we cannot extract any summands
 extract_summand(_Summand,Var,(Sm_with,Sm_without),(Sm_with,[Var|Sm_without])):-var(Var),!.
+% we don't extract summands from strexp wrapped in nats
+extract_summand(_Summand,nat(add(Summands)),(Sm_with,Sm_without),(Sm_with,[nat(add(Summands))|Sm_without])).
 
 extract_summand(Summand,add(Summands),(Sm_with,Sm_without),([add(Summands1)|Sm_with],Sm_without)):-
 	remove_summand(Summands,Summand,Summands1),!.
 extract_summand(_Summand,add(Summands),(Sm_with,Sm_without),(Sm_with,[add(Summands)|Sm_without])).
+
 
 remove_summand([mult(X,Coeff)|Summands],mult(X2,Coeff2),Res):-
 	X2==X,!,
@@ -382,8 +433,11 @@ remove_summand([mult(X,Coeff)|Summands],mult(X2,Coeff2),Res):-
 	).
 remove_summand([mult(X,Coeff)|Summands],mult(X2,Coeff2),[mult(X,Coeff)|Res]):-
 	remove_summand(Summands,mult(X2,Coeff2),Res).
-
-
+	
+%! get_best_summand_candidate(+Strexp_list:list(strexp_var),-Summand:summand) is semidet
+% get the summand that appears in most strexp of Strexp_list with the minimum coefficient
+% it has to appear more than once or the predicate fails
+% we only select constant summands if they appear in every strexp of Strexp_list
 get_best_summand_candidate(Strexp_list,mult(Selected_summand,Coeff)):-
 	exclude(var,Strexp_list,Strexp_list_without_vars),
 	maplist(zip_with_op(_),Summands_list,Strexp_list_without_vars),
@@ -410,6 +464,11 @@ get_highest_occurrence_summand((_Summand,(_Coeff,N)),(Summand2,(Coeff2,N2)),(Sum
 	N2 >= N,!.
 get_highest_occurrence_summand((Summand,(Coeff,N)),(_Summand2,_),(Summand,(Coeff,N))).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% auxiliary predicates
+strexp_transform_summand(mult(Factors),mult(Not_numbers_sorted,Amount)):-
+	partition(is_rational,Factors,Numbers,Not_numbers),
+	ut_sort(Not_numbers,Not_numbers_sorted),
+	foldl(multiply_fr,Numbers,1,Amount).
 
 zero_factor_var(mult([Zero])):-nonvar(Zero),Zero==0.	
 
