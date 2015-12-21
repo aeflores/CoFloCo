@@ -16,8 +16,11 @@ CoFloCo is intended to be used as a backend. Here are some systems that use CoFl
 
  * [SRA](http://sra.cs.unibo.it/index.html): A resource analysis tool for a concurrent language with explicit acquire and release operations for virtual machines.
 
+Note: only the first system uses the techniques implemented in this branch at the moment.
+
 The main techniques used in CoFloCo are described in the paper:
  * [Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295](https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf)
+ * Work under review 
 
 Using Vagrant
 -------------
