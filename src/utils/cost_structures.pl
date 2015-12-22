@@ -99,7 +99,8 @@
 		cstr_shorten_variables_names/3]).
 		
 		
-:- use_module(cofloco_utils,[zip_with_op/3,is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3]).	
+:- use_module(cofloco_utils,[zip_with_op/3,is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3]).
+:- use_module(structured_cost_expression,[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).	
 :- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1]).	
 :- use_module(polyhedra_optimizations,[nad_entails_aux/3]).	
 :- use_module('../IO/params',[get_param/2]).
@@ -117,8 +118,9 @@
 	constant_le/2]).	
 :- use_module(stdlib(counters),[counter_increase/3]).	
 :- use_module(stdlib(utils),[ut_flat_list/2]).	
-:- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
-:- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
+:- use_module(stdlib(multimap),[put_mm/4,from_pair_list_mm/2,values_of_mm/3]).	
+:- use_module(stdlib(list_map),[lookup_lm/3,delete_lm/3,insert_lm/4]).
+
 :- use_module(stdlib(fraction)).
 :- use_module(stdlib(fraction_list)).
 :- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
@@ -186,6 +188,8 @@ is_negative_fconstr(bound(_,[]+N,_Bounded)):-
 bconstr_get_bounded(bound(_,_,Bounded),Bounded).
 
 bconstr_empty_bounded(bound(_,_,[])).
+
+bconstr_bounds_multiple_itvars(bound(_,_,[_,_|_])).
 
 %bconstr_accum_bounded_set(Bconstr:bconstr,Set:list_set(itvar),Set1:list_set(itvar)) is det
 % add the bounded itvars of Bconstr to Set
@@ -387,11 +391,109 @@ cstr_get_components([cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant)|Rest],[U
 
 %! cstr_join_equal_fconstr(+Cost:cstr,-Cost_simple:cstr) is det
 % join all the final bound constraints that have the same linear expression
-cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant)):-
+cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_final2):-
+	%cstr_shorten_variables_names(Cost,list,cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant)),
 	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
 	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
-	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2).
+	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),
+	join_equivalent_itvars(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cost_final),
+	cstr_remove_cycles(Cost_final,Cost_final2).
 
+
+
+
+
+join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant)):-
+	partition(bconstr_bounds_multiple_itvars,Itcons,Multiple_itconstrs,Single_itconstrs),
+	foldl(add_itvar_empty_map,Bsummands,[],Map_0),
+	foldl(get_itconstr_for_each_itvar,Single_itconstrs,Map_0,Map),
+	foldl(remove_itvars_from_map,Ub_fcons,Map,Map1),
+	foldl(remove_itvars_from_map,Lb_fcons,Map1,Map2),
+	foldl(remove_itvars_from_map,Multiple_itconstrs,Map2,Map3),
+	maplist(tuple,Itvar,Itconstr_set,Map3),
+	maplist(tuple,Itconstr_set,Itvar,Map_inv),
+	from_pair_list_mm(Map_inv,Multimap),
+	maplist(tuple,_,Itvar_sets,Multimap),
+	include(is_multiple_set,Itvar_sets,Itvar_multiple_sets),	
+	(Itvar_multiple_sets\=[]->
+		foldl(join_itvar_set,Itvar_multiple_sets,(Itcons,Bsummands),(Itcons2,Bsummands2)),
+		join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands2,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant))
+		;
+		Itcons3=Itcons,
+		Bsummands3=Bsummands
+	).
+
+add_itvar_empty_map((Itvar,_),Map,Map1):-
+	insert_lm(Map,Itvar,[],Map1).
+get_itconstr_for_each_itvar(bound(Op,Exp,[Itvar]),Map,Map1):-!,
+	copy_term(Exp,Exp2),
+	Exp2=exp(Index_pos,Index_neg,_,_),
+	maplist(ground_index,Index_pos),
+	maplist(ground_index,Index_neg),
+	term_hash((Op,Exp2),Hash),
+	put_mm(Map,Itvar,Hash,Map1).
+
+
+	
+remove_itvars_from_map(bound(_,_,Bounded),Map,Map1):-
+	foldl(delete_lm_aux,Bounded,Map,Map1).
+	
+delete_lm_aux(Key,Map,Map1):-
+	delete_lm(Map,Key,Map1).
+	
+is_multiple_set([_,_|_]).	
+
+join_itvar_set([Itvar|Equivalent_itvars],(Itconstrs,Bsummands),(Itconstrs4,Bsummands2)):-
+	from_list_sl(Equivalent_itvars,Equivalent_itvars_set),
+	exclude(bconstr_bounds_itvars(Equivalent_itvars_set),Itconstrs,Itconstrs2),
+	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_set),Itconstrs2,([],[]),(_,Itconstrs3)),
+	reverse(Itconstrs3,Itconstrs4),
+	foldl(compress_basic_summands(Itvar,Equivalent_itvars_set),Bsummands,[],Bsummands2).
+
+bconstr_bounds_itvars(Set,bound(_,_,Bounded)):-
+	from_list_sl(Bounded,Bounded_set),
+	intersection_sl(Set,Bounded_set,[_|_]).
+
+itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_set,bound(Op,Exp,Bounded),(Bconstrs_hash_set,Bconstrs),Pair1):-
+	Exp=exp(Index_pos,Index_neg,Pos,Neg),
+	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_set),Index_pos,Index_pos2),
+	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_set),Index_neg,Index_neg2),
+	Exp2=exp(Index_pos2,Index_neg2,Pos,Neg),
+	copy_term(Exp2,Exp_ground),
+	Exp_ground=exp(Index_pos_ground,Index_neg_ground,_,_),
+	
+	maplist(ground_index,Index_pos_ground),
+	maplist(ground_index,Index_neg_ground),
+	term_hash(bound(Op,Exp_ground,Bounded),Hash_new_bconstr),
+	(contains_sl(Bconstrs_hash_set,Hash_new_bconstr)->
+		Pair1=(Bconstrs_hash_set,Bconstrs)
+		;
+		insert_sl(Bconstrs_hash_set,Hash_new_bconstr,Bconstrs_hash_set1),
+		Bconstrs1=[bound(Op,Exp2,Bounded)|Bconstrs],
+		Pair1=(Bconstrs_hash_set1,Bconstrs1)
+	).
+
+substitute_itvars_in_index(Itvar,Equiv_itvar_set,(Itvar2,Var),(Itvar,Var)):-
+	contains_sl(Equiv_itvar_set,Itvar2),!.
+substitute_itvars_in_index(_Itvar,_Equiv_itvar_set,(Itvar2,Var),(Itvar2,Var)).
+
+compress_basic_summands(Itvar,Equiv_itvars_set,(Itvar2,Coeff),Map,Map1):-
+	contains_sl(Equiv_itvars_set,Itvar2),!,
+	accum_basic_summand(Itvar,Coeff,Map,Map1).
+	
+compress_basic_summands(_Itvar,_Equiv_itvars_set,(Itvar2,Coeff),Map,Map1):-
+	accum_basic_summand(Itvar2,Coeff,Map,Map1).	
+
+accum_basic_summand(Itvar,Coeff,Map,Map1):-
+	(lookup_lm(Map,Itvar,Coeff2)->
+		sum_fr(Coeff,Coeff2,Coeff3),
+		insert_lm(Map,Itvar,Coeff3,Map1)
+	;
+		insert_lm(Map,Itvar,Coeff,Map1)
+	).
+	
+ground_index((X,X)):-!.
+ground_index(_).
  %! fconstr_join_equal_expressions(Fcons:list(fconstr),Fcons2:list(fconstr),New_Iconstrs:list(iconstr)) is det
  % group all final constraints that have the same expression and generate a single final constraint for each group
  % the original final constraints become intermediate constraints that reference the new final constraint
@@ -859,7 +961,9 @@ cstr_or_compress(Costs,Cost_final):-
 	max_frl(BConstants,BConstant),
 	(maplist(is_constant_bconstr,Ub_fcons_flat)->
 	    cstr_maxminimization(cost(Ub_fcons_flat,[],Itcons_flat,BSummands_flat,BConstant),max,none,[],New_BConstant),
-	    cexpr_simplify(New_BConstant,[],New_BConstant_simpl),
+	    strexp_simplify_max_min(New_BConstant,Cost_max_min_simple),
+		strexp_to_cost_expression(Cost_max_min_simple,New_BConstant_cexpr),
+	    cexpr_simplify(New_BConstant_cexpr,[],New_BConstant_simpl),
 	    (is_rational(New_BConstant_simpl)->
 	        cstr_from_cexpr(New_BConstant_simpl,Cost_final)
 	        ;
