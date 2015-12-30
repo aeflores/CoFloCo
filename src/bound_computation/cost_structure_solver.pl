@@ -98,7 +98,7 @@ This module uses the following auxiliary cost structures:
 cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 	Head=..[_|Vars],
 	max_min_ub_lb(Max_min,Op),
-	cstr_shorten_variables_names(Cost_long,no_list,Cost_short),	
+	cstr_shorten_variables_names(Cost_long,list,Cost_short),	
 	cstr_simplify(Cost_short,Vars,Inv,Max_min,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,BSummands,BConstant)),
 	basic_cost_to_astrexp(BSummands,BConstant,Max_min,Exp_cost),
 	%join all constraints

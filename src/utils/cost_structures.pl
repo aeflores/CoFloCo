@@ -391,6 +391,7 @@ cstr_get_components([cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant)|Rest],[U
 
 %! cstr_join_equal_fconstr(+Cost:cstr,-Cost_simple:cstr) is det
 % join all the final bound constraints that have the same linear expression
+% and simplify intermediate constraints. Join intermediate variables that are subject to the same constraints
 cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_final2):-
 	%cstr_shorten_variables_names(Cost,list,cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant)),
 	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
@@ -398,8 +399,6 @@ cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_
 	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),
 	join_equivalent_itvars(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cost_final),
 	cstr_remove_cycles(Cost_final,Cost_final2).
-
-
 
 
 

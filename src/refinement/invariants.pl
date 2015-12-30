@@ -212,7 +212,7 @@ compute_backward_invariants(Head,RefCnt):-
     (compute_backward_invariant(RevChain,[],Head,RefCnt,Entry_pattern)->
     add_backward_invariant(Head,(Chain,RefCnt),Entry_pattern)
     ;
-    retract(chain(Head,RefCnt,Chain))
+    retract(chains:chain(Head,RefCnt,Chain))
     ),
     fail.
 compute_backward_invariants(_,_).

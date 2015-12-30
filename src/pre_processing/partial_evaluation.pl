@@ -30,15 +30,15 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 */
 :- module(partial_evaluation,[partial_evaluation/0]).
 
-:- use_module('SCCs',[crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
+:- use_module('SCCs',[crs_scc/5,crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
 :- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[cstr_from_cexpr/2]).
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2,nad_project_group/3]).
-%:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_consistent_constraints/1]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_consistent_constraints/1]).
 :- use_module(stdlib(utils),[ut_varset/2]).
 :- use_module(stdlib(set_list)).
-
+:- use_module(stdlib(counters),[counter_increase/3]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -55,6 +55,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 partial_evaluation :-
 	retractall(pe_eq(_,_,_,_)),
 	cofloco_aux_entry_name(Call),
+	compress_segments,
 	pe_aux(Call),%FIXME take the entry condition into account
 	findall(F1/A1,
 	        (
@@ -73,6 +74,72 @@ partial_evaluation :-
 	(Ignored_set\=[]->
 	   format('Warning: the following predicates are never called:~p~n',[Ignored_set]);true),
 	 maplist(add_ignored_scc,Ignored_set).
+
+compress_segments:-
+	crs_scc(_N,recursive,Nodes,_Sub_Graph,Entries),
+	from_list_sl(Nodes,Nodes_set),
+	from_list_sl(Entries,Entries_set),
+	difference_sl(Nodes_set,Entries_set,Unfoldable_nodes),
+	compress_segments_in_scc(Unfoldable_nodes,[],1),
+	fail.
+compress_segments.	
+
+compress_segments_in_scc([F/A|Unfoldable_nodes],Not_compressed,Level):-
+	functor(Head,F,A),
+	findall(Id,input_eq(Head,Id,_,_,_),Ids),
+	length(Ids,N_eqs),
+	N_eqs =< Level,
+	
+	!,
+	findall(Caller_id,(input_eq(_,Caller_id,_,Calls,_),member(Head,Calls)),Caller_ids),
+	substitute_caller(Caller_ids,Ids),
+	%writeln(segment(F/A)),
+	compress_segments_in_scc(Unfoldable_nodes,Not_compressed,Level).
+
+compress_segments_in_scc([Node|Unfoldable_nodes],Not_compressed,Level):-
+	compress_segments_in_scc(Unfoldable_nodes,[Node|Not_compressed],Level).
+
+compress_segments_in_scc([],Not_compressed,Level):-
+	Not_compressed\=[],
+	(Level=10->true;
+	Level1 is Level +1,
+	%writeln(level(Level1)),
+	compress_segments_in_scc(Not_compressed,[],Level1)
+	)
+	.
+	
+compress_segments_in_scc([],[],_Level).
+	
+substitute_caller(Calls,Ids):-
+	maplist(get_and_remove_eq,Ids,Callees),
+	maplist(get_and_remove_eq,Calls,Callers),
+	maplist(add_combined_eq(Callers),Callees).
+
+get_and_remove_eq(Id,input_eq(Head,Id,Exp,Calls,Size)):-
+	retract(db:input_eq(Head,Id,Exp,Calls,Size)).
+	
+add_combined_eq(Callers,Callee):-
+	maplist(add_combined_eq_1(Callee),Callers).
+
+add_combined_eq_1(input_eq(Head_callee,_Id0,Exp0,Calls0,Size0),input_eq(Head_caller,_Id1,Exp1,Calls1,Size1)):-
+	substitute_call_2(Calls1,Head_callee,Calls0,Calls1_sub),
+	combine_cost_expressions(Exp1,Exp0,CombE),
+ 	combine_size_relations(Size1,Size0,CombS),
+ 	term_variables(input_eq(Head_caller,CombE,Calls1_sub,CombS),Total_vars),from_list_sl(Total_vars,Total_vars_set),
+ 	term_variables(Head_callee,Intermediate_vars),from_list_sl(Intermediate_vars,Intermediate_vars_set),
+ 	(nad_consistent_constraints_group(Total_vars,CombS)->
+ 		difference_sl(Total_vars_set,Intermediate_vars_set,Rest_vars),
+ 		nad_project_group(Rest_vars,CombS,CombSp),
+ 		counter_increase(input_eqs,1,Id_new),
+ 		asserta(db:input_eq(Head_caller,Id_new,CombE,Calls1_sub,CombSp))
+ 		;
+ 		true
+ 	).
+
+substitute_call_2([Head_callee|Calls1],Head_callee,Calls0,Calls1_sub):-
+	append(Calls0,Calls1,Calls1_sub).
+substitute_call_2([Other|Calls1],Head_callee,Calls0,[Other|Calls1_sub]):-
+	substitute_call_2(Calls1,Head_callee,Calls0,Calls1_sub).
 
 add_ignored_scc(X):-
 	assert('SCCs':ignored_scc(X)).

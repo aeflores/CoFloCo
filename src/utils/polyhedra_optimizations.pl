@@ -239,13 +239,14 @@ filter_constraints([([],C)|Cs],Accum_rem,Vars,Accum_selected,Cs_rem,Vars_out,Cs_
 	filter_constraints(Cs,Accum_rem,Vars,[C|Accum_selected],Cs_rem,Vars_out,Cs_selected).
 
 filter_constraints([(Vs,C)|Cs],Accum_rem,Vars,Accum_selected,Cs_rem,Vars_out,Cs_selected):-
-	intersection_sl(Vs,Vars,[]),!,
-	filter_constraints(Cs,[(Vs,C)|Accum_rem],Vars,Accum_selected,Cs_rem,Vars_out,Cs_selected).
+       intersection_sl(Vs,Vars,[]),!,
+       filter_constraints(Cs,[(Vs,C)|Accum_rem],Vars,Accum_selected,Cs_rem,Vars_out,Cs_selected).
 
 filter_constraints([(Vs,C)|Cs],Accum_rem,Vars,Accum_selected,Cs_rem,Vars_out,Cs_selected):-
-	union_sl(Vs,Vars,Vars1),
-	filter_constraints(Cs,Accum_rem,Vars1,[C|Accum_selected],Cs_rem,Vars_out,Cs_selected).
-	
+        union_sl(Vs,Vars,Vars1),
+       filter_constraints(Cs,Accum_rem,Vars1,[C|Accum_selected],Cs_rem,Vars_out,Cs_selected).
+
+
 	
 	
 %FIXME it seems to work well for one case but not for invariant generation	
