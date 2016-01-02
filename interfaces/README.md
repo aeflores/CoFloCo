@@ -6,14 +6,16 @@ This folder contains two prolog scripts to tranform integer transition systems g
 
 There are two transformation scripts:
 
- * koat2ces.pl: This script parses a koat file (.koat) and generates a control flow graph file in prolog format (.koat.cfg). In the process it adapts the variable names, an the constraints.
+#### koat2ces.pl
+This script parses a koat file (.koat) and generates a control flow graph file in prolog format (.koat.cfg). In the process it adapts the variable names, an the constraints.
 
 It also removes calls to other functions that are not defined in the koat file. At the moment it does not support koat files that represent multiple procedures or recursive procedures.
 
 By default, each transition is assigned cost 1. However, this script admits an additional parameter "tick_cost". If koat2ces.pl is called with "tick_cost", it assigns cost "n" to each call to the function "void tick(int c);" and 0 to all the other transitions.
 
    
- * cfg2pubs.pl: This script receives a control flow graph file (.koat.cfg) and generates a equivalent set of cost equations. In order to do that, it detects and extracts the loops in the control flow graph. This process can fail if there is an irreducible cfg but this does not happen often in practice.
+#### cfg2pubs.pl
+This script receives a control flow graph file (.koat.cfg) and generates a equivalent set of cost equations. In order to do that, it detects and extracts the loops in the control flow graph. This process can fail if there is an irreducible cfg but this does not happen often in practice.
 
 
 Example:
@@ -32,7 +34,7 @@ Let's consider that we want to analyze a function written in C in a file named "
 
     `./koat2ces.pl Example.koat`
 
-  If we want to count only the call to tick(), we execute the following command instead:
+  If we want to count only the calls to tick(), we execute the following command instead:
 
      `./koat2ces.pl Example.koat tick_cost`
 
