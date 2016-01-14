@@ -33,7 +33,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 :- use_module('SCCs',[crs_scc/5,crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
 :- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
-:- use_module('../utils/cost_structures',[cstr_from_cexpr/2]).
+:- use_module('../utils/cost_structures',[cstr_join/3,cstr_or_compress/2]).
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2,nad_project_group/3]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_consistent_constraints/1]).
 :- use_module(stdlib(utils),[ut_varset/2]).
@@ -42,7 +42,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
-
+:-use_module(library(terms)).
 
 %! pe_eq(Head:term,Exp:cost_expression,Calls:list(term),Size:polyhedron)
 % stores a partially evaluated cost equation
@@ -89,7 +89,6 @@ compress_segments_in_scc([F/A|Unfoldable_nodes],Not_compressed,Level):-
 	findall(Id,input_eq(Head,Id,_,_,_),Ids),
 	length(Ids,N_eqs),
 	N_eqs =< Level,
-	
 	!,
 	findall(Caller_id,(input_eq(_,Caller_id,_,Calls,_),member(Head,Calls)),Caller_ids),
 	substitute_caller(Caller_ids,Ids),
@@ -123,18 +122,36 @@ add_combined_eq(Callers,Callee):-
 
 add_combined_eq_1(input_eq(Head_callee,_Id0,Exp0,Calls0,Size0),input_eq(Head_caller,_Id1,Exp1,Calls1,Size1)):-
 	substitute_call_2(Calls1,Head_callee,Calls0,Calls1_sub),
-	combine_cost_expressions(Exp1,Exp0,CombE),
+	cstr_join(Exp1,Exp0,CombE),
  	combine_size_relations(Size1,Size0,CombS),
  	term_variables(input_eq(Head_caller,CombE,Calls1_sub,CombS),Total_vars),from_list_sl(Total_vars,Total_vars_set),
  	term_variables(Head_callee,Intermediate_vars),from_list_sl(Intermediate_vars,Intermediate_vars_set),
  	(nad_consistent_constraints_group(Total_vars,CombS)->
  		difference_sl(Total_vars_set,Intermediate_vars_set,Rest_vars),
  		nad_project_group(Rest_vars,CombS,CombSp),
- 		counter_increase(input_eqs,1,Id_new),
- 		asserta(db:input_eq(Head_caller,Id_new,CombE,Calls1_sub,CombSp))
+ 		save_input_eq(Head_caller,CombE,Calls1_sub,CombSp)
  		;
  		true
  	).
+
+save_input_eq(Head,Cost,Calls,Cs):-
+	copy_term((Head,Calls,Cs),Eq_copy),
+	numbervars(Eq_copy,0,_),
+	term_hash(Eq_copy,Hash),
+	(
+	input_eq(Head,(Id,Hash),Cost2,Calls,Cs2),
+	Cs==Cs2,
+	retract(db:input_eq(Head,(Id,Hash),Cost2,Calls,Cs2)),
+	cstr_or_compress([Cost,Cost2],Final_cost),
+	%writeln(joined_cost(Final_cost)),
+	asserta(db:input_eq(Head,(Id,Hash),Final_cost,Calls,Cs))
+	;
+	counter_increase(input_eqs,1,Id_new),
+	asserta(db:input_eq(Head,(Id_new,Hash),Cost,Calls,Cs))
+	),!.
+	
+
+
 
 substitute_call_2([Head_callee|Calls1],Head_callee,Calls0,Calls1_sub):-
 	append(Calls0,Calls1,Calls1_sub).
@@ -208,7 +225,7 @@ derive(pe_eq(Sg,Exp,[Call|Calls],Residual,Size),ClauseC):-
  	input_eq(Call,_,Exp0,Calls0,Size0),
 	append(Calls0,Calls,CCalls),
  	ClauseC0 = pe_eq(Sg,CombE,CCalls,Residual,CombSp),
-    combine_cost_expressions(Exp,Exp0,CombE),
+    cstr_join(Exp,Exp0,CombE),
  	combine_size_relations(Size,Size0,CombS),
  	
  	%try to fail early
@@ -230,7 +247,7 @@ combine_size_relations(S,CS,Tmp_CombS):-
 	append(S,CS,CombS_u),
 	from_list_sl(CombS_u,Tmp_CombS).
 
-combine_cost_expressions(Exp,Exp0,Exp+Exp0).
+
 
 
 % get all the residual calls and refresh their variables
@@ -266,10 +283,7 @@ replace_cost_relations:-
 	ut_varset((Head,Exp,Calls),Vars),	
 	(nad_consistent_constraints_group(Vars,Size) ->	    
 	    nad_project_group(Vars,Size,P_Size),
-	  % nad_project(Vars,Size,P_Size),
-	    cexpr_simplify_ctx_free(Exp,Exp_simpl),
-	    cstr_from_cexpr(Exp_simpl,Cost_structure),
-	    add_eq_ph(eq_ph(Head,0,Cost_structure,NR_Calls,R_Calls,Calls,P_Size,terminating),none)
+	    add_eq_ph(eq_ph(Head,0,Exp,NR_Calls,R_Calls,Calls,P_Size,terminating),none)
 	;
 	    true
 	),

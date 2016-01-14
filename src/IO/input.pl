@@ -30,6 +30,7 @@ This module reads cost equations and stores them in the database after normalizi
 					add_ground_equation_header/2]).
 :- use_module('../utils/cofloco_utils',[normalize_constraint/2]).
 :- use_module('../utils/cost_expressions',[is_linear_exp/1,parse_cost_expression/2]).
+:- use_module('../utils/cost_structures',[cstr_from_cexpr/2]).
 :- use_module('../utils/polyhedra_optimizations',[slice_relevant_constraints/4,nad_normalize_polyhedron/2]).
 :- use_module(stdlib(counters),[counter_increase/3]).
 :- use_module(stdlib(utils),[ut_var_member_chk/2]).
@@ -113,21 +114,21 @@ add_equation(eq(Name,Vars,Exp,Body_Calls,Size_Rel)) :-!,
      
 
 add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-!,
-	normalize_input_equation(eq(Head,Exp,Body_Calls,Size_Rel), eq(NHead,NExp,NCalls,NSize_Rel)), % Normalize the equation
-	term_variables((NHead,NExp,NCalls),Relevant_Vars),
+	normalize_input_equation(eq(Head,Exp,Body_Calls,Size_Rel), eq(NHead,Cost_structure,NCalls,NSize_Rel)), % Normalize the equation
+	term_variables((NHead,Cost_structure,NCalls),Relevant_Vars),
 	%remove constraints that do not affect anything
 	from_list_sl(Relevant_Vars,Relevant_Vars_set),
 	from_list_sl(NSize_Rel,NSize_Rel_set),
 	slice_relevant_constraints(Relevant_Vars_set,NSize_Rel_set,_,NSize_Rel_filtered),
 	%check the equation doesn't exist yet
-	((input_eq(NHead,_,NExp1,NCalls,NSize_Rel1),
+	((input_eq(NHead,_,Cost_structure1,NCalls,NSize_Rel1),
 	  NSize_Rel1==NSize_Rel_filtered,
-	  NExp1==NExp
+	  Cost_structure1==Cost_structure
 	)->
 	 true
 	;
 	counter_increase(input_eqs,1,Id),% get new id
-	assertz(db:input_eq(NHead,Id,NExp,NCalls,NSize_Rel_filtered))
+	assertz(db:input_eq(NHead,Id,Cost_structure,NCalls,NSize_Rel_filtered))
 	),			% add the equation to db
 	!.
 	
@@ -136,7 +137,7 @@ add_equation(entry(Term:Size_Rel)):-!,
 	  normalize_entry(entry(Term:Size_Rel), Entry_Normalized),
 	  assertz(db:Entry_Normalized).
 
-add_equation(db:reset_scc(Head,Vars,Type)):-!,
+add_equation(reset_scc(Head,Vars,Type)):-!,
 	  assertz(db:reset_scc(Head,Vars,Type)).	  
 
 % throw an exception on failure
@@ -198,7 +199,8 @@ normalize_input_equation(EQ,EQ_Normalized) :-
        maplist(normalize_constraint,Cs_aux_filtered,Cs_aux_Normalized),
        nad_normalize_polyhedron(Cs_aux_Normalized,Cs_aux_Normalized1),
 	parse_cost_expression(Cost_Expr,Expr_Normalized), %% replace by simplification
-	EQ_Normalized = eq(Head_Normalized,Expr_Normalized,Body_Normalized,Cs_aux_Normalized1).
+	cstr_from_cexpr(Expr_Normalized,Cost_structure),
+	EQ_Normalized = eq(Head_Normalized,Cost_structure,Body_Normalized,Cs_aux_Normalized1).
 
 normalize_entry(entry(Call:Cs), Entry_Normalized) :-
 	normalize_atom(Call,[],Call_Normalized,_,Cs_aux-Cs),

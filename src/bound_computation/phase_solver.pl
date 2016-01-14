@@ -310,7 +310,7 @@ compute_all_pending(_,_,_,_).
 % that are stored in the database
 compute_pending(Head,Call,Phase,Pending,Pending_out):-
 	get_one_pending(Pending,Type,(Depth,Lin_exp,Coeff_bounded),Pending1),
-	%(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
+	(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
 	assert(current_pending_depth(Depth)),
 	compute_pending_element(Type,Head,Call,Phase,Lin_exp,Coeff_bounded,New_fconstrs,New_iconstrs,Pending1,Pending_out),
 	retract(current_pending_depth(Depth)),
@@ -659,7 +659,8 @@ check_loop_maxsum(Head,Call,Exp_diff,Flag,Loop,Pstrexp_pair,Bounded,Pending,Pend
 		(get_param(debug,[])->format('Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
 		;
 		term_variables(Head,Vars_head),
-		select_important_variables(Vars_head,Exp_diff_neg,Vars_of_Interest),
+		%select_important_variables(Vars_head,Exp_diff_neg,Vars_of_Interest),
+		select_important_variables(Vars,Exp_diff_neg,Vars_of_Interest),
 		max_min_linear_expression_all(Exp_diff_neg, Vars_of_Interest, Cs,max, Max_increments),
 %add an expression
 		(Max_increments\=[]->
@@ -868,7 +869,7 @@ check_loop_max(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			Pending_out=Pending
 		;
 			term_variables(Head,Vars_head),
-			select_important_variables(Vars_head,Lin_exp,Vars_of_Interest),
+			select_important_variables(Vars,Lin_exp,Vars_of_Interest),
 			max_min_linear_expression_all(Lin_exp_diff_neg, Vars_of_Interest, Cs,max, Max_increments),
 %add an expression		
 			(Max_increments\=[]->
@@ -963,7 +964,7 @@ basic_product(Head,Call,Loop,Lin_exp,Bounded,Aux_exp,Max_min,Pending,Pending_out
 	get_enriched_loop(Loop,Head,Call,Cs),
 	new_itvar(Aux_itvar),
 	get_loop_itvar(Loop,Loop_itvar),
-	astrexp_new(add([mult([Aux_itvar,Loop_itvar])])-add([]),Astrexp),
+	astrexp_new(add([mult([Loop_itvar,Aux_itvar])])-add([]),Astrexp),
 	(is_head_expression(Head,Lin_exp)->
 		fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
 		Max_fconstrs=[Fconstr]
