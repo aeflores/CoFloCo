@@ -89,7 +89,7 @@ read_crs(CRs,_EQs) :-
 
 
 read_crs_from_file(S,EQs) :-
-	catch(read_term(S,Term,[variable_names(Bindings)]),_,fail),
+	read_term(S,Term,[variable_names(Bindings)]),
 	( 
 	  Term == end_of_file -> 
 	    EQs = []
@@ -98,6 +98,7 @@ read_crs_from_file(S,EQs) :-
 	    read_crs_from_file(S,EQs_aux)
 	).
 
+	
 %! add_equation(+Cost_equation:cost_equation) is det
 % @throws failed_to_add_equation 
 % normalize the cost equation and add it to the database
