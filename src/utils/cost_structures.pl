@@ -99,14 +99,14 @@
 		cstr_shorten_variables_names/3]).
 		
 		
-:- use_module(cofloco_utils,[zip_with_op/3,is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3]).
+:- use_module(cofloco_utils,[zip_with_op/3,is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3,get_all_pairs/3,normalize_constraint/2]).
 :- use_module(structured_cost_expression,[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).	
 :- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1]).	
 :- use_module(polyhedra_optimizations,[nad_entails_aux/3]).	
 :- use_module('../IO/params',[get_param/2]).
 :- use_module('../IO/output',[print_aux_exp/1]).	
 :- use_module('../bound_computation/cost_structure_solver',[cstr_maxminimization/5]).
-
+:- use_module('../bound_computation/constraints_maximization',[max_min_linear_expression_all/5]).
 
 :- use_module(stdlib(linear_expression),[
 	parse_le/2,
@@ -404,7 +404,9 @@ cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_
 
 join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant)):-
 	partition(bconstr_bounds_multiple_itvars,Itcons,Multiple_itconstrs,Single_itconstrs),
-	foldl(add_itvar_empty_map,Bsummands,[],Map_0),
+	%TODO: the unbounded variables that appear adding and substracting should not be joined!! Puting Map_0=[] is a quick fix
+	%foldl(add_itvar_empty_map,Bsummands,[],Map_0),
+	Map_0=[],
 	foldl(get_itconstr_for_each_itvar,Single_itconstrs,Map_0,Map),
 	foldl(remove_itvars_from_map,Ub_fcons,Map,Map1),
 	foldl(remove_itvars_from_map,Lb_fcons,Map1,Map2),
@@ -421,6 +423,7 @@ join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(U
 		Itcons3=Itcons,
 		Bsummands3=Bsummands
 	).
+
 
 add_itvar_empty_map((Itvar,_),Map,Map1):-
 	insert_lm(Map,Itvar,[],Map1).
@@ -593,13 +596,137 @@ zero_summand(mult(Factors)):-
 cstr_remove_cycles(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Short):-
 	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Ub_Bounded_set),
 	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
-	remove_not_bounded(Iconstrs,Ub_Bounded_set,Lb_Bounded_set,Iconstrs2),
+	find_cycles(Iconstrs,Iconstrs1),!,
+	find_cycles(Iconstrs1,Iconstrs11),!,
+%	find_cycles(Iconstrs11,Iconstrs2),!,
+	Iconstrs11=Iconstrs2,
+	remove_not_bounded(Iconstrs2,Ub_Bounded_set,Lb_Bounded_set,Iconstrs3),
 	%Some other simplifications
-	cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs2,Bsummands,BConstant),Simplified1),
+	cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs3,Bsummands,BConstant),Simplified1),
 	cstr_remove_useless_constrs(Simplified1,both,Simplified),
 	cstr_shorten_variables_names(Simplified,list,Short).
 
+:- use_module(stdlib(scc),[compute_sccs/2]).
 
+find_cycles(Iconstrs,Iconstrs2):-
+	foldl(iconstr_create_edges,Iconstrs,[],Graph),
+	compute_sccs(Graph,SCCs),
+	include(is_recursive_scc,SCCs,Recursive),
+	foldl(solve_cycle,Recursive,Iconstrs,Iconstrs2).
+
+solve_cycle((recursive,Itvars),Iconstrs,Iconstrs2):-
+	from_list_sl(Itvars,Itvars_set),
+	partition(involved_iconstr(Itvars_set),Iconstrs,Involved,Innocent),
+	(
+	solve_cycle_1(Itvars_set,Involved,New_constrs)
+	;
+	New_constrs=Involved
+	),
+	append(New_constrs,Innocent,Iconstrs2).
+
+
+
+
+involved_iconstr(Itvars_set,bound(_,exp(Index_pos,Index_neg,_,_),Bounded)):-
+	from_list_sl(Bounded,Bounded_set),
+	intersection_sl(Itvars_set,Bounded_set,[_|_]),
+	(
+	member((Itvar,_),Index_pos),
+	contains_sl(Itvars_set,Itvar)
+	;
+	member((Itvar,_),Index_neg),
+	contains_sl(Itvars_set,Itvar)
+	),!.
+
+solve_cycle_1(Itvars_set,Iconstrs,[Extra_iconstr|Iconstrs2]):-
+	maplist(writeln,Iconstrs),
+	%trace,
+	foldl(get_positive_linear_constraint(Itvars_set),Iconstrs,([],[]),(Map,Linear_constrs)),
+	term_variables(Map,Vars),
+	maplist(lookup_lm(Map),Itvars_set,Bad_vars),
+	from_list_sl(Bad_vars,Bad_vars_set),
+	from_list_sl(Vars,Vars_set),
+
+	%(Name=[it(18)];true),
+	%trace,
+	%(member([it(Loop)],Itvars_set),Name=[it(Loop)]
+	%;
+	member(Name,Itvars_set)
+	%)
+	,
+	lookup_lm(Map,Name,Var),
+	difference_sl(Vars_set,Bad_vars_set,Vars_of_interest),
+	max_min_linear_expression_all([(Var,1)]+0, Vars_of_interest, Linear_constrs,max, Lin_exp_out),
+	Lin_exp_out=[BSummands+BConstant|_],!,
+	writeln(solved),
+	maplist(unify_pair,Map),
+	foldl(get_summands_aux,BSummands,[mult([BConstant])],Summands),
+	astrexp_new(add(Summands)-add([]),Exp),
+	%Iconstrs=Iconstrs2,
+	exclude(contains_bounded_var(Var),Iconstrs,Iconstrs2),
+	Extra_iconstr=bound(ub,Exp,[Var]).
+	
+get_summands_aux((X,1),Summands,[mult([X])|Summands]):-!.
+get_summands_aux((X,Coeff),Summands,[mult([X,Coeff])|Summands]).
+	
+	
+contains_bounded_var(Var,bound(_,_,[Bounded])):-
+	Var=Bounded.
+
+
+
+get_positive_linear_constraint(_Itvars_set,bound(Op,exp(Index_pos,[],add(Summands),add([])),Bounded),(Map,Lin_exps),(Map2,[Lin_exp_norm|Lin_exps])):-
+	copy_term((Index_pos,Summands),(Index_pos_c,Summands_c)),
+	maplist(unify_pair,Index_pos_c),
+	foldl(get_left_side,Summands_c,(Map,[]),(Map1,Summands_left)),
+	write_sum(Summands_left,Left),
+	foldl(translate,Bounded,(Map1,[]),(Map2,List_vars)),
+	write_sum(List_vars,Right),
+	get_rel_op(Op,Rel_op),
+	Lin_exp=..[Rel_op,Left,Right],
+	normalize_constraint(Lin_exp,Lin_exp_norm),!.
+	
+get_positive_linear_constraint(_Itvars_set,_,(Map,Lin_exps),(Map,Lin_exps)).
+
+
+get_left_side(mult(Factors),(Map,Summands),(Map1,[Summand|Summands])):-
+	partition(is_rational,Factors,Coeffs,Vars),
+	product_frl([1|Coeffs],Coeff),
+	(Vars=[]->
+		Summand=Coeff,
+		Map1=Map
+	;
+	Vars=[Var],
+	Var\=max(_),Var\=min(_),
+	translate(Var,(Map,[]),(Map1,[Var2])),
+	Summand=Coeff*Var2
+	).
+
+translate(Name,(Map,Vars),(Map,[Var|Vars])):-
+	lookup_lm(Map,Name,Var),!.
+translate(Name,(Map,Vars),(Map1,[Var|Vars])):-
+	insert_lm(Map,Name,Var,Map1),!.	
+	
+get_rel_op(ub,'>=').
+get_rel_op(lb,'=<').
+
+unify_pair((X,X)).
+is_recursive_scc((recursive,_)).
+
+iconstr_create_edges(bound(ub,exp(Index_pos,_Index_neg,_,_),Bounded),Edges_accum,Edges):-
+	maplist(tuple,Target_vars1,_,Index_pos),
+	%maplist(tuple,Target_vars2,_,Index_neg),
+	foldl(get_all_combinations(Target_vars1),Bounded,Edges_accum,Edges).
+	
+iconstr_create_edges(bound(lb,exp(_Index_pos,Index_neg,_,_),Bounded),Edges_accum,Edges):-
+	%maplist(tuple,Target_vars1,_,Index_pos),
+	maplist(tuple,Target_vars2,_,Index_neg),
+	foldl(get_all_combinations(Target_vars2),Bounded,Edges_accum,Edges).
+
+get_all_combinations(Xs,Y,Edges_accum,Edges):-
+	foldl(get_all_combinations1(Y),Xs,Edges_accum,Edges).
+
+get_all_combinations1(Y,X,Edges,[Y-X|Edges]).
 
 %! remove_not_bounded(Iconstrs:list(iconstrs),Ub_Set:list_set(itvar),Lb_Set:list_set(itvar),Iconstrs_out:list(iconstrs)) is det
 %  in each iteration accumulate the iconstrs that are well defined (all the itvars in their expressions are bounded)
@@ -609,7 +736,7 @@ remove_not_bounded(Iconstrs,Ub_Set,Lb_Set,Iconstrs_out):-
 	split_bounded(Iconstrs,Ub_Set,Lb_Set,Ub_Set_1,Lb_Set_1,Bounded,Not_bounded),
 	(Bounded=[]->
 	  Iconstrs_out=[]
-	  %(Not_bounded\=[]->trace,maplist(print_aux_exp,Not_bounded);true)
+	  %,(Not_bounded\=[]->trace,maplist(print_aux_exp,Not_bounded);true)
 	;
 	  remove_not_bounded(Not_bounded,Ub_Set_1,Lb_Set_1,Iconstrs_aux),
 	  append(Bounded,Iconstrs_aux,Iconstrs_out)
@@ -811,83 +938,107 @@ cstr_join(cost(T,A,Iconstrs,Bs,B),cost(T2,A2,Iconstrs2,B2s,B2),cost(T3,A3,Iconst
 % Sums is a pair of set of final constraints whose sum over Loop has to be computed
 cstr_propagate_sums(Loop,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Cost2,(Max_mins,Sums)):-
 	%transform the basic summands into sums and record the relation between the original variable and the sum variable in Sum_map_initial
-	generate_initial_sum_map(Bsummands,[],Sum_map_initial,Bsummands1),
-	propagate_sums_backwards(Iconstrs,Sum_map_initial,Iconstrs2,Sum_map,Max_map),
-	
+	foldl(generate_initial_sum_map,Bsummands,Bsummands1,[],Sum_map_initial),
+	propagate_sums_backwards(Iconstrs,Sum_map_initial,Iconstrs2,Sum_map,Max_min_set),
 	get_loop_itvar(Loop,Itvar),
 	Cost2=cost([],[],Iconstrs2,[(Itvar,BConstant)|Bsummands1],0),
 	% get the final constraints that have to be computed
-	get_maxs(Ub_fconstrs,Max_map,Ub_fconstrs2),
-	get_summatories(Ub_fconstrs,Sum_map,Ub_Summatories),
-	get_maxs(Lb_fconstrs,Max_map,Lb_fconstrs2),
-	get_summatories(Lb_fconstrs,Sum_map,Lb_Summatories),
+	foldl(get_maxs_mins(Max_min_set),Ub_fconstrs,[],Ub_fconstrs2),
+	foldl(get_sums(Sum_map),Ub_fconstrs,[],Ub_Summatories),
+	foldl(get_maxs_mins(Max_min_set),Lb_fconstrs,[],Lb_fconstrs2),
+	foldl(get_sums(Sum_map),Lb_fconstrs,[],Lb_Summatories),
 	Max_mins=(Ub_fconstrs2,Lb_fconstrs2),
 	Sums=(Ub_Summatories,Lb_Summatories).
 
-	
-generate_initial_sum_map([],Map,Map,[]).
-generate_initial_sum_map([(Name,Val)|Bsummands],Map,Map_out,[(Name2,Val)|Bsummands1]):-
-	lookup_lm(Map,Name,Name2),!,
-	generate_initial_sum_map(Bsummands,Map,Map_out,Bsummands1).
-generate_initial_sum_map([(Name,Val)|Bsummands],Map,Map_out,[(Name2,Val)|Bsummands1]):-
+
+
+generate_initial_sum_map((Name,Val),(Name2,Val),Map,Map):-
+	lookup_lm(Map,Name,Name2),!.
+generate_initial_sum_map((Name,Val),(Name2,Val),Map,Map1):-
 	new_itvar(Name2),
-	insert_lm(Map,Name,Name2,Map1),
-	generate_initial_sum_map(Bsummands,Map1,Map_out,Bsummands1).
+	insert_lm(Map,Name,Name2,Map1).
+
 		
+put_in_list(X,[X]).
 	
-get_maxs([],_,[]).
-get_maxs([bound(Op,Exp,Bounded)|Fcons],Max_set,Fcons2):-
-	include(contains_sl(Max_set),Bounded,Non_summatories),
-	(Non_summatories\=[]->
-		Fcons2=[bound(Op,Exp,Non_summatories)|Fcons1]
-		;
-		Fcons2=Fcons1
-		),
-	get_maxs(Fcons,Max_set,Fcons1).
+
+get_maxs_mins(Max_min_set,bound(ub,Exp,Bounded),Bconstrs,Bconstrs2):-
+	include(contains_sl(Max_min_set),Bounded,Non_summatories),
+	maplist(put_in_list,Non_summatories,Unitary_bounded),
+	maplist(iconstr_new(Exp,ub),Unitary_bounded,New_bounds),
+	append(New_bounds,Bconstrs,Bconstrs2).
 	
-get_summatories([],_,[]).
-get_summatories([bound(Op,Exp,Bounded)|Fcons],Sum_map,Fcons2):-
+	
+get_maxs_mins(Max_min_set,bound(lb,Exp,[One_Bounded]),Bconstrs,Bconstrs2):-
+	contains_sl(Max_min_set,One_Bounded),!,
+	Bconstrs2=[bound(lb,Exp,[One_Bounded])|Bconstrs].
+
+get_maxs_mins(_Max_min_set,bound(lb,_Exp,_Bounded),Bconstrs,Bconstrs).
+%	(include(contains_sl(Max_set),Bounded,Bounded)->
+%	format(user_error,'Lost constraint ~p~n',[bound(lb,Exp,Bounded)])
+%	;
+%	true),
+
+	
+get_sums(Sum_map,bound(ub,Exp,Bounded),Bconstrs,Bconstrs2):-
 	get_mapped(Bounded,Sum_map,New_names),
-	(New_names\=[]->
-		Fcons2=[bound(Op,Exp,New_names)|Fcons1]
-		;
-		Fcons2=Fcons1
-		),
-	get_summatories(Fcons,Sum_map,Fcons1).
+	New_names\=[],!,
+	Bconstrs2=[bound(ub,Exp,New_names)|Bconstrs].
+	
+get_sums(Sum_map,bound(lb,Exp,Bounded),Bconstrs,Bconstrs2):-
+	get_mapped(Bounded,Sum_map,New_names),
+	length(Bounded,N),
+	%only of we can keep all (all bounded are interesting)
+	length(New_names,N),!,
+	Bconstrs2=[bound(lb,Exp,New_names)|Bconstrs].
+	
+get_sums(_Sum_map,_,Bconstrs,Bconstrs).
 
 
-	
-	
-propagate_sums_backwards([],Sum_map,[],Sum_map,[]).
-propagate_sums_backwards([bound(Op,Astrexp,Bounded)|Iconstrs_ini],Sum_map_initial,Iconstrs3,Sum_map3,Max_map4):-	
+propagate_sums_backwards(Iconstrs,Sum_map_initial,Iconstrs2,Sum_map,Max_min_set):-
+	reverse(Iconstrs,Iconstrs_rev),
+	foldl(propagate_sums,Iconstrs_rev,([],[],Sum_map_initial),(Iconstrs2,Max_min_set,Sum_map)).
+
+propagate_sums(bound(Op,Astrexp,Bounded),(Iconstrs,Max_min_set,Sum_map),(Iconstrs3,Max_min_set4,Sum_map3)):-	
 	Astrexp=exp(Index1,Index2,Std_exp,Std_exp_neg),
 	append(Index1,Index2,Index_total),
-	propagate_sums_backwards(Iconstrs_ini,Sum_map_initial,Iconstrs,Sum_map,Max_map),
-	get_mapped(Bounded,Sum_map,New_names),
-	include(contains_sl(Max_map),Bounded,Non_summatories),
-	(Non_summatories\=[]->
-		Iconstrs2=[bound(Op,Astrexp,Non_summatories)|Iconstrs],
-		foldl(add_indexes_to_set,Index_total,Max_map,Max_map2)
+	%add max/min
+	get_maxs_mins(Max_min_set,bound(Op,Astrexp,Bounded),[],New_max_bounds),
+	(New_max_bounds\=[]->
+		append(New_max_bounds,Iconstrs,Iconstrs2),
+		foldl(add_indexes_to_set,Index_total,Max_min_set,Max_min_set2)
 	;
 	  Iconstrs2=Iconstrs,
-	  Max_map2=Max_map
+	  Max_min_set2=Max_min_set
 	),
-	(New_names\=[]->
+	
+	% add sums
+	get_mapped(Bounded,Sum_map,New_names),
+	length(Bounded,N),
+	(
+	((Op=lb,length(New_names,N))
+	;
+	(Op=ub,New_names\=[])
+	)
+	->
 
 	%this means some are multiplied (the new names can be the same as the old if they did not coicide
-	update_max_set(Index1,Std_exp,Index1_max,Max_map2,Max_map3),
-	update_max_set(Index2,Std_exp_neg,Index2_max,Max_map3,Max_map4),
+	update_max_set(Index1,Std_exp,Index1_max,Max_min_set2,Max_min_set3),
+	update_max_set(Index2,Std_exp_neg,Index2_max,Max_min_set3,Max_min_set4),
 	
-	update_sum_map(Index1,Std_exp,Index1_sum,Max_map4,Sum_map,Sum_map2),
+	update_sum_map(Index1,Std_exp,Index1_sum,Max_min_set4,Sum_map,Sum_map2),
 	append(Index1_max,Index1_sum,Index1_final),
-	update_sum_map(Index2,Std_exp_neg,Index2_sum,Max_map3,Sum_map2,Sum_map3),
+	update_sum_map(Index2,Std_exp_neg,Index2_sum,Max_min_set4,Sum_map2,Sum_map3),
 	append(Index2_max,Index2_sum,Index2_final),
 	Iconstrs3=[bound(Op,exp(Index1_final,Index2_final,Std_exp,Std_exp_neg),New_names)|Iconstrs2]
 	;
 	Iconstrs3=Iconstrs2,
 	Sum_map3=Sum_map,
-	Max_map4=Max_map2
+	Max_min_set4=Max_min_set2
 	).
+	
+
+
 
 get_mapped([],_,[]).
 get_mapped([X|Xs],Map,[New_name|New_names]):-
