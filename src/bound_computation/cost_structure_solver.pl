@@ -126,8 +126,8 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 
 
 %this predicate should never fail
-cstr_maxminimization(Cost_long,Max_min,_):-
-	throw(maximization_failed(Cost_long,Max_min)).	
+cstr_maxminimization(Cost_long,Max_min,Head,_Inv,_Cost_max_min):-
+	throw(maximization_failed(Cost_long,Max_min,Head)).	
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

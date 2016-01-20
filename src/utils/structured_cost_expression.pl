@@ -316,20 +316,21 @@ multiply_by_factors(Factors1,Coeff,mult(Summand,Coeff2),mult(Factors2,Coeff3)):-
 	
 strexp_var_simplify_factor(Var,Var):-var(Var),!.
 
-strexp_var_simplify_factor(min(List),Res):-!,
-	maplist(strexp_var_simplify,List,List_simplified),
-	from_list_sl(List_simplified,Set),
-	strexp_simplify_max_min(max(Set),Res).
+strexp_var_simplify_factor(min(List),min(Set)):-!,
+	maplist(strexp_var_simplify_factor,List,List_simplified),
+	from_list_sl(List_simplified,Set).
+%	strexp_simplify_max_min(min(Set),Res).
 
-strexp_var_simplify_factor(max(List),Res):-!,
-	maplist(strexp_var_simplify,List,List_simplified),
-	from_list_sl(List_simplified,Set),
-	strexp_simplify_max_min(max(Set),Res).
+strexp_var_simplify_factor(max(List),max(Set)):-!,
+	maplist(strexp_var_simplify_factor,List,List_simplified),
+	from_list_sl(List_simplified,Set).
+%	strexp_simplify_max_min(max(Set),Res).
 
 strexp_var_simplify_factor(Factor,Factor_simple):-
 	strexp_var_simplify(Factor,Factor_simple),!.
 
 
+%FIMXE make this predicate Var compatible
 	
 %! strexp_simplify_max_min(Expr:op(list(strexp_var)),Strexp:strexp_var)
 % where op is 'max' or 'min'

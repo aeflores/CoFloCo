@@ -124,10 +124,9 @@ add_combined_eq_1(input_eq(Head_callee,_Id0,Exp0,Calls0,Size0),input_eq(Head_cal
 	substitute_call_2(Calls1,Head_callee,Calls0,Calls1_sub),
 	cstr_join(Exp1,Exp0,CombE),
  	combine_size_relations(Size1,Size0,CombS),
- 	term_variables(input_eq(Head_caller,CombE,Calls1_sub,CombS),Total_vars),from_list_sl(Total_vars,Total_vars_set),
- 	term_variables(Head_callee,Intermediate_vars),from_list_sl(Intermediate_vars,Intermediate_vars_set),
+ 	term_variables(input_eq(Head_caller,CombE,Calls1_sub,CombS),Total_vars),
+ 	term_variables(input_eq(Head_caller,CombE,Calls1_sub),Rest_vars),
  	(nad_consistent_constraints_group(Total_vars,CombS)->
- 		difference_sl(Total_vars_set,Intermediate_vars_set,Rest_vars),
  		nad_project_group(Rest_vars,CombS,CombSp),
  		save_input_eq(Head_caller,CombE,Calls1_sub,CombSp)
  		;

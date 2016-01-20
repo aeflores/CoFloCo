@@ -166,6 +166,8 @@ get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost2):-
 	get_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost),
 	cstr_extend_variables_names(Cost,it(Eq_id),Cost2).
 	
+
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % auxiliary dynamic predicates
 
@@ -441,14 +443,14 @@ compute_sum(Head,Call,Phase,Loop,Lin_exp,min,Bounded_ini,New_fconstrs,New_iconst
 	    New_iconstrs2=[],
 	    Pending_aux1=Pending_out,
 	    % we substract the decrements
-	    astrexp_new(add([mult([Initial_name,All_iterations_name])])-add([mult([All_iterations_name,All_iterations_name,Min_increment_scaled])]),Astrexp)
+	    astrexp_new(add([mult([All_iterations_name,Initial_name]),mult([All_iterations_name,Min_increment_scaled])])-add([mult([All_iterations_name,All_iterations_name,Min_increment_scaled])]),Astrexp)
 	;
 		multiply_fr(Min_increment,-1/2,Min_increment_scaled),
 		negate_le(Exp,Exp_neg),
 		new_itvar(Initial_name_neg),
 		%we add the increments, but we substract the negation of the initial value in case this one is negative	
 		compute_max_min(Head,Call,Other_loops,Exp_neg,max,[Initial_name_neg],New_fconstrs2,New_iconstrs2,Pending_aux1,Pending_out),
-		astrexp_new(add([mult([Initial_name,All_iterations_name]),mult([All_iterations_name,All_iterations_name,Min_increment_scaled])])-add([mult([Initial_name_neg,All_iterations_name])]),Astrexp)
+		astrexp_new(add([mult([All_iterations_name,Initial_name]),mult([All_iterations_name,All_iterations_name,Min_increment_scaled])])-add([mult([Initial_name_neg,All_iterations_name]),mult([All_iterations_name,Min_increment_scaled])]),Astrexp)
 	),
 	iconstr_new(Astrexp,lb,Bounded_vars,Main_iconstr),
 	ut_flat_list([New_fconstrs1,New_fconstrs2],New_fconstrs),!,
@@ -713,8 +715,8 @@ check_loop_minsum(Head,Call,Exp_diff,Loop,Pstrexp_pair,[],Pending,Pending1):-
 		Pending1=Pending,
 		(get_param(debug,[])->format('Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
 		;
-		term_variables(Head,Vars_head),
-		select_important_variables(Vars_head,Exp_diff_neg,Vars_of_Interest),
+		%term_variables(Head,Vars_head),
+		select_important_variables(Vars,Exp_diff_neg,Vars_of_Interest),
 		max_min_linear_expression_all(Exp_diff_neg, Vars_of_Interest, Cs,min, Max_increments),
 %add an expression
 	    Max_increments\=[],
@@ -815,10 +817,20 @@ compute_max_min(Head,Call,Phase,Lin_exp,Max_min,Bounded,[Fconstr],[Iconstr],Pend
 	% check the effect of the loops
 	(Max_min=max->
 	check_loops_max(Phase,Head,Call,Lin_exp,Resets,Pstrexp_pair2,Pending,Pending_out),
-	Pstrexp_pair1=add([mult([max([Aux_itvar|Resets])])])-add([])
+	(Resets=[] ->
+	   Max_resets=Aux_itvar
+	   ;
+	   Max_resets=max([Aux_itvar|Resets])
+	   ),
+	Pstrexp_pair1=add([mult([Max_resets])])-add([])
 	;
 	check_loops_min(Phase,Head,Call,Lin_exp,Resets,Pstrexp_pair2,Pending,Pending_out),
-	Pstrexp_pair1=add([mult([min([Aux_itvar|Resets])])])-add([])
+	(Resets=[] ->
+	   Min_resets=Aux_itvar
+	   ;
+	   Min_resets=min([Aux_itvar|Resets])
+	   ),
+	Pstrexp_pair1=add([mult([Min_resets])])-add([])
 	),
 	pstrexp_pair_add(Pstrexp_pair1,Pstrexp_pair2,Pstrexp_pair),
 	astrexp_new(Pstrexp_pair,Astrexp),

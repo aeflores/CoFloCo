@@ -593,6 +593,8 @@ zero_summand(mult(Factors)):-
 % one of the main simplifying predicates for cost structures
 % remove constraints that depend on variables that are not bounded anywhere
 % get rid of circular dependencies	
+
+
 cstr_remove_cycles(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Short):-
 	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Ub_Bounded_set),
 	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
@@ -640,7 +642,6 @@ involved_iconstr(Itvars_set,bound(_,exp(Index_pos,Index_neg,_,_),Bounded)):-
 
 solve_cycle_1(Itvars_set,Iconstrs,[Extra_iconstr|Iconstrs2]):-
 	maplist(writeln,Iconstrs),
-	%trace,
 	foldl(get_positive_linear_constraint(Itvars_set),Iconstrs,([],[]),(Map,Linear_constrs)),
 	term_variables(Map,Vars),
 	maplist(lookup_lm(Map),Itvars_set,Bad_vars),
@@ -1071,9 +1072,10 @@ get_all_but_first_factor_1(mult([_|Rest_factors]),Vars_set):-
 get_first_factor(add(Summands),Vars):-	
 	maplist(get_first_factor_1,Summands,Vars_list),
 	unions_sl(Vars_list,Vars).
-get_first_factor_1(mult([First|_]),Vars_set):-
-	term_variables(First,Vars),
-	from_list_sl(Vars,Vars_set).
+get_first_factor_1(mult([First|_]),[First]):-
+	var(First),!.
+get_first_factor_1(mult([Factors]),_):-
+	throw(unexpected_factors(mult([Factors]))).
 
 update_sum_map(Index,Expr,Index_sum_substituted,Max_map,Sum_map,Sum_map2):-
 	get_first_factor(Expr,Vars_set),

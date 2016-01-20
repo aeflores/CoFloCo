@@ -51,7 +51,7 @@ These ranking functions are used to prove termination.
 						nad_widen/5, nad_false/1,
 						nad_all_ranking_functions_PR/4,
 						nad_all_ranking_functions_MS/4,
-						nad_glb/3]).
+						nad_glb/3]).						
 :- use_module(stdlib(fraction),[leq_fr/2,negate_fr/2]).						
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(multimap),[
