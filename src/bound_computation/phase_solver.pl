@@ -268,8 +268,10 @@ compute_sums_and_max_min_in_phase(Head,Call,Phase,Maxs,Mins,Max_sums,Min_sums):-
 	retractall(sum_found(_,_,_,_,_,_,_,_,_)),
 	%we start from depth 0
 	assert(current_pending_depth(0)),
-	foldl(save_pending_list(max),Phase,Maxs,Empty_pending,Pending1),
-	foldl(save_pending_list(min),Phase,Mins,Pending1,Pending2),
+	maplist(transform_max_min2_head(Head,Call,max),Phase,Maxs,Maxs_head),
+	maplist(transform_max_min2_head(Head,Call,min),Phase,Mins,Mins_head),
+	foldl(save_pending_list(max),Phase,Maxs_head,Empty_pending,Pending1),
+	foldl(save_pending_list(min),Phase,Mins_head,Pending1,Pending2),
 	foldl(save_pending_list(maxsum),Phase,Max_sums,Pending2,Pending3),
 	foldl(save_pending_list(minsum),Phase,Min_sums,Pending3,Pending4),
 	retract(current_pending_depth(0)),
@@ -280,6 +282,15 @@ compute_sums_and_max_min_in_phase(Head,Call,Phase,Maxs,Mins,Max_sums,Min_sums):-
 	compute_all_pending(Head,Call,Phase,Pending4),
 	retract(max_pending_depth(Max_pending)).
 
+transform_max_min2_head(Head,Call,Max_min,Loop,Maxs_mins,Maxs_mins_head):-
+	Head=..[_|Vars_head],
+	get_enriched_loop(Loop,Head,Call,Cs),
+	foldl(transform_max_min2_head_1(Vars_head,Cs,Max_min),Maxs_mins,[],Maxs_mins_head).
+	
+transform_max_min2_head_1(Vars_head,Cs,Max_min,bound(Op,Lin_exp,Bounded),Fconstrs,[bound(Op,Lin_exp_head,Bounded)|Fconstrs]):-
+	max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_mins_head),
+	member(Lin_exp_head,Maxs_mins_head),!.
+transform_max_min2_head_1(_Vars_head,_Cs,_Max_min,+,Fconstrs,Fconstrs).
 %! add_general_ranking_functions(Head:term,Call:term,Phase:phase) is det
 % add final constraints using the already computed ranking functions
 add_general_ranking_functions(Head,Call,Phase):-
@@ -1311,6 +1322,9 @@ print_pending_structure(Head,Call,Pending):-
 	format('Minsums:~n',[]),
 	maplist(print_pending_elems_loop,Minsums).
 
+print_pending_elem((_,Lin_exp,Bounded)):-
+	write_le(Lin_exp,Lin_exp_print),
+	format('~p  ~p ~n',[Lin_exp_print,Bounded]).
 print_pending_elem((_,Lin_exp,Bounded)):-
 	write_le(Lin_exp,Lin_exp_print),
 	format('~p  ~p ~n',[Lin_exp_print,Bounded]).

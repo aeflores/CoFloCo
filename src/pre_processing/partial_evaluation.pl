@@ -134,14 +134,16 @@ add_combined_eq_1(input_eq(Head_callee,_Id0,Exp0,Calls0,Size0),input_eq(Head_cal
  	).
 
 save_input_eq(Head,Cost,Calls,Cs):-
-	copy_term((Head,Calls,Cs),Eq_copy),
+	copy_term((Head,Calls,Cs,Cost),Eq_copy),
 	numbervars(Eq_copy,0,_),
 	term_hash(Eq_copy,Hash),
 	(
 	input_eq(Head,(Id,Hash),Cost2,Calls,Cs2),
 	Cs==Cs2,
 	retract(db:input_eq(Head,(Id,Hash),Cost2,Calls,Cs2)),
-	cstr_or_compress([Cost,Cost2],Final_cost),
+	Cost=Cost2,
+	Final_cost=Cost,
+	%cstr_or_compress([Cost,Cost2],Final_cost),
 	%writeln(joined_cost(Final_cost)),
 	asserta(db:input_eq(Head,(Id,Hash),Final_cost,Calls,Cs))
 	;

@@ -123,7 +123,7 @@
 
 :- use_module(stdlib(fraction)).
 :- use_module(stdlib(fraction_list)).
-:- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
+:- use_module(stdlib(set_list),[difference_sl/3,remove_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
 :-dynamic short_db/3.
 :-use_module(library(apply_macros)).
@@ -598,10 +598,10 @@ zero_summand(mult(Factors)):-
 cstr_remove_cycles(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Short):-
 	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Ub_Bounded_set),
 	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
-	find_cycles(Iconstrs,Iconstrs1),!,
-	find_cycles(Iconstrs1,Iconstrs11),!,
+%	find_cycles(Iconstrs,Iconstrs1),!,
+%	find_cycles(Iconstrs1,Iconstrs11),!,
 %	find_cycles(Iconstrs11,Iconstrs2),!,
-	Iconstrs11=Iconstrs2,
+	Iconstrs=Iconstrs2,
 	remove_not_bounded(Iconstrs2,Ub_Bounded_set,Lb_Bounded_set,Iconstrs3),
 	%Some other simplifications
 	cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs3,Bsummands,BConstant),Simplified1),
@@ -940,8 +940,8 @@ cstr_join(cost(T,A,Iconstrs,Bs,B),cost(T2,A2,Iconstrs2,B2s,B2),cost(T3,A3,Iconst
 cstr_propagate_sums(Loop,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Cost2,(Max_mins,Sums)):-
 	%transform the basic summands into sums and record the relation between the original variable and the sum variable in Sum_map_initial
 	foldl(generate_initial_sum_map,Bsummands,Bsummands1,[],Sum_map_initial),
-	propagate_sums_backwards(Iconstrs,Sum_map_initial,Iconstrs2,Sum_map,Max_min_set),
 	get_loop_itvar(Loop,Itvar),
+	propagate_sums_backwards(Iconstrs,Itvar,Sum_map_initial,Iconstrs2,Sum_map,Max_min_set),
 	Cost2=cost([],[],Iconstrs2,[(Itvar,BConstant)|Bsummands1],0),
 	% get the final constraints that have to be computed
 	foldl(get_maxs_mins(Max_min_set),Ub_fconstrs,[],Ub_fconstrs2),
@@ -996,11 +996,11 @@ get_sums(Sum_map,bound(lb,Exp,Bounded),Bconstrs,Bconstrs2):-
 get_sums(_Sum_map,_,Bconstrs,Bconstrs).
 
 
-propagate_sums_backwards(Iconstrs,Sum_map_initial,Iconstrs2,Sum_map,Max_min_set):-
+propagate_sums_backwards(Iconstrs,Itvar,Sum_map_initial,Iconstrs2,Sum_map,Max_min_set):-
 	reverse(Iconstrs,Iconstrs_rev),
-	foldl(propagate_sums,Iconstrs_rev,([],[],Sum_map_initial),(Iconstrs2,Max_min_set,Sum_map)).
+	foldl(propagate_sums(Itvar),Iconstrs_rev,([],[],Sum_map_initial),(Iconstrs2,Max_min_set,Sum_map)).
 
-propagate_sums(bound(Op,Astrexp,Bounded),(Iconstrs,Max_min_set,Sum_map),(Iconstrs3,Max_min_set4,Sum_map3)):-	
+propagate_sums(Itvar,bound(Op,Astrexp,Bounded),(Iconstrs,Max_min_set,Sum_map),(Iconstrs3,Max_min_set4,Sum_map3)):-	
 	Astrexp=exp(Index1,Index2,Std_exp,Std_exp_neg),
 	append(Index1,Index2,Index_total),
 	%add max/min
@@ -1023,15 +1023,17 @@ propagate_sums(bound(Op,Astrexp,Bounded),(Iconstrs,Max_min_set,Sum_map),(Iconstr
 	)
 	->
 
+	update_sum_map(Index1,Itvar,Std_exp,Std_exp2,Index1_sum,Sum_map,Sum_map2),
+	update_sum_map(Index2,Itvar,Std_exp_neg,Std_exp_neg2,Index2_sum,Sum_map2,Sum_map3),
 	%this means some are multiplied (the new names can be the same as the old if they did not coicide
-	update_max_set(Index1,Std_exp,Index1_max,Max_min_set2,Max_min_set3),
-	update_max_set(Index2,Std_exp_neg,Index2_max,Max_min_set3,Max_min_set4),
+	update_max_set(Index1,Std_exp2,Index1_max,Max_min_set2,Max_min_set3),
+	update_max_set(Index2,Std_exp_neg2,Index2_max,Max_min_set3,Max_min_set4),
 	
-	update_sum_map(Index1,Std_exp,Index1_sum,Max_min_set4,Sum_map,Sum_map2),
+
 	append(Index1_max,Index1_sum,Index1_final),
-	update_sum_map(Index2,Std_exp_neg,Index2_sum,Max_min_set4,Sum_map2,Sum_map3),
+	
 	append(Index2_max,Index2_sum,Index2_final),
-	Iconstrs3=[bound(Op,exp(Index1_final,Index2_final,Std_exp,Std_exp_neg),New_names)|Iconstrs2]
+	Iconstrs3=[bound(Op,exp(Index1_final,Index2_final,Std_exp2,Std_exp_neg2),New_names)|Iconstrs2]
 	;
 	Iconstrs3=Iconstrs2,
 	Sum_map3=Sum_map,
@@ -1050,6 +1052,26 @@ get_mapped([_|Xs],Map,New_names):-
 	
 add_indexes_to_set((Name,_Var),Max_map,Max_map2):-
 	insert_sl(Max_map,Name,Max_map2).
+
+update_sum_map(Index,Itvar,Expr,Expr2,Index_final,Sum_map,Sum_map2):-
+	get_first_factor(Expr,Expr2,Vars_set),
+	include(pair_contains(Vars_set),Index,Index_sum),
+	foldl(get_missing,Index,Vars_set,Missing),
+	maplist(tuple(Itvar),Missing,Index_extra),
+	substitute_by_new_name(Index_sum,Sum_map,Index_sum_substituted,Sum_map2),
+	append(Index_extra,Index_sum_substituted,Index_final).
+
+get_missing((_Name,Var),Set,Set1):-
+	remove_sl(Set,Var,Set1).
+	
+substitute_by_new_name([],Sum_map,[],Sum_map).
+substitute_by_new_name([(Name,Var)|Index_sum],Sum_map,[(New_name,Var)|Index_sum_substituted],Sum_map3):-
+%	contains_sl(Max_map,Name),!,
+	(lookup_lm(Sum_map,Name,New_name),Sum_map2=Sum_map
+	;
+	new_itvar(New_name),
+	insert_lm(Sum_map,Name,New_name,Sum_map2)),
+	substitute_by_new_name(Index_sum,Sum_map2,Index_sum_substituted,Sum_map3).
 	
 update_max_set(Index,Expr,Index_max,Max_set,Max_set2):-
 	get_all_but_first_factor(Expr,Vars_set),
@@ -1062,34 +1084,26 @@ pair_contains_first(Set,(F,_)):-
 	contains_sl(Set,F).	
 pair_contains(Set,(_,Var)):-
 	contains_sl(Set,Var).
+	
 get_all_but_first_factor(add(Summands),Vars):-
 	maplist(get_all_but_first_factor_1,Summands,Vars_list),
 	unions_sl(Vars_list,Vars).
-get_all_but_first_factor_1(mult([_|Rest_factors]),Vars_set):-
-	term_variables(Rest_factors,Vars),
-	from_list_sl(Vars,Vars_set).
+get_all_but_first_factor_1(mult(Factors),Vars_set1):-
+	member(First_factor,Factors),
+	var(First_factor),!,
+	term_variables(Factors,Vars),
+	from_list_sl(Vars,Vars_set),
+	remove_sl(Vars_set,First_factor,Vars_set1).
 	
-get_first_factor(add(Summands),Vars):-	
-	maplist(get_first_factor_1,Summands,Vars_list),
+get_first_factor(add(Summands),add(Summands1),Vars):-	
+	maplist(get_first_factor_1,Summands,Summands1,Vars_list),
 	unions_sl(Vars_list,Vars).
-get_first_factor_1(mult([First|_]),[First]):-
-	var(First),!.
-get_first_factor_1(mult([Factors]),_):-
-	throw(unexpected_factors(mult([Factors]))).
+get_first_factor_1(mult(Factors),mult(Factors),[First_valid]):-
+	member(First_valid,Factors),
+	var(First_valid),!.
+get_first_factor_1(mult(Factors),mult([Itvar|Factors]),[Itvar]).
 
-update_sum_map(Index,Expr,Index_sum_substituted,Max_map,Sum_map,Sum_map2):-
-	get_first_factor(Expr,Vars_set),
-	include(pair_contains(Vars_set),Index,Index_sum),
-	substitute_by_new_name(Index_sum,Max_map,Sum_map,Index_sum_substituted,Sum_map2).
 
-substitute_by_new_name([],_Max_map,Sum_map,[],Sum_map).
-substitute_by_new_name([(Name,Var)|Index_sum],Max_map,Sum_map,[(New_name,Var)|Index_sum_substituted],Sum_map3):-
-%	contains_sl(Max_map,Name),!,
-	(lookup_lm(Sum_map,Name,New_name),Sum_map2=Sum_map
-	;
-	new_itvar(New_name),
-	insert_lm(Sum_map,Name,New_name,Sum_map2)),
-	substitute_by_new_name(Index_sum,Max_map,Sum_map2,Index_sum_substituted,Sum_map3).
 	
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
