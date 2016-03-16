@@ -60,7 +60,7 @@ main:-
 
 % main transformation predicate
 % take a function definition and generate a list of cost relations (and print them)	
-defun2cost_exp([defun,Name,Args,Body_with_quotes],All_cost_relations):-
+defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relations):-
 	%FIXME: quotes such as '(a b) are currently not parsed correcty
 	fix_quotes(Body_with_quotes,Body),
 	% create map from variable names to prolog variables
@@ -84,6 +84,7 @@ defun2cost_exp(['defined-locally',Name,NArgs],[Entry]):-
 	print_cr(Entry),!.
 	
 defun2cost_exp(Other,_):-
+	format(user_error,'Failed translating S-expression: ~p~n',[Other]),
 	throw(error('Failed translating S-expression',Other)).
 
 % unroll_body process a body and extracts a set of calls that define its behavior

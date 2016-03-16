@@ -27,11 +27,25 @@ Read a file with a sequence of S-expressions and express them as nested lists
 
 	
 parse_lisp(File,S_expressions) :-
-   phrase_from_file(s_expressions(S_expressions), File).
+   phrase_from_file(definitions(S_expressions), File).
 
 parse_lisp(File,_) :-
 	throw(error('Failed parsing file',File)).	
+
+definitions([Sexp|Sexps])-->
+    spaces,
+    s_expression(Sexp),!,
+    spaces,
+    definitions(Sexps).	
+
+definitions(Sexps)-->
+    illegal_term,!,
+    definitions(Sexps).	
+
+definitions([])-->spaces,[].
 	
+illegal_term--> anything_but_new_lines(Illegal_term),[X],{char_type(X,newline),format(user_error,'ERROR- illegal term:~s~n',[Illegal_term])}.
+
 s_expressions([Sexp|Sexps])-->
     spaces,
     s_expression(Sexp),!,
@@ -49,8 +63,19 @@ space --> [X],{ char_type(X,white)}.
 s_expression(E) --> is_atom(E).    
 s_expression(E) --> "(",spaces, s_expressions(Exps),spaces,")",{E=Exps}.  
 
+is_atom(string(String))-->"\'\"",anything_but_quotes(String),"\"".
+
 is_atom(Name_lower) -->
       chars(CHARS), {atom_codes(Name, CHARS),downcase_atom(Name,Name_lower)}.
+
+anything_but_quotes([X|Y]) --> anything_but_quote(X), anything_but_quotes(Y).
+anything_but_quotes([]) --> [],!.
+anything_but_quote(X) --> [X], {\+atom_codes('\"',[X])}.
+
+anything_but_new_lines([X|Y]) --> anything_but_new_line(X), anything_but_new_lines(Y).
+anything_but_new_lines([]) --> [],!.
+
+anything_but_new_line(X) --> [X], {\+char_type(X,newline)}.
 
 chars([X|Y]) --> char(X), chars(Y).
 chars([X]) --> char(X).
