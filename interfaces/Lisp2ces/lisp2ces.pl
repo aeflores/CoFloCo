@@ -72,9 +72,16 @@ defun2cost_exp([defun,Name,Args,Body_with_quotes],All_cost_relations):-
 	% the main cost relation
 	Cost_relation= eq(Head,1,Body_unrolled,[]),
 	% we want closed-form bound for this cost relation
-	Entry= entry(Head:[]),
-	ut_flat_list([Entry,Cost_relation|Cost_relations],All_cost_relations),
+	ut_flat_list([Cost_relation|Cost_relations],All_cost_relations),
 	maplist(print_cr,All_cost_relations),!.
+
+defun2cost_exp(['defined-locally',Name,NArgs],[Entry]):-
+	atom_number(NArgs,Nargs_number),
+	NArgs1 is Nargs_number+1,
+	length(Args,NArgs1),
+	Head=..[Name|Args],
+	Entry= entry(Head:[]),
+	print_cr(Entry),!.
 	
 defun2cost_exp(Other,_):-
 	throw(error('Failed translating S-expression',Other)).
@@ -256,6 +263,7 @@ print_cr(Cr):-
 	numbervars(Crp,0,_),
 	format('~q.~n',[Crp]).
 	
+make_dicc(nil,[],[]).	
 make_dicc([],[],[]).
 make_dicc([Name|Names],[Var|Vars],Map1):-
 	make_dicc(Names,Vars,Map),
