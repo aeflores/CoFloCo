@@ -44,15 +44,16 @@ main:-
 	Args=[File|_Rest],
 	catch(
 	  (
-	  parse_lisp(File,S_expressions),
+	  parse_lisp(File,S_expressions),!,
 	  counter_initialize(if_cnt,0),
 	  counter_initialize(atom_cnt,2),
-	  maplist(defun2cost_exp,S_expressions,All_cost_relations),
-	  ut_flat_list(All_cost_relations,All_cost_relations_flat),
-	  compute_undefined_predicates(All_cost_relations_flat,Undefined_predicates),
+	  maplist(defun2cost_exp,S_expressions,All_cost_relations), 
 	  load_basic_lisp(Basic_lisp_crs),
-	  % print basic lisp functions that are referenced by the main program
-	  print_basic_lisp(Basic_lisp_crs,Undefined_predicates)
+	  ut_flat_list([Basic_lisp_crs,All_cost_relations],Total_crs),
+	  compute_undefined_predicates(Total_crs,Selected_crs,Undefined_predicates),
+	  % print the crs
+	  maplist(print_cr,Selected_crs),
+	  format(user_error,'Undefined functions: ~q ~n',[Undefined_predicates])
 	  ),Fail,writeln(Fail)),
 	halt.
 
@@ -72,8 +73,8 @@ defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relation
 	% the main cost relation
 	Cost_relation= eq(Head,1,Body_unrolled,[]),
 	% we want closed-form bound for this cost relation
-	ut_flat_list([Cost_relation|Cost_relations],All_cost_relations),
-	maplist(print_cr,All_cost_relations),!.
+	ut_flat_list([Cost_relation|Cost_relations],All_cost_relations),!.
+	
 
 defun2cost_exp(['defined-locally',Name,NArgs],[Entry]):-
 	atom_number(NArgs,Nargs_number),
@@ -92,8 +93,11 @@ defun2cost_exp(Other,_):-
 
 % a variable	
 unroll_body(Dicc,Var_name,[],Var,[]):-
-	lookup_lm(Dicc,Var_name,Var).
+	lookup_lm(Dicc,Var_name,Var),!.
 
+%a string
+unroll_body(_Dicc,string(X),[],Size,[]):-
+	length(X,Size),!.
 % an atom	
 unroll_body(_Dicc,Quoted_atom,[],Size,[]):-
 	atom(Quoted_atom),
@@ -135,7 +139,7 @@ unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,Res_var,Cost_relations
 %	append(Cost_relations1,Cost_relations2,Cost_relations).
 	
 % lambdas are used to express let expressions in simplified lisp	
-unroll_body(Dicc,[[lambda,New_vars,Exp]| Def_exps],Body_unrolled,Res_var,Cost_relations):-
+unroll_body(Dicc,[[lambda,New_vars,Exp]| Def_exps],Body_unrolled,Res_var,Cost_relations):-!,
 	couple_definitions(New_vars,Def_exps,Defs),
 	unroll_definitions(Defs,Dicc,Dicc1,Calls_defs,Cost_relations1),
 	unroll_body(Dicc1,Exp,Calls_exp,Res_var,Cost_relations2),
@@ -143,7 +147,7 @@ unroll_body(Dicc,[[lambda,New_vars,Exp]| Def_exps],Body_unrolled,Res_var,Cost_re
 	append(Cost_relations1,Cost_relations2,Cost_relations).	
 
 % coerce is type casting, for now we ignore it	
-unroll_body(Dicc,[coerce,Exp,_Type],Body_unrolled,Res_var,Cost_relations):-
+unroll_body(Dicc,[coerce,Exp,_Type],Body_unrolled,Res_var,Cost_relations):-!,
 	unroll_body(Dicc,Exp,Body_unrolled,Res_var,Cost_relations).
 
 
@@ -157,7 +161,7 @@ unroll_body(Dicc,[Function|Args],Body_unrolled,Res_var,Cost_relations):-
 
 %something else
 unroll_body(_Dicc,Expr,_Body_unrolled,_Res_var,_Cost_relations):-
-	format(user_error,'Unknown Function format: ~p~n',[Expr]),fail.
+	format(user_error,'Unknown Function format: ~p~n',[Expr]),!,fail.
 
 % predicates to deal witht the lambda expressions and let
 
@@ -168,7 +172,7 @@ couple_definition(Var,Exp,[Var, Exp]).
 % update the variable map
 unroll_definitions([],Dicc,Dicc,[],[]).
 unroll_definitions([[Var_name,Exp]|Defs],Dicc,Dicc_final,Calls,Cost_relations):-
-	unroll_body(Dicc,Exp,Calls_exp,Res_var,Cost_relations_exp),
+	unroll_body(Dicc,Exp,Calls_exp,Res_var,Cost_relations_exp),!,
 	insert_lm(Dicc,Var_name,Res_var,Dicc1),
 	unroll_definitions(Defs,Dicc1,Dicc_final,Calls_aux,Cost_relations_aux),
 	append(Calls_exp,Calls_aux,Calls),
@@ -200,9 +204,12 @@ size_atom(Atom,_Length):-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % complete the abstract program with the definitions of the basic functions (cdr, consp, etc.) that are referenced
 
-compute_undefined_predicates(Eqs,Undefined):-
-	foldl(get_defined,Eqs,[],Defined),
-	foldl(get_called,Eqs,[],Called),
+compute_undefined_predicates(Terms,Crs_selected,Undefined):-
+	partition(is_entry,Terms,Entries,Crs),
+	foldl(init_called,Entries,[],Called_ini),
+	compute_called(Crs,Called_ini,Called),
+	foldl(get_defined,Crs,[],Defined),
+	include(is_called(Called),Crs,Crs_selected),
 	difference_sl(Called,Defined,Undefined).
 
 get_defined(eq(Head,_Cost,_Calls,_Cs),Defined,Defined1):-!,
@@ -210,9 +217,30 @@ get_defined(eq(Head,_Cost,_Calls,_Cs),Defined,Defined1):-!,
 	insert_sl(Defined,F/A,Defined1).
 get_defined(_,Defined,Defined).
 
-get_called(eq(_Head,_Cost,Calls,_Cs),Called,Called1):-!,
+
+is_entry(entry(_)).
+is_called(Called,eq(Head,_,_,_)):-
+	functor(Head,F,A),
+	contains_sl(Called,F/A).
+
+init_called(entry(Head:_),Called,Called1):-
+	functor(Head,F,A),
+	insert_sl(Called,F/A,Called1).
+	
+compute_called(Eqs,Called,Called1):-
+	foldl(get_called_new,Eqs,Called,Called_aux),
+	length(Called_aux,N),
+	length(Called_aux,N1),
+	(N1 >N ->
+	  compute_called(Eqs,Called_aux,Called1)
+	  ;
+	  Called1=Called_aux).
+
+get_called_new(eq(Head,_Cost,Calls,_Cs),Called,Called1):-
+	functor(Head,F,A),
+	contains_sl(Called,F/A),!,
 	foldl(get_called_aux,Calls,Called,Called1).
-get_called(_,Called,Called).
+get_called_new(_,Called,Called).
 
 get_called_aux(Call,Called,Called1):-
 	functor(Call,F,A),
@@ -223,31 +251,13 @@ load_basic_lisp(Crs):-
 	findall(X,(eq(Head,Cost,Calls,Cs),X=eq(Head,Cost,Calls,Cs)),Crs).
 
 
-
-print_basic_lisp(Basic_lisp_crs,Used):-
-	print_basic_lisp_aux(Basic_lisp_crs,Used,Used).
-
-print_basic_lisp_aux([],_Used,Undefined):-
-	(Undefined\=[]->
-	format(user_error,'Undefined functions: ~q ~n',[Undefined])
-	; 
-	true).
-
-print_basic_lisp_aux([Cr|Crs],Used,Undefined):-
-	Cr=eq(Head,_,_,_),
-	functor(Head,F,A),
-	remove_sl(Undefined,F/A,Undefined1),
-	(contains_sl(Used,F/A)->
-	  print_cr(Cr)
-	  ;
-	  true),
-	  print_basic_lisp_aux(Crs,Used,Undefined1).
-	  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % auxiliary predicates
 
 fix_quotes(Atom,Atom):-
 	atom(Atom),!.
+fix_quotes(string(X),string(X)):-!.
+
 fix_quotes([],[]).
 fix_quotes([X|Xs],[Ls1|Xss_fixed]):-
     X=='\'',
