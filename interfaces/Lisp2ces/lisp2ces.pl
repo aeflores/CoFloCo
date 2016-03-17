@@ -114,6 +114,9 @@ unroll_body(_Dicc,Atom,[],Size,[]):-
 	atom(Atom),!,
 	size_atom(Atom,Size).
 	
+unroll_body(_Dicc,[quote,S_expression],[],Size,[]):-!,
+	size_s_expression(S_expression,Size).
+
 
 % if expression
 unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,Res_var,Cost_relations):-!,
@@ -151,6 +154,7 @@ unroll_body(Dicc,[[lambda,New_vars,Exp]| Def_exps],Body_unrolled,Res_var,Cost_re
 	unroll_body(Dicc1,Exp,Calls_exp,Res_var,Cost_relations2),
 	append(Calls_defs,Calls_exp,Body_unrolled),
 	append(Cost_relations1,Cost_relations2,Cost_relations).	
+	
 
 % coerce is type casting, for now we ignore it	
 unroll_body(Dicc,[coerce,Exp,_Type],Body_unrolled,Res_var,Cost_relations):-!,
@@ -172,7 +176,11 @@ unroll_body(_Dicc,Expr,_Body_unrolled,_Res_var,_Cost_relations):-
 % predicates to deal witht the lambda expressions and let
 
 couple_definitions(Vars,Exps,Defs):-
-	maplist(couple_definition,Vars,Exps,Defs).
+	maplist(couple_definition,Vars,Exps,Defs),!.
+couple_definitions(Vars,Exps,_Defs):-
+	length(Vars,N1),
+	length(Exps,N2),
+	format(user_error,'Failed coupling variables: ~n~p and its definitions ~n~p in lambda expression. Different number ~p ~p~n',[Vars,Exps,N1,N2]),!,fail.
 couple_definition(Var,Exp,[Var, Exp]).
 
 % update the variable map
@@ -184,6 +192,8 @@ unroll_definitions([[Var_name,Exp]|Defs],Dicc,Dicc_final,Calls,Cost_relations):-
 	append(Calls_exp,Calls_aux,Calls),
 	append(Cost_relations_exp,Cost_relations_aux,Cost_relations).
 
+unroll_definitions([[_Var_name,Exp]|_Defs],_Dicc,_Dicc_final,_Calls,_Cost_relations):-
+	format(user_error,'Failed definition unrolling: ~p~n',[Exp]),!,fail.
 
 	
 size_atom(nil,0):-!.
@@ -205,7 +215,12 @@ size_atom(Atom,Size):-
 size_atom(Atom,_Length):-
 	format(user_error,'No size defined for atom: ~p~n',[Atom]),fail.
 
-
+size_s_expression([],0):-!.
+size_s_expression([X|Xs],Size):-!,
+	size_s_expression(X,S1),
+	size_s_expression(Xs,S2),
+	Size is S1+S2+1.
+size_s_expression(_,1).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % complete the abstract program with the definitions of the basic functions (cdr, consp, etc.) that are referenced
@@ -265,11 +280,15 @@ fix_quotes(Atom,Atom):-
 fix_quotes(string(X),string(X)):-!.
 
 fix_quotes([],[]).
-fix_quotes([X|Xs],[Ls1|Xss_fixed]):-
-    X=='\'',
+fix_quotes([X|Xs],[[quote,Ls]|Xss_fixed]):-
+    X=='\'',!,
     Xs=[Ls|Xss],
-    Ls1=['quote'|Ls],!,
     fix_quotes(Xss,Xss_fixed).	
+ 
+ fix_quotes([X|Xs],[['\\',Ls]|Xss_fixed]):-
+    X=='\\',!,
+    Xs=[Ls|Xss],
+    fix_quotes(Xss,Xss_fixed).	  
 
 fix_quotes([X|Xs],[X_fixed|Xs_fixed]):-
     fix_quotes(X,X_fixed),
