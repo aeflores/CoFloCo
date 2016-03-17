@@ -59,8 +59,14 @@ main:-
 
 
 
+
+
 % main transformation predicate
 % take a function definition and generate a list of cost relations (and print them)	
+defun2cost_exp(['defun-simplified','state-fix'|_],[]):-!,
+	format(user_error,'For now, we ignore state-fix function~n',[]).
+
+
 defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relations):-
 	%FIXME: quotes such as '(a b) are currently not parsed correcty
 	fix_quotes(Body_with_quotes,Body),
