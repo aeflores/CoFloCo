@@ -136,7 +136,7 @@ compute_cover_point_for_scc(SCC_N) :-
 		add_to_btc([Cover_Point]),
 		declare_residual_scc(SCC_N,Cover_Point)
 	;
-	    throw(error(no_cover_point,[scc=SCC_N]))
+	    throw(error(no_cover_point(SCC_N,Nodes)))
 	    
 	).
 
