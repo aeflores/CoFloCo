@@ -101,12 +101,22 @@ eq('nfix'(A,0),1,[],[A+1=<0]).
 
 eq('lnfix$inline'(A,A),1,[],[]).
 
+
+eq('hide'(A,A),1,[],[]).   % identity function
+eq('coerce'(A,A),1,[],[]).   % for now, also treat this as id
+
+
 %undefined
 eq('return-last'(_A,_B,_C,_D),1,[],[]).
 eq('unary-/'(_A,_B),1,[],[]).
 eq('integerp'(_A,_B),1,[],[]).
+eq('rationalp'(_A,_B),1,[],[]).
+eq('acl2-numberp'(_A,_B),1,[],[]).
 eq('characterp'(_A,_B),1,[],[]).
 eq('stringp'(_A,_B),1,[],[]).
+eq('symbolp'(_A,_B),1,[],[]).
+eq('char-code'(_A),1,[],[]).
+eq('code-char'(_A),1,[],[]).
 eq('binary-*'(_A,_B,_C),1,[],[]).
 eq('equal'(_A,_B,_C),1,[],[]).
 eq('eq'(_A,_B,_C),1,[],[]).
