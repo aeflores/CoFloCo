@@ -78,8 +78,8 @@ normalize_loop(((Head,Rec_Calls,Term_flag),(Inv,Eq_id)),((Head,Rec_Calls,Term_fl
 	nad_normalize_polyhedron(Inv,Inv_normalized).
 	
 save_loop(RefCnt,((Head,Calls,Term_flag),List_Inv_Eqs)):-
-%	reverse(List_Inv_Eqs,List_Inv_Eqs1),
-	maplist(save_loop_1(RefCnt,Head,Calls,Term_flag),List_Inv_Eqs).
+	reverse(List_Inv_Eqs,List_Inv_Eqs1),
+	maplist(save_loop_1(RefCnt,Head,Calls,Term_flag),List_Inv_Eqs1).
 
 save_loop_1(RefCnt,Head,Calls,Term_flag,(Inv,Equations)):-
 	add_loop_ph(Head,RefCnt,Calls,Inv, Equations,Term_flag).

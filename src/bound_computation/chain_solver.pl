@@ -68,7 +68,8 @@ compress_chain_costs([Base_case],Chain_rev,Head_total,Head,Cost_base,Cs_base):-
 	get_all_base_case_information(Head,[Base_case|Chain_rev],Cs_base),
 	profiling_start_timer(loop_phases),
 	(number(Base_case)->
-		compute_phase_cost(Head,[],Base_case,[Base_case|Chain_rev],Cost_base)
+		compute_phase_cost(Head,[],Base_case,[Base_case|Chain_rev],Cost_base_aux),
+		cstr_join_equal_fconstr(Cost_base_aux,Cost_base)
 		;
 		copy_term(Head_total,Call),
 		compute_phase_cost(Head,[Call],Base_case,[Base_case|Chain_rev],Cost_base_aux),

@@ -227,7 +227,11 @@ compute_backward_invariants(_,_).
 
 % the case where the invariant is already computed
 compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-%
-	forward_invariant(Head,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+    (Ph=multiple(Intern_ph,_)->
+    forward_invariant(Head,([Intern_ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv)
+    ;
+	forward_invariant(Head,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv)
+	),
     partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv2),Entry_pattern),
     Local_inv==Local_inv2,!,
     counter_increase(compressed_invs,1,_),
@@ -243,41 +247,22 @@ compute_backward_invariant([Base_case],Prev_chain,Head,RefCnt,Entry_pattern_norm
     nad_glb(Cs_1,Inv,Entry_pattern),
 	\+nad_is_bottom(Entry_pattern),
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized).
-
-%multiple recursion phase
-compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-
-	phase_loop(Ph,RefCnt,Head,_,Cs),
-	maplist(compute_backward_invariant_aux([Ph|Prev_chain],Head,RefCnt),Tails,Call_patterns),
-	nad_list_lub(Call_patterns,Initial_inv),
-    forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
-	findall((Head_loop,Calls_loop,Cs_1),
-	    (
-	    member(Loop,Ph),
-	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_),
-	    nad_glb(Local_inv,Cs_loop,Cs_1)
-	    ),Loops),
-	split_multiple_loops(Loops,Loops_splitted),       
-	backward_invariant_fixpoint(inv(Head,Initial_inv),Loops_splitted,inv(Head_out,It_pattern)),
-	Head=..[_|EVars],
-	Head=Head_out,
-	nad_project_group(EVars,Cs,Extra_conds),
-	nad_glb(Extra_conds,It_pattern,Entry_pattern),
-	Head=Head_loop,
-	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
-	(nad_is_bottom(Entry_pattern_normalized)->
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1])),
-	fail
-	;
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
-	).
-
-
-
+	
 % the non-terminating case, the cost relations have to be applicable, but that is all we know
-compute_backward_invariant([Non_terminating],_Prev_chain,Head,RefCnt,Entry_pattern):-!,
+compute_backward_invariant([Non_terminating],_Prev_chain,Head,RefCnt,Entry_pattern):-
+	Non_terminating=[_|_],!,
 	phase_loop(Non_terminating,RefCnt,Head,_,Cs),
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern).
+
+compute_backward_invariant([multiple(Non_terminating,Tails)],_Prev_chain,Head,RefCnt,Entry_pattern):-
+	member([],Tails),!,
+	phase_loop(Non_terminating,RefCnt,Head,_,Cs),
+	Head=..[_|EVars],
+ 	nad_project_group(EVars,Cs,Entry_pattern).
+
+
+
  % We have a phase that is not iterative (Ph is a number).
  % The backward invariant is obtained by applying the loop definition once to the
  % backward invariant of the rest of the chain
@@ -327,6 +312,56 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
 	).
 	
+%multiple recursion phase
+compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-
+	number(Ph),!,
+	maplist(compute_backward_invariant_aux([Ph|Prev_chain],Head,RefCnt),Tails,Call_patterns),
+	nad_list_lub(Call_patterns,Initial_inv),
+    forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+	findall((Head_loop,Calls_loop,Cs_1),
+	    (
+	    loop_ph(Head_loop,(Ph,RefCnt),Calls_loop,Cs_loop,_,_),
+	    nad_glb(Local_inv,Cs_loop,Cs_1)
+	    ),Loops),
+	split_multiple_loops(Loops,Loops_splitted),    
+	backward_invariant_once(inv(Head,Initial_inv),Loops_splitted,inv(Head_out,Entry_pattern)),
+	Head=Head_out,
+	Head=Head_loop,
+	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
+	(nad_is_bottom(Entry_pattern_normalized)->
+	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1])),
+	fail
+	;
+	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
+	).
+
+
+%multiple recursion phase
+compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-
+	phase_loop(Ph,RefCnt,Head,_,Cs),
+	maplist(compute_backward_invariant_aux([Ph|Prev_chain],Head,RefCnt),Tails,Call_patterns),
+	nad_list_lub(Call_patterns,Initial_inv),
+    forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+	findall((Head_loop,Calls_loop,Cs_1),
+	    (
+	    member(Loop,Ph),
+	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_),
+	    nad_glb(Local_inv,Cs_loop,Cs_1)
+	    ),Loops),
+	split_multiple_loops(Loops,Loops_splitted),       
+	backward_invariant_fixpoint(inv(Head,Initial_inv),Loops_splitted,inv(Head_out,It_pattern)),
+	Head=..[_|EVars],
+	Head=Head_out,
+	nad_project_group(EVars,Cs,Extra_conds),
+	nad_glb(Extra_conds,It_pattern,Entry_pattern),
+	Head=Head_loop,
+	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
+	(nad_is_bottom(Entry_pattern_normalized)->
+	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1])),
+	fail
+	;
+	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
+	).
 	
 compute_backward_invariant_aux(Prev_chain,Head,RefCnt,Chain,Entry_pattern):-
 	(compute_backward_invariant(Chain,Prev_chain,Head,RefCnt,Entry_pattern)->
@@ -359,9 +394,6 @@ compute_forward_invariants(Entry_Call,RefCnt):-
 compute_forward_invariants(_,_).
 
 
-
-
-
 get_reversed_chains(Prefix,[multiple(Phase,Tails)],Rev_chains):-!,
 	maplist(get_reversed_chains([Phase|Prefix]),Tails,Rev_chains_lists),
 	foldl(append,Rev_chains_lists,[],Rev_chains).
@@ -392,82 +424,37 @@ compute_forward_invariant(Chain,RefCnt,Entry_Call,Inv):-
 %initial phase of a bigger chain not recursive
 % we start from the precondition (scc_forward_invariant) and store that invariant
 % then we apply the loop of the phase once and return that one
-compute_forward_invariant([Entry_phase],RefCnt,Head, Inv_out):-
-    number(Entry_phase),
-    loop_ph(Head,(Entry_phase,RefCnt),[Call],Cs,_,_),  !,
-    Call=..[_|Vars2],
-    scc_forward_invariant(Head,_,Inv),
-    nad_glb(Inv,Cs,Cs_1),
-    nad_project_group(Vars2,Cs_1,Inv_out),
-    Head=Call,
-    (nad_is_bottom(Inv_out)->
-        assert(unfeasible_chain_prefix(Head,RefCnt,[Entry_phase])),
-        fail
-     ;
-        add_forward_invariant(Head,([Entry_phase],RefCnt), Inv)
-     ).
+compute_forward_invariant([],_,Head, Inv):-
+	scc_forward_invariant(Head,_,Inv).
 
 
-% a chain with only a base case
-% we start from the precondition (scc_forward_invariant) and store that invariant
-compute_forward_invariant([Entry_phase],RefCnt,Entry_Call,none):-
-    number(Entry_phase),!,%a non recursive phase
-    scc_forward_invariant(Entry_Call,_,Inv),
-    add_forward_invariant(Entry_Call,([Entry_phase],RefCnt),Inv).
-
-
-%initial phase that is recursive
-% start from the precondition (scc_forward_invariant) and apply the loops until
-% reaching a fixpoint
-compute_forward_invariant([Entry_phase],RefCnt,Entry_Call, Inv_out):-!,
-    scc_forward_invariant(Entry_Call,_,Inv_0),
-    findall((Head_loop,Calls_loop,Cs_loop),
-	    (
-	    member(Loop,Entry_phase),
-	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_)
-	    ),Loops),
-	split_multiple_loops(Loops,Loops_splitted),       
-    forward_invariant_fixpoint(inv(Entry_Call,Inv_0),Loops_splitted,inv(Entry_Call,Inv_aux)),
-    apply_loops_external(Loops_splitted,inv(Entry_Call,Inv_aux),Entry_call2,Cs_list),
-%    include(nad_is_bottom,Cs_list,Bottoms),
-%    length(Bottoms,N_bot),
-%    length(Entry_phase,N_phase),
-%    ((Bottoms\=[],N_bot\=N_phase)-> format(user_error,'We could eliminate ~p loops in ~p~n',[N_bot,[Entry_phase]]);true),
-   nad_list_lub(Cs_list,Inv_out),
-    Entry_call2=Entry_Call,
-   (nad_is_bottom(Inv_out)->
-        assert(unfeasible_chain_prefix(Entry_Call,RefCnt,[Entry_phase])),
-        fail
-     ;
-        add_forward_invariant(Entry_Call,([Entry_phase],RefCnt), Inv_aux)
-    ).
-
-%an intermediate non-iterative phase
+%non-iterative phase
 % start from the returned invariant of the suffix chain, store that invariant
 % and apply the loops once to obtain the return invariant
 compute_forward_invariant([Non_loop|Chain],RefCnt,Entry_Call,Inv_out):-
-    number(Non_loop),
-    loop_ph(Entry_Call,(Non_loop,RefCnt),[Call],Cs,_,_),!,
+    number(Non_loop),!,
     compute_forward_invariant(Chain,RefCnt,Entry_Call,Inv_aux), 
-    Call=..[_|Vars],
-    nad_glb(Inv_aux,Cs,Cs_1),
-    nad_project_group(Vars,Cs_1,Inv_out),
-    Call=Entry_Call,
-   (nad_is_bottom(Inv_out)->
-        assert(unfeasible_chain_prefix(Entry_Call,RefCnt,[Non_loop|Chain])),
-        fail
-        ;
-        add_forward_invariant(Entry_Call,([Non_loop|Chain],RefCnt), Inv_aux)
+          findall((Head_loop,Calls_loop,Cs_loop),
+	    (
+	    loop_ph(Head_loop,(Non_loop,RefCnt),Calls_loop,Cs_loop,_,_)
+	    ),Loops),
+	split_multiple_loops(Loops,Loops_splitted),  
+	(Loops_splitted=[]->
+	    Inv_out=none,
+	    add_forward_invariant(Entry_Call,([Non_loop|Chain],RefCnt), Inv_aux)
+	    ;
+
+		forward_invariant_once(inv(Entry_Call,Inv_aux),Loops_splitted,inv(Entry_call2,Inv_out)),
+   		Entry_call2=Entry_Call,
+   		(nad_is_bottom(Inv_out)->
+        	assert(unfeasible_chain_prefix(Entry_Call,RefCnt,[Non_loop|Chain])),
+        	fail
+        	;
+        	add_forward_invariant(Entry_Call,([Non_loop|Chain],RefCnt), Inv_aux)
+      	)
       ).
 
-%The base case in a chain with multiple phases
-% take from the returned invariant of the suffix chain and store it
-compute_forward_invariant([Phase|Chain],RefCnt,Entry_Call, Inv_out):-
-    number(Phase),!,
-    compute_forward_invariant(Chain,RefCnt,Entry_Call, Inv_out),
-    add_forward_invariant(Entry_Call,([Phase|Chain],RefCnt), Inv_out).
-
-%an intermediate iterative phase
+%an iterative phase
 % start from the returned invariant of the suffix chain, 
 % apply the loops once to obtain the return invariant
 compute_forward_invariant([Phase|Chain],RefCnt,Entry_Call, Inv_out):-!,
@@ -479,12 +466,11 @@ compute_forward_invariant([Phase|Chain],RefCnt,Entry_Call, Inv_out):-!,
 	    ),Loops),
 	split_multiple_loops(Loops,Loops_splitted),    
     forward_invariant_fixpoint(inv(Entry_Call,Inv_0),Loops_splitted, inv(Entry_Call, Inv_aux)),
-    apply_loops_external(Loops_splitted,inv(Entry_Call,Inv_aux),Entry_call2,Cs_list),
+    forward_invariant_once(inv(Entry_Call,Inv_aux),Loops_splitted,inv(Entry_call2,Inv_out)),
 %    include(nad_is_bottom,Cs_list,Bottoms),
 %        length(Bottoms,N_bot),
 %        length(Phase,N_phase),
 %    ((Bottoms\=[],N_bot\=N_phase)-> format(user_error,'We could eliminate ~p loops in ~p~n',[N_bot,[Phase|Chain]]);true),
-    nad_list_lub(Cs_list,Inv_out),
     Entry_call2=Entry_Call,
    (nad_is_bottom(Inv_out)->
         assert(unfeasible_chain_prefix(Entry_Call,RefCnt,[Phase|Chain])),
@@ -493,14 +479,34 @@ compute_forward_invariant([Phase|Chain],RefCnt,Entry_Call, Inv_out):-!,
         add_forward_invariant(Entry_Call,([Phase|Chain],RefCnt), Inv_aux)
      ).
 
-apply_loops_external([],_,_,[]).
 
-apply_loops_external([(Head_loop,Call_loop,Cs_loop)|Loops],inv(Head_inv,Inv),Call,[Cs|Cs_list]):-
+backward_invariant_once(Initial_inv,Loops_splitted,inv(Head,Inv_out)):-
+	apply_loops_backward(Loops_splitted,Initial_inv,Head,Cs_list),
+	nad_list_lub(Cs_list,Inv_out).
+	
+
+apply_loops_backward([],_,_,[]).
+
+apply_loops_backward([(Head_loop,Call_loop,Cs_loop)|Loops],inv(Call_inv,Inv),Head,[Cs|Cs_list]):-
+       copy_term(loop(Head_loop,Call_loop,Cs_loop),loop(Head,Call_inv,Cs_aux)),
+       nad_glb(Inv,Cs_aux,Cs_context),
+       Head=..[_|Vars],
+       nad_project_group(Vars,Cs_context,Cs),
+       apply_loops_backward(Loops,inv(Call_inv,Inv),Head,Cs_list).
+       
+
+forward_invariant_once(Initial_inv,Loops_splitted,inv(Head,Inv_out)):-
+	apply_loops_forward(Loops_splitted,Initial_inv,Head,Cs_list),
+	nad_list_lub(Cs_list,Inv_out).
+	       
+apply_loops_forward([],_,_,[]).
+
+apply_loops_forward([(Head_loop,Call_loop,Cs_loop)|Loops],inv(Head_inv,Inv),Call,[Cs|Cs_list]):-
        copy_term(loop(Head_loop,Call_loop,Cs_loop),loop(Head_inv,Call,Cs_aux)),
        nad_glb(Inv,Cs_aux,Cs_context),
        Call=..[_|Vars],
        nad_project_group(Vars,Cs_context,Cs),
-       apply_loops_external(Loops,inv(Head_inv,Inv),Call,Cs_list).
+       apply_loops_forward(Loops,inv(Head_inv,Inv),Call,Cs_list).
        
        
  split_multiple_loops(Loops,Loops_splitted):-

@@ -282,7 +282,7 @@ transform_max_min2_head(Head,Call,Max_min,Loop,Maxs_mins,Maxs_mins_head):-
 transform_max_min2_head_1(Vars_head,Cs,Max_min,bound(Op,Lin_exp,Bounded),Fconstrs,[bound(Op,Lin_exp_head,Bounded)|Fconstrs]):-
 	max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_mins_head),
 	member(Lin_exp_head,Maxs_mins_head),!.
-transform_max_min2_head_1(_Vars_head,_Cs,_Max_min,+,Fconstrs,Fconstrs).
+transform_max_min2_head_1(_Vars_head,_Cs,_Max_min,_,Fconstrs,Fconstrs).
 %! add_general_ranking_functions(Head:term,Call:term,Phase:phase) is det
 % add final constraints using the already computed ranking functions
 add_general_ranking_functions(Head,Call,Phase):-
@@ -381,6 +381,7 @@ compute_sum(Head,Call,Phase,Loop,[]+1,max,Bounded,New_fconstrs,New_iconstrs,Pend
 % minsum: partial ranking function (a special case of linear sum)
 %/*
 compute_sum(Head,Call,Phase,Loop,[]+1,min,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
+	(get_param(compute_lbs,[])->
 	current_chain_prefix(Chain_prefix),
 	bagof_no_fail(Lb,get_partial_lower_bound(Head,Call,Chain_prefix,Loop,Lb),Lbs),
 	maplist(check_loops_minsum(Head,Call,Phase,Loop,Bounded,Pending),Lbs,New_fconstrs_list,New_iconstrs_list,Pending_out_list),
@@ -393,7 +394,9 @@ compute_sum(Head,Call,Phase,Loop,[]+1,min,Bounded,New_fconstrs,New_iconstrs,Pend
 		Pending_out=Pending
 		;
 		Pending_out=Pending_out_aux
-	).		
+	)
+	;
+	New_fconstrs=[],New_iconstrs=[],Pending=Pending_out).
 %*/
 % Stored solution
 compute_sum(Head,Call,_Phase,Loop,Lin_exp,Max_min,Bounded,Fconstrs1,[New_iconstr|Iconstrs1],Pending,Pending):-
@@ -1015,6 +1018,7 @@ find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending_o
 		!,
 		save_used_term(maxsum(Loop),Head,Call,Exp2,Bounded).
 
+/*
 find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending):-
 		used_term(maxsum,Loop,Head,Call,Exp2,Bounded),	
 		term_variables((Head,Call),Vars),
@@ -1027,7 +1031,8 @@ find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending):
 		   nad_entails(Vars,Cs,[Exp_diff_base_case_print>=0])
 		  ;
 		  true),!.
-		
+*/	
+
 %! find_minsum_constraint(Loop:loop_id,Head:term,Call:term,Cs:polyhedron,Exp_diff:nlinexp,Flag:flag,Bounded:list(itvar),Pending:pending_constrs,Pending_out:pending_constrs)
 % try to find a pending minsum that can be bounded by Exp_diff
 % we check that Exp_diff=< Exp2 	
@@ -1038,14 +1043,20 @@ find_minsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded,Pending,Pending):-
 		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
 		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!,
 		save_used_term(minsum(Loop),Head,Call,Exp2,Bounded).
-%/*		
+%this is important for lower bounds!	
+
 find_minsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded,Pending,Pending):-
 		used_term(minsum,Loop,Head,Call,Exp2,Bounded),	
 		term_variables((Head,Call),Vars),
 		subtract_le(Exp2,Exp_diff,Exp_diff2),
 		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
 		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!.
-%	*/	
+
+save_used_term(Max_min_loop,Head,Call,Exp,Bounded):-
+	Max_min_loop=..[Max_minsum,Loop],
+	used_term(Max_minsum,Loop,Head,Call,Exp2,Bounded),
+	Exp2==Exp,!.
+
 save_used_term(minsum(Loop),Head,Call,Exp,Bounded):-!,
 	assert(used_term(minsum,Loop,Head,Call,Exp,Bounded)).
 	

@@ -259,7 +259,7 @@ refinement:-
       crs_node_scc(F,A,SCC_N)
       ),SCC_Ns),
     max_list(SCC_Ns,SCC_max),
-	top_down_refinement(SCC_max),	
+	top_down_refinement(SCC_max),
 	bottom_up_refinement(0,SCC_max),
 	warn_if_no_chains(2).
 
