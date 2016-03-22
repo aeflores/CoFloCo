@@ -105,9 +105,9 @@ eq('lnfix$inline'(A,A),1,[],[]).
 eq('hide'(A,A),1,[],[]).   % identity function
 eq('coerce'(A,A),1,[],[]).   % for now, also treat this as id
 
+eq('return-last'(_A,_B,C,D),1,[],[D=C]).
 
 %undefined
-eq('return-last'(_A,_B,_C,_D),1,[],[]).
 eq('unary-/'(_A,_B),1,[],[]).
 eq('integerp'(_A,_B),1,[],[]).
 eq('rationalp'(_A,_B),1,[],[]).
