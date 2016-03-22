@@ -5,7 +5,7 @@ the input variables and the variables of the recursive call (if there is one)
 
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014,2015 Antonio Flores Montoya
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
 
 @license This file is part of CoFloCo. 
     CoFloCo is free software: you can redistribute it and/or modify
@@ -59,34 +59,26 @@ init_cost_equation_solver:-
 	retractall(loop_cost(_,_,_,_,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! get_loop_cost(+Head:term,+Call:term,+Forward_inv_hash:(int,polyhedron),+Loop_id:loop_id,-Cost:cstr) is det
+%! get_loop_cost(+Head:term,+Calls:list(term),+Forward_inv_hash:(int,polyhedron),+Loop_id:loop_id,-Cost:cstr) is det
 %  Given a loop id (Eq_id) , it accesses the definition and computes the cost of an individual loop application
 % a loop corresponds to one or more cost equations that behave the same way with respect to the recursive call
-get_loop_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Cost):-
-	loop_cost(Head,Call,(Forward_inv_hash,Forward_inv2),Loop_id,Cost),
+get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Cost):-
+	loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv2),Loop_id,Cost),
 	Forward_inv==Forward_inv2,!.
 
-get_loop_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
-    loop_ph(Head,(Loop_id,_),Call,_Inv,Eqs,_),
-    maplist(get_equation_cost(Head,Call,Forward_inv),Eqs,Costs),
-    (Costs=[]->
-    	cstr_empty(Final_cost)
-    	;
-    	cstr_or_compress(Costs,Final_cost)
-    	),
-    assert(loop_cost(Head,Call,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost)).
+get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
+    loop_ph(Head,(Loop_id,_),Calls,_Inv,Eqs,_),
+    maplist(get_equation_cost(Head,Calls,Forward_inv),Eqs,Costs),
+    cstr_or_compress(Costs,Final_cost),
+    assert(loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost)).
     
-%! get_equation_cost(+Head:term,+Call:term,+Forward_inv:polyhedron,+Eq_id:eq_id,-Cost:cstr) is det
+%! get_equation_cost(+Head:term,+Calls:list(term),+Forward_inv:polyhedron,+Eq_id:eq_id,-Cost:cstr) is det
 %  * each call in the equation is substituted by its cost structure
 %  * the final constraints of the cost expressions are combined and the costs added 
- get_equation_cost(Head,Call,Forward_inv,Eq_id,Cost):-
-     (Call==none->   
-       eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,[],_,Phi,_)
-       ;
-       eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,[Call],_,Phi,_)
-       ),
+ get_equation_cost(Head,Calls,Forward_inv,Eq_id,Cost):-
+    eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,Calls,_,Phi,_),
 	nad_glb(Forward_inv,Phi,Phi1),
-	term_variables((Head,Call),TVars),
+	term_variables((Head,Calls),TVars),
 	foldl(accumulate_calls,Base_calls,(Basic_cost,1),(cost(Ub_fconstrs_list,Lb_fconstrs_list,Iconstrs,Bases,Base),_)),
 	% we reverse the calls in case we want to combine cost structures incrementally
 	% this is not done now but it would allow us to detect which calls make us lose precision

@@ -121,8 +121,8 @@ This module acts as a database that stores:
 % this is recorded in order to trace the behavior back to the original representation.
 :- dynamic eq_refined/2.
 
-%! loop_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Rec_Call:term,-Cs:polyhedron,Ids:list(equation_id),Term_flag:flag)
-% for each recursive equation loop_ph/4 stores the relation between the head and the recursive call (abstracting the cost and the other calls away)
+%! loop_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Rec_Calls:list(term),-Cs:polyhedron,Ids:list(equation_id),Term_flag:flag)
+% for each recursive equation loop_ph/4 stores the relation between the head and the recursive calls (abstracting the cost and the other calls away)
 % Ids is the list of cost equations that correspond to the loop.
 %Term_flag can be 'terminating' or 'non_terminating'
 :- dynamic  loop_ph/6.
@@ -168,11 +168,10 @@ This module acts as a database that stores:
 
 %! non_terminating_chain(?Head:term,RefCnt:int,?Chain:chain)
 % It indicates that the chain Chain is non-terminating
-% a chain whose first element is a non_terminating_stub is non-terminating
+% a chain whose last element is iterative is non-terminating
 :-dynamic non_terminating_chain/3.
 
-%non_terminating_chain(Head,[First|_]):-
-%	non_terminating_stub(Head,First).
+
 
 %! init_db is det
 % erase the database and initialize counters
@@ -233,17 +232,15 @@ cofloco_aux_entry_name('$cofloco_aux_entry$').
 
 non_terminating_chain_1(Head,RefCnt,Chain):-
 	chain(Head,RefCnt,Chain),
-	non_terminating_chain_2(Head,Chain).
+	reverse(Chain,Chain_rev),
+	non_terminating_chain_2(Head,Chain_rev).
 	
 non_terminating_chain_2(Head,[X|_Chain]):-
 	number(X),
 	loop_ph(Head,(X,_),_Call,_Cs,_Ids,non_terminating),!.
 
-non_terminating_chain_2(Head,[X|_Chain]):-
-	\+number(X),
-	non_terminating_chain_2(Head,X),!.
-non_terminating_chain_2(Head,[_|Chain]):-
-	non_terminating_chain_2(Head,Chain).
+non_terminating_chain_2(_Head,[X|_Chain]):-
+	\+number(X).
 	
 
 %! add_ground_equation_header(+Non_ground:term,+Ground:term) is det
@@ -280,17 +277,17 @@ add_eq_ph(eq_ph(Head,0,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_e
 add_eq_ph(eq_ph(Head,RefCnt,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_eqs) :-
 	(R_Calls=[_,_|_]-> 
 	        functor(Head,Name,Arity),
-	        throw(error(multiple_recursion_is_not_currently_supported([Name/Arity])))
+	        format(user_error,'multiple_recursion_is_not_currently_supported: ~p~n',[Name/Arity])
 	; true),
 	counter_increase(eq_ph,1,Id),
 	assertz(eq_ph(Head,(Id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)),
 	assertz(eq_refined(Previous_eqs,Id)).	
 	  
-%! add_loop_ph(+Head:term,+RefCnt:int,+Call:term,+Cs:polyhedron,+Ids:list(equation_id),Term_flag:flag) is det
+%! add_loop_ph(+Head:term,+RefCnt:int,+Calls:list(term),+Cs:polyhedron,+Ids:list(equation_id),Term_flag:flag) is det
 % stores the loop corresponding to the cost equations Ids in the database
-add_loop_ph(Head,RefCnt,Call,Cs, Ids,Term_flag) :-
+add_loop_ph(Head,RefCnt,Calls,Cs, Ids,Term_flag) :-
 	counter_increase(loop_ph,1,Id),
-	assertz(loop_ph(Head,(Id,RefCnt),Call,Cs,Ids,Term_flag)).
+	assertz(loop_ph(Head,(Id,RefCnt),Calls,Cs,Ids,Term_flag)).
 	
 %! add_phase_loop(+Phase:phase,+RefCnt:int,+Head:term,+Call:term,+Cs:polyhedron) is det
 % stores the summary loop corresponding to the phase Phase in the database	

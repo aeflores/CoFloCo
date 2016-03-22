@@ -9,7 +9,7 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014,2015 Antonio Flores Montoya
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
 
 @license This file is part of CoFloCo. 
     CoFloCo is free software: you can redistribute it and/or modify

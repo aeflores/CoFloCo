@@ -404,9 +404,10 @@ cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_
 
 join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant)):-
 	partition(bconstr_bounds_multiple_itvars,Itcons,Multiple_itconstrs,Single_itconstrs),
-	%TODO: the unbounded variables that appear adding and substracting should not be joined!! Puting Map_0=[] is a quick fix
-	%foldl(add_itvar_empty_map,Bsummands,[],Map_0),
-	Map_0=[],
+	%TODO: the unbounded variables that appear adding and substracting should not be joined!! 
+	% join the positive together and the negative together but do not mix them
+	foldl(add_itvar_empty_map,Bsummands,[],Map_0),
+	%Map_0=[],
 	foldl(get_itconstr_for_each_itvar,Single_itconstrs,Map_0,Map),
 	foldl(remove_itvars_from_map,Ub_fcons,Map,Map1),
 	foldl(remove_itvars_from_map,Lb_fcons,Map1,Map2),
@@ -425,8 +426,13 @@ join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(U
 	).
 
 
+add_itvar_empty_map((Itvar,Coeff),Map,Map1):-
+	Coeff>0,!,
+	insert_lm(Map,Itvar,[pos],Map1).
 add_itvar_empty_map((Itvar,_),Map,Map1):-
-	insert_lm(Map,Itvar,[],Map1).
+	insert_lm(Map,Itvar,[neg],Map1).	
+	
+	
 get_itconstr_for_each_itvar(bound(Op,Exp,[Itvar]),Map,Map1):-!,
 	copy_term(Exp,Exp2),
 	Exp2=exp(Index_pos,Index_neg,_,_),

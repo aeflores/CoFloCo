@@ -35,7 +35,7 @@ The specific "data types" used in this module are the following:
  
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014,2015 Antonio Flores Montoya
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
 
 @license This file is part of CoFloCo. 
     CoFloCo is free software: you can redistribute it and/or modify

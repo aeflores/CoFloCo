@@ -31,7 +31,7 @@ For the constraints, this is done at the same time of the compression.
 
 :- module(chain_solver,[compute_chain_cost/3]).
 
-:- use_module(phase_solver,[compute_phases_cost/5]).
+:- use_module(phase_solver,[compute_phase_cost/5]).
 :- use_module(constraints_maximization,[max_min_fconstrs_in_chain/6]).
 
 :-use_module('../db',[phase_loop/5,loop_ph/6]).
@@ -51,49 +51,64 @@ For the constraints, this is done at the same time of the compression.
 	
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
-
+:- use_module('../utils/cost_structures',[new_itvar/1]).	
 
 %! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cstr) is det
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
 %   * compress the costs of different phases
 compute_chain_cost(Head,Chain,Cost_total1):-
-	profiling_start_timer(loop_phases),
-	compute_phases_cost(Chain,Chain,Head,Call,Costs),
-	profiling_stop_timer_acum(loop_phases,_),
-	profiling_start_timer(chain_solver),
-	compress_chain_costs(Chain,Costs,Head,Call,Cost_total),
-	cstr_extend_variables_names(Cost_total,ch(Chain),Cost_total1),	
-	profiling_stop_timer_acum(chain_solver,_),
+	compress_chain_costs(Chain,[],Head,Head,Cost_total,_),
+	cstr_extend_variables_names(Cost_total,ch(Chain),Cost_total1),
 	!.
 
 
+compress_chain_costs([Base_case],Chain_rev,Head_total,Head,Cost_base,Cs_base):-
+	copy_term(Head_total,Head),
+	get_all_base_case_information(Head,[Base_case|Chain_rev],Cs_base),
+	profiling_start_timer(loop_phases),
+	(number(Base_case)->
+		compute_phase_cost(Head,[],Base_case,[Base_case|Chain_rev],Cost_base)
+		;
+		copy_term(Head_total,Call),
+		compute_phase_cost(Head,[Call],Base_case,[Base_case|Chain_rev],Cost_base_aux),
+		Cost_base_aux=cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),
+		max_min_fconstrs_in_chain(Ub_fconstrs,[Base_case],Cs_base,Head,Ub_fconstrs_new,Ub_iconstrs_extra),
+		max_min_fconstrs_in_chain(Lb_fconstrs,[Base_case],Cs_base,Head,Lb_fconstrs_new,Lb_iconstrs_extra),
+	    % put together the original non-final constraints (Aux_exps) and the newly created
+	    ut_flat_list([Ub_iconstrs_extra,Lb_iconstrs_extra,Iconstrs],Aux_exps_new),
+	    Cost_base_aux2=cost(Ub_fconstrs_new,Lb_fconstrs_new,Aux_exps_new,Bsummands,BConstant),
+	    cstr_join_equal_fconstr(Cost_base_aux2,Cost_base)
+	),
+	profiling_stop_timer_acum(loop_phases,_).
 
-
-%! compress_chain_costs(+Chain:chain,+Costs:list(cstr),+Head_total:term,+Call:term,-Cost_total:cstr) is det
-%  We have a cost structure for each phase and we want to combine them into a single cost structure
-% in terms of the input variables
-%
-% we combine the cost structures incrementally from the last phase (base case) to the first (entry point).
-compress_chain_costs([Lg|More],[Cost_base|Costs],Head_total,Call_total,Cost_total):-
-	copy_term((Head_total,Cost_base),(Head,Cost_base1)),
-	get_all_base_case_information(Head,[Lg|More],Phi),
-	compress_chain_costs_1(More,Costs,Cost_base1,Phi,Head_total,Call_total,Head,Cost_total).
-
-compress_chain_costs_1([],[],Cost_total,_,Head,_,Head,Cost_total).
-compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,Call_total,Call,Cost_total):-
-	copy_term((Head_total,Call_total,Cost),(Head,Call,Cost1)),
-	cstr_join_equal_fconstr(Cost1,Cost1_simple),
+%multiple recursion case
+% we don't compute anything yet
+compress_chain_costs([multiple(_Phase,_Tails)],_Chain_rev,_Head_total,_Head,Cost_next_simple,Cs_next):-
+	%maplist(compress_chain_costs_aux([Phase|Chain_rev],Head_total,Call),Tails,Costs_prev,Cs_prevs),
+	new_itvar(It_var),
+	Cost_next_simple=cost([],[],[],[(It_var,1)],0),
+	Cs_next=[].
+	
+compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs_next):-
+	copy_term(Head_total,Head),
+	compress_chain_costs(Chain,[Phase|Chain_rev],Head_total,Call,Cost_prev,Cs_prev),
+	profiling_start_timer(loop_phases),
+	compute_phase_cost(Head,[Call],Phase,[Phase|Chain_rev],Cost),
+	profiling_stop_timer_acum(loop_phases,_),
+	
+	profiling_start_timer(chain_solver),
+	cstr_join_equal_fconstr(Cost,Cost_simple),
 	%get information of the phase and later phases
-	get_all_phase_information(Head,Call,[Lg|More],Cs_list),
+	get_all_phase_information(Head,Call,[Phase|Chain_rev],Cs_list),
 	nad_list_glb([Cs_prev|Cs_list],Cs_total),
 	% combine the upper bound and lower bound final constraints separately
 	Cost_prev=cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands_prev,BConstant_prev),
-	Cost1_simple=cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant1),
+	Cost_simple=cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant1),
 	append(Ub_fconstrs,Ub_fconstrs1,Ub_fconstrs_total),
 	append(Lb_fconstrs,Lb_fconstrs1,Lb_fconstrs_total),
-	max_min_fconstrs_in_chain(Ub_fconstrs_total,[Lg|More],Cs_total,Head,Ub_fconstrs_new,Ub_iconstrs_extra),
-	max_min_fconstrs_in_chain(Lb_fconstrs_total,[Lg|More],Cs_total,Head,Lb_fconstrs_new,Lb_iconstrs_extra),
+	max_min_fconstrs_in_chain(Ub_fconstrs_total,[Phase|Chain],Cs_total,Head,Ub_fconstrs_new,Ub_iconstrs_extra),
+	max_min_fconstrs_in_chain(Lb_fconstrs_total,[Phase|Chain],Cs_total,Head,Lb_fconstrs_new,Lb_iconstrs_extra),
 	% put together the original non-final constraints (Aux_exps) and the newly created
 	ut_flat_list([Ub_iconstrs_extra,Lb_iconstrs_extra,Iconstrs,Iconstrs1],Aux_exps_new),
 	%the cost is the sum of the individual costs
@@ -105,16 +120,20 @@ compress_chain_costs_1([Lg|More],[Cost|Cost_list],Cost_prev,Cs_prev,Head_total,C
 	Head=..[_|EVars],
 	%prepare  information for next iteration
 	nad_project_group(EVars,Cs_total,Cs_next),
-	compress_chain_costs_1(More,Cost_list,Cost_next_simple,Cs_next,Head_total,Call_total,Head,Cost_total).
+	profiling_stop_timer_acum(chain_solver,_).
+	
 
 
 %! get_all_base_case_information(+Head:term,+Part_chain:chain,-Phi:polyhedron) is det
 %  obtain the base case definition and the forward invariant
 %  and put them together
 get_all_base_case_information(Head,[Lg|More],Phi):-
-	loop_ph(Head,(Lg,_),none,Cs_base,_,_),
+	loop_ph(Head,(Lg,_),[],Cs_base,_,_),!,
 	forward_invariant(Head,([Lg|More],_),_,Local_inv),
 	ut_flat_list([Local_inv,Cs_base],Phi). %cheap glb
+% for non-terminating chains
+get_all_base_case_information(Head,[Lg|More],Local_inv):-
+	forward_invariant(Head,([Lg|More],_),_,Local_inv).%cheap glb
 
 %! get_all_phase_information(+Head:term,Call:term,+Part_chain:chain,-Phi_list:list(polyhedron)) is det
 % Obtain:
@@ -125,12 +144,11 @@ get_all_base_case_information(Head,[Lg|More],Phi):-
 %  * The phase information at the end of the next phase
 % and put it all together in a list
 get_all_phase_information(Head,Call,[Lg|More],Phi_list):-
-	forward_invariant(Head,([Lg|More],_),_,Local_inv),
-	
+	forward_invariant(Head,([Lg|More],_),_,Local_inv),	
 	(
 	phase_transitive_closure(Lg,_,Head,Call,Cs_transitive)
 	 ;
-	loop_ph(Head,(Lg,_),Call,Cs_transitive,_,_)
+	loop_ph(Head,(Lg,_),[Call],Cs_transitive,_,_)
 	),
 	(phase_loop(Lg,_,Head,_,Cs_extra) ; Cs_extra=[]),!,
 	get_next_phase_predicate(More,Head,Cs_carried),
@@ -140,8 +158,8 @@ get_all_phase_information(Head,Call,[Lg|More],Phi_list):-
 get_next_phase_predicate([],_,[]).
 get_next_phase_predicate([Lg_next|_],Head,Cs_carried):-
 	number(Lg_next),!,
-	loop_ph(_,(Lg_next,_),Head,Cs_carried,_,_).
+	loop_ph(_,(Lg_next,_),[Head],Cs_carried,_,_).
 get_next_phase_predicate([Lg_next|_],Head,Cs_carried):-
-	phase_loop(Lg_next,_,_,Head,Cs_carried).
+	phase_loop(Lg_next,_,_,[Head],Cs_carried).
 
 

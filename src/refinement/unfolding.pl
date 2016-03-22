@@ -219,10 +219,8 @@ remove_terminating_non_terminating_chains(Head,RefCnt):-
 
 remove_terminating_non_terminating_chains_1(Head,RefCnt):-
 	chain(Head,RefCnt,Chain),
-	Chain=[Base|_],
-	loop_ph(Head,(Base,RefCnt),none,[],[],non_terminating),%it is really a stub, not a non-terminating call
+	reverse(Chain,[Iterative_phase|_]),Iterative_phase=[_|_],
 	termination_argument(Head,Chain,yes,_Term_arg),
-
 	retract(chains:chain(Head,RefCnt,Chain)),
 	numbervars(Head,0,_),
 	(get_param(debug,[])->

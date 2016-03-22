@@ -180,12 +180,11 @@ print_chains_1(_).
 % print the chain Pattern
 
 print_chain(Entry,Pattern):-
-	reverse(Pattern,Pattern_inv),
 	(non_terminating_chain(Entry,_,Pattern)->
 	   %Pattern=[_|Pattern1],
-	   ansi_format_aux([fg(red)],'~p:~p...',[Entry,Pattern_inv])
+	   ansi_format_aux([fg(red)],'~p:~p...',[Entry,Pattern])
 	 ;
-	   ansi_format_aux([],'~p:~p',[Entry,Pattern_inv])
+	   ansi_format_aux([],'~p:~p',[Entry,Pattern])
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -207,12 +206,11 @@ print_chains_entry_1(_,_):-nl.
 
 
 print_chain_simple(Pattern):-
-	reverse(Pattern,Pattern_inv),
 	(non_terminating_chain(_,_,Pattern)->
 	   %Pattern=[_|Pattern1],
-	   ansi_format_aux([fg(red)],'~p...',[Pattern_inv])
+	   ansi_format_aux([fg(red)],'~p...',[Pattern])
 	 ;
-	   ansi_format_aux([],'~p',[Pattern_inv])
+	   ansi_format_aux([],'~p',[Pattern])
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

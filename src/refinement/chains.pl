@@ -22,7 +22,7 @@ However, for each SCC there is a special base case that will allow us to represe
 
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014,2015 Antonio Flores Montoya
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
 
 @license This file is part of CoFloCo. 
     CoFloCo is free software: you can redistribute it and/or modify
@@ -62,11 +62,17 @@ However, for each SCC there is a special base case that will allow us to represe
 % each predicate chain represent a possible pattern of execution of the SCC
 % determined by Head. 
 %
-% [phase1,phase2,phase3] represents a chain where phase3 is executed first and
-% phase1 is the base case of the recusion.
+% [phase1,phase2,phase3] represents a chain where phase1 is executed first and
+% phase3 is the base case of the recusion.
 % Each phase is represented as a number if it is a non-iterative phase
 % or a ordered list of numbers if it is an iterative phase.
 % Each number is the id of a cost equation
+%
+% if phase3 is iterative, it represents a non-terminating computation
+%
+% a phase can also be of the form multiple(Sub-chains) where Sub-chains are a set of chain fragments.
+% This phases follow other phases that contain multiple recursion 
+
 %
 % @arg RefCnt represents the refinement phase to which the chain belongs
 % @arg Chain is a list of loop phases in inverse order
@@ -109,16 +115,13 @@ However, for each SCC there is a special base case that will allow us to represe
 %
 %  * compute all possible chains: The set of execution patterns is all possible sequences of phases
 %
-%  * remove imposible chains generated with the non_terminating_stub/2
 compute_chains(Head,RefCnt):-
 	clean_graph,
 	retractall(chain(Head,RefCnt,_)),
 	retractall(phase(_,Head,RefCnt)),
 	add_nodes(Head,RefCnt),
 	compute_phases(Head,RefCnt),
-	compute_basic_chains(Head,RefCnt),
-	compute_rec_chains(Head,RefCnt),
-	remove_impossible_non_terminating_chains(Head,RefCnt).
+	compute_chains_1(Head,RefCnt).
 
 %! init_chains is det
 %  erase all chains and phases
@@ -135,33 +138,19 @@ clean_graph:-
 
 
 add_nodes(Head,RefCnt):-	 
-	loop_ph(Head,(Id_Loop,RefCnt),Call,_,_,_),
-	(Call==none->
+	loop_ph(Head,(Id_Loop,RefCnt),Calls,_,_,_),
+	(Calls==[]->
 	  assert(node(Id_Loop,final))
 	  ;
+	  (Calls=[_,_|_]->
+	  assert(node(Id_Loop,multiple_loop))
+	  ;
 	  assert(node(Id_Loop,loop))
+	  )
 	  ),
 	fail.
 add_nodes(_,_).	
 
-%! remove_impossible_non_terminating_chains(+Head:term,+RefCnt:int) is det
-% A non_terminating_stub is an empty loop used to generate chains that represent non-terminating executions.
-% If X is a non_terminating_stub a chain [X,P1,P2...PN] represents an execution where P1 goes on forever.
-%
-% this predicate remove chains that do not make sense such as [X] and [X,PI...] where PI is not an iterative phase.
-remove_impossible_non_terminating_chains(Head,RefCnt):-
-	chain(Head,RefCnt,Chain),
-	is_impossible_non_terminating(Head,Chain),
-	retract(chain(Head,RefCnt,Chain)),
-	fail.
-remove_impossible_non_terminating_chains(_,_).
-
-
-is_impossible_non_terminating(Head,[X]):-
-	loop_ph(Head,(X,_RefCnt),_,_,[],non_terminating).%it is really a stub, not a non-terminating call
-is_impossible_non_terminating(Head,[X,Y|_]):-
-	loop_ph(Head,(X,_RefCnt),_,_,[],non_terminating),
-	number(Y).
 
 
 %! get_phases_edge(?C1:phase,?C2:phase) is semidet    
@@ -214,36 +203,41 @@ get_phases_aux(C1,C2):-
         fail
         ).      
 
-%! compute_basic_chains(+Head:term,+RefCnt:int) is det
-% store the chains that are simply a base case   
-compute_basic_chains(Head,RefCnt):-
-	node(Id,final),
-	save_chain(Head,RefCnt,[Id]),
-	fail.
-compute_basic_chains(_,_).
 
-%! compute_rec_chains(+Head:term,+RefCnt:int) is det
-% compute and store chains that are composed of at least two phases
-compute_rec_chains(Head,RefCnt):-
-	findall(Phase,phase(Phase,Head,RefCnt),Phasees),
-	member(Phase,Phasees),
-	delete(Phasees,Phase,Rest),
-	compute_rec_chains_aux([Phase],Rest,Head,RefCnt).
-compute_rec_chains(_,_).
+compute_chains_1(Head,RefCnt):-
+	findall(Phase,phase(Phase,Head,RefCnt),Phases),
+	from_list_sl(Phases,Phases_set),
+	foldl(compute_rec_chains_from(Phases_set),Phases_set,[],Chains),
+	maplist(save_chain(Head,RefCnt),Chains).
 
-compute_rec_chains_aux([Loop|Other],Rest,Head,RefCnt):-
-	member(Phase2,Rest),
-	get_phases_edge(Loop,Phase2),
-	((number(Phase2),node(Phase2,final))->
-	  save_chain(Head,RefCnt,[Phase2,Loop|Other]),
-	  fail
-	;
-	delete(Rest,Phase2,Rest2),
-	compute_rec_chains_aux([Phase2,Loop|Other],Rest2,Head,RefCnt)
-	).
-
-
-
+%we can add memoing here
+%compute the chains that can follow from Phase
+compute_rec_chains_from(_Available_phases,Phase,Chains_accum,[[Phase]|Chains_accum]):-
+	node(Phase,final),!.
+compute_rec_chains_from(Available_phases,Phase,Chains_accum,Chains):-
+	remove_sl(Available_phases,Phase,Available_phases1),
+	include(get_phases_edge(Phase),Available_phases1,Next_phases),
+	foldl(compute_rec_chains_from(Available_phases1),Next_phases,[],Chain_fragments),
+	%if the phase is iterative, we consider the case where it does not terminate
+	(Phase=[_|_]->
+	   Chain_fragments_non_term=[[]|Chain_fragments]
+	   ;
+	   Chain_fragments_non_term=Chain_fragments
+	),
+	% we consider sequences independently but cannot do the same with multiple recursive phases
+	(is_linear_phase(Phase)->
+		maplist(append([Phase]),Chain_fragments_non_term,New_chains)
+		;
+		New_chains=[[multiple(Phase,Chain_fragments_non_term)]]
+	),
+	append(New_chains,Chains_accum,Chains).
+	
+is_linear_phase(Loop):-
+	number(Loop),!,
+	node(Loop,loop).
+is_linear_phase(Phase):-
+	maplist(is_linear_phase,Phase).
+	
 save_chain(Head,RefCnt,Chain):-
 	chain(Head,RefCnt,Chain),!.
 save_chain(Head,RefCnt,Chain):-
@@ -270,7 +264,7 @@ get_one_edge_form_list_to_list(O_list,D_list,O,D):-
    get_edge(O,D),!.     
     
 get_edges_not_to(O,D_list,D):-
-	findall(N,node(N,loop),Nodes),
+	findall(N,(node(N,Non_final),Non_final\=final),Nodes),
 	from_list_sl(Nodes,Nodes_set),
 	from_list_sl(D_list,D_set),
 	difference_sl(Nodes_set,D_set,D_Rest),
@@ -282,21 +276,24 @@ get_edge(O,D):-
    edge(O,D).
 
 get_edge(O,D):-
-   node(O,loop),
+   node(O,Non_final),Non_final\=final,
    node(D,_),
     \+edge(O,D),
    \+not_edge(O,D),
-   loop_ph(_Head,(O,RefCnt),Head2,Phi,_,_),
+   loop_ph(_Head,(O,RefCnt),Calls,Phi,_,_),
    loop_ph(Head2,(D,RefCnt),_,Phi2,_,_),
-    append(Phi,Phi2,Composed_cons),
-	Head2=..[_|Relevant_vars],
-	(nad_consistent_constraints_group(Relevant_vars,Composed_cons)->
+   append(Phi,Phi2,Composed_cons),
+   (is_edge_possible(Head2,Calls,Composed_cons)->
 	    assert(edge(O,D))
 	    ;
 	    assert(not_edge(O,D)),fail
 	    ).
 
-
+is_edge_possible(Head2,Calls,Cs):-
+	member(Head2,Calls),
+	Head2=..[_|Relevant_vars],
+	nad_consistent_constraints_group(Relevant_vars,Cs).
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 :- dynamic phases_changed/0.
 
@@ -330,6 +327,10 @@ initialize_phases(Head,RefCnt):-
 	node(Id_Loop,loop),
 	save_phase([Id_Loop],Head,RefCnt),
 	fail.
+initialize_phases(Head,RefCnt):-
+	node(Id_Loop,multiple_loop),
+	save_phase([Id_Loop],Head,RefCnt),
+	fail.	
 initialize_phases(_,_).
 
 save_phase(Phase,Head,RefCnt):-

@@ -59,19 +59,19 @@ These ranking functions are used to prove termination.
     put_mm/4]).
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).   
-%! ranking_function(Head:term,Chain:chain,Phase:phase,RF:linear_expression)
-% stores a ranking function of the phase Phase that belongs to the Chain and SCC Head
-% if Chain is not specified, the ranking function is valid for all chains that contain
+%! ranking_function(Head:term,Chain_prefix:chain_inverse_prefix,Phase:phase,RF:linear_expression)
+% stores a ranking function of the phase Phase that is reached after the pefix Chain_prefix and belongs SCC Head
+% if Chain_prefix is not specified, the ranking function is valid for all prefixes that contain
 % the phase
 :- dynamic ranking_function/4.
 
 
-%! partial_ranking_function(Head:term,Chain:chain,Phase:phase,Loops:list(equation_id),RF:linear_expression,Deps:list(equation_id),Deps_type:list(flags))
+%! partial_ranking_function(Head:term,Chain_prefix:chain_inverse_prefix,Phase:phase,Loops:list(equation_id),RF:linear_expression,Deps:list(equation_id),Deps_type:list(flags))
 % stores a ranking function of the loops Loops contained in phase Phase
-% that belongs to the Chain and SCC Head.
+% that is reached after the pefix Chain_prefix and belongs SCC Head.
 %
-% If Chain is not specified, the partial ranking function is valid for
-% all chains that contain the phase.
+% If Chain_prefix is not specified, the partial ranking function is valid for
+% all  prefixes that contain the phase.
 %
 %Deps  store the loops that can increase the value of the ranking function
 %Deps_type specifies how the value is increased:
@@ -100,62 +100,63 @@ clean_ranking_functions(Head):-
 % find and store all ranking functions of SCC Head
 find_ranking_functions(Head,RefCnt):-
 	chain(Head,RefCnt,Chain),
-	find_chain_ranking_functions(Chain,Head,Chain),
+	reverse(Chain,Chain_rev),
+	find_chain_ranking_functions(Chain_rev,Head),
 	fail.
 find_ranking_functions(_,_).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! find_chain_ranking_functions(Chain:chain,Head:term,Chain:chain) is det
+%! find_chain_ranking_functions(Chain_rev:chain_rev,Head:term) is det
 % infer ranking functions for the iterative phases of a chain
 find_chain_ranking_functions([],_,_).
-find_chain_ranking_functions([Non_loop|Rec_elems],Head,Chain):-
+find_chain_ranking_functions([Non_loop|Rec_elems],Head):-
 		number(Non_loop),!,
-		find_chain_ranking_functions(Rec_elems,Head,Chain).
+		find_chain_ranking_functions(Rec_elems,Head).
 
-find_chain_ranking_functions([Phase|Rec_elems],Head,Chain):-
+find_chain_ranking_functions([Phase|Rec_elems],Head):-
 	    forward_invariant(Head,([Phase|Rec_elems],_),_,Inv),
-		compute_phase_rfs(Head,Chain,Phase,Inv),
-		compute_phase_partial_rfs(Head,Chain,Phase,Inv),
-		find_chain_ranking_functions(Rec_elems,Head,Chain).
+		compute_phase_rfs(Head,[Phase|Rec_elems],Phase,Inv),
+		compute_phase_partial_rfs(Head,[Phase|Rec_elems],Phase,Inv),
+		find_chain_ranking_functions(Rec_elems,Head).
 
-%! compute_phase_rfs(Head:term,Chain:chain,Phase:phase,Inv:polyhedron) is det 
+%! compute_phase_rfs(Head:term,Chain_prefix:chain_inverse_prefix,Phase:phase,Inv:polyhedron) is det 
 % try to compute ranking functions valid for all cost equations in Phase using the invariant Inv
-compute_phase_rfs(Head,Chain,Phase,_Inv):-
-	computed_ranking_functions(Head,Chain,Phase),!.
+compute_phase_rfs(Head,Chain_prefix,Phase,_Inv):-
+	computed_ranking_functions(Head,Chain_prefix,Phase),!.
 
 % we try to infer a universal rf for the phase (ignoring the given invariant)
-compute_phase_rfs(Head,Chain,Phase,_):-
+compute_phase_rfs(Head,_Chain_prefix,Phase,_):-
 	%we haven't computed any rf for this phase
 	\+computed_ranking_functions(Head,_,Phase),
-	phase_loop(Phase,_,Head,Call,Cs),
+	phase_loop(Phase,_,Head,[Call],Cs),
 	compute_iterations_ubs( Head, Call, Cs, Iter_Ubs),
 	Iter_Ubs\=[],!,
-	maplist(add_ranking_function(Head,Chain,Phase),Iter_Ubs),
+	maplist(add_ranking_function(Head,_,Phase),Iter_Ubs),
 	assert(computed_ranking_functions(Head,_,Phase)).
 
 %If we failed to compute a universal ranking function, we try to compute ranking functions using the given chain invariant
-compute_phase_rfs(Head,Chain,Phase,Inv):-
-	phase_loop(Phase,_,Head,Call,Cs),
+compute_phase_rfs(Head,Chain_prefix,Phase,Inv):-
+	phase_loop(Phase,_,Head,[Call],Cs),
 	nad_glb(Cs,Inv,Cs_1),
 	compute_iterations_ubs( Head, Call, Cs_1, Iter_Ubs),
-	maplist(add_ranking_function(Head,Chain,Phase),Iter_Ubs),
-	assert(computed_ranking_functions(Head,Chain,Phase)).
+	maplist(add_ranking_function(Head,Chain_prefix,Phase),Iter_Ubs),
+	assert(computed_ranking_functions(Head,Chain_prefix,Phase)).
 
 
-%! compute_phase_partial_rfs(Head:term,Chain:chain,Phase:phase,Inv:polyhedron) is det 
+%! compute_phase_partial_rfs(Head:term,Chain_prefix:chain_inverse_prefix,Phase:phase,Inv:polyhedron) is det 
 % try to compute ranking functions for each cost equation in the phase and infer
 % how these ranking functions can be increased in other cost equations (the dependencies)
-compute_phase_partial_rfs(Head,Chain,Phase,_Inv):-
-	computed_partial_ranking_functions(Head,Chain,Phase),!.
+compute_phase_partial_rfs(Head,Chain_prefix,Phase,_Inv):-
+	computed_partial_ranking_functions(Head,Chain_prefix,Phase),!.
 
 % we try to compute universal ranking functions first. If there is a cost equation that does not
 % have any universal ranking function we fail and use the invariant.
 %
 % This is not perfect because we might have a ranking function in every cost equation of a phase and still have a cyclic dependency
 % but it's a decent heuristic.
-compute_phase_partial_rfs(Head,Chain,Phase,_):-
+compute_phase_partial_rfs(Head,Chain_prefix,Phase,_):-
 	%we haven't computed any rf for this phase
 	\+computed_partial_ranking_functions(Head,_,Phase),
 	empty_mm(Empty_map),
@@ -163,7 +164,7 @@ compute_phase_partial_rfs(Head,Chain,Phase,_):-
 	foldl(compute_1_loop_rfs(Head,Call,[]),Phase,Empty_map,Initial_map),
 	\+member((_,[]),Initial_map),
 	% exclude ranking functions that are general
-	exclude(covered_by_rf_map(Head,Phase,Chain),Initial_map,Initial_map_filtered),
+	exclude(covered_by_rf_map(Head,Phase,Chain_prefix),Initial_map,Initial_map_filtered),
 	%the initial dependencies are all phases except the covered ones
 	maplist(get_initial_deps(Phase),Initial_map_filtered,Init_deps),
 	maplist(check_lexicographic_deps_aux(Head,Call,[]),Initial_map_filtered,Init_deps,Deps,Type_deps),
@@ -171,13 +172,13 @@ compute_phase_partial_rfs(Head,Chain,Phase,_):-
 	assert(computed_ranking_functions(Head,_,Phase)).
 	
 % same but taking the invariant into account
-compute_phase_partial_rfs(Head,Chain,Phase,Inv):-
+compute_phase_partial_rfs(Head,Chain_prefix,Phase,Inv):-
 	empty_mm(Empty_map),
 	%initial map with the ranking functions and the loops they cover
 	foldl(compute_1_loop_rfs(Head,Call,Inv),Phase,Empty_map,Initial_map),
-	Chain_saved=Chain,
+	Chain_saved=Chain_prefix,
 	% exclude ranking functions that are general
-	exclude(covered_by_rf_map(Head,Phase,Chain),Initial_map,Initial_map_filtered),
+	exclude(covered_by_rf_map(Head,Phase,Chain_prefix),Initial_map,Initial_map_filtered),
 	%the initial dependencies are all phases except the covered ones
 	maplist(get_initial_deps(Phase),Initial_map_filtered,Init_deps),
 	maplist(check_lexicographic_deps_aux(Head,Call,Inv),Initial_map_filtered,Init_deps,Deps,Type_deps),
@@ -186,7 +187,7 @@ compute_phase_partial_rfs(Head,Chain,Phase,Inv):-
 
 
 compute_1_loop_rfs(Head,Call,Inv,Loop,Map_in,Map_out):-
-	loop_ph(Head,(Loop,_),Call,Cs_loop,_,_),
+	loop_ph(Head,(Loop,_),[Call],Cs_loop,_,_),
 	nad_glb(Cs_loop,Inv,Cs_loop1),
 	compute_iterations_ubs( Head, Call, Cs_loop1, Rfs),
 	foldl(add_rf_2_map(Loop),Rfs,Map_in,Map_out).
@@ -197,8 +198,8 @@ add_rf_2_map(Loop,Rf,Map_in,Map_out):-
 get_initial_deps(Phase,(_Rf,Covered),Deps):-
 	difference_sl(Phase,Covered,Deps).
 	
-covered_by_rf_map(Head,Phase,Chain,(Rf,_Values)):-
-	covered_by_rf(Head,Phase,Chain,Rf).
+covered_by_rf_map(Head,Phase,Chain_prefix,(Rf,_Values)):-
+	covered_by_rf(Head,Phase,Chain_prefix,Rf).
 	
 check_lexicographic_deps_aux(Head,Call,Inv,(Rf,_Covered),Init_deps,Deps,Type_deps):-
 	check_lexicographic_deps(Init_deps,Head,Call,Inv,Rf,Deps,Type_deps).
@@ -214,7 +215,7 @@ add_partial_ranking_function_aux(Head,Chain,Phase,(Rf,Covered),Deps,Type_deps):-
 % Type_deps_out is a list of flags that can be an integer or unknown
 check_lexicographic_deps([],_Head,_Call,_,_Rf,[],[]).
 check_lexicographic_deps([Loop|Loops],Head,Call,Inv,Rf,Deps_out,Type_deps_out):-
-	loop_ph(Head,(Loop,_),Call,Cs_loop,_,_),
+	loop_ph(Head,(Loop,_),[Call],Cs_loop,_,_),
 	nad_glb(Cs_loop,Inv,Cs_loop1),
 	check_increment(Head,Call,Cs_loop1,Rf,Inc),
 	( leq_fr(Inc,0) ->
@@ -240,36 +241,36 @@ check_increment(Head,Call,Cs,Rf,Delta) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-add_ranking_function(Head,Chain,Phase,Rf) :-
+add_ranking_function(Head,Chain_prefix,Phase,Rf) :-
 	parse_le_fast(Rf,Lin_exp),
-	add_ranking_function_1(Head,Chain,Phase,Lin_exp).
+	add_ranking_function_1(Head,Chain_prefix,Phase,Lin_exp).
 
-add_ranking_function_1(Head,Chain,Phase,Rf):-	
-	ranking_function(Head,Chain,Phase,RF_1),
+add_ranking_function_1(Head,Chain_prefix,Phase,Rf):-	
+	ranking_function(Head,Chain_prefix,Phase,RF_1),
 	RF_1==Rf,!.
 
-add_ranking_function_1(Head,Chain,Phase,RF) :-
-	assertz(ranking_function(Head,Chain,Phase,RF)),
+add_ranking_function_1(Head,Chain_prefix,Phase,RF) :-
+	assertz(ranking_function(Head,Chain_prefix,Phase,RF)),
 	
 	(get_param(debug,[])->
 	write_le(RF,Rf_print),
 	copy_term((Head,Rf_print),(PHead,PRF)),
 	numbervars(PHead,0,_),
-	 format('~p~n',ranking_function(PHead,Chain,Phase,PRF))
+	 format('~p~n',ranking_function(PHead,Chain_prefix,Phase,PRF))
 	;
 	 true).
 
-add_partial_ranking_function(Head,Chain,Phase,Loop,RF,Deps,Deps_type) :-
+add_partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :-
 	parse_le_fast(RF,Lin_exp),
-	add_partial_ranking_function_1(Head,Chain,Phase,Loop,Lin_exp,Deps,Deps_type).
+	add_partial_ranking_function_1(Head,Chain_prefix,Phase,Loop,Lin_exp,Deps,Deps_type).
 	
 
-add_partial_ranking_function_1(Head,Chain,Phase,Loop,RF,Deps,Deps_type) :-
-	partial_ranking_function(Head,Chain,Phase,Loop,RF2,Deps,Deps_type),
+add_partial_ranking_function_1(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :-
+	partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF2,Deps,Deps_type),
 	RF==RF2,!.
 
-add_partial_ranking_function_1(Head,Chain,Phase,Loop,RF,Deps,Deps_type) :-
-	assertz(partial_ranking_function(Head,Chain,Phase,Loop,RF,Deps,Deps_type)),
+add_partial_ranking_function_1(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :-
+	assertz(partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type)),
 	(get_param(debug,[])->
 	 write_le(RF,Rf_print),
 	 copy_term((Head,Rf_print),(PHead,PRF)),
@@ -313,6 +314,6 @@ compute_offset(Rf,Cs,Rf_1):-
 	Offset is ceiling(-Val+1),
 	Rf_1=Rf+Offset.
 
-covered_by_rf(Head,Phase,Chain,Rf):-
-	ranking_function(Head,Chain,Phase,Rf1),
+covered_by_rf(Head,Phase,Chain_prefix,Rf):-
+	ranking_function(Head,Chain_prefix,Phase,Rf1),
 	Rf1==Rf.

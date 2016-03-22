@@ -195,7 +195,7 @@ param_description('v','0-3 : selects the level of verbosity ').
 %param_description('visual',_,'Launch the upper bound graphical visualizer ').
 %param_description('break_chains','Attempt to break phases').
 
-param_description('n_rankings',' nat : (default 2) Sets the maximum number of ranking functions that are considered for each cost equation ').
+param_description('n_rankings',' nat : (default 1) Sets the maximum number of ranking functions that are considered for each cost equation ').
 param_description('assume_sequential',
 'Assume that the calls performed in a cost equation are done sequentially
 It is important for non-terminating programs').
@@ -204,7 +204,7 @@ It is important for non-terminating programs').
 %' nat : (default not active) The  maximum number of extra constraints that can be considered when solving cost structures').
 
 param_description('maximize_fast',
-'nat : (default 5) The  maximum number of upper bound of a cost expression that the maximize operation can return').
+'nat : (default 1) The  maximum number of upper bound of a cost expression that the maximize operation can return').
 param_description('conditional_ubs',
 'Generate a set of conditional upper bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
 

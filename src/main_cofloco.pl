@@ -321,13 +321,12 @@ top_down_refinement_scc(Head):-
 %  *  Compute forward and backwards invariants
 bottom_up_refinement_scc(Head) :-
 	copy_term(Head,Head_aux),
-
 	profiling_start_timer(unfold),
 	unfold_calls(Head,1),
-	print_equations_refinement(Head_aux,1),
-		  
+	print_equations_refinement(Head_aux,1), 
 	compute_loops(Head,2),
 	print_loops_refinement(Head_aux,2),
+	
 	compute_chains(Head,2),
 	compute_phase_loops(Head,2),
 	profiling_stop_timer_acum(unfold,_),
@@ -350,7 +349,7 @@ bottom_up_refinement_scc(Head) :-
 	print_chains_entry(Head_aux,2).
 	%conditional_call(get_param(compress_chains,[]),
 	%    (
-	%	  compress_chains_execution_patterns(Head,2),
+%		  compress_chains_execution_patterns(Head,2),
 	%	  print_external_pattern_refinement(Head,2)
 	%	  )
 	%	 ).

@@ -20,7 +20,7 @@ at the beginning and the end of the phase.
 
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014,2015 Antonio Flores Montoya
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
 
 @license This file is part of CoFloCo. 
     CoFloCo is free software: you can redistribute it and/or modify
@@ -37,7 +37,7 @@ at the beginning and the end of the phase.
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(phase_solver,[compute_phases_cost/5,init_phase_solver/0]).
+:- module(phase_solver,[compute_phase_cost/5,init_phase_solver/0]).
 
 					
 :- use_module(cost_equation_solver,[get_loop_cost/5]).
@@ -110,60 +110,52 @@ at the beginning and the end of the phase.
 % for cacheing purposes
 :- dynamic  phase_cost/5.
 
-%! current_chain(Chain:chain)
+%! current_chain_prefix(Chain_prefix:chain_prefix)
 % the chain to which the phase being computed belongs
 % used to 
-:- dynamic  current_chain/1.
+:- dynamic  current_chain_prefix/1.
 
+
+:- dynamic  used_term/6.
 %! init_phase_solver is det
 % clear all the intermediate results
 init_phase_solver:-
 	retractall(phase_cost(_,_,_,_,_,_)).
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%! compute_phases_cost(+Phases:list(phase),+Chain:chain,+Head:term,+Call:term,-Costs:list(cstr)) is det
-% compute cost structures for the phases Phases that belong to Chain.
-% the constraints of the cost structure are expressed in terms of the variables at the beginnig and end of the chain (Head and Call)
-compute_phases_cost([],_,_,_,[]).
-compute_phases_cost([Phase|More],Chain,Head,Call,[Cost|Costs]):-
-	forward_invariant(Head,([Phase|More],_),Forward_inv_hash,Forward_inv),
-	assert(current_chain(Chain)),
-	%obtain a cost structure in terms of the variableUb_fconstrsnning and end of the phase
-	compute_phase_cost(Phase,Head,Call,(Forward_inv_hash,Forward_inv),Cost),
-	retract(current_chain(Chain)),
-	%(get_param(debug,[])->print_phase_cost(Phase,Head,Call,Cost);true),
-	compute_phases_cost(More,Chain,Head,Call,Costs).
-	
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %! compute_phase_cost(Phase:phase,Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Cost:cstr) is det
 % Obtain the cost of a phase given a forward invariant.
-compute_phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv),Cost):-
-	phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv2),Cost),
+compute_phase_cost(Head,Calls,Phase,Chain_prefix,Cost):-
+	assert(current_chain_prefix(Chain_prefix)),
+	retractall(used_term(_,_,_,_,_,_)),
+	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
+	compute_phase_cost_1(Phase,Head,Calls,(Forward_hash,Forward_inv),Cost),
+	retract(current_chain_prefix(Chain_prefix)).
+	
+compute_phase_cost_1(Phase,Head,Calls,(Forward_hash,Forward_inv),Cost):-
+	phase_cost(Phase,Head,Calls,(Forward_hash,Forward_inv2),Cost),
 	Forward_inv2==Forward_inv,!,
 	counter_increase(compressed_phases1,1,_).
 	
 % in a non-iterative phase, we just obtain the cost of the equation
-compute_phase_cost(Non_it,Head,Call,(Forward_hash,Forward_inv),Cost):-
+compute_phase_cost_1(Non_it,Head,Calls,(Forward_hash,Forward_inv),Cost):-
 	number(Non_it),	
 	profiling_start_timer(equation_cost),
-	get_loop_cost(Head,Call1,(Forward_hash,Forward_inv),Non_it,Cost),
-	(Call1\=none->Call1=Call;true),
+	get_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Non_it,Cost),
 	profiling_stop_timer_acum(equation_cost,_),
-	assert(phase_cost(Non_it,Head,Call,(Forward_hash,Forward_inv),Cost)).
+	assert(phase_cost(Non_it,Head,Calls,(Forward_hash,Forward_inv),Cost)).
 
-compute_phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv),Cost):-
+compute_phase_cost_1(Phase,Head,[Call],(Forward_hash,Forward_inv),Cost):-
     %get the cost of each iterative component of the phase	
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv)),Phase,Costs),
+	maplist(get_equation_loop_cost(Head,[Call],(Forward_hash,Forward_inv)),Phase,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
 	compute_iterative_phase_cost(Costs,Head,Call,Forward_inv,Phase,Cost),
-	assert(phase_cost(Phase,Head,Call,(Forward_hash,Forward_inv),Cost)).
+	assert(phase_cost(Phase,Head,[Call],(Forward_hash,Forward_inv),Cost)).
 
-get_equation_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost2):-
-	get_loop_cost(Head,Call,(Forward_hash,Forward_inv),Eq_id,Cost),
+get_equation_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Eq_id,Cost2):-
+	get_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Eq_id,Cost),
 	cstr_extend_variables_names(Cost,it(Eq_id),Cost2).
 	
 
@@ -295,11 +287,11 @@ transform_max_min2_head_1(_Vars_head,_Cs,_Max_min,+,Fconstrs,Fconstrs).
 % add final constraints using the already computed ranking functions
 add_general_ranking_functions(Head,Call,Phase):-
 	rf_limit(Max),
-	current_chain(Chain),
-	get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Ub_fconstrs),
+	current_chain_prefix(Chain_prefix),
+	get_ranking_functions_constraints(Max,Head,Call,Phase,Chain_prefix,Ub_fconstrs),
 	maplist(save_new_phase_fconstr(Head,Call,Phase),Ub_fconstrs),
 	(get_param(compute_lbs,[])->
-	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain,Lb_fconstrs),
+	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain_prefix,Lb_fconstrs),
 	   maplist(save_new_phase_fconstr(Head,Call,Phase),Lb_fconstrs)
 	   ;
 	   true
@@ -326,7 +318,8 @@ compute_pending(Head,Call,Phase,Pending,Pending_out):-
 	(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
 	assert(current_pending_depth(Depth)),
 	compute_pending_element(Type,Head,Call,Phase,Lin_exp,Coeff_bounded,New_fconstrs,New_iconstrs,Pending1,Pending_out),
-	retract(current_pending_depth(Depth)),
+	
+	save_used_term(Type,Head,Call,Lin_exp,Coeff_bounded),
 	maplist(save_new_phase_fconstr(Head,Call,Phase),New_fconstrs),
 	maplist(save_new_phase_iconstr(Head,Call,Phase),New_iconstrs).
 
@@ -357,13 +350,13 @@ compute_sum(_Head,_Call,_Phase,_Loop,[]+0,Max_min,Bounded,[Fconstr],[],Pending,P
 	
 %maxsum: partial ranking function (a special case of linear sum)
 compute_sum(Head,Call,Phase,Loop,[]+1,max,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-!,
-    current_chain(Chain),
+    current_chain_prefix(Chain_prefix),
     %obtain the ranking functions for the loop and their difference version
     % if rf=x+y the difference version is (x+y)-(x'+y')
 	bagof_no_fail(Rf,
 	Deps^Deps_type^Loops^
 	(
-		partial_ranking_function(Head,Chain,Phase,Loops,Rf,Deps,Deps_type),
+		partial_ranking_function(Head,Chain_prefix,Phase,Loops,Rf,Deps,Deps_type),
 		contains_sl(Loops,Loop)		
 	),Rfs),
 	maplist(get_difference_version(Head,Call),Rfs,Rfs_diff),
@@ -388,8 +381,8 @@ compute_sum(Head,Call,Phase,Loop,[]+1,max,Bounded,New_fconstrs,New_iconstrs,Pend
 % minsum: partial ranking function (a special case of linear sum)
 %/*
 compute_sum(Head,Call,Phase,Loop,[]+1,min,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	current_chain(Chain),
-	bagof_no_fail(Lb,get_partial_lower_bound(Head,Call,Chain,Loop,Lb),Lbs),
+	current_chain_prefix(Chain_prefix),
+	bagof_no_fail(Lb,get_partial_lower_bound(Head,Call,Chain_prefix,Loop,Lb),Lbs),
 	maplist(check_loops_minsum(Head,Call,Phase,Loop,Bounded,Pending),Lbs,New_fconstrs_list,New_iconstrs_list,Pending_out_list),
 	ut_flat_list(New_fconstrs_list,New_fconstrs),
 	ut_flat_list(New_iconstrs_list,New_iconstrs),
@@ -482,10 +475,12 @@ compute_sum(Head,Call,Phase,Loop,Lin_exp,Max_min,Bounded,New_fconstrs,New_iconst
 	ut_flat_list(New_fconstrs_list,New_fconstrs),
 	%we stay with this option as long as one attempt succeeded 
 	%otherwise go to simple multiplication
+	
 	New_fconstrs\=[],
 	ut_flat_list(New_iconstrs_list,New_iconstrs),
 	empty_pending(Empty_pending),
 	foldl(union_pending,Pending_out_list,Empty_pending,Pending_aux),
+	%foldl(union_pending,Pending_out_list,Pending,Pending_aux),
 	% this is an heuristic
 	% if we are computing a minsum or we have created some intermediate constraints, we apply the basic product strategy as well
 	((New_iconstrs\=[];Exp_list=[_]; Max_min=min)->
@@ -1017,7 +1012,21 @@ find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending_o
 		   nad_entails(Vars,Cs,[Exp_diff_base_case_print>=0])
 		  ;
 		  true),
-		!.
+		!,
+		save_used_term(maxsum(Loop),Head,Call,Exp2,Bounded).
+
+find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending):-
+		used_term(maxsum,Loop,Head,Call,Exp2,Bounded),	
+		term_variables((Head,Call),Vars),
+		subtract_le(Exp_diff,Exp2,Exp_diff2),
+		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
+		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),
+		(Flag=head(Exp_original)->
+		   subtract_le(Exp_original,Exp2,Exp_diff_base_case),
+		   le_print_int(Exp_diff_base_case,Exp_diff_base_case_print,_),
+		   nad_entails(Vars,Cs,[Exp_diff_base_case_print>=0])
+		  ;
+		  true),!.
 		
 %! find_minsum_constraint(Loop:loop_id,Head:term,Call:term,Cs:polyhedron,Exp_diff:nlinexp,Flag:flag,Bounded:list(itvar),Pending:pending_constrs,Pending_out:pending_constrs)
 % try to find a pending minsum that can be bounded by Exp_diff
@@ -1027,7 +1036,24 @@ find_minsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded,Pending,Pending):-
 		term_variables((Head,Call),Vars),
 		subtract_le(Exp2,Exp_diff,Exp_diff2),
 		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
-		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!.	
+		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!,
+		save_used_term(minsum(Loop),Head,Call,Exp2,Bounded).
+%/*		
+find_minsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded,Pending,Pending):-
+		used_term(minsum,Loop,Head,Call,Exp2,Bounded),	
+		term_variables((Head,Call),Vars),
+		subtract_le(Exp2,Exp_diff,Exp_diff2),
+		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
+		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!.
+%	*/	
+save_used_term(minsum(Loop),Head,Call,Exp,Bounded):-!,
+	assert(used_term(minsum,Loop,Head,Call,Exp,Bounded)).
+	
+save_used_term(maxsum(Loop),Head,Call,Exp,Bounded):-!,
+	assert(used_term(maxsum,Loop,Head,Call,Exp,Bounded)).
+	
+save_used_term(_Other,_Head,_Call,_Exp,_Bounded).
+
 %! get_ranking_functions_constraints(Max:int,Head:term,Call:term,Phase:phase,Chain:chain,Fconstrs:list(fconstr))
 % generate at most Max upper bound final constraints from the ranking functions
 % -the ranking function itself
@@ -1060,7 +1086,7 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 	subtract_le(Rf,Rf1,Rf_diff),
 	integrate_le(Rf_diff,Den,Rf_diff_nat),
 	write_le(Rf_diff_nat,Rf_diff_nat_print),
-	phase_loop(Phase,_,Head,Call,Phi),
+	phase_loop(Phase,_,Head,[Call],Phi),
 	Constraint= (Den* D = Rf_diff_nat_print),
 	Cs_1 = [ Constraint | Phi],
 	% maximum decrease
@@ -1108,7 +1134,7 @@ generate_lecandidates(Head,Call,Lin_exp,min,Loop,Diff_list_selected):-
 max_min_top_expression_in_phase(Head,Call,Phase,bound(Op,Lin_exp,_Bounded),Maxs_out):-
 	get_constr_op(Max_min,Op),
 	phase_transitive_closure(Phase,_,Head_total,Head,Cs_star_trans),
-	phase_loop(Phase,_,Head,Call,Cs),
+	phase_loop(Phase,_,Head,[Call],Cs),
 	ut_flat_list([Cs_star_trans,Cs],Context),
 	term_variables(Head_total,Vars_of_Interest),
 	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Maxs_out),
@@ -1287,7 +1313,7 @@ put_inside_mult(Factor,mult([Factor])).
 
 
 get_enriched_loop(Loop,Head,Call,Total_cs):-
-	loop_ph(Head,(Loop,_),Call,Cs,_,_),	
+	loop_ph(Head,(Loop,_),[Call],Cs,_,_),	
 	forward_invariant_temp(Head,Call,Forward_inv),
 	append(Forward_inv,Cs,Total_cs).
 				
