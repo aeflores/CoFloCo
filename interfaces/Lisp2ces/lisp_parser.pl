@@ -37,8 +37,9 @@ s_expressions([Sexp|Sexps])-->
     s_expression(Sexp),!,
     spaces,
     s_expressions(Sexps).	
-
+	
 s_expressions([])-->spaces,[].
+
 
 spaces --> space,!,spaces.
 spaces -->[],!.

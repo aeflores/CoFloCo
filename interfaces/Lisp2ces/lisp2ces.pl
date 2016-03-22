@@ -68,7 +68,6 @@ defun2cost_exp(['defun-simplified','state-fix'|_],[]):-!,
 
 
 defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relations):-
-	%FIXME: quotes such as '(a b) are currently not parsed correcty
 	fix_quotes(Body_with_quotes,Body),
 	% create map from variable names to prolog variables
 	make_dicc(Args,Args_abstract,Dicc),
@@ -149,6 +148,7 @@ unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,Res_var,Cost_relations
 	
 % lambdas are used to express let expressions in simplified lisp	
 unroll_body(Dicc,[[lambda,New_vars,Exp]| Def_exps],Body_unrolled,Res_var,Cost_relations):-!,
+  %  (New_vars=nil-> New_vars1=[]; New_vars1=New_vars),
 	couple_definitions(New_vars,Def_exps,Defs),
 	unroll_definitions(Defs,Dicc,Dicc1,Calls_defs,Cost_relations1),
 	unroll_body(Dicc1,Exp,Calls_exp,Res_var,Cost_relations2),
@@ -250,7 +250,7 @@ init_called(entry(Head:_),Called,Called1):-
 	
 compute_called(Eqs,Called,Called1):-
 	foldl(get_called_new,Eqs,Called,Called_aux),
-	length(Called_aux,N),
+	length(Called,N),
 	length(Called_aux,N1),
 	(N1 >N ->
 	  compute_called(Eqs,Called_aux,Called1)
