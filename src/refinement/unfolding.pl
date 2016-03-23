@@ -219,18 +219,62 @@ remove_terminating_non_terminating_chains(Head,RefCnt):-
 
 remove_terminating_non_terminating_chains_1(Head,RefCnt):-
 	chain(Head,RefCnt,Chain),
-	reverse(Chain,[Iterative_phase|_]),Iterative_phase=[_|_],
-	termination_argument(Head,Chain,yes,_Term_arg),
+	remove_terminating_non_terminating_2([],Head,Chain,New_chain),
+	New_chain\=Chain,
 	retract(chains:chain(Head,RefCnt,Chain)),
+	(New_chain\=none->
+	   assert(chains:chain(Head,RefCnt,New_chain))
+	   ;
+	   true
+	 ),
 	numbervars(Head,0,_),
 	(get_param(debug,[])->
 	 format('Discarded unfeasible chain ',[]),
 	 print_chain(Head,Chain),
-	 format('(Non-terminating chain proved terminating)~n',[])
+	 format('(Non-terminating chain proved terminating)~n',[]),
+	 (New_chain\=none->
+	   format('Remaining chain: ',[]),
+	   print_chain(Head,New_chain),nl
+	   ;
+	   true
+	   )
 	 ;
 	 true),
 	fail.
 remove_terminating_non_terminating_chains_1(_,_).
+
+remove_terminating_non_terminating_2(_Prev_chain,_Head,Chain,Chain):-
+	reverse(Chain,[Last_phase|_Chain_rev]),
+	number(Last_phase),!.
+
+remove_terminating_non_terminating_2(Prev_chain,Head,Chain,New_chain):-
+	reverse(Chain,[Last_phase|Chain_rev]),
+	Last_phase=[_|_],!,
+	append([Last_phase|Chain_rev],Prev_chain,Complete_prev_chain),
+	(termination_argument(Head,Complete_prev_chain,yes,_Term_arg)->
+	     New_chain=none
+	;
+	     New_chain=Chain
+	).
+remove_terminating_non_terminating_2(Prev_chain,Head,Chain,New_chain):-
+	  reverse(Chain,[Last_phase|Chain_rev]),
+	  Last_phase=multiple(Mult_phase,Tails),!,
+	  append([Mult_phase|Chain_rev],Prev_chain,Complete_prev_chain),
+	  (termination_argument(Head,Complete_prev_chain,yes,_Term_arg)->
+	     delete(Tails,[],Tails2)
+	   ; 
+	     Tails2=Tails
+	  ),
+	  maplist(remove_terminating_non_terminating_2(Complete_prev_chain,Head),Tails2,New_tails),
+	  exclude(is_none,New_tails,New_tails_excluded),
+	  (New_tails_excluded=[]->
+	      New_chain=none
+	      ;
+	      reverse([multiple(Mult_phase,New_tails_excluded)|Chain_rev],New_chain)
+	  ).
+	      
+	     
+is_none(none).	    
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

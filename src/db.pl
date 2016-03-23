@@ -240,7 +240,16 @@ non_terminating_chain_2(Head,[X|_Chain]):-
 	loop_ph(Head,(X,_),_Call,_Cs,_Ids,non_terminating),!.
 
 non_terminating_chain_2(_Head,[X|_Chain]):-
-	\+number(X).
+	X=[_|_],!.
+
+non_terminating_chain_2(Head,[multiple(_Phase,Tails)|_Chain]):-
+	maplist(reverse,Tails,Tails_rev),
+	member(Tail_rev,Tails_rev),
+	(
+	Tail_rev=[]
+	  ;
+	non_terminating_chain_2(Head,Tail_rev)
+	).
 	
 
 %! add_ground_equation_header(+Non_ground:term,+Ground:term) is det

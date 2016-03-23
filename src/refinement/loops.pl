@@ -29,7 +29,7 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
     You should have received a copy of the GNU General Public License
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
-:- module(loops,[compute_loops/2,compute_phase_loops/2]).
+:- module(loops,[compute_loops/2,compute_phase_loops/2,split_multiple_loops/2,get_extended_phase/2]).
 
 :- use_module('../db',[eq_ph/8,loop_ph/6, add_loop_ph/6,add_phase_loop/5]).
 :- use_module(chains,[phase/3]).
@@ -93,23 +93,48 @@ put_in_list_1((Inv,E),(Inv,[E])).
 % compute a loop for each iterative phase 
 compute_phase_loops(Head,RefCnt) :-
 	phase(Class,Head,RefCnt),
-	findall(loop(Head,Calls,Cs),
+	findall((Head,Calls,Cs),
 		(member(Id,Class),
 		 loop_ph(Head,(Id,RefCnt),Calls,Cs,_,_)
 		),Loops),
-	join_loops(Loops,Head_out,Calls_out,Cs_out,_Vars),
-	add_phase_loop(Class,RefCnt,Head_out,Calls_out,Cs_out),
+	split_multiple_loops(Loops,Loops_splitted),
+	join_loops(Loops_splitted,Head_out,Call_out,Cs_out,_Vars),
+	add_phase_loop(Class,RefCnt,Head_out,Call_out,Cs_out),
 	fail.
 compute_phase_loops(_Head,_RefCnt).
 
 
-join_loops([loop(Head,Calls,Cs)],Head,Calls,Cs,Vars):-!,
+join_loops([(Head,Calls,Cs)],Head,Calls,Cs,Vars):-!,
 	Head=..[_|V1],
 	term_variables(Calls,V2),
 	append(V1,V2,Vars).
 
-join_loops([loop(Head,Calls,Cs)|Loops],Head,Calls,Cs_out,Vars):-
+join_loops([(Head,Calls,Cs)|Loops],Head,Calls,Cs_out,Vars):-
 	join_loops(Loops,Head,Calls,Cs_aux,Vars),
 	nad_lub(Vars,Cs,Vars,Cs_aux,Vars,Cs_out).
 	
 	
+ split_multiple_loops(Loops,Loops_splitted):-
+ 	     split_multiple_loops_aux(Loops,[],Loops_splitted).
+ 
+ split_multiple_loops_aux([],Loops_splitted,Loops_splitted).	
+ split_multiple_loops_aux([(_Head,[],_Inv)|Loops],Loops_accum,Loops_splitted):-
+  	   split_multiple_loops_aux(Loops,Loops_accum,Loops_splitted).
+  split_multiple_loops_aux([(Head,[Call|Calls],Inv)|Loops],Loops_accum,Loops_splitted):-
+	  term_variables((Head,Call),Vars),
+	  nad_project_group(Vars,Inv,Inv_loop),
+  	  split_multiple_loops_aux([(Head,Calls,Inv)|Loops],[(Head,Call,Inv_loop)|Loops_accum],Loops_splitted). 
+  	  
+  	  
+get_extended_phase([],[]).
+get_extended_phase([Loop|Phase],Extended_phase1):-
+	loop_ph(_,(Loop,_),Calls,_,_,_),
+	length(Calls,N),
+	get_extended_loop_names(1,N,Loop,Extended_loops),
+	get_extended_phase(Phase,Extended_phase),
+	append(Extended_loops,Extended_phase,Extended_phase1).
+get_extended_loop_names(N,N,Loop,[Loop:N]).
+get_extended_loop_names(N1,N,Loop,[Loop:N1|Extended_loops]):-
+	N1<N,
+	N2 is N1+1,
+	get_extended_loop_names(N2,N,Loop,Extended_loops).	

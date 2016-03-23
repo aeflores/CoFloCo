@@ -45,8 +45,8 @@ This module computes different kinds of invariants for the chains:
 		      add_scc_forward_invariant/3]).
 
 :- use_module('../db',[loop_ph/6,phase_loop/5]).
-:- use_module(chains,[chain/3]).
-
+:- use_module(chains,[chain/3,get_reversed_chains/3]).
+:- use_module(loops,[split_multiple_loops/2]).
 
 :- use_module('../utils/cofloco_utils',[assign_right_vars/3]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,
@@ -393,14 +393,6 @@ compute_forward_invariants(Entry_Call,RefCnt):-
 	fail.
 compute_forward_invariants(_,_).
 
-
-get_reversed_chains(Prefix,[multiple(Phase,Tails)],Rev_chains):-!,
-	maplist(get_reversed_chains([Phase|Prefix]),Tails,Rev_chains_lists),
-	foldl(append,Rev_chains_lists,[],Rev_chains).
-get_reversed_chains(Prefix,[],[Prefix]).
-	
-get_reversed_chains(Prefix,[Phase|Chain],Rev_chains):-
-	get_reversed_chains([Phase|Prefix],Chain,Rev_chains).
 	
 compute_prefix_forward_invariant(RefCnt,Entry_Call,Chain_prefix):-
 	\+has_infeasible_prefix(Entry_Call,RefCnt,Chain_prefix),
@@ -508,17 +500,7 @@ apply_loops_forward([(Head_loop,Call_loop,Cs_loop)|Loops],inv(Head_inv,Inv),Call
        nad_project_group(Vars,Cs_context,Cs),
        apply_loops_forward(Loops,inv(Head_inv,Inv),Call,Cs_list).
        
-       
- split_multiple_loops(Loops,Loops_splitted):-
- 	     split_multiple_loops_aux(Loops,[],Loops_splitted).
- 
- split_multiple_loops_aux([],Loops_splitted,Loops_splitted).	
- split_multiple_loops_aux([(_Head,[],_Inv)|Loops],Loops_accum,Loops_splitted):-
-  	   split_multiple_loops_aux(Loops,Loops_accum,Loops_splitted).
-  split_multiple_loops_aux([(Head,[Call|Calls],Inv)|Loops],Loops_accum,Loops_splitted):-
-	  term_variables((Head,Call),Vars),
-	  nad_project_group(Vars,Inv,Inv_loop),
-  	  split_multiple_loops_aux([(Head,Calls,Inv)|Loops],[(Head,Call,Inv_loop)|Loops_accum],Loops_splitted). 	   
+      	   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! compute_loops_transitive_closures(Entry:term,RefCnt:int) is det
@@ -530,7 +512,7 @@ compute_loops_transitive_closures(Entry,RefCnt):-
 compute_loops_transitive_closures(_,_).
 
 compute_phase_transitive_closure(Phase,RefCnt):-
-	phase_loop(Phase,RefCnt,Head,[Call],Inv_0),
+	phase_loop(Phase,RefCnt,Head,Call,Inv_0),
         findall((Head_loop,Call_loop,Cs_loop),
 	    (
 	    member(Loop,Phase),

@@ -41,7 +41,8 @@ Specific "data types" of this module:
 
 :- use_module(ranking_functions,[ranking_function/4,
 				 partial_ranking_function/7]).
-:- use_module('refinement/chains',[chain/3]).
+:- use_module('refinement/chains',[chain/3,get_reversed_chains/3]).	  
+:- use_module('refinement/loops',[get_extended_phase/2]).	
 :- use_module('IO/params',[get_param/2]).
 :- use_module('IO/output',[print_phase_termination_argument/4]).
 :- use_module('utils/polyhedra_optimizations',[nad_normalize_polyhedron/2]).
@@ -79,10 +80,11 @@ init_termination:-
 % try to prove termination of all the chains in the SCC of Head
 prove_termination(Head,RefCnt):-
 	chain(Head,RefCnt,Chain),
-	reverse(Chain,Chain_rev),	
+	get_reversed_chains([],Chain,Chains_rev),
+	member(Chain_rev,Chains_rev),
 	Chain_rev=[Last_phase|_],
 	prove_phase_termination(Head,Chain_rev,Last_phase,Termination_argument),
-	save_termination_argument(Head,Chain,Termination_argument),
+	save_termination_argument(Head,Chain_rev,Termination_argument),
 	fail.
 prove_termination(_,_).
 
@@ -108,7 +110,8 @@ prove_phase_termination(Head,Chain_prefix,Phase,Phase_rf):-
 			),Deps_structure),
 	%order ranking function by number of dependencies
 	keysort(Deps_structure,Sorted_structure),
-	find_lexicographic_proof_1(Sorted_structure,Phase,[],Phase_rf).
+	get_extended_phase(Phase,Extended_phase),
+	find_lexicographic_proof_1(Sorted_structure,Extended_phase,[],Phase_rf).
 
 %if there are no loops left, terminate
 find_lexicographic_proof_1(_Sorted_structure,[],Term_arg,Term_arg):-!.
@@ -158,7 +161,4 @@ save_termination_argument(Head,Chain,Term_argument):-
 save_termination_argument(Head,Chain,Term_argument):-
 	assertz(termination_argument(Head,Chain,yes,Term_argument)).
 
-save_phase_termination_argument(Head,Chain,Phase,_Term_argument):-
-	phase_termination_argument(Head,Chain,Phase,_,_),!.
-	
 

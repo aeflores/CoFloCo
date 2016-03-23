@@ -40,7 +40,7 @@ However, for each SCC there is a special base case that will allow us to represe
 */
 
 
-:- module(chains,[compute_chains/2,chain/3,phase/3,init_chains/0]).
+:- module(chains,[compute_chains/2,chain/3,phase/3,init_chains/0,get_reversed_chains/3]).
 
 
 :- use_module('../db',[loop_ph/6]).
@@ -123,6 +123,15 @@ compute_chains(Head,RefCnt):-
 	compute_phases(Head,RefCnt),
 	compute_chains_1(Head,RefCnt).
 
+
+get_reversed_chains(Prefix,[multiple(Phase,Tails)],Rev_chains):-!,
+	maplist(get_reversed_chains([Phase|Prefix]),Tails,Rev_chains_lists),
+	foldl(append,Rev_chains_lists,[],Rev_chains).
+get_reversed_chains(Prefix,[],[Prefix]).
+	
+get_reversed_chains(Prefix,[Phase|Chain],Rev_chains):-
+	get_reversed_chains([Phase|Prefix],Chain,Rev_chains).
+	
 %! init_chains is det
 %  erase all chains and phases
 init_chains:-

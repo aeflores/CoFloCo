@@ -357,7 +357,7 @@ compute_sum(Head,Call,Phase,Loop,[]+1,max,Bounded,New_fconstrs,New_iconstrs,Pend
 	Deps^Deps_type^Loops^
 	(
 		partial_ranking_function(Head,Chain_prefix,Phase,Loops,Rf,Deps,Deps_type),
-		contains_sl(Loops,Loop)		
+		contains_sl(Loops,Loop:1)		
 	),Rfs),
 	maplist(get_difference_version(Head,Call),Rfs,Rfs_diff),
 	append(Rfs,Rfs_diff,Rfs_all),
@@ -1097,7 +1097,7 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 	subtract_le(Rf,Rf1,Rf_diff),
 	integrate_le(Rf_diff,Den,Rf_diff_nat),
 	write_le(Rf_diff_nat,Rf_diff_nat_print),
-	phase_loop(Phase,_,Head,[Call],Phi),
+	phase_loop(Phase,_,Head,Call,Phi),
 	Constraint= (Den* D = Rf_diff_nat_print),
 	Cs_1 = [ Constraint | Phi],
 	% maximum decrease
@@ -1107,7 +1107,7 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 	
 get_partial_lower_bound(Head,Call,Chain,Loop,Lb):-
 	partial_ranking_function(Head,Chain,_Phase,Loops,Rf,_,_),
-	contains_sl(Loops,Loop),	
+	contains_sl(Loops,Loop:1),	
 	get_difference_version(Head,Call,Rf,Rf_diff),
 	integrate_le(Rf_diff,Den,Rf_diff_nat),
 	write_le(Rf_diff_nat,Rf_diff_nat_print),
@@ -1145,7 +1145,7 @@ generate_lecandidates(Head,Call,Lin_exp,min,Loop,Diff_list_selected):-
 max_min_top_expression_in_phase(Head,Call,Phase,bound(Op,Lin_exp,_Bounded),Maxs_out):-
 	get_constr_op(Max_min,Op),
 	phase_transitive_closure(Phase,_,Head_total,Head,Cs_star_trans),
-	phase_loop(Phase,_,Head,[Call],Cs),
+	phase_loop(Phase,_,Head,Call,Cs),
 	ut_flat_list([Cs_star_trans,Cs],Context),
 	term_variables(Head_total,Vars_of_Interest),
 	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Maxs_out),

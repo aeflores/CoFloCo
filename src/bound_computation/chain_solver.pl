@@ -161,6 +161,6 @@ get_next_phase_predicate([Lg_next|_],Head,Cs_carried):-
 	number(Lg_next),!,
 	loop_ph(_,(Lg_next,_),[Head],Cs_carried,_,_).
 get_next_phase_predicate([Lg_next|_],Head,Cs_carried):-
-	phase_loop(Lg_next,_,_,[Head],Cs_carried).
+	phase_loop(Lg_next,_,_,Head,Cs_carried).
 
 
