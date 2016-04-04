@@ -143,6 +143,7 @@ unfold_calls(Head,RefCnt):-
 	fail.
 unfold_calls(_,_).
 
+
 %! unfold_calls_aux(+Total_calls:list(term),+Base_calls:list(term),+Head:term,+RefCnt:int,+Cost:cost_expression,+R_Calls:list(term),+New_B_Calls:list(term),+New_T_Calls:list(term),+Cs:polyhedron,+Term_flag:flag,+Id:int) is failure
 % Unfold calls before the recursive call (if there is one).
 % Each call is substituted in a non-deterministic manner by a call to a specific chain.
@@ -185,10 +186,14 @@ unfold_calls_aux([Base_Call|More],[Base_Call|MoreB],Head,RefCnt,Cost,R_Calls,New
 	      Terminating=terminating
 	      )
 	),
+	(Head_Pattern=[]->
+	    Total_Cons=Cs
+	    ;
 	append(Head_Pattern,Cs,Total_Cons),
 	term_variables(Head_Pattern,Relevant_vars_ini),
 	slice_relevant_constraints_and_vars(Relevant_vars_ini,[],Total_Cons,_,Relevant_Cons),
-	nad_consistent_constraints_group_aux(Relevant_Cons),
+	nad_consistent_constraints_group_aux(Relevant_Cons)
+	),
 	or_terminating_flag(Term_flag,Terminating,Term_flag2),
 	%if the calls are sequential and one does not terminate, we can eliminate further calls
 	((get_param(assume_sequential,[]),Terminating=non_terminating)->
@@ -297,7 +302,15 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	assign_right_vars(Ex_pats,Head,Ex_pats1),
 	% group the partitions according to the chains
 	from_pair_list_mm(Ex_pats1,Multimap_simplified),
-	
+%TODO: experiments of how to compress chains
+%	length(Multimap_simplified,N),
+%	Head=..[_|Vars],
+%	append(_,[Last],Vars),
+%	(N>3-> 
+%	   merge_patterns(Head,[],weak,Multimap_simplified,Multimap_simplified_2)
+%	   ;
+%	  merge_patterns(Head,[Last],strong,Multimap_simplified,Multimap_simplified_2)
+%	  ),
 	(reset_scc(Head,Important_vars,Flag)-> 
 	   merge_patterns(Head,Important_vars,Flag,Multimap_simplified,Multimap_simplified_2)
 	   ;
