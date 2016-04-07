@@ -58,6 +58,8 @@ This module prints the results of the analysis
 
 :- use_module('../utils/cost_structures',[
 	cstr_shorten_variables_names/3,
+	cstr_get_unbounded_itvars/2,
+	itvar_recover_long_name/2,
 	astrexp_to_cexpr/2]).
 
 
@@ -68,7 +70,7 @@ This module prints the results of the analysis
 :- use_module(stdlib(profiling),[profiling_get_info/3]).
 :- use_module(stdlib(counters),[counter_get_value/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
-
+:- use_module(stdlib(set_list),[contains_sl/2]).
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
@@ -239,16 +241,36 @@ gen_mult_bases((A,B),A*B).
 
 print_new_cost_structure(Cost):-
 	cstr_shorten_variables_names(Cost,no_list,cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)),
+	cstr_get_unbounded_itvars(cost(Top_exps,LTop_exps,Aux_exps,Bases,Base),Unbounded),
 	partition(is_ub_aux_exp,Aux_exps,Ub_Aux_exps,Lb_Aux_exps),
-	maplist(gen_mult_bases,Bases,Bases1),
-	write_sum([Base|Bases1],Sum),
-	format('~p',[Sum]),
+	print_base(Bases,Base,Unbounded),
 	format('~n  Such that:~12|',[]),
 	maplist(print_top_exp,Top_exps),
 	maplist(print_aux_exp,Ub_Aux_exps),
 	maplist(print_top_exp,LTop_exps),
-	maplist(print_aux_exp,Lb_Aux_exps).
+	maplist(print_aux_exp,Lb_Aux_exps),	
+	((get_param(debug,[]),Unbounded\=[])->
+		ansi_format_aux([fg(red)],'Unbounded itvars~n',[]),
+		maplist(itvar_recover_long_name,Unbounded,Long_names),
+		maplist(print_unbounded_itvar,Unbounded,Long_names)
+	;
+		true	
+	).
+
+print_unbounded_itvar(Short,Long):-
+	ansi_format_aux([fg(red)],'~p :  ~p~n',[Short,Long]).
 	
+print_base([],C,_):-
+	format('~p',[C]).
+print_base([(Itvar,Coeff)|Bases],C,Unbounded):-
+	(contains_sl(Unbounded,Itvar)->
+		ansi_format_aux([fg(red)],'~p',[Coeff*Itvar])
+		;
+		ansi_format_aux([],'~p',[Coeff*Itvar])
+	),
+	format('+',[]),
+	print_base(Bases,C,Unbounded).
+		
 is_ub_aux_exp(bound(ub,_,_)).
 
 print_top_exp(bound(Op,Exp,Bounded)):-

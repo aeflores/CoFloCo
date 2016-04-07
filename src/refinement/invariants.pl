@@ -39,6 +39,7 @@ This module computes different kinds of invariants for the chains:
 		      clean_invariants/0,
 		      add_backward_invariant/3,
 		      backward_invariant/4,
+		      partial_backward_invariant/4,
 		      forward_invariant/4,
 		      scc_forward_invariant/3,
 		      phase_transitive_closure/5,
@@ -249,11 +250,13 @@ compute_backward_invariant([Base_case],Prev_chain,Head,RefCnt,Entry_pattern_norm
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized).
 	
 % the non-terminating case, the cost relations have to be applicable, but that is all we know
-compute_backward_invariant([Non_terminating],_Prev_chain,Head,RefCnt,Entry_pattern):-
+compute_backward_invariant([Non_terminating],Prev_chain,Head,RefCnt,Entry_pattern):-
 	Non_terminating=[_|_],!,
 	phase_loop(Non_terminating,RefCnt,Head,_,Cs),
 	Head=..[_|EVars],
- 	nad_project_group(EVars,Cs,Entry_pattern).
+ 	nad_project_group(EVars,Cs,Entry_pattern),
+ 	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+ 	assert(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern)).
 
 compute_backward_invariant([multiple(Non_terminating,Tails)],_Prev_chain,Head,RefCnt,Entry_pattern):-
 	member([],Tails),!,

@@ -90,7 +90,9 @@
 		basic_cost_to_astrexp/4,
 		cstr_from_cexpr/2,
 		cstr_remove_cycles/2,
+		cstr_get_unbounded_itvars/2,
 		cstr_extend_variables_names/3,
+		itvar_recover_long_name/2,
 		cstr_propagate_sums/4,
 		cstr_join/3,
 		cstr_or_compress/2,
@@ -680,6 +682,17 @@ get_summands_aux((X,Coeff),Summands,[mult([X,Coeff])|Summands]).
 contains_bounded_var(Var,bound(_,_,[Bounded])):-
 	Var=Bounded.
 
+%it asumes that cycles and undefined constraints have been removed 
+cstr_get_unbounded_itvars(cost(Top_exps,_LTop_exps,Aux_exps,Bases,_Base),Unbounded):-
+	foldl(get_bounded_itvars(ub),Top_exps,[],Bounded_aux),
+	foldl(get_bounded_itvars(ub),Aux_exps,Bounded_aux,Bounded),
+	maplist(tuple,Itvars,_,Bases),
+	from_list_sl(Itvars,Itvars_set),
+	difference_sl(Itvars_set,Bounded,Unbounded).
+get_bounded_itvars(Op,bound(Op,_,Bounded),Bounded_set,Bounded_set1):-!,
+	from_list_sl(Bounded,Bounded_set_new),
+	union_sl(Bounded_set,Bounded_set_new,Bounded_set1).
+get_bounded_itvars(_,_,Bounded_set,Bounded_set).
 
 
 get_positive_linear_constraint(_Itvars_set,bound(Op,exp(Index_pos,[],add(Summands),add([])),Bounded),(Map,Lin_exps),(Map2,[Lin_exp_norm|Lin_exps])):-
@@ -922,6 +935,19 @@ itvar_shorten_name(no_list,Name,Short_name):-
 	 	assert(short_db(Hash,Name,s(Id))),
 	 	Short_name=s(Id)
 	 	).	
+
+itvar_recover_long_name(Name,Long_name2):-
+	short_db(_,Long_name1,Name),!,
+	itvar_recover_long_name(Long_name1,Long_name2).
+
+itvar_recover_long_name([Name],Long_name2):-
+	short_db(_,Long_name1,Name),!,
+	itvar_recover_long_name(Long_name1,Long_name2).		
+itvar_recover_long_name([Name],[Name]):-!.
+
+itvar_recover_long_name([Name1|Names],[Name1|Long_name]):-
+	itvar_recover_long_name(Names,Long_name).
+
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
