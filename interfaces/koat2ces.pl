@@ -197,7 +197,14 @@ maybe_exp(Var,Factor)-->"^",!,number_exp(Num),{repeat_n_times(Num,Var,Factor)}.
 maybe_exp(Var,Var)-->[].
 
 
-repeat_n_times('2',Var,Var*Var).
+
+repeat_n_times(Num_atom,Var,Factor):-
+	atom_number(Num_atom,Num),
+	repeat_n_times_1(Num,Var,Factor).
+repeat_n_times_1(1,Var,Var):-!.
+repeat_n_times_1(N,Var,Var*Factor):-
+	N1 is N-1,
+	repeat_n_times_1(N1,Var,Factor).
 
 combine_factor(None,F1,F1):-None==none,!.
 combine_factor(F1,F2,F_comb):-F_comb=..['*',F1,F2].
