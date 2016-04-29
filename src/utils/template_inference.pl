@@ -26,7 +26,11 @@ It uses linear programming to infer linear expressions that satisfy a property g
 
 :- module(template_inference,[
 	difference_constraint_farkas_ub/6,
-	difference_constraint_farkas_lb/5]).
+	difference_constraint_farkas_lb/5,
+	max_min_linear_expression_list_all/6,
+	difference_constraint_farkas_multiple_ub/5,
+	farkas_leave_ub_candidate/5
+	]).
 
 :- use_module('cofloco_utils',[
 			sort_with/3,write_le_internal/2,	
@@ -65,6 +69,7 @@ It uses linear programming to infer linear expressions that satisfy a property g
 :- use_module(stdlib(linear_expression), [
 	parse_le_fast/2,
 	parse_le/2,
+	sum_le/3,
 	multiply_le/3,
 	negate_le/2,
 	write_le/2,
@@ -77,8 +82,7 @@ It uses linear programming to infer linear expressions that satisfy a property g
 %! difference_constraint_farkas_ub(Head:term,Call:term,Phi:polyhedron,Lin_exp:nlinexp,Lin_exp_list:list(nlinexp),Lin_exp_list2:list(nlinexp))
 % generate a set of Head-tail upper bound candidates Lin_exp_list2 and Head upper bound candidates Lin_exp_list
 % for the linear expression Lin_exp in the loop defined as Phi
-difference_constraint_farkas_ub(Head,Call,Phi_1,Lin_exp,Lin_exp_list,Lin_exp_list2):-
-	nad_normalize_polyhedron(Phi_1,Phi),
+difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Lin_exp_list,Lin_exp_list2):-
 	Head=..[_|EVars],
 	Call=..[_|CVars],
 	length(EVars,N1),
@@ -197,6 +201,140 @@ difference_constraint_farkas_lb(Head,Call,Phi,Lin_exp,Lin_exps_non_constant):-
 	exclude(is_constant_le,Lin_exp_list_set,Lin_exps_non_constant),
 	Lin_exps_non_constant\=[].	
 
+get_negated_unknowns([],_,[],[]).
+get_negated_unknowns([_Call|Calls],Unknowns_head,Vars1,Characterizing_constraints1):-
+	get_negated_unknowns(Calls,Unknowns_head,Vars,Characterizing_constraints),
+	length(Unknowns_head,N),
+	length(Unknowns_call,N),
+	maplist(negation_constr,Unknowns_head,Unknowns_call,Characterizing_constraints_new),
+	append(Unknowns_call,Vars,Vars1),
+	append(Characterizing_constraints_new,Characterizing_constraints,Characterizing_constraints1).
+	
+difference_constraint_farkas_multiple_ub(Head,Calls,Phi_1,Lin_exp,Lin_exp_list):-
+	nad_normalize_polyhedron(Phi_1,Phi),
+	Head=..[_|EVars],
+	term_variables(Calls,CVars),
+	length(EVars,N1),
+	append(EVars,CVars,Vars),
+	length(Unknowns_head,N1),
+	get_negated_unknowns(Calls,Unknowns_head,Unknown_calls,Characterizing_constraints),
+
+	% the negative version of the linear expression
+	get_lin_expr_dmatrix(Vars,Lin_exp,Coeffs),
+	multiply_by_factor_dmatrix(Coeffs,-1,Coeffs_minus),
+	append([Coeff_0|Unknowns_head],Unknown_calls,Unknowns),
+	% l(x)-l(x')
+	get_symbolic_dmatrix(Unknowns,Template),
+	% l(x)-l(x')-Lin_exp(xx')
+	add_dmatrix_symbolically(Template,Coeffs_minus,Expression_vector),
+	
+	get_negated_unknowns(Calls,Unknowns_head,Unknown_calls2,_),
+	append([Coeff_1|Unknowns_head],Unknown_calls2,Unknowns2),
+	% l(x)+Coeff_1
+	get_symbolic_dmatrix(Unknowns2,Template2),
+	% l(x)_coeff_1-Lin_exp(xx')
+	%add_dmatrix_symbolically(Template2,Coeffs_minus,Expression_vector2),
+	
+	% l(x)_coeff_1 must be positive
+	Expression_vector2=Template2,
+	
+	%generate constraints for head tail candidates
+	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,[Coeff_0=0|Characterizing_constraints],system(Complete_system1,Ys1)),
+	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector2,[Coeff_1>=0],system(Complete_system2,Ys3)),
+	maplist(=(0),Unknown_calls2),	
+	ut_flat_list([Complete_system1,Complete_system2],Complete_system_final),
+	nad_project(Unknowns,Complete_system_final,Complete_system_proy),
+	% here we get multiple candidates
+	get_generators(c,Unknowns,Complete_system_proy,Generators),
+	%once we have the point, we can set all the coefficients variables to 0 and obtain the point in terms of Unknowns
+	maplist(=(0),Ys1),
+	maplist(=(0),Ys3),
+	
+	%extract the linear expressions from the points
+	copy_term(([Coeff_1|Unknowns_head],Unknown_calls,Generators),([Coeff_0_c2|Unknowns1_c2],Unknowns_calls_c2,Generators_c)),
+	maplist(=(0),Unknowns_calls_c2),
+	copy_term(([Coeff_0_c2|Unknowns1_c2],Generators_c),([1|EVars],Generators_copy)),
+	
+	get_expressions_from_points(Generators_copy,Lin_exp_list).
+
+farkas_leave_ub_candidate(Head,Calls,Cs,Lin_exp,Lin_exp_list):-
+	Head=..[_|EVars],
+	term_variables(Calls,CVars),
+	length(EVars,N1),
+	append(EVars,CVars,Vars),
+	length(Unknowns_head,N1),
+	get_negated_unknowns(Calls,Unknowns_head,Unknown_calls,Characterizing_constraints),
+    copy_term(Unknown_calls,Unknown_calls2),
+	% the negative version of the linear expression
+	append([Coeff_0|Unknowns_head],Unknown_calls,Unknowns),
+	% l(x)-l(x')
+	get_symbolic_dmatrix(Unknowns,Template),
+	Expression_vector=Template,
+	
+	append([Coeff_0|Unknowns_head],Unknown_calls2,Unknowns2),
+	get_symbolic_dmatrix(Unknowns2,Template2),
+	% l(x)_coeff_1-Lin_exp(xx')
+	foldl(get_sum_exp_calls(Head,Lin_exp),Calls,[]+0,Lin_exp_calls),
+	
+	get_lin_expr_dmatrix(Vars,Lin_exp_calls,Coeffs),
+	multiply_by_factor_dmatrix(Coeffs,-1,Coeffs_minus),
+	add_dmatrix_symbolically(Template2,Coeffs_minus,Expression_vector2),
+%	Expression_vector2=Template2,
+	%generate constraints for head tail candidates
+	generalized_farkas_property_dmatrix(Vars,Cs,Expression_vector,[Coeff_0=0|Characterizing_constraints],system(Complete_system1,Ys1)),
+	generalized_farkas_property_dmatrix(Vars,Cs,Expression_vector2,[],system(Complete_system2,Ys3)),
+	ut_flat_list([Complete_system1,Complete_system2],Complete_system_final),
+	maplist(=(0),Unknown_calls2),
+	nad_project(Unknowns,Complete_system_final,Complete_system_proy),
+	% here we get multiple candidates
+	get_generators(c,Unknowns,Complete_system_proy,Generators),
+	%once we have the point, we can set all the coefficients variables to 0 and obtain the point in terms of Unknowns
+	maplist(=(0),Ys1),
+	maplist(=(0),Ys3),
+	
+	%extract the linear expressions from the points
+	copy_term(([Coeff_0|Unknowns_head],Unknown_calls,Generators),([Coeff_0_c2|Unknowns1_c2],Unknowns_calls_c2,Generators_c)),
+	maplist(=(0),Unknowns_calls_c2),
+	copy_term(([Coeff_0_c2|Unknowns1_c2],Generators_c),([1|EVars],Generators_copy)),
+	get_expressions_from_points(Generators_copy,Lin_exp_list).
+
+get_sum_exp_calls(Head,Lin_exp,Call,Accum,Accum2):-
+	copy_term((Head,Lin_exp),(Call,Lin_exp2)),
+	sum_le(Accum,Lin_exp2,Accum2).
+	
+max_min_linear_expression_list_all(Lin_exps,Vars,Vars_of_interest,Phi_1,max,Lin_exp_list):-
+	trace,
+	from_list_sl(Vars_of_interest,Vars_of_interest_set),
+	nad_normalize_polyhedron(Phi_1,Phi),
+	maplist(get_max_polyhedron(Vars,Vars_of_interest_set,Phi,max,Coeff_0),Lin_exps,Css),
+	nad_list_glb(Css,Cs),
+	term_variables(Cs,Vars),
+	get_generators(c,Vars,Cs,Generators),
+	Coeff_0=1,
+	get_expressions_from_points(Generators,Lin_exp_list).
+%HERE
+	
+get_max_polyhedron(Vars,Vars_of_interest_set,Phi,Coeff_0_c,max,Lin_exp,Cs):-
+	copy_term((Vars,Vars_of_interest_set),(Unknowns1,Coeffs_of_interest)),
+	from_list_sl(Coeffs_of_interest,Coeffs_of_interest_set),
+	from_list_sl(Unknowns1,Unknowns1_set),
+	difference_sl(Unknowns1_set,Coeffs_of_interest_set,Zero_coeffs),
+	Unknowns=[Coeff_0|Unknowns1],
+	% l(x)
+	get_symbolic_dmatrix(Unknowns,Template),
+	% the negative version of the linear expression
+	get_lin_expr_dmatrix(Vars,Lin_exp,Coeffs),
+	multiply_by_factor_dmatrix(Coeffs,-1,Coeffs_minus),	
+	% l(x)-Lin_exp(xx')
+	add_dmatrix_symbolically(Template,Coeffs_minus,Expression_vector),
+	%generate constraints for head tail candidates
+	generalized_farkas_property_dmatrix(Vars,Phi,Expression_vector,[],system(Complete_system1,_Ys1)),
+
+	maplist(=(0),Zero_coeffs),	
+	nad_project(Unknowns,Complete_system1,Complete_system_proy),
+	copy_term((Coeff_0,Coeffs_of_interest,Complete_system_proy),(Coeff_0_c,Vars_of_interest_set,Cs)).
+
+
 le_print_int(Lin_exp,Exp,Den):-
 		integrate_le(Lin_exp,Den,Lin_exp_nat),
 		write_le_internal(Lin_exp_nat,Exp).
@@ -305,9 +443,13 @@ negation_constr(X,Y,(1*X+1*Y=0)).
 % with the exception of the first line that has =< operator		
 dmatrix_to_constraints(dmatrix(X,Y,Vals),Vars,Op, dmatrix(1,X,[(1,Constants)]),[C|Cs]):-
 	length(Vars,Y),
-	Vals=[(1,Line)|Vals_rest],
+	(Vals=[(1,Line)|Vals_rest]->
+		true;
+	   Vals_rest=Vals,
+	   Line=[]
+	),  
 	Constants=[(1,Constant)|Constants_rest],	
-	parse_le(Constant,Lin_exp_right),
+	parse_le(Constant,Lin_exp_right),		
 	integrate_le(Lin_exp_right,Den,Lin_exp_right_int),
 	write_le(Lin_exp_right_int,Cnt),
 	get_line_product(Vars,Den,Line,Lin_exp),

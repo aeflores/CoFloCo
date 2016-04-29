@@ -7,12 +7,13 @@ at the beginning and the end of the phase.
   
  Pending_constrs contains the information of the constraints that are pending to be computed
  It has the form
- pending(Maxs,Mins,Maxsums,Minsums)
+ pending(Head_calls,Maxs,Mins,Maxsums,Minsums)
  where
+  * Head_calls are the head and call terms that define the variables of the expressions inside
   * Maxs=list_set(Elem)
   * Mins=list_set(Elem)
-  * Maxsums=multimap(loop_id,Elem)
-  * Minsums=multimap(loop_id,Elem)
+  * Maxsums=map(loop_id,(Head_call,Elem))
+  * Minsums=map(loop_id,(Head_call,Elem))
   And Elem=(Depth:int,Linexp:nlinexp,Bounded:list(itvar))
  an Elem (Depth,Linexp,Bounded) represents a constraint "Linexp OP Bounded"
  where OP is =< or >= depending on whether the elem is in Maxs/Maxsums or Mins/Minsums
@@ -37,7 +38,33 @@ at the beginning and the end of the phase.
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(phase_solver,[compute_phase_cost/5,init_phase_solver/0]).
+:- module(phase_solver,[compute_phase_cost/5,
+				init_phase_solver/0,
+				save_enriched_loop/3,
+				enriched_loop/4,
+				current_chain_prefix/1,
+				max_pending_depth/1,
+				current_pending_depth/1,
+				get_it_sum_constraint/3,
+				get_equation_loop_cost/4,
+				save_new_phase_fconstr/2,
+				save_new_phase_iconstr/2,
+				collect_phase_results/4,
+				used_term/5,
+				save_used_term/4,
+				save_sum_found/7,
+				sum_found/8,
+				save_max_min_found/5,
+		        max_min_found/5,
+		        empty_pending/1,
+		        save_pending_list/6,
+		        get_one_pending/5,
+		        extract_pending/6,
+		        basic_product/9,
+		        union_pending/3,
+		        normalize_max_min/2,
+		        print_lin_exp_in_phase/3,
+				transform_max_min2_head/6]).
 
 					
 :- use_module(cost_equation_solver,[get_loop_cost/5]).
@@ -79,7 +106,10 @@ at the beginning and the end of the phase.
 :-use_module('../utils/template_inference',[
 			difference_constraint_farkas_ub/6,
 			difference_constraint_farkas_lb/5
-	]).								
+	]).		
+:- use_module('../utils/polyhedra_optimizations',[
+		    nad_normalize_polyhedron/2 
+]).						
 :- use_module(stdlib(numeric_abstract_domains),[
 			nad_maximize/3,
 			nad_minimize/3,
@@ -110,13 +140,6 @@ at the beginning and the end of the phase.
 % for cacheing purposes
 :- dynamic  phase_cost/5.
 
-%! current_chain_prefix(Chain_prefix:chain_prefix)
-% the chain to which the phase being computed belongs
-% used to 
-:- dynamic  current_chain_prefix/1.
-
-
-:- dynamic  used_term/6.
 %! init_phase_solver is det
 % clear all the intermediate results
 init_phase_solver:-
@@ -127,100 +150,30 @@ init_phase_solver:-
 %! compute_phase_cost(Phase:phase,Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Cost:cstr) is det
 % Obtain the cost of a phase given a forward invariant.
 compute_phase_cost(Head,Calls,Phase,Chain_prefix,Cost):-
-	assert(current_chain_prefix(Chain_prefix)),
-	retractall(used_term(_,_,_,_,_,_)),
 	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
-	compute_phase_cost_1(Phase,Head,Calls,(Forward_hash,Forward_inv),Cost),
-	retract(current_chain_prefix(Chain_prefix)).
-	
-compute_phase_cost_1(Phase,Head,Calls,(Forward_hash,Forward_inv),Cost):-
 	phase_cost(Phase,Head,Calls,(Forward_hash,Forward_inv2),Cost),
 	Forward_inv2==Forward_inv,!,
 	counter_increase(compressed_phases1,1,_).
 	
-% in a non-iterative phase, we just obtain the cost of the equation
-compute_phase_cost_1(Non_it,Head,Calls,(Forward_hash,Forward_inv),Cost):-
-	number(Non_it),	
-	profiling_start_timer(equation_cost),
-	get_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Non_it,Cost),
-	profiling_stop_timer_acum(equation_cost,_),
-	assert(phase_cost(Non_it,Head,Calls,(Forward_hash,Forward_inv),Cost)).
 
-compute_phase_cost_1(Phase,Head,[Call],(Forward_hash,Forward_inv),Cost):-
+
+compute_phase_cost(Head,[Call],Phase,Chain_prefix,Cost_final):-
+	retractall(enriched_loop(_,_,_,_)),
+	retractall(current_chain_prefix(_)),
+	retractall(used_term(_,_,_,_,_,_)),
+	retractall(max_min_found(_,_,_,_,_)),
+	retractall(sum_found(_,_,_,_,_,_,_,_)),
+	assert(current_chain_prefix(Chain_prefix)),
+	
+	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
+	maplist(save_enriched_loop(Head,Forward_inv),Phase),
+
     %get the cost of each iterative component of the phase	
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost(Head,[Call],(Forward_hash,Forward_inv)),Phase,Costs),
+	maplist(get_equation_loop_cost((Forward_hash,Forward_inv),loop_vars(Head,[Call])),Phase,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
-	compute_iterative_phase_cost(Costs,Head,Call,Forward_inv,Phase,Cost),
-	assert(phase_cost(Phase,Head,[Call],(Forward_hash,Forward_inv),Cost)).
-
-get_equation_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Eq_id,Cost2):-
-	get_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Eq_id,Cost),
-	cstr_extend_variables_names(Cost,it(Eq_id),Cost2).
 	
-
 	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% auxiliary dynamic predicates
-
-%recording the resulting cost of the phase and recovering
-
-%! new_phase_fconstr(Head:term,Call:term,Phase:phase,Fconstr)
-% temporary storage of final constraints for the phase Phase
-:-dynamic new_phase_fconstr/4.
-
-%! new_phase_iconstr(Head:term,Call:term,Phase:phase,Iconstr)
-% temporary storage of intermediate for the phase Phase
-:-dynamic new_phase_iconstr/4.
-
-
-save_new_phase_fconstr(Head,Call,Phase,FConstr):-
-	assert(new_phase_fconstr(Head,Call,Phase,FConstr)).
-save_new_phase_iconstr(Head,Call,Phase,IConstr):-
-	assert(new_phase_iconstr(Head,Call,Phase,IConstr)).
-	
-collect_phase_results(Head,Call,Phase,Ub_fconstrs,Lb_fconstrs,Iconstrs):-
-	bagof_no_fail(Top,(new_phase_fconstr(Head,Call,Phase,Top)),Fconstrs),
-	partition(is_ub_bconstr,Fconstrs,Ub_fconstrs,Lb_fconstrs),
-	bagof_no_fail(Aux,(new_phase_iconstr(Head,Call,Phase,Aux)),Iconstrs),
-	retractall(new_phase_fconstr(_,_,_,_)),
-	retractall(new_phase_iconstr(_,_,_,_)).
-	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%cacheing computation of sums, maxs and mins
-
-%FIXME simplify this
-%! sum_found(Loop:loop_id,Lin_exp_norm_ground:alinexp_ground,Max_min:flag,Head:term,Call:term,Coeff,Aux_itvar:Var,Fconstrs:list(fconstr),IConstrs:list(iconstr))
-%  a sum has been found for the linear expression Lin_exp_norm_ground*Coeff and it corresponds to the constraints Fconstrs and IConstrs
-% one can use this sum by simply unifying Aux_itvar with the itvar that we want to bound
-:-dynamic sum_found/9.
-%FIXME simplify this
-%! max_min_found(Head:term,Call:term,Phase:phase,(Lin_exp_normalized2,Coeff2,Constant2),Max_min:flag,Res:?)
-% a max or min has been found for the linear expression Lin_exp_normalized2*Coeff2+Constant2 and is Res
-% we can use this information to compute maxs or mins for similar expressions
-:-dynamic max_min_found/6.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%temporary information that we want available during the computation of the phase cost
-
-%! forward_invariant_temp(Head:term,Call:term,Inv:polyhedron)
-% the forward invariant valid for the current chain, it gives us additional information
-:-dynamic forward_invariant_temp/3.
-
-%! max_pending_depth(N:int)
-% maximum number or 'recursive' definitions of cost 
-% it depends on the number of loops in the phase and could be adjusted
-:-dynamic max_pending_depth/1.
-
-%! current_pending_depth(N:int)
-% how many recursive calls we have so far for a given expression
-:-dynamic current_pending_depth/1.
-
-	
-%! compute_iterative_phase_cost(+Costs:list(cstr),+Head:term,+Call:term,+Forward_inv:polyhedron,+Phase:phase,-Cost_final:cstr) is det
-% Compute the cost of an iterative phase by combining the cost of each of its loops
-compute_iterative_phase_cost(Costs,Head,Call,Forward_inv,Phase,Cost_final):-
-	assert(forward_invariant_temp(Head,Call,Forward_inv)),
 	maplist(cstr_remove_cycles,Costs,Costs_simple),
 	maplist(cstr_propagate_sums,Phase,Costs_simple,Costs_propagated2,Max_min_pairs_Sums_pairs),
 	cstr_empty(Empty_cost),
@@ -238,15 +191,104 @@ compute_iterative_phase_cost(Costs,Head,Call,Forward_inv,Phase,Cost_final):-
 	%main predicate
 	compute_sums_and_max_min_in_phase(Head,Call,Phase,Maxs,Mins,Max_sums1,Min_sums1),
 	%collect stored results
-	collect_phase_results(Head,Call,Phase,Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs),
-	retractall(forward_invariant_temp(_,_,_)),
-	append(New_iconstrs,Iconstrs,Iconstrs_final),
-	cstr_remove_cycles(cost(Final_ub_fconstrs,Final_lb_fconstrs,Iconstrs_final,Bases,Base),Cost_final),!.
+	collect_phase_results(loop_vars(Head,[Call]),Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs),
 	
+	append(New_iconstrs,Iconstrs,Iconstrs_final),
+	cstr_remove_cycles(cost(Final_ub_fconstrs,Final_lb_fconstrs,Iconstrs_final,Bases,Base),Cost_final),!,
+	assert(phase_cost(Phase,Head,[Call],(Forward_hash,Forward_inv),Cost_final)),
+	(get_param(debug,[])->
+		print_phase_cost(Phase,Head,Call,Cost_final)
+		;
+		true).
+
+
+	
+get_equation_loop_cost((Forward_hash,Forward_inv),loop_vars(Head,Calls),Eq_id,Cost2):-
+	get_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Eq_id,Cost),
+	cstr_extend_variables_names(Cost,it(Eq_id),Cost2).
+	
+
 get_it_sum_constraint(ub,Loop,[bound(ub,[]+1,[Loop_name])]):-
 	get_loop_itvar(Loop,Loop_name).
 get_it_sum_constraint(lb,Loop,[bound(lb,[]+1,[Loop_name])]):-
-	get_loop_itvar(Loop,Loop_name).	
+	get_loop_itvar(Loop,Loop_name).
+		
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% auxiliary dynamic predicates
+
+%recording the resulting cost of the phase and recovering
+
+%! new_phase_fconstr(Head_Call:term,Fconstr)
+% temporary storage of final constraints for the phase Phase
+:-dynamic new_phase_fconstr/2.
+
+%! new_phase_iconstr(Head_Call:term,Iconstr)
+% temporary storage of intermediate constraint
+:-dynamic new_phase_iconstr/2.
+
+
+save_new_phase_fconstr(Loop_vars,FConstr):-
+	assert(new_phase_fconstr(Loop_vars,FConstr)).
+save_new_phase_iconstr(Loop_vars,IConstr):-
+	assert(new_phase_iconstr(Loop_vars,IConstr)).
+	
+collect_phase_results(Loop_vars,Ub_fconstrs,Lb_fconstrs,Iconstrs_total):-
+	Loop_vars=loop_vars(Head,_),
+	bagof_no_fail(Top,(new_phase_fconstr(Loop_vars,Top)),Fconstrs),
+	bagof_no_fail(Top,(new_phase_fconstr(loop_vars(Head,[]),Top)),Fconstrs2),
+	append(Fconstrs,Fconstrs2,Fconstrs_total),
+	partition(is_ub_bconstr,Fconstrs_total,Ub_fconstrs,Lb_fconstrs),
+	bagof_no_fail(Aux,(new_phase_iconstr(Loop_vars,Aux)),Iconstrs),
+	bagof_no_fail(Aux,(new_phase_iconstr(loop_vars(Head,[]),Aux)),Iconstrs2),
+	append(Iconstrs,Iconstrs2,Iconstrs_total),
+	retractall(new_phase_fconstr(_,_)),
+	retractall(new_phase_iconstr(_,_)).
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%cacheing computation of sums, maxs and mins
+
+%FIXME simplify this
+%! sum_found(Loop:loop_id,Lin_exp_norm_ground:alinexp_ground,Max_min:flag,Loop_vars:loop_vars,Coeff,Aux_itvar:Var,Fconstrs:list(fconstr),IConstrs:list(iconstr))
+%  a sum has been found for the linear expression Lin_exp_norm_ground*Coeff and it corresponds to the constraints Fconstrs and IConstrs
+% one can use this sum by simply unifying Aux_itvar with the itvar that we want to bound
+:-dynamic sum_found/8.
+%FIXME simplify this
+%! max_min_found(Head:term,Phase:phase,(Lin_exp_normalized2,Coeff2,Constant2),Max_min:flag,Res:?)
+% a max or min has been found for the linear expression Lin_exp_normalized2*Coeff2+Constant2 and is Res
+% we can use this information to compute maxs or mins for similar expressions
+:-dynamic max_min_found/5.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%temporary information that we want available during the computation of the phase cost
+
+%! enriched_loop(Loop,Head,Calls,Cs_normalized)
+% the loop enriched with the forward invariant
+:-dynamic enriched_loop/4.
+
+save_enriched_loop(Head,Forward_inv,Loop):-
+	loop_ph(Head,(Loop,_),Calls,Cs,_,_),	
+	append(Forward_inv,Cs,Total_cs),
+	nad_normalize_polyhedron(Total_cs,Cs_normalized),
+	assert(enriched_loop(Loop,Head,Calls,Cs_normalized)).
+
+%! max_pending_depth(N:int)
+% maximum number or 'recursive' definitions of cost 
+% it depends on the number of loops in the phase and could be adjusted
+:-dynamic max_pending_depth/1.
+
+%! current_pending_depth(N:int)
+% how many recursive calls we have so far for a given expression
+:-dynamic current_pending_depth/1.
+
+%! current_chain_prefix(Chain_prefix:chain_prefix)
+% the chain to which the phase being computed belongs
+% used to 
+:- dynamic  current_chain_prefix/1.
+
+% used_term(Flag,Loop:loop_id,Loop_vars:loop_vars(term,list(term)),Exp:lin_exp,Bounded:list(itvar))
+% flag is in {maxsum,minsum}
+:- dynamic  used_term/5.	
+	
 	
 %! compute_sums_and_max_min_in_phase(Head:term,Call:term,Phase:phase,Maxs:list(fconstrs),Mins:list(fconstrs),Max_sums:list(fconstrs),Min_sums:list(fconstrs))
 % store all the pending computations in Pending structure and compute them incrementally
@@ -256,55 +298,54 @@ compute_sums_and_max_min_in_phase(Head,Call,Phase,Maxs,Mins,Max_sums,Min_sums):-
 	length(Phase,N),
 	Max_pending is 2*N,
 	assert(max_pending_depth(Max_pending)),
-	retractall(max_min_found(_,_,_,_,_,_)),
-	retractall(sum_found(_,_,_,_,_,_,_,_,_)),
 	%we start from depth 0
 	assert(current_pending_depth(0)),
-	maplist(transform_max_min2_head(Head,Call,max),Phase,Maxs,Maxs_head),
-	maplist(transform_max_min2_head(Head,Call,min),Phase,Mins,Mins_head),
-	foldl(save_pending_list(max),Phase,Maxs_head,Empty_pending,Pending1),
-	foldl(save_pending_list(min),Phase,Mins_head,Pending1,Pending2),
-	foldl(save_pending_list(maxsum),Phase,Max_sums,Pending2,Pending3),
-	foldl(save_pending_list(minsum),Phase,Min_sums,Pending3,Pending4),
+	maplist(transform_max_min2_head(Head,max,loop_vars(Head,[Call])),Phase,Maxs,Maxs_head),
+	maplist(transform_max_min2_head(Head,min,loop_vars(Head,[Call])),Phase,Mins,Mins_head),
+	foldl(save_pending_list(max,loop_vars(Head,[])),Phase,Maxs_head,Empty_pending,Pending1),
+	foldl(save_pending_list(min,loop_vars(Head,[])),Phase,Mins_head,Pending1,Pending2),
+	foldl(save_pending_list(maxsum,loop_vars(Head,[Call])),Phase,Max_sums,Pending2,Pending3),
+	foldl(save_pending_list(minsum,loop_vars(Head,[Call])),Phase,Min_sums,Pending3,Pending4),
 	retract(current_pending_depth(0)),
 	%special treatment of ranking functions of the whole phase
 	% we add final constraints directly using the ranking functions as they are used most times
-	add_general_ranking_functions(Head,Call,Phase),
-	
-	compute_all_pending(Head,Call,Phase,Pending4),
+	add_general_ranking_functions(Head,Call,Phase),	
+	compute_all_pending(Phase,Pending4),
 	retract(max_pending_depth(Max_pending)).
 
-transform_max_min2_head(Head,Call,Max_min,Loop,Maxs_mins,Maxs_mins_head):-
+transform_max_min2_head(Head,Max_min,loop_vars(Head,Calls),Loop,Maxs_mins,Maxs_mins_head):-
 	Head=..[_|Vars_head],
-	get_enriched_loop(Loop,Head,Call,Cs),
+	enriched_loop(Loop,Head,Calls,Cs),
 	foldl(transform_max_min2_head_1(Vars_head,Cs,Max_min),Maxs_mins,[],Maxs_mins_head).
 	
 transform_max_min2_head_1(Vars_head,Cs,Max_min,bound(Op,Lin_exp,Bounded),Fconstrs,[bound(Op,Lin_exp_head,Bounded)|Fconstrs]):-
 	max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_mins_head),
 	member(Lin_exp_head,Maxs_mins_head),!.
 transform_max_min2_head_1(_Vars_head,_Cs,_Max_min,_,Fconstrs,Fconstrs).
+
+
 %! add_general_ranking_functions(Head:term,Call:term,Phase:phase) is det
 % add final constraints using the already computed ranking functions
 add_general_ranking_functions(Head,Call,Phase):-
 	rf_limit(Max),
 	current_chain_prefix(Chain_prefix),
 	get_ranking_functions_constraints(Max,Head,Call,Phase,Chain_prefix,Ub_fconstrs),
-	maplist(save_new_phase_fconstr(Head,Call,Phase),Ub_fconstrs),
+	maplist(save_new_phase_fconstr(loop_vars(Head,[Call])),Ub_fconstrs),
 	(get_param(compute_lbs,[])->
 	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain_prefix,Lb_fconstrs),
-	   maplist(save_new_phase_fconstr(Head,Call,Phase),Lb_fconstrs)
+	   maplist(save_new_phase_fconstr(loop_vars(Head,[Call])),Lb_fconstrs)
 	   ;
 	   true
 	 ).
 	
-%! compute_all_pending(Head:term,Call:term,Phase:phase,Pending:pending_constrs)
+%! compute_all_pending(Phase:phase,Pending:pending_constrs)
 % the main loop of the computation:
 % compute one pending element at a time unil there are no more pending elements
-compute_all_pending(Head,Call,Phase,Pending):-
-	compute_pending(Head,Call,Phase,Pending,Pending_out),
-	compute_all_pending(Head,Call,Phase,Pending_out).
+compute_all_pending(Phase,Pending):-
+	compute_pending(Phase,Pending,Pending_out),
+	compute_all_pending(Phase,Pending_out).
 
-compute_all_pending(_,_,_,_).
+compute_all_pending(_,_).
 
 %! compute_pending(Head:term,Call:term,Phase:phase,Pending:pending_constrs,Pending_out:pending_constrs)
 % extract one pending constraint from Pending and compute it
@@ -313,26 +354,41 @@ compute_all_pending(_,_,_,_).
 %
 % The result of computing a pending element is a set of final constraints (New_fconstrs) and intermediate constraints (New_iconstrs)
 % that are stored in the database
-compute_pending(Head,Call,Phase,Pending,Pending_out):-
-	get_one_pending(Pending,Type,(Depth,Lin_exp,Coeff_bounded),Pending1),
-	(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
+compute_pending(Phase,Pending,Pending_out):-
+	get_one_pending(Pending,Type,Loop_vars,(Depth,Lin_exp,Coeff_bounded),Pending1),
+	%(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
 	assert(current_pending_depth(Depth)),
-	compute_pending_element(Type,Head,Call,Phase,Lin_exp,Coeff_bounded,New_fconstrs,New_iconstrs,Pending1,Pending_out),
-	
-	save_used_term(Type,Head,Call,Lin_exp,Coeff_bounded),
-	maplist(save_new_phase_fconstr(Head,Call,Phase),New_fconstrs),
-	maplist(save_new_phase_iconstr(Head,Call,Phase),New_iconstrs).
+	compute_pending_element(Type,Loop_vars,Phase,Lin_exp,Coeff_bounded,New_fconstrs,New_iconstrs,Pending1,Pending_out),	
+	save_used_term(Type,Loop_vars,Lin_exp,Coeff_bounded),
+	maplist(save_new_phase_fconstr(Loop_vars),New_fconstrs),
+	maplist(save_new_phase_iconstr(Loop_vars),New_iconstrs).
 
 %case distinction according to what we have to compute
 
-compute_pending_element(maxsum(Loop),Head,Call,Phase,Exp,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
+compute_pending_element(maxsum(Loop),loop_vars(Head,[Call]),Phase,Exp,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
+	(get_param(debug,[])->
+		ground_copy((Head,Call,Exp),(Head_gr,Call_gr,Lin_exp_norm_ground)),
+		format('computing bound for ~p maxsum(~p) in loop ~p ~p->~p ~n',[Bounded,Lin_exp_norm_ground,Loop,Head_gr,Call_gr])
+	;
+		true),
 	compute_sum(Head,Call,Phase,Loop,Exp,max,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out).
-compute_pending_element(minsum(Loop),Head,Call,Phase,Exp,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
+	
+compute_pending_element(minsum(Loop),loop_vars(Head,[Call]),Phase,Exp,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
+		(get_param(debug,[])->
+		ground_copy((Head,Call,Exp),(Head_gr,Call_gr,Lin_exp_norm_ground)),
+		format('computing bound for ~p minsum(~p) in loop ~p ~p->~p ~n',[Bounded,Lin_exp_norm_ground,Loop,Head_gr,Call_gr])
+	;
+		true),
 	compute_sum(Head,Call,Phase,Loop,Exp,min,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out).	
-compute_pending_element(max,Head,Call,Phase,Exp,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	compute_max_min(Head,Call,Phase,Exp,max,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out).	
-compute_pending_element(min,Head,Call,Phase,Exp,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	compute_max_min(Head,Call,Phase,Exp,min,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out).	
+	
+compute_pending_element(Max_min,loop_vars(Head,[]),Phase,Exp,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out):-
+		(get_param(debug,[])->
+		ground_copy((Head,Exp),(Head_gr,Lin_exp_norm_ground)),
+		format('computing bound for ~p  ~p(~p) in  ~p ~n',[Bounded,Max_min,Lin_exp_norm_ground,Head_gr])
+	;
+		true),
+	compute_max_min(Head,Phase,Exp,Max_min,Bounded,New_fconstrs,New_iconstrs,Pending,Pending_out).	
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -403,18 +459,21 @@ compute_sum(Head,Call,_Phase,Loop,Lin_exp,Max_min,Bounded,Fconstrs1,[New_iconstr
 	get_constr_op(Max_min,Op),
 	semi_normalize_le(Lin_exp,Coeff2,Lin_exp_normalized2),
 	ground_copy((Head,Call,Lin_exp_normalized2),(_,_,Lin_exp_norm_ground)),
-	sum_found(Loop,Lin_exp_norm_ground,Max_min,Head,Call,Coeff,Aux_itvar,Fconstrs1,Iconstrs1),!,
+	sum_found(Loop,Lin_exp_norm_ground,Max_min,loop_vars(Head,[Call]),Coeff,Aux_itvar,Fconstrs1,Iconstrs1),!,
 	divide_fr(Coeff2,Coeff,Coeff_final),
 	new_itvar(Aux_itvar),
 	astrexp_new(add([mult([Aux_itvar,Coeff_final])])-add([]),Astrexp),
-	iconstr_new(Astrexp,Op,Bounded,New_iconstr).
+	iconstr_new(Astrexp,Op,Bounded,New_iconstr),
+	(get_param(debug,[])->
+			ground_copy((Head,Call,Lin_exp),(_,_,Lin_exp_ground)),
+			format('Found stored solution to sum(~p) in loop ~p ~n',[Lin_exp_ground,Loop]);true).
 
 
 %triangular strategy
 % valid for minsums of expressions that are not constant	
 compute_sum(Head,Call,Phase,Loop,Lin_exp,min,Bounded_ini,New_fconstrs,New_iconstrs,Pending,Pending_out):-
 	Lin_exp\=[]+_,
-	get_enriched_loop(Loop,Head,Call,Cs),
+	enriched_loop(Loop,Head,[Call],Cs),
 	%obtain an expressions only in terms of the initial variables of the loop
 	(is_head_expression(Head,Lin_exp)->
 		Exp=Lin_exp
@@ -441,7 +500,7 @@ compute_sum(Head,Call,Phase,Loop,Lin_exp,min,Bounded_ini,New_fconstrs,New_iconst
 	get_it_sum_aux([Loop|Included_loops],Aux_all_iter_iconstr,All_iterations_name),
 	%obtain the minimum initial value of the expression taking the Other_loops into account
 	new_itvar(Initial_name),
-	compute_max_min(Head,Call,Other_loops,Exp,min,[Initial_name],New_fconstrs1,New_iconstrs1,Pending_aux,Pending_aux1),
+	compute_max_min(Head,Other_loops,Exp,min,[Initial_name],New_fconstrs1,New_iconstrs1,Pending_aux,Pending_aux1),
 	max_frl([Delta|Increments],Min_increment),
 	%depending on whether we increment or decrement
 	(Dir=pos->
@@ -456,13 +515,13 @@ compute_sum(Head,Call,Phase,Loop,Lin_exp,min,Bounded_ini,New_fconstrs,New_iconst
 		negate_le(Exp,Exp_neg),
 		new_itvar(Initial_name_neg),
 		%we add the increments, but we substract the negation of the initial value in case this one is negative	
-		compute_max_min(Head,Call,Other_loops,Exp_neg,max,[Initial_name_neg],New_fconstrs2,New_iconstrs2,Pending_aux1,Pending_out),
+		compute_max_min(Head,Other_loops,Exp_neg,max,[Initial_name_neg],New_fconstrs2,New_iconstrs2,Pending_aux1,Pending_out),
 		astrexp_new(add([mult([All_iterations_name,Initial_name]),mult([All_iterations_name,All_iterations_name,Min_increment_scaled])])-add([mult([Initial_name_neg,All_iterations_name]),mult([All_iterations_name,Min_increment_scaled])]),Astrexp)
 	),
 	iconstr_new(Astrexp,lb,Bounded_vars,Main_iconstr),
 	ut_flat_list([New_fconstrs1,New_fconstrs2],New_fconstrs),!,
 	ut_flat_list([New_iconstrs1,New_iconstrs2,Aux_all_iter_iconstr,Main_iconstr],New_iconstrs),!,
-	save_sum_found(Head,Call,Loop,Lin_exp,min,Bounded_ini,New_fconstrs,New_iconstrs).	
+	save_sum_found(loop_vars(Head,[Call]),Loop,Lin_exp,min,Bounded_ini,New_fconstrs,New_iconstrs).	
 	
 
 %Inductive strategy
@@ -487,20 +546,23 @@ compute_sum(Head,Call,Phase,Loop,Lin_exp,Max_min,Bounded,New_fconstrs,New_iconst
 	% this is an heuristic
 	% if we are computing a minsum or we have created some intermediate constraints, we apply the basic product strategy as well
 	((New_iconstrs\=[];Exp_list=[_]; Max_min=min)->
-	basic_product(Head,Call,Loop,Lin_exp,Bounded,Iconstr_extra,Max_min,Pending_aux,Pending_out),
+	basic_product(Head,[Call],Loop,Lin_exp,Bounded,Iconstr_extra,Max_min,Pending_aux,Pending_out),
 	New_iconstrs2=[Iconstr_extra|New_iconstrs]
 	;
 	Pending_aux=Pending_out,
 	New_iconstrs2=New_iconstrs
 	),
-	save_sum_found(Head,Call,Loop,Lin_exp,Max_min,Bounded,New_fconstrs,New_iconstrs2).
+	save_sum_found(loop_vars(Head,[Call]),Loop,Lin_exp,Max_min,Bounded,New_fconstrs,New_iconstrs2).
 
 
 %Basic Product strategy
 compute_sum(Head,Call,_Phase,Loop,Lin_exp,Max_min,Bounded,[],[Iconstr],Pending,Pending_out):-
 	Lin_exp\=[]+1,!,
-	basic_product(Head,Call,Loop,Lin_exp,Bounded,Iconstr,Max_min,Pending,Pending_out),
-	save_sum_found(Head,Call,Loop,Lin_exp,Max_min,Bounded,[],[Iconstr]).
+	(get_param(debug,[])->
+			ground_copy((Head,Call,Lin_exp),(_,_,Lin_exp_ground)),
+			format('Applying basic product to ~p in loop ~p ~n',[Lin_exp_ground,Loop]);true),
+	basic_product(Head,[Call],Loop,Lin_exp,Bounded,Iconstr,Max_min,Pending,Pending_out),
+	save_sum_found(loop_vars(Head,[Call]),Loop,Lin_exp,Max_min,Bounded,[],[Iconstr]).
 	
 compute_sum(_Head,_Call,_Phase,_Loop,_,_Max_min,_Bounded,[],[],Pending,Pending).	
 
@@ -537,7 +599,7 @@ check_loops_triangle_minsum([Loop|Loops],Pos_neg,Head,Call,Pending,Exp,Included_
 	check_loops_triangle_minsum(Loops,Pos_neg,Head,Call,Pending,Exp,Included_loops,Bounded_total,Increments,Other_loops,Pending_out).
 	
 check_loop_triangle_minsum(Loop,Pos_neg,Head,Call,Pending,Exp,Bounded,Delta,Pending1):-	
-	get_enriched_loop(Loop,Head,Call,Cs),
+	enriched_loop(Loop,Head,[Call],Cs),
 	get_difference_version(Head,Call,Exp,Exp_diff),	
 	le_print_int(Exp_diff,Exp_diff_int,Exp_diff_denominator),
 	nad_maximize([Exp_diff_int=Exp_diff_denominator*D|Cs],[D],[Delta]),
@@ -644,7 +706,7 @@ check_loops_minsum_1([Loop2|Loops],Loop,Head,Call,Exp_diff,Pstrexp_pair,Bounded,
 % * generates a Pstrexp_pair with the elements that have to be added to the constraint
 % * sometimes we can bound some itvar from Loop, those are in Bounded
 check_loop_maxsum(Head,Call,Exp_diff,Flag,Loop,Pstrexp_pair,Bounded,Pending,Pending1):-
-	get_enriched_loop(Loop,Head,Call,Cs),
+	enriched_loop(Loop,Head,[Call],Cs),
 	term_variables((Head,Call),Vars),	
 	le_print_int(Exp_diff,Exp_diff_print_int,_),
 	negate_le(Exp_diff,Exp_diff_neg),
@@ -653,13 +715,13 @@ check_loop_maxsum(Head,Call,Exp_diff,Flag,Loop,Pstrexp_pair,Bounded,Pending,Pend
 	(nad_entails(Vars,Cs,[Exp_diff_print_int>=0])->
 	 %find a collaborative loop
 	    (find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending1)->			
-		   true
+		   (get_param(debug,[])->format('Loop ~p is collaborative and bounds ~p ~n',[Loop,Bounded]);true)
 		   ;
+		   (get_param(debug,[])->format('Loop ~p is collaborative~n',[Loop]);true),
 			Pending1=Pending,
 			Bounded=[]
 		),
-		pstrexp_pair_empty(Pstrexp_pair),
-		(get_param(debug,[])->format('Loop ~p is collaborative~n',[Loop]);true)
+		pstrexp_pair_empty(Pstrexp_pair)
 	;
 	 Bounded=[],
 %if add a constant	
@@ -678,8 +740,10 @@ check_loop_maxsum(Head,Call,Exp_diff,Flag,Loop,Pstrexp_pair,Bounded,Pending,Pend
 				new_itvar(Aux_itvar),
 				Pstrexp_pair=add([mult([Aux_itvar])])-add([]),
 				maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
-				save_pending_list(maxsum,Loop,Maxsums,Pending,Pending1),
-				(get_param(debug,[])->format('Loop ~p adds an expression ~p~n',[Loop,Max_increments]);true)
+				save_pending_list(maxsum,loop_vars(Head,[Call]),Loop,Maxsums,Pending,Pending1),
+				(get_param(debug,[])->
+					ground_copy((Head,Call,Max_increments),(_,_,Max_increments_ground)),
+					format('Loop ~p adds an expression ~p~n',[Loop,Max_increments_ground]);true)
 			    ;
 %reset			    
 			    Flag=head(Exp),
@@ -690,8 +754,10 @@ check_loop_maxsum(Head,Call,Exp_diff,Flag,Loop,Pstrexp_pair,Bounded,Pending,Pend
    				new_itvar(Aux_itvar),
    				Pstrexp_pair=add([mult([Aux_itvar])])-add([]),
 				maplist(fconstr_new([Aux_itvar],ub),Max_resets,Maxsums),
-				save_pending_list(maxsum,Loop,Maxsums,Pending,Pending1),
-				(get_param(debug,[])->format('Loop ~p has a reset to  ~p~n',[Loop,Max_resets]);true)
+				save_pending_list(maxsum,loop_vars(Head,[Call]),Loop,Maxsums,Pending,Pending1),
+				(get_param(debug,[])->
+					ground_copy((Head,Call,Max_resets),(_,_,Max_resets_ground)),
+					format('Loop ~p has a reset to  ~p~n',[Loop,Max_resets_ground]);true)
 		)
 	)
 	).
@@ -706,7 +772,7 @@ check_loop_maxsum(_Head,_Call,_Exp_diff,_,Loop,[],[],_Pending,_Pending1):-
 % similar to check_loop_maxsum but checking the different possibilities in opposite order
 % for minsum there are only head-tail candidates
 check_loop_minsum(Head,Call,Exp_diff,Loop,Pstrexp_pair,[],Pending,Pending1):-	
-	get_enriched_loop(Loop,Head,Call,Cs),
+	enriched_loop(Loop,Head,[Call],Cs),
 	term_variables((Head,Call),Vars),
 	le_print_int(Exp_diff,Exp_diff_print_int,_),
 %increasing
@@ -732,13 +798,13 @@ check_loop_minsum(Head,Call,Exp_diff,Loop,Pstrexp_pair,[],Pending,Pending1):-
 		new_itvar(Aux_itvar),
 		Pstrexp_pair=add([mult([Aux_itvar])])-add([]),
 		maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
-		save_pending_list(minsum,Loop,Maxsums,Pending,Pending1),
+		save_pending_list(minsum,loop_vars(Head,[Call]),Loop,Maxsums,Pending,Pending1),
 		(get_param(debug,[])->format('Loop ~p adds an expression ~p~n',[Loop,Max_increments]);true)
 	).
 
 %collaborative loop	with constraint
 check_loop_minsum(Head,Call,Exp_diff,Loop,Pstrexp_pair,Bounded,Pending,Pending1):-
-		get_enriched_loop(Loop,Head,Call,Cs),
+		enriched_loop(Loop,Head,[Call],Cs),
 		pstrexp_pair_empty(Pstrexp_pair),
 		find_minsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded,Pending,Pending1),!,
 		(get_param(debug,[])->format('Loop ~p is collaborative with a constraint~n',[Loop]);true).
@@ -751,15 +817,15 @@ check_loop_minsum(_Head,_Call,_Exp_diff,Loop,_,_,_Pending,_):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! compute_max_min(Head:term,Call:term,Phase:phase,Lin_exp:nlinexp,Max_min:flag,Bounded:list(itvar),New_fconstrs:list(fconstr),New_iconstrs:list(iconstr),Pending:pending_constrs,Pending:pending_constrs)
+%! compute_max_min(Head:term,Phase:phase,Lin_exp:nlinexp,Max_min:flag,Bounded:list(itvar),New_fconstrs:list(fconstr),New_iconstrs:list(iconstr),Pending:pending_constrs,Pending:pending_constrs)
 % Compute the maximum or minimum value of Lin_exp in any iteration of the loops of Phase
 % this computation is recorded with a set on new final and intermediate constraints
 %
 % * first try to find a similar linear expression whose maximum/minimum has already been computed (cacheing)
 % * if not, try using transitive invariants (we have them precomputed)
 % * finally, try the incremental approach 
-compute_max_min(Head,Call,Phase,Lin_exp,Max_min,Bounded,New_fconstrs,New_iconstrs,Pending,Pending):-
-	max_min_found(Head,Call,Phase,(Lin_exp_normalized2,Coeff2,Constant2),Max_min,Res),
+compute_max_min(Head,Phase,Lin_exp,Max_min,Bounded,New_fconstrs,New_iconstrs,Pending,Pending):-
+	max_min_found(Head,Phase,(Lin_exp_normalized2,Coeff2,Constant2),Max_min,Res),
 	normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)),
 	% there is a linear expression that has been computed and is a multiple of the one we are computing
 	Lin_exp_normalized2==Lin_exp_normalized,!,
@@ -801,31 +867,37 @@ compute_max_min(Head,Call,Phase,Lin_exp,Max_min,Bounded,New_fconstrs,New_iconstr
 		iconstr_new(Astrexp,Op,Bounded,Iconstr2),
 		New_iconstrs=[Iconstr2|New_iconstrs1]
 	)
-	).
+	),
+	(get_param(debug,[])->
+			ground_copy((Head,Lin_exp),(_,Lin_exp_ground)),
+			format('Found stored solution to max/min(~p) ~n',[Lin_exp_ground]);true).
 
 % a constant does not need to be maximized/minimized
-compute_max_min(_Head,_Call,_Phase,[]+C,Max_min,Bounded,New_fconstrs,[],Pending,Pending):-!,
+compute_max_min(_Head,_Phase,[]+C,Max_min,Bounded,New_fconstrs,[],Pending,Pending):-!,
 	get_constr_op(Max_min,Op),
 	maplist(fconstr_new(Bounded,Op),[[]+C],New_fconstrs).
 	
 %use transitive invariant
-compute_max_min(Head,Call,Phase,Lin_exp,Max_min,Bounded,New_fconstrs,[],Pending,Pending):-
+compute_max_min(Head,Phase,Lin_exp,Max_min,Bounded,New_fconstrs,[],Pending,Pending):-
 	get_constr_op(Max_min,Op),
-	max_min_top_expression_in_phase(Head,Call,Phase,bound(Op,Lin_exp,Bounded),Maxs_out),
+	max_min_top_expression_in_phase(Head,Phase,bound(Op,Lin_exp,Bounded),Maxs_out),
 	maplist(fconstr_new(Bounded,Op),Maxs_out,New_fconstrs),
 	New_fconstrs\=[],!,
-	save_max_min_found(Head,Call,Phase,Lin_exp,Max_min,final(Maxs_out)).
+	(get_param(debug,[])->
+			ground_copy((Head,Lin_exp,Maxs_out),(_,Lin_exp_ground,Maxs_out_ground)),
+			format('Found  max/min(~p) using transitive invariant: ~p  ~n',[Lin_exp_ground,Maxs_out_ground]);true),
+	save_max_min_found(Head,Phase,Lin_exp,Max_min,final(Maxs_out)).
 
 
 %use  increments and resets procedure	
-compute_max_min(Head,Call,Phase,Lin_exp,Max_min,Bounded,[Fconstr],[Iconstr],Pending,Pending_out):-
+compute_max_min(Head,Phase,Lin_exp,Max_min,Bounded,[Fconstr],[Iconstr],Pending,Pending_out):-
 	get_constr_op(Max_min,Op),
 	%we have to consider the case where the value is not reseted
 	new_itvar(Aux_itvar),
 	fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
 	% check the effect of the loops
 	(Max_min=max->
-	check_loops_max(Phase,Head,Call,Lin_exp,Resets,Pstrexp_pair2,Pending,Pending_out),
+	check_loops_max(Phase,Head,Lin_exp,Resets,Pstrexp_pair2,Pending,Pending_out),
 	(Resets=[] ->
 	   Max_resets=Aux_itvar
 	   ;
@@ -833,7 +905,7 @@ compute_max_min(Head,Call,Phase,Lin_exp,Max_min,Bounded,[Fconstr],[Iconstr],Pend
 	   ),
 	Pstrexp_pair1=add([mult([Max_resets])])-add([])
 	;
-	check_loops_min(Phase,Head,Call,Lin_exp,Resets,Pstrexp_pair2,Pending,Pending_out),
+	check_loops_min(Phase,Head,Lin_exp,Resets,Pstrexp_pair2,Pending,Pending_out),
 	(Resets=[] ->
 	   Min_resets=Aux_itvar
 	   ;
@@ -844,22 +916,22 @@ compute_max_min(Head,Call,Phase,Lin_exp,Max_min,Bounded,[Fconstr],[Iconstr],Pend
 	pstrexp_pair_add(Pstrexp_pair1,Pstrexp_pair2,Pstrexp_pair),
 	astrexp_new(Pstrexp_pair,Astrexp),
 	iconstr_new(Astrexp,Op,Bounded,Iconstr),
-    save_max_min_found(Head,Call,Phase,Lin_exp,Max_min,inter(Astrexp)).
+    save_max_min_found(Head,Phase,Lin_exp,Max_min,inter(Astrexp)).
 
     
 %failed    
-compute_max_min(Head,Call,Phase,Lin_exp,Max_min,_Bounded,[],[],Pending,Pending):-
-	save_max_min_found(Head,Call,Phase,Lin_exp,Max_min,none).
+compute_max_min(Head,Phase,Lin_exp,Max_min,_Bounded,[],[],Pending,Pending):-
+	save_max_min_found(Head,Phase,Lin_exp,Max_min,none).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%			
 
 
-check_loops_max([],_Head,_Call,_Lin_exp,[],Empty_pstrexp_pair,Pending,Pending):-
+check_loops_max([],_Head,_Lin_exp,[],Empty_pstrexp_pair,Pending,Pending):-
 	pstrexp_pair_empty(Empty_pstrexp_pair).
 	
-check_loops_max([Loop|Loops],Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
-	check_loop_max(Loop,Head,Call,Lin_exp,Resets1,Pstrexp_pair1,Pending,Pending_aux),
-	check_loops_max(Loops,Head,Call,Lin_exp,Resets2,Pstrexp_pair2,Pending_aux,Pending_out),
+check_loops_max([Loop|Loops],Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	check_loop_max(Loop,Head,Lin_exp,Resets1,Pstrexp_pair1,Pending,Pending_aux),
+	check_loops_max(Loops,Head,Lin_exp,Resets2,Pstrexp_pair2,Pending_aux,Pending_out),
 	append(Resets1,Resets2,Resets),
 	pstrexp_pair_add(Pstrexp_pair1,Pstrexp_pair2,Pstrexp_pair).
 
@@ -869,8 +941,8 @@ check_loops_max([Loop|Loops],Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pendi
 % * the loop increases Lin_exp by a constant Delta: add maxsum(Loop,Delta) to the cost (in Pstrexp)
 % * the loop increases Lin_exp by a linear expression Max_increment: add maxsum(Loop,Max_increment) to the cost
 % * the loop resets Lin_exp to Max_resets: add Max_resets to the resets
-check_loop_max(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
-	get_enriched_loop(Loop,Head,Call,Cs),
+check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	enriched_loop(Loop,Head,[Call],Cs),
 	get_difference_version(Head,Call,Lin_exp,Lin_exp_diff),
 	le_print_int(Lin_exp_diff,Exp_diff_int,_),
 	negate_le(Lin_exp_diff,Lin_exp_diff_neg),
@@ -878,12 +950,14 @@ check_loop_max(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 	term_variables((Head,Call),Vars),
 % the lin_exp does not increase
 	(nad_entails(Vars,Cs,[Exp_diff_int>=0])->
+		(get_param(debug,[])->format('Loop ~p does not increase the expression~n',[Loop]);true),
 		Resets=[],
 		pstrexp_pair_empty(Pstrexp_pair),
 		Pending_out=Pending
 		;
 % add a constant
 		((nad_maximize([Exp_diff_neg_int=Exp_diff_denominator*D|Cs],[D],[Delta]),greater_fr(Delta,0))->
+			(get_param(debug,[])->format('Loop ~p  increases the expression by ~p ~n',[Loop,Delta]);true),
 			get_loop_itvar(Loop,Loop_name),
 			Pstrexp_pair=add([mult([Loop_name,Delta])])-add([]),
 			Resets=[],
@@ -894,9 +968,12 @@ check_loop_max(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			max_min_linear_expression_all(Lin_exp_diff_neg, Vars_of_Interest, Cs,max, Max_increments),
 %add an expression		
 			(Max_increments\=[]->
+				(get_param(debug,[])->
+				    ground_copy((Head,Call,Max_increments),(_,_,Max_increments_ground)),
+				    format('Loop ~p  increases the expression by ~p ~n',[Loop,Max_increments_ground]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
-				save_pending_list(maxsum,Loop,Maxsums,Pending,Pending_out),
+				save_pending_list(maxsum,loop_vars(Head,[Call]),Loop,Maxsums,Pending,Pending_out),
 				Pstrexp_pair=add([mult([Aux_itvar])])-add([]),
 				Resets=[]
 			;
@@ -904,9 +981,12 @@ check_loop_max(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 				copy_term((Head,Lin_exp),(Call,Lin_exp_p)),
 				max_min_linear_expression_all(Lin_exp_p, Vars_head, Cs,max, Maxs_resets),
 				Maxs_resets\=[],!,
+				(get_param(debug,[])->
+				    ground_copy((Head,Maxs_resets),(_,Maxs_resets_ground)),
+				    format('Loop ~p  resets the expression to ~p ~n',[Loop,Maxs_resets_ground]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Maxs_resets,Maxtops),
-				save_pending_list(max,Loop,Maxtops,Pending,Pending_out),
+				save_pending_list(max,loop_vars(Head,[]),Loop,Maxtops,Pending,Pending_out),
 				pstrexp_pair_empty(Pstrexp_pair),
 				Resets=[Aux_itvar]
 			)
@@ -918,20 +998,20 @@ check_loop_max(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-check_loops_min([],_Head,_Call,_Lin_exp,[],Empty_pstrexp_pair,Pending,Pending):-
+check_loops_min([],_Head,_Lin_exp,[],Empty_pstrexp_pair,Pending,Pending):-
 	pstrexp_pair_empty(Empty_pstrexp_pair).
 	
-check_loops_min([Loop|Loops],Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
-	check_loop_min(Loop,Head,Call,Lin_exp,Resets1,Pstrexp_pair1,Pending,Pending_aux),
-	check_loops_min(Loops,Head,Call,Lin_exp,Resets2,Pstrexp_pair2,Pending_aux,Pending_out),
+check_loops_min([Loop|Loops],Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	check_loop_min(Loop,Head,Lin_exp,Resets1,Pstrexp_pair1,Pending,Pending_aux),
+	check_loops_min(Loops,Head,Lin_exp,Resets2,Pstrexp_pair2,Pending_aux,Pending_out),
 	append(Resets1,Resets2,Resets),
 	pstrexp_pair_add(Pstrexp_pair1,Pstrexp_pair2,Pstrexp_pair).
 
-%! check_loop_min(Loop:loop_id,Head:term,Call:term,Lin_exp:alinexp,Resets:list(itvar),Pstrexp_pair:pstrexp_pair,Pending:pending_constrs,Pending_out:pending_constrs)
+%! check_loop_min(Loop:loop_id,Head:term,Lin_exp:alinexp,Resets:list(itvar),Pstrexp_pair:pstrexp_pair,Pending:pending_constrs,Pending_out:pending_constrs)
 % check the different possible behaviors of Loop with respect to Lin_exp
 % similar to check_loops_max
-check_loop_min(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
-	get_enriched_loop(Loop,Head,Call,Cs),
+check_loop_min(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	enriched_loop(Loop,Head,[Call],Cs),
 	get_difference_version(Head,Call,Lin_exp,Lin_exp_diff),
 	le_print_int(Lin_exp_diff,Exp_diff_int,Exp_diff_denominator),
 	%negate_le(Lin_exp_diff,Lin_exp_diff_neg),
@@ -939,12 +1019,14 @@ check_loop_min(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 	term_variables((Head,Call),Vars),
 % the Lin_exp does not decrease
 	(nad_entails(Vars,Cs,[Exp_diff_int=<0])->
+		(get_param(debug,[])->format('Loop ~p does not decrease the expression~n',[Loop]);true),
 		Resets=[],
 		pstrexp_pair_empty(Pstrexp_pair),
 		Pending_out=Pending
 		;
 % decreases by a constant
 		((nad_maximize([Exp_diff_int=Exp_diff_denominator*D|Cs],[D],[Delta]),greater_fr(Delta,0))->
+			(get_param(debug,[])->format('Loop ~p  decreases the expression by ~p ~n',[Loop,Delta]);true),
 			get_loop_itvar(Loop,Loop_name),
 			Pstrexp_pair=add([])-add([mult([Loop_name,Delta])]),
 			Resets=[],
@@ -955,9 +1037,12 @@ check_loop_min(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			max_min_linear_expression_all(Lin_exp_diff, Vars_of_Interest, Cs,max, Max_increments),
 %decreases by an expression		
 			(Max_increments\=[]->
+				(get_param(debug,[])->
+					ground_copy((Head,Call,Max_increments),(_,_,Max_increments_ground)),
+					format('Loop ~p  decreases the expression by ~p ~n',[Loop,Max_increments_ground]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
-				save_pending_list(maxsum,Loop,Maxsums,Pending,Pending_out),
+				save_pending_list(maxsum,loop_vars(Head,[Call]),Loop,Maxsums,Pending,Pending_out),
 				Pstrexp_pair=add([])-add([mult([Aux_itvar])]),
 				Resets=[]
 			;
@@ -965,9 +1050,12 @@ check_loop_min(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 				copy_term((Head,Lin_exp),(Call,Lin_exp_p)),
 				max_min_linear_expression_all(Lin_exp_p, Vars_head, Cs,min, Mins_resets),
 				Mins_resets\=[],!,
+				(get_param(debug,[])->
+					ground_copy((Head,Mins_resets),(_,Mins_resets_ground)),
+					format('Loop ~p  resets the expression to ~p ~n',[Loop,Mins_resets_ground]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],lb),Mins_resets,Maxtops),
-				save_pending_list(max,Loop,Maxtops,Pending,Pending_out),
+				save_pending_list(min,loop_vars(Head,[]),Loop,Maxtops,Pending,Pending_out),
 				pstrexp_pair_empty(Pstrexp_pair),
 				Resets=[Aux_itvar]
 			)
@@ -980,9 +1068,9 @@ check_loop_min(Loop,Head,Call,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 % Implement the basic product strategy:
 % maxsum(A)=< maxsum(1)*max(A)
 % minsum(A)=< minsum(1)*min(A)
-basic_product(Head,Call,Loop,Lin_exp,Bounded,Aux_exp,Max_min,Pending,Pending_out):-	
+basic_product(Head,Calls,Loop,Lin_exp,Bounded,Aux_exp,Max_min,Pending,Pending_out):-	
 	get_constr_op(Max_min,Op),
-	get_enriched_loop(Loop,Head,Call,Cs),
+	enriched_loop(Loop,Head,Calls,Cs),
 	new_itvar(Aux_itvar),
 	get_loop_itvar(Loop,Loop_itvar),
 	astrexp_new(add([mult([Loop_itvar,Aux_itvar])])-add([]),Astrexp),
@@ -994,8 +1082,9 @@ basic_product(Head,Call,Loop,Lin_exp,Bounded,Aux_exp,Max_min,Pending,Pending_out
 	 max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_exps),
 	 maplist(fconstr_new([Aux_itvar],Op),Maxs_exps,Max_fconstrs)
 	 ),
-	save_pending_list(Max_min,Loop,Max_fconstrs,Pending,Pending_out),
+	save_pending_list(Max_min,loop_vars(Head,[]),Loop,Max_fconstrs,Pending,Pending_out),
     Aux_exp=bound(Op,Astrexp,Bounded).	
+    	   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % auxiliary predicates for maxsum and minsum
 
@@ -1004,7 +1093,7 @@ basic_product(Head,Call,Loop,Lin_exp,Bounded,Aux_exp,Max_min,Pending,Pending_out
 % we check that Exp_diff>= Exp2 and in case we are dealing with a head candidate
 % we also check Exp_original>=Exp2
 find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending_out):-
-		extract_pending(Loop,maxsum,Pending,(_Depth,Exp2,Bounded),Pending_out),
+		extract_pending(Loop,maxsum,Pending,loop_vars(Head,[Call]),(_Depth,Exp2,Bounded),Pending1),
 		term_variables((Head,Call),Vars),
 		subtract_le(Exp_diff,Exp2,Exp_diff2),
 		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
@@ -1012,15 +1101,16 @@ find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending_o
 		(Flag=head(Exp_original)->
 		   subtract_le(Exp_original,Exp2,Exp_diff_base_case),
 		   le_print_int(Exp_diff_base_case,Exp_diff_base_case_print,_),
-		   nad_entails(Vars,Cs,[Exp_diff_base_case_print>=0])
+		   nad_entails(Vars,Cs,[Exp_diff_base_case_print>=0]),
+		   Pending_out=Pending1
 		  ;
-		  true),
+		  Pending_out=Pending),
 		!,
-		save_used_term(maxsum(Loop),Head,Call,Exp2,Bounded).
+		save_used_term(maxsum(Loop),loop_vars(Head,[Call]),Exp2,Bounded).
 
 /*
 find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending):-
-		used_term(maxsum,Loop,Head,Call,Exp2,Bounded),	
+		used_term(maxsum,Loop,loop_vars(Head,[Call]),Exp2,Bounded),	
 		term_variables((Head,Call),Vars),
 		subtract_le(Exp_diff,Exp2,Exp_diff2),
 		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
@@ -1037,33 +1127,33 @@ find_maxsum_constraint(Loop,Head,Call,Cs,Exp_diff,Flag,Bounded,Pending,Pending):
 % try to find a pending minsum that can be bounded by Exp_diff
 % we check that Exp_diff=< Exp2 	
 find_minsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded,Pending,Pending):-
-		extract_pending(Loop,minsum,Pending,(_Depth,Exp2,Bounded),_Pending_out),
+		extract_pending(Loop,minsum,Pending,loop_vars(Head,[Call]),(_Depth,Exp2,Bounded),_Pending_out),
 		term_variables((Head,Call),Vars),
 		subtract_le(Exp2,Exp_diff,Exp_diff2),
 		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
 		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!,
-		save_used_term(minsum(Loop),Head,Call,Exp2,Bounded).
+		save_used_term(minsum(Loop),loop_vars(Head,[Call]),Exp2,Bounded).
 %this is important for lower bounds!	
 
 find_minsum_constraint(Loop,Head,Call,Cs,Exp_diff,Bounded,Pending,Pending):-
-		used_term(minsum,Loop,Head,Call,Exp2,Bounded),	
+		used_term(minsum,Loop,loop_vars(Head,[Call]),Exp2,Bounded),	
 		term_variables((Head,Call),Vars),
 		subtract_le(Exp2,Exp_diff,Exp_diff2),
 		le_print_int(Exp_diff2,Exp_diff2_print_int,_),
 		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),!.
 
-save_used_term(Max_min_loop,Head,Call,Exp,Bounded):-
+save_used_term(Max_min_loop,Loop_vars,Exp,Bounded):-
 	Max_min_loop=..[Max_minsum,Loop],
-	used_term(Max_minsum,Loop,Head,Call,Exp2,Bounded),
+	used_term(Max_minsum,Loop,Loop_vars,Exp2,Bounded),
 	Exp2==Exp,!.
 
-save_used_term(minsum(Loop),Head,Call,Exp,Bounded):-!,
-	assert(used_term(minsum,Loop,Head,Call,Exp,Bounded)).
+save_used_term(minsum(Loop),Loop_vars,Exp,Bounded):-!,
+	assert(used_term(minsum,Loop,Loop_vars,Exp,Bounded)).
 	
-save_used_term(maxsum(Loop),Head,Call,Exp,Bounded):-!,
-	assert(used_term(maxsum,Loop,Head,Call,Exp,Bounded)).
+save_used_term(maxsum(Loop),Loop_vars,Exp,Bounded):-!,
+	assert(used_term(maxsum,Loop,Loop_vars,Exp,Bounded)).
 	
-save_used_term(_Other,_Head,_Call,_Exp,_Bounded).
+save_used_term(_Other,_Loop_vars,_Exp,_Bounded).
 
 %! get_ranking_functions_constraints(Max:int,Head:term,Call:term,Phase:phase,Chain:chain,Fconstrs:list(fconstr))
 % generate at most Max upper bound final constraints from the ranking functions
@@ -1111,7 +1201,7 @@ get_partial_lower_bound(Head,Call,Chain,Loop,Lb):-
 	get_difference_version(Head,Call,Rf,Rf_diff),
 	integrate_le(Rf_diff,Den,Rf_diff_nat),
 	write_le(Rf_diff_nat,Rf_diff_nat_print),
-	get_enriched_loop(Loop,Head,Call,Cs),
+	enriched_loop(Loop,Head,[Call],Cs),
 	Constraint= (Den* D = Rf_diff_nat_print),
 	Cs_1 = [ Constraint | Cs],
 	nad_maximize(Cs_1,[D],[Delta]),
@@ -1124,7 +1214,7 @@ get_partial_lower_bound(Head,Call,Chain,Loop,Lb):-
 %
 % use Farkas lemma
 generate_lecandidates(Head,Call,Lin_exp,max,Loop,Total_exps):-
-	get_enriched_loop(Loop,Head,Call,Cs),	
+	enriched_loop(Loop,Head,[Call],Cs),	
 	rf_limit(Max_candidates),
 	difference_constraint_farkas_ub(Head,Call,Cs,Lin_exp,Diff_list,Diff_list2),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
@@ -1133,19 +1223,19 @@ generate_lecandidates(Head,Call,Lin_exp,max,Loop,Total_exps):-
 	
 	
 generate_lecandidates(Head,Call,Lin_exp,min,Loop,Diff_list_selected):-
-	get_enriched_loop(Loop,Head,Call,Cs),	
+	enriched_loop(Loop,Head,[Call],Cs),	
 	rf_limit(Max_candidates),
 	difference_constraint_farkas_lb(Head,Call,Cs,Lin_exp,Diff_list),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_).	
 
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%! max_min_top_expression_in_phase(Head:term,Call:term,Phase:phase,bound(Op,Lin_exp,_Bounded),Maxs_out)
+%! max_min_top_expression_in_phase(Head:term,Phase:phase,bound(Op,Lin_exp,_Bounded),Maxs_out)
 % auxiliary predicate for computing max and min of a linexp using the transitive invariant
-max_min_top_expression_in_phase(Head,Call,Phase,bound(Op,Lin_exp,_Bounded),Maxs_out):-
+max_min_top_expression_in_phase(Head,Phase,bound(Op,Lin_exp,_Bounded),Maxs_out):-
 	get_constr_op(Max_min,Op),
 	phase_transitive_closure(Phase,_,Head_total,Head,Cs_star_trans),
-	phase_loop(Phase,_,Head,Call,Cs),
+	phase_loop(Phase,_,Head,_Call,Cs),
 	ut_flat_list([Cs_star_trans,Cs],Context),
 	term_variables(Head_total,Vars_of_Interest),
 	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Maxs_out),
@@ -1160,22 +1250,22 @@ max_min_top_expression_in_phase(Head,Call,Phase,bound(Op,Lin_exp,_Bounded),Maxs_
 %
 % we normalize the linear expression so any multiple of the original constraint 
 % can reuse the stored result
-save_sum_found(Head,Call,Loop,Lin_exp,Max_min,Bounded,Fconstrs,Iconstrs):-
+save_sum_found(Loop_vars,Loop,Lin_exp,Max_min,Bounded,Fconstrs,Iconstrs):-
 	from_list_sl(Bounded,Bounded_set),
 	substitute_bounded_by_var(Iconstrs,Bounded_set,Var,Iconstrs1),
 	substitute_bounded_by_var(Fconstrs,Bounded_set,Var,Fconstrs1),
 	semi_normalize_le(Lin_exp,Coeff,Lin_exp_normalized),
-	ground_copy((Head,Call,Lin_exp_normalized),(_,_,Lin_exp_norm_ground)),
-	assert(sum_found(Loop,Lin_exp_norm_ground,Max_min,Head,Call,Coeff,Var,Fconstrs1,Iconstrs1)).
+	ground_copy((Loop_vars,Lin_exp_normalized),(_,Lin_exp_norm_ground)),
+	assert(sum_found(Loop,Lin_exp_norm_ground,Max_min,Loop_vars,Coeff,Var,Fconstrs1,Iconstrs1)).
 
 %! save_max_min_found(Head:term,Call:term,Phase:phase,Lin_exp:alinexp,Max_min:flag,Exp:final_inter_none)
 % final_inter_none:= final(list(alinexp)) | inter(astrexp) | none
 % Store the value Exp from the maximization/minimization of a linear expression Lin_exp
 % we normalize the linear expression to be able to reuse the result in more cases:
 % any multiple plus any constant
-save_max_min_found(Head,Call,Phase,Lin_exp,Max_min,Exp):-
+save_max_min_found(Head,Phase,Lin_exp,Max_min,Exp):-
 	normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)),
-	assert(max_min_found(Head,Call,Phase,(Lin_exp_normalized,Coeff,Constant),Max_min,Exp)).
+	assert(max_min_found(Head,Phase,(Lin_exp_normalized,Coeff,Constant),Max_min,Exp)).
 
 normalize_max_min(Lin_exp,([]+0,1,Constant)):-
 	Lin_exp=[]+Constant,!.
@@ -1199,99 +1289,113 @@ substitute_bounded_by_var([_|Constrs],Bounded_set,Var,Constrs2):-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Predicates to handle the pending_constrs data structure
 
-empty_pending(pending([],[],[],[])).
+empty_pending(pending(_,[],[],[],[])).
 
 %! save_pending_list(Type:flag,Loop:loop_id,Fconstrs:list(fconstr),Pending:pending_constrs,Pending_out:pending_constrs)
 % add the final constraints Fconstrs to the pending constrs Pending
 % They are added with Depth+1 where Depth is the current Depth
 % If Depth is above the limit, the constraints are not added and will be ignored
 % Type in {max, min, maxsum, minsum}
-save_pending_list(Type,Loop,Fconstrs,Pending,Pending_out):-
+save_pending_list(Type,Head_call,Loop,Fconstrs,Pending,Pending_out):-
 	current_pending_depth(Depth),
 	max_pending_depth(Max_depth),Depth<Max_depth,!,
 	Depth_new is Depth+1,
-	foldl(save_pending(Type,Loop,Depth_new),Fconstrs,Pending,Pending_out).
-save_pending_list(_Type,_Loop,_Fconstrs,Pending,Pending).
+	foldl(save_pending(Type,Loop,Depth_new,Head_call),Fconstrs,Pending,Pending_out).
+save_pending_list(_Type,_,_Loop,_Fconstrs,Pending,Pending).
 
 %!union_pending(Pending1:pending_constrs,Pending2:pending_constrs,Pending3:pending_constrs)
 % join Pending1 and Pending2 into Pending3
-union_pending(pending(Maxs1,Mins1,Maxsums1,Minsums1),pending(Maxs2,Mins2,Maxsums2,Minsums2),pending(Maxs3,Mins3,Maxsums3,Minsums3)):-
+union_pending(pending(Head_call,Maxs1,Mins1,Maxsums1,Minsums1),pending(Head_call,Maxs2,Mins2,Maxsums2,Minsums2),pending(Head_call,Maxs3,Mins3,Maxsums3,Minsums3)):-
 	union_sl(Maxs1,Maxs2,Maxs3),
 	union_sl(Mins1,Mins2,Mins3),
-	join_mm(Maxsums1,Maxsums2,Maxsums3),
-	join_mm(Minsums1,Minsums2,Minsums3).
+	join_pending_sums(Maxsums1,Maxsums2,Maxsums3),
+	join_pending_sums(Minsums1,Minsums2,Minsums3).
 	
+
+join_pending_sums(Sum,[],Sum):-!.
+join_pending_sums([],Sum,Sum):-!.
+join_pending_sums([(Loop,(Head_call,Set1))|Sums1],[(Loop,(Head_call,Set2))|Sums2],[(Loop,(Head_call,Set_union))|Sums_union]):-!,
+	union_sl(Set1,Set2,Set_union),
+	join_pending_sums(Sums1,Sums2,Sums_union).
+	
+join_pending_sums([(Loop1,Elem1)|Sums1],[(Loop2,Elem2)|Sums2],[(Loop1,Elem1)|Sums_union]):-
+	Loop1<Loop2,!,
+	join_pending_sums(Sums1,[(Loop2,Elem2)|Sums2],Sums_union).
+join_pending_sums([(Loop1,Elem1)|Sums1],[(Loop2,Elem2)|Sums2],[(Loop2,Elem2)|Sums_union]):-
+	Loop1>Loop2,
+	join_pending_sums([(Loop1,Elem1)|Sums1],Sums2,Sums_union).	
+
 %! save_pending(Type:flag,Loop:loop_id,Depth:int,Fconstr:fconstr,Pending:pending_constrs,Pending_out:pending_constrs)
 % add Fconstr to Pending with flag Type, Loop and Depth
-save_pending(max,_,Depth,bound(ub,Lin_exp,Bounded),Pending,Pending_out):-
-	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+save_pending(max,_,Depth,Head_call,bound(ub,Lin_exp,Bounded),Pending,Pending_out):-
+	Pending=pending(Head_call,Maxs,Mins,Maxsums,Minsums),
 	insert_sl(Maxs,(Depth,Lin_exp,Bounded),Maxs1),
-	Pending_out=pending(Maxs1,Mins,Maxsums,Minsums).
-save_pending(min,_,Depth,bound(lb,Lin_exp,Bounded),Pending,Pending_out):-
-	Pending=pending(Maxs,Mins,Maxsums,Minsums),
+	Pending_out=pending(Head_call,Maxs1,Mins,Maxsums,Minsums).
+save_pending(min,_,Depth,Head_call,bound(lb,Lin_exp,Bounded),Pending,Pending_out):-
+	Pending=pending(Head_call,Maxs,Mins,Maxsums,Minsums),
 	insert_sl(Mins,(Depth,Lin_exp,Bounded),Mins1),
-	Pending_out=pending(Maxs,Mins1,Maxsums,Minsums).	
+	Pending_out=pending(Head_call,Maxs,Mins1,Maxsums,Minsums).	
 
-save_pending(maxsum,Loop,Depth,bound(ub,Lin_exp,Bounded),Pending,Pending_out):-
-	Pending=pending(Maxs,Mins,Maxsums,Minsums),
-	(lookup_lm(Maxsums,Loop,Maxsum_set)->
+save_pending(maxsum,Loop,Depth,Head_call,bound(ub,Lin_exp,Bounded),Pending,Pending_out):-
+	Pending=pending(Head_call_max_min,Maxs,Mins,Maxsums,Minsums),
+	(lookup_lm(Maxsums,Loop,(Head_call,Maxsum_set))->
 		true
 		;
 		empty_sl(Maxsum_set)
 	),	
 	insert_sl(Maxsum_set,(Depth,Lin_exp,Bounded),Maxsum_set1),
-	insert_lm(Maxsums,Loop,Maxsum_set1,Maxsums1),
-	Pending_out=pending(Maxs,Mins,Maxsums1,Minsums).	
+	insert_lm(Maxsums,Loop,(Head_call,Maxsum_set1),Maxsums1),
+	Pending_out=pending(Head_call_max_min,Maxs,Mins,Maxsums1,Minsums).	
 
-save_pending(minsum,Loop,Depth,bound(lb,Lin_exp,Bounded),Pending,Pending_out):-
-	Pending=pending(Maxs,Mins,Maxsums,Minsums),
-	(lookup_lm(Minsums,Loop,Minsum_set)->
+save_pending(minsum,Loop,Depth,Head_call,bound(lb,Lin_exp,Bounded),Pending,Pending_out):-
+	Pending=pending(Head_call_max_min,Maxs,Mins,Maxsums,Minsums),
+	(lookup_lm(Minsums,Loop,(Head_call,Minsum_set))->
 		true
 		;
 		empty_sl(Minsum_set)
 	),	
 	insert_sl(Minsum_set,(Depth,Lin_exp,Bounded),Minsum_set1),
-	insert_lm(Minsums,Loop,Minsum_set1,Minsums1),
-	Pending_out=pending(Maxs,Mins,Maxsums,Minsums1).
+	insert_lm(Minsums,Loop,(Head_call,Minsum_set1),Minsums1),
+	Pending_out=pending(Head_call_max_min,Maxs,Mins,Maxsums,Minsums1).
 
 %! get_one_pending(Pending:pending_constrs,Type:term,Elem:(int,nlinexp,list(itvar)),Pending_out:pending_constrs) is semidet
 % get one pending constraint from Pending
 % it fails if Pending is empty
-get_one_pending(pending([Element|Maxs],Mins,Maxsums,Minsums),max,Element,pending(Maxs,Mins,Maxsums,Minsums)):-!.
-get_one_pending(pending([],[Element|Mins],Maxsums,Minsums),min,Element,pending([],Mins,Maxsums,Minsums)):-!.
-get_one_pending(pending([],[],[(Loop,Multimap)|Maxsums],Minsums),maxsum(Loop),Element,pending([],[],Maxsums_out,Minsums)):-
+get_one_pending(pending(Head_call,[Element|Maxs],Mins,Maxsums,Minsums),max,Head_call,Element,pending(Head_call,Maxs,Mins,Maxsums,Minsums)):-!.
+get_one_pending(pending(Head_call,[],[Element|Mins],Maxsums,Minsums),min,Head_call,Element,pending(Head_call,[],Mins,Maxsums,Minsums)):-!.
+get_one_pending(pending(Head_call_max_min,[],[],[(Loop,(Head_call,Multimap))|Maxsums],Minsums),maxsum(Loop),Head_call,Element,pending(Head_call_max_min,[],[],Maxsums_out,Minsums)):-
 	get_one_pending_1(Multimap,Element,Multimap1),
 	(Multimap1=[]->
 		Maxsums_out=Maxsums
 	;
-		Maxsums_out=[(Loop,Multimap1)|Maxsums]
+		Maxsums_out=[(Loop,(Head_call,Multimap1))|Maxsums]
 	).
-get_one_pending(pending([],[],[],[(Loop,Multimap)|Minsums]),minsum(Loop),Element,pending([],[],[],Minsums_out)):-
+get_one_pending(pending(Head_call_max_min,[],[],[],[(Loop,(Head_call,Multimap))|Minsums]),minsum(Loop),Head_call,Element,pending(Head_call_max_min,[],[],[],Minsums_out)):-
 	get_one_pending_1(Multimap,Element,Multimap1),
 	(Multimap1=[]->
 		Minsums_out=Minsums
 	;
-		Minsums_out=[(Loop,Multimap1)|Minsums]
+		Minsums_out=[(Loop,(Head_call,Multimap1))|Minsums]
 	).	
 get_one_pending_1([Element|Multimap],Element,Multimap).
 
 % Similar to the previous predicate but specifying the Loop and whether it is maxsum or minsum that
 % we want to obtain
-extract_pending(Loop,maxsum,pending(Maxs,Mins,Maxsums,Minsums),Element,pending(Maxs,Mins,Maxsums1,Minsums)):-
-	lookup_lm(Maxsums,Loop,Elements),
+extract_pending(Loop,maxsum,pending(Head_call_max_min,Maxs,Mins,Maxsums,Minsums),Head_call,Element,pending(Head_call_max_min,Maxs,Mins,Maxsums1,Minsums)):-
+	lookup_lm(Maxsums,Loop,(Head_call,Elements)),
 	select(Element,Elements,Elements1),
 	(Elements1=[]->
 		delete_lm(Maxsums,Loop,Maxsums1)
 		;
-		insert_lm(Maxsums,Loop,Elements1,Maxsums1)
+		insert_lm(Maxsums,Loop,(Head_call,Elements1),Maxsums1)
 	).
-extract_pending(Loop,minsum,pending(Maxs,Mins,Maxsums,Minsums),Element,pending(Maxs,Mins,Maxsums,Minsums1)):-
-	lookup_lm(Minsums,Loop,Elements),
+extract_pending(Loop,minsum,pending(Head_call_max_min,Maxs,Mins,Maxsums,Minsums),Head_call,Element,pending(Head_call_max_min,Maxs,Mins,Maxsums,Minsums1)):-
+	lookup_lm(Minsums,Loop,(Head_call,Elements)),
 	select(Element,Elements,Elements1),
 	(Elements1=[]->
 		delete_lm(Minsums,Loop,Minsums1)
 		;
-		insert_lm(Minsums,Loop,Elements1,Minsums1)
+		insert_lm(Minsums,Loop,(Head_call,Elements1),Minsums1)
 	).	
 
 			
@@ -1322,11 +1426,6 @@ select_important_variables(Vars_head,Lin_exp,Vars_of_Interest):-
 	
 put_inside_mult(Factor,mult([Factor])).
 
-
-get_enriched_loop(Loop,Head,Call,Total_cs):-
-	loop_ph(Head,(Loop,_),[Call],Cs,_,_),	
-	forward_invariant_temp(Head,Call,Forward_inv),
-	append(Forward_inv,Cs,Total_cs).
 				
 is_head_expression(Head,Exp):-
 	copy_term((Head,Exp),(Head2,Exp2)),

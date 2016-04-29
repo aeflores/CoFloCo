@@ -76,6 +76,7 @@
 		max_min_ub_lb/2,
 		new_itvar/1,
 		get_loop_itvar/2,
+		get_loop_depth_itvar/2,
 		is_ub_bconstr/1,
 		fconstr_new/4,
 		fconstr_new_inv/4,
@@ -153,6 +154,10 @@ new_itvar([aux(Num)]):-
 %! get_loop_itvar(Loop:loop_id,Itvar:itvar) is det
 % get the itvar corresponding to a loop identifier
 get_loop_itvar(Loop,[it(Loop)]).
+
+%! get_loop_depth_itvar(Loop:loop_id,Itvar:itvar) is det
+% get the itvar corresponding to the depth of a loop identifier
+get_loop_depth_itvar(Loop,[it_depth(Loop)]).
 
 %! annotate_itvar(Op:atom,Itvar:itvar,Var:op(itvar))
 % wrap an intermediate variable inside Op

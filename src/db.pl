@@ -284,10 +284,6 @@ add_eq_ph(eq_ph(Head,0,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_e
 	assert(eq_refined(Previous_eqs2,Id)).
 %*/
 add_eq_ph(eq_ph(Head,RefCnt,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_eqs) :-
-	(R_Calls=[_,_|_]-> 
-	        functor(Head,Name,Arity),
-	        format(user_error,'multiple_recursion_is_not_currently_supported: ~p~n',[Name/Arity])
-	; true),
 	counter_increase(eq_ph,1,Id),
 	assertz(eq_ph(Head,(Id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)),
 	assertz(eq_refined(Previous_eqs,Id)).	
