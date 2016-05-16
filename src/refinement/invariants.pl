@@ -258,11 +258,13 @@ compute_backward_invariant([Non_terminating],Prev_chain,Head,RefCnt,Entry_patter
  	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
  	assert(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern)).
 
-compute_backward_invariant([multiple(Non_terminating,Tails)],_Prev_chain,Head,RefCnt,Entry_pattern):-
+compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,RefCnt,Entry_pattern):-
 	member([],Tails),!,
 	phase_loop(Non_terminating,RefCnt,Head,_,Cs),
 	Head=..[_|EVars],
- 	nad_project_group(EVars,Cs,Entry_pattern).
+ 	nad_project_group(EVars,Cs,Entry_pattern),
+ 	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+ 	assert(partial_backward_invariant([multiple(Non_terminating,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern)).
 
 
 
