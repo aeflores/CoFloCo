@@ -24,100 +24,107 @@ Size relations of the basic lisp functions
 		eq/4
 	]).
 
-eq('or'(1,_,1),1,[],[]).
-eq('or'(_,1,1),1,[],[]).
 
-eq('and'(1,1,1),1,[],[]).
-eq('and'(A,B,0),1,[],[A+B=<1]).
+eq('cons'(_Ai,_Al,As,_Bi,Bl,Bs,_Ci,Cl,Cs),1,[],[Cl=1+Bl,Cs=As+Bs+1]).
 
-eq('-'(A,B,C),1,[],[C=A-B]).
-eq('+'(A,B,C),1,[],[C=A+B]).
-eq('1+'(A,B),1,[],[B=A+1]).
-eq('1-'(A,B),1,[],[B=A-1]).
+eq('consp'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al>=1,As>=1]).
+eq('consp'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
 
-eq('='(A,A,1),1,[],[]).
-eq('='(A,B,0),1,[],[A>=B+1]).
-eq('='(A,B,0),1,[],[A+1=<B]).
+eq('atom'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al>=1,As>=1]).
+eq('atom'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
 
-eq('eql'(A,A,1),1,[],[]).
-eq('eql'(A,B,0),1,[],[A>=B+1]).
-eq('eql'(A,B,0),1,[],[A+1=<B]).
+%eq('endp'(_Ai,Al,_As,0,0,0),1,[],[Al>=1]).
+eq('endp'(_Ai,_Al,As,0,0,0),1,[],[Al=<As,Al>=1,As>=1]).
+eq('endp'(_Ai,Al,_As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
 
-eq('>'(A,B,1),1,[],[A>=B+1]).
-eq('>'(A,B,0),1,[],[A=<B]).
+eq('car'(_Ai,Al,As,_Bi,_Bl,Bs),1,[],[Al=<As,Al>=1,Bs+1=<As]).
+eq('car'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
+eq('cdr'(_Ai,Al,As,_Bi,Bl,Bs),1,[],[Al=<As,Bl+1=Al,Bs+1=<As]).
+eq('cdr'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
 
-eq('<'(A,B,1),1,[],[A+1 =< B]).
-eq('<'(A,B,0),1,[],[A >= B]).
+eq('or'(1,_,_,_,_,_,1,0,0),1,[],[]).
+eq('or'(_,_,_,1,_,_,1,0,0),1,[],[]).
 
+eq('and'(1,_,_,1,_,_,1,0,0),1,[],[]).
+eq('and'(A,_,_,B,_,_,0,0,0),1,[],[A+B=<1]).
 
-eq('endp'(A,1),1,[],[A=0]).
-eq('endp'(A,0),1,[],[A>=1]).
+eq('-'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai-Bi]).
+eq('+'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai+Bi]).
+eq('1+'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=Ai+1]).
+eq('1-'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=Ai-1]).
 
-eq('not'(A,1),1,[],[A=0]).
-eq('not'(A,0),1,[],[A=1]).
+eq('='(Ai,_,_,Ai,_,_,1,0,0),1,[],[]).
+eq('='(Ai,_,_,Bi,_,_,0,0,0),1,[],[Ai>=Bi+1]).
+eq('='(Ai,_,_,Bi,_,_,0,0,0),1,[],[Ai+1=<Bi]).
 
-eq('zp'(A,1),1,[],[A=0]).
-eq('zp'(A,0),1,[],[A>=1]).
-
-eq('car'(A,B),1,[],[A=0,A=B]).
-eq('car'(A,B),1,[],[A>=1,B+1=<A]).
-
-eq('cdr'(A,B),1,[],[A=0,A=B]).
-eq('cdr'(A,B),1,[],[A>=1,B+1=<A]).
+eq('eql'(Ai,_,_,Ai,_,_,1,0,0),1,[],[]).
+eq('eql'(Ai,_,_,Bi,_,_,0,0,0),1,[],[Ai>=Bi+1]).
+eq('eql'(Ai,_,_,Bi,_,_,0,0,0),1,[],[Ai+1=<Bi]).
 
 
+eq('>'(Ai,_Al,_As,Bi,_Bl,_Bs,1,0,0),1,[],[Ai>=Bi+1]).
+eq('>'(Ai,_Al,_As,Bi,_Bl,_Bs,0,0,0),1,[],[Ai=<Bi]).
 
+eq('<'(Ai,_Al,_As,Bi,_Bl,_Bs,1,0,0),1,[],[Ai+1=<Bi]).
+eq('<'(Ai,_Al,_As,Bi,_Bl,_Bs,0,0,0),1,[],[Ai>=Bi]).
 
-eq('binary-+'(A,B,C),1,[],[C=A+B]).
-eq('binary--'(A,B,C),1,[],[C=A-B]).
-eq('unary--'(A,B),1,[],[B=A-1]).
+eq('binary-+'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai+Bi]).
+eq('binary--'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai-Bi]).
+eq('unary--'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=0-Ai]).
 
-eq('ash'(A,B,A),1,[],[B=0]).
-eq('ash'(A,B,C),1,[],[B>=1,2*C=<A]).
-eq('ash'(A,B,C),1,[],[B+1=<0,C>=2*A]).
+eq('integerp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
+eq('rationalp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
 
-eq('cons'(A,B,C),1,[],[C=A+B+1]).
-eq('consp'(A,1),1,[],[A>=1]).
-eq('consp'(A,0),1,[],[A=0]).
+eq('not'(A,_,_,1,0,0),1,[],[A=0]).
+eq('not'(A,_,_,0,0,0),1,[],[A=1]).
 
-eq('atom'(A,0),1,[],[A>=1]).
-eq('atom'(A,1),1,[],[A=0]).
+eq('zp'(A,_,_,1,0,0),1,[],[A=0]).
+eq('zp'(A,_,_,0,0,0),1,[],[A=1]).
 
-eq('quote'(A,1),1,[],[A>=1]).
+eq('ash'(A,_,_,B,_,_,A,0,0),1,[],[B=0]).
+eq('ash'(A,_,_,B,_,_,C,0,0),1,[],[B>=1,2*C=<A]).
+eq('ash'(A,_,_,B,_,_,C,0,0),1,[],[B+1=<0,C>=2*A]).
 
-
-
-eq('null'(0,1),1,[],[]).
-eq('null'(A,0),1,[],[A>=1]).
-eq('null'(A,0),1,[],[A+1=<0]).
+eq('null'(Ai,0,0,0,0,0),1,[],[Ai>=1]).
+eq('null'(Ai,0,0,0,0,0),1,[],[Ai+1=<0]).
+eq('null'(0,0,0,1,0,0),1,[],[]).
+eq('null'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
 
 %type check, we assume for now that it never fails
-eq('the-check'(_A,_B,C,C),1,[],[]).
-%eq('the-check'(A,_B,C,C),1,[],[A=1]).
-%eq('the-check'(A,B,_C,B),1,[],[A=0]).
+eq('the-check'(_Ai,_,_,_Bi,_,_,Ci,Cl,Cs,Ci,Cl,Cs),1,[],[]).
 
-eq('nfix'(A,A),1,[],[A>=0]).
-eq('nfix'(A,0),1,[],[A+1=<0]).
+eq('nfix'(Ai,0,0,Ai,0,0),1,[],[Ai>=0]).
+eq('nfix'(Ai,_,_,0,0,0),1,[],[Ai+1=<0]).
+eq('nfix'(_,_,As,0,0,0),1,[],[As>=1]).
+eq('nfix'(_,Al,_,0,0,0),1,[],[Al>=1]).
 
-eq('lnfix$inline'(A,A),1,[],[]).
+eq('hide'(Ai,Al,As,Ai,Al,As),1,[],[]).   % identity function
+eq('coerce'(Ai,Al,As,Ai,Al,As),1,[],[]).   % for now, also treat this as id
 
+eq('return-last'(_Ai,_,_,_Bi,_,_,Ci,Cl,Cs,Ci,Cl,Cs),1,[],[]).
 
-eq('hide'(A,A),1,[],[]).   % identity function
-eq('coerce'(A,A),1,[],[]).   % for now, also treat this as id
+% included for completeness and to avoid warnings, but not currently functional
+eq('unary-/'(Ai,_Al,_As,Bi,0,0),1,[],[Ai>=1,Bi=1/Ai]).
+eq('unary-/'(Ai,_Al,_As,Bi,0,0),1,[],[Ai+1=<0,Bi=1/Ai]).
+eq('binary-*'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai*Bi]).
 
-eq('return-last'(_A,_B,C,D),1,[],[D=C]).
+eq('eq'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
+eq('eq'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
+eq('eq'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
+
+eq('equal'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
+eq('equal'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
+eq('equal'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
+
+eq('eql'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
+eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
+eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
 
 %undefined
-eq('unary-/'(_A,_B),1,[],[]).
-eq('integerp'(_A,_B),1,[],[]).
-eq('rationalp'(_A,_B),1,[],[]).
-eq('acl2-numberp'(_A,_B),1,[],[]).
-eq('characterp'(_A,_B),1,[],[]).
-eq('stringp'(_A,_B),1,[],[]).
-eq('symbolp'(_A,_B),1,[],[]).
-eq('char-code'(_A),1,[],[]).
-eq('code-char'(_A),1,[],[]).
-eq('binary-*'(_A,_B,_C),1,[],[]).
-eq('equal'(_A,_B,_C),1,[],[]).
-eq('eq'(_A,_B,_C),1,[],[]).
-eq('<<'(_A,_B,_C),1,[],[]).
+eq('acl2-numberp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
+eq('characterp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
+eq('stringp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
+eq('symbolp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
+eq('char-code'(_Ai,_Al,_As),1,[],[]).
+eq('code-char'(_Ai,_Al,_As),1,[],[]).
+eq('<<'(_Ai,_Al,_As,_Bi,_Bl,_Bs,_Ci,0,0),1,[],[]).
