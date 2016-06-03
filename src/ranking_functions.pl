@@ -173,7 +173,7 @@ compute_phase_partial_rfs(Head,Chain_prefix,Phase,_):-
 	maplist(get_initial_deps(Extended_phase),Initial_map_filtered,Init_deps),
 	maplist(check_lexicographic_deps_aux(Head,Call,[]),Initial_map_filtered,Init_deps,Deps,Type_deps),
 	maplist(add_partial_ranking_function_aux(Head,_,Phase),Initial_map_filtered,Deps,Type_deps),
-	assert(computed_ranking_functions(Head,_,Phase)).
+	assert(computed_partial_ranking_functions(Head,_,Phase)).
 	
 % same but taking the invariant into account
 compute_phase_partial_rfs(Head,Chain_prefix,Phase,Inv):-
@@ -188,7 +188,7 @@ compute_phase_partial_rfs(Head,Chain_prefix,Phase,Inv):-
 	maplist(get_initial_deps(Extended_phase),Initial_map_filtered,Init_deps),
 	maplist(check_lexicographic_deps_aux(Head,Call,Inv),Initial_map_filtered,Init_deps,Deps,Type_deps),
 	maplist(add_partial_ranking_function_aux(Head,Chain_saved,Phase),Initial_map_filtered,Deps,Type_deps),
-	assert(computed_ranking_functions(Head,Chain_saved,Phase)).
+	assert(computed_partial_ranking_functions(Head,Chain_saved,Phase)).
 
 
 	
