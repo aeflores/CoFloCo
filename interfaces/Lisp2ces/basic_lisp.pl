@@ -34,8 +34,8 @@ eq('atom'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al>=1,As>=1]).
 eq('atom'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
 
 %eq('endp'(_Ai,Al,_As,0,0,0),1,[],[Al>=1]).
-eq('endp'(_Ai,_Al,As,0,0,0),1,[],[Al=<As,Al>=1,As>=1]).
-eq('endp'(_Ai,Al,_As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
+eq('endp'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al>=1,As>=1]).
+eq('endp'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
 
 eq('car'(_Ai,Al,As,_Bi,_Bl,Bs),1,[],[Al=<As,Al>=1,Bs+1=<As]).
 eq('car'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
