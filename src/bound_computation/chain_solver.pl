@@ -32,8 +32,7 @@ For the constraints, this is done at the same time of the compression.
 :- module(chain_solver,[compute_chain_cost/3]).
 
 :- use_module(cost_equation_solver,[get_loop_cost/5]).
-:- use_module(phase_solver,[compute_phase_cost/5]).
-:- use_module(multiple_rec_phase_solver,[compute_multiple_rec_phase_cost/5]).
+:- use_module('phase_solver/phase_solver',[compute_phase_cost/5,compute_multiple_rec_phase_cost/5]).
 :- use_module(constraints_maximization,[max_min_fconstrs_in_chain/6]).
 
 :-use_module('../db',[phase_loop/5,loop_ph/6]).

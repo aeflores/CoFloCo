@@ -43,13 +43,14 @@ This module computes different kinds of invariants for the chains:
 		      forward_invariant/4,
 		      scc_forward_invariant/3,
 		      phase_transitive_closure/5,
+		      phase_transitive_star_closure/5,
 		      add_scc_forward_invariant/3]).
 
 :- use_module('../db',[loop_ph/6,phase_loop/5]).
 :- use_module(chains,[chain/3,get_reversed_chains/3]).
 :- use_module(loops,[split_multiple_loops/2]).
 
-:- use_module('../utils/cofloco_utils',[assign_right_vars/3]).
+:- use_module('../utils/cofloco_utils',[assign_right_vars/3,zip_with_op2/4]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,
 					nad_consistent_constraints_group_aux/1,
 					nad_is_bottom/1,
@@ -166,6 +167,14 @@ add_phase_transitive_closure(Phase,RefCnt,_,_,_) :-
 
 add_phase_transitive_closure(Phase,RefCnt,Head,Call,Inv) :-
 	assertz(phase_transitive_closure(Phase,RefCnt,Head,Call,Inv)).
+	
+%! add_phase_transitive_closure(+Phase:phase,+RefCnt:int,+Head:term,+Call:term,+Inv:polyhedron)
+%  store the transitive closure if it does not already exits
+add_phase_transitive_star_closure(Phase,RefCnt,_,_,_) :-
+	phase_transitive_star_closure(Phase,RefCnt,_,_,_),!.
+
+add_phase_transitive_star_closure(Phase,RefCnt,Head,Call,Inv) :-
+	assertz(phase_transitive_star_closure(Phase,RefCnt,Head,Call,Inv)).	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -513,6 +522,7 @@ apply_loops_forward([(Head_loop,Call_loop,Cs_loop)|Loops],inv(Head_inv,Inv),Call
 compute_loops_transitive_closures(Entry,RefCnt):-
 	phase_loop(Phase,RefCnt,Entry,_,_),
 	compute_phase_transitive_closure(Phase,RefCnt),
+	compute_phase_transitive_star_closure(Phase,RefCnt),
 	fail.
 compute_loops_transitive_closures(_,_).
 
@@ -526,7 +536,16 @@ compute_phase_transitive_closure(Phase,RefCnt):-
         transitive_closure_invariant_fixpoint(inv(Head,Call,Inv_0),Loops,inv(Entry_out,Call_out, Trans_closure)),
         add_phase_transitive_closure(Phase,RefCnt,Entry_out,Call_out,Trans_closure).
 
-
+compute_phase_transitive_star_closure(Phase,RefCnt):-
+	phase_transitive_closure(Phase,RefCnt,Head,Call,Inv),
+	Head=..[_|Vars_head],
+	Call=..[_|Vars_Call],
+	phase_loop(Phase,RefCnt,Head,Call,Inv_0),
+	nad_project(Vars_head,Inv_0,Inv_0_head),
+	maplist(zip_with_op2('='),Vars_head,Vars_Call,Equalities),
+	append(Equalities,Inv_0_head,No_iterations_inv),
+	nad_list_lub([No_iterations_inv,Inv],Inv_star),
+	add_phase_transitive_star_closure(Phase,RefCnt,Head,Call,Inv_star).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Low level fixpoint computations

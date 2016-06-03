@@ -151,10 +151,9 @@ difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Lin_exp_list,Lin_exp_list2
 	maplist(=(0),Ys4),
 	
 	%extract the linear expressions from the points
-	copy_term(([Coeff_0|Unknowns1],Unknowns2,Generators2),([Coeff_0_c|Unknowns1_c],Unknowns2_c,Generators2_c)),
-	maplist(=(0),Unknowns2_c),
-	copy_term((Unknowns,Generators),([1|Vars],Generators_copy)),
-	copy_term(([Coeff_0_c|Unknowns1_c],Generators2_c),([1|EVars],Generators_copy2)),
+	maplist(=(0),Unknowns2),
+	copy_term(([Coeff_0|Unknowns1],Generators),([1|EVars],Generators_copy)),
+	copy_term(([Coeff_0|Unknowns1],Generators2),([1|EVars],Generators_copy2)),
 	
 	get_expressions_from_points(Generators_copy,Lin_exp_list),
 	get_expressions_from_points(Generators_copy2,Lin_exp_list2),
@@ -194,8 +193,9 @@ difference_constraint_farkas_lb(Head,Call,Phi,Lin_exp,Lin_exps_non_constant):-
 	get_generators(c,All_new_vars,Complete_system_final,Generators),
 	maplist(=(0),Ys),
 	maplist(=(0),Ys2),
+	maplist(=(0),Unknowns2),
 	%obtain linear expressions form the candidates
-	copy_term((Unknowns,Generators),([1|Vars],Generators_copy)),	
+	copy_term(([Coeff_0|Unknowns1],Generators),([1|EVars],Generators_copy)),	
 	get_expressions_from_points(Generators_copy,Lin_exp_list),
 	from_list_sl(Lin_exp_list,Lin_exp_list_set),
 	exclude(is_constant_le,Lin_exp_list_set,Lin_exps_non_constant),

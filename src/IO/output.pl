@@ -290,10 +290,16 @@ print_op(ub,'=<').
 print_op(lb,'>=').
 
 
-print_phase_cost(Phase,Head,Call,Cost):-
-	copy_term((Head,Call,Cost),(Headp,Callp,Costp)),
+print_phase_cost(Phase,Head,Calls,Cost):-
+	copy_term((Head,Calls,Cost),(Headp,Callsp,Costp)),
 	ground_header(Headp),
-	(Callp==none;ground_header_prime(Callp)),
+	(
+		Callsp==[],
+		Callp=none
+		;
+		Callsp=[Callp],
+		ground_header_prime(Callp)
+	),
 	ansi_format_aux([underline,bold],'Cost of phase ~p:~p -> ~p ~n',[Phase,Headp,Callp]),
 	print_new_cost_structure(Costp).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

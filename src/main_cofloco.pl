@@ -120,7 +120,7 @@ The main "data types" used in CoFloCo are the following:
 				  compute_single_closed_bound/2]).
 :- use_module('bound_computation/conditional_bounds',[
 				  compute_conditional_bounds/1]).			  
-:- use_module('bound_computation/phase_solver',[init_phase_solver/0]).
+:- use_module('bound_computation/phase_solver/phase_solver',[init_phase_solver/0]).
 :- use_module('bound_computation/cost_equation_solver',[init_cost_equation_solver/0]).    
 
 :- use_module('IO/output',[print_results/2,

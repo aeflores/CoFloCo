@@ -968,7 +968,7 @@ cstr_join(cost(T,A,Iconstrs,Bs,B),cost(T2,A2,Iconstrs2,B2s,B2),cost(T3,A3,Iconst
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! cstr_propagate_sums(+Loop:loop_id,+Cost:cstr,-Cost2:cstr,-Max_mins:(list(fconstr),list(fconstr)),-Summs:(list(fconstr),list(fconstr))) is det
+%! cstr_propagate_sums(+Loop:loop_id,+Cost:cstr,-Cost2:cstr,-Max_mins:list(fconstr),-Summs:list(fconstr)) is det
 % propagate the sum of a cost structure all form the basic summands to the final constraints
 %
 % Cost_out contains the transformed cost except the final constraints that still have to be computed
@@ -981,12 +981,10 @@ cstr_propagate_sums(Loop,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConsta
 	propagate_sums_backwards(Iconstrs,Itvar,Sum_map_initial,Iconstrs2,Sum_map,Max_min_set),
 	Cost2=cost([],[],Iconstrs2,[(Itvar,BConstant)|Bsummands1],0),
 	% get the final constraints that have to be computed
-	foldl(get_maxs_mins(Max_min_set),Ub_fconstrs,[],Ub_fconstrs2),
-	foldl(get_sums(Sum_map),Ub_fconstrs,[],Ub_Summatories),
-	foldl(get_maxs_mins(Max_min_set),Lb_fconstrs,[],Lb_fconstrs2),
-	foldl(get_sums(Sum_map),Lb_fconstrs,[],Lb_Summatories),
-	Max_mins=(Ub_fconstrs2,Lb_fconstrs2),
-	Sums=(Ub_Summatories,Lb_Summatories).
+	foldl(get_maxs_mins(Max_min_set),Ub_fconstrs,[],Max_mins1),
+	foldl(get_sums(Sum_map),Ub_fconstrs,[],Sums1),
+	foldl(get_maxs_mins(Max_min_set),Lb_fconstrs,Max_mins1,Max_mins),
+	foldl(get_sums(Sum_map),Lb_fconstrs,Sums1,Sums).
 
 
 
