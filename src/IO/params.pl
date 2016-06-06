@@ -34,11 +34,14 @@ The module also takes care of parsing the input parameters and storing them.
 		  parameter_dictionary/3,
 		  param_description/2]).
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %% param(+Param:atom,-Values:list) is nondet
 % @arg Param is the name of the parameter
 % @arg values is a list of values associated to each parameter
 :-dynamic param/2.
+
+
 
 %% parameter_dictionary(?External_name:atom,?Internal_name:atom,-Values:list) is nondet
 % @arg external_name is the name of the parameter that is read from the input
@@ -64,17 +67,18 @@ parameter_dictionary('-assume_sequential','assume_sequential',[bool]).
 parameter_dictionary('-n_rankings','n_rankings',[number]).
 
 parameter_dictionary('-maximize_fast','maximize_fast',[number]).
+parameter_dictionary('-solve_fast','solve_fast',[bool]).
 
-parameter_dictionary('-compress_chains','compress_chains',[]).
-parameter_dictionary('-negative','negative',[]).
+parameter_dictionary('-compress_chains','compress_chains',[bool]).
 
 parameter_dictionary('-only_termination','only_termination',[bool]).
-parameter_dictionary('-prolog_format','prolog_format',[bool]).
 
-parameter_dictionary('-conditional_ubs','conditional_ubs',[]).
+parameter_dictionary('-compute_ubs','compute_ubs',[bool]).
+parameter_dictionary('-compute_lbs','compute_lbs',[bool]).
+parameter_dictionary('-conditional_ubs','conditional_ubs',[bool]).
+parameter_dictionary('-conditional_lbs','conditional_lbs',[bool]).
 
-
-incompatible_parameters(param(negative,[]),param(compress_chains,_)).
+:-dynamic incompatible_parameters/2.
 
 %% clean_params is det
 % erase all the stored parameters
@@ -87,9 +91,11 @@ clean_params:-
 %  * -n_rankings 2
 %  * -maximize_fast 5
 set_default_params:-
-	parse_params(['-v',2,
-		      '-n_rankings',2,
-		      '-maximize_fast',2
+	parse_params(['-v','2',
+		      '-n_rankings','1',
+		      '-maximize_fast','1',
+		      '-compute_ubs',
+		      '-compute_lbs'
 		      ]).
 		      
 %% parse_params(Params:list(atoms)) is det
@@ -99,7 +105,8 @@ parse_params([Param|Rest]):-
 	parameter_dictionary(Param,Internal_repr,ArgsOpts),!,
 	process_args(ArgsOpts,Rest,Args,New_rest),
 	(Args==[no]->
-	  true;
+	  retractall(param(Internal_repr,[]))
+	  ;
 	(Args==[yes]->
 	 add_param(Internal_repr,[])
 	;
@@ -188,7 +195,7 @@ param_description('v','0-3 : selects the level of verbosity ').
 %param_description('visual',_,'Launch the upper bound graphical visualizer ').
 %param_description('break_chains','Attempt to break phases').
 
-param_description('n_rankings',' nat : (default 2) Sets the maximum number of ranking functions that are considered for each cost equation ').
+param_description('n_rankings',' nat : (default 1) Sets the maximum number of ranking functions that are considered for each cost equation ').
 param_description('assume_sequential',
 'Assume that the calls performed in a cost equation are done sequentially
 It is important for non-terminating programs').
@@ -197,7 +204,7 @@ It is important for non-terminating programs').
 %' nat : (default not active) The  maximum number of extra constraints that can be considered when solving cost structures').
 
 param_description('maximize_fast',
-'nat : (default 5) The  maximum number of upper bound of a cost expression that the maximize operation can return').
+'nat : (default 1) The  maximum number of upper bound of a cost expression that the maximize operation can return').
 param_description('conditional_ubs',
 'Generate a set of conditional upper bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
 

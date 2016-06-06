@@ -40,14 +40,15 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
     ignored_scc/1
 ]).
 
-:- use_module('../db',[input_eq/5]).
+:- use_module('../db',[input_eq/5,entry_eq/2]).
 %:- use_module(recursion_loop_extraction,[try_loop_extraction/1]).
 
 :- use_module(stdlib(scc),[compute_sccs/2]).
 :- use_module(stdlib(minimal_feedback_set),[compute_mfbs_shamir/3]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! crs_btc(Functor:atom,Arity:int)
 % the cost equation Functor/Arity is a cover point (btc)
 :- dynamic crs_btc/2.
@@ -130,15 +131,32 @@ compute_btc_aux(_).
 
 compute_cover_point_for_scc(SCC_N) :-
 	crs_scc(SCC_N,Type,Nodes,SCC_Graph,Entries),
-
+    
 	( compute_cover_point_for_scc_aux(Type,SCC_N,Nodes,SCC_Graph,Entries,Cover_Point) ->
+	    ( (Type=recursive; has_entry_node(Nodes))->
 		add_to_btc([Cover_Point]),
 		declare_residual_scc(SCC_N,Cover_Point)
+		;
+		(has_one_eq(Nodes)->
+		   true;
+		  add_to_btc([Cover_Point]),
+		declare_residual_scc(SCC_N,Cover_Point) 
+		)
+		)
+		
 	;
-	    throw(error(no_cover_point,[scc=SCC_N]))
+	    throw(error(no_cover_point(SCC_N,Nodes)))
 	    
 	).
 
+has_entry_node(Nodes):-
+	entry_eq(Head,_),
+	functor(Head,F,A),
+	member(F/A,Nodes),!.
+has_one_eq([F/A]):-
+	functor(Head,F,A),
+	findall(Id,input_eq(Head,Id,_,_,_),[_]).
+	
 compute_cover_point_for_scc_aux(non_recursive,_SCC_N,[F/A],_SCC_Graph,_Entries,F/A) :-!.
 
 

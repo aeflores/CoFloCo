@@ -20,7 +20,9 @@
 :- use_module(stdlib(linear_expression), [parse_le/2]).
 
 :- use_module(stdlib(matrix_constraint)).
-:- use_module(stdlib(ppl)).
+
+:-use_module(stdlib(polyhedra_ppl)).
+
 
 %% lp_mrep_to_grep(+MRep,-GRep):
 %%

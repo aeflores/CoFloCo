@@ -27,13 +27,16 @@ This module prints the results of the analysis
 		  print_chain/2,
 		  print_chains_entry/2,
 		  print_results/2,
+		  print_phase_cost/4,
 		  print_equations_refinement/2,
 		  print_loops_refinement/2,
 		  print_external_pattern_refinement/2,
 		  print_phase_termination_argument/4,
 		  print_single_closed_result/2,
 		  print_conditional_upper_bounds/1,
+		  print_conditional_lower_bounds/1,
 		  print_closed_results/2,
+		  print_aux_exp/1,
 		  print_stats/0]).
 
 :- use_module('../db',[ground_equation_header/1,
@@ -42,23 +45,37 @@ This module prints the results of the analysis
 						loop_ph/6,
 						external_call_pattern/5,
 						upper_bound/4,
-						closed_upper_bound/4,
+						closed_upper_bound_print/3,
+						closed_lower_bound_print/3,
 						conditional_upper_bound/3,
+						conditional_lower_bound/3,
 						non_terminating_chain/3]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
 
-:- use_module('../utils/cost_expressions',[cexpr_add_list/2,get_asymptotic_class_name/2]).
-:- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2]).
+:- use_module('../utils/cost_expressions',[get_asymptotic_class_name/2]).
+:- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2,tuple/3]).
+
+:- use_module('../utils/cost_structures',[
+	cstr_shorten_variables_names/3,
+	cstr_get_unbounded_itvars/2,
+	itvar_recover_long_name/2,
+	astrexp_to_cexpr/2]).
+
 
 :- use_module('../IO/params',[parameter_dictionary/3,get_param/2,
 		      param_description/2]).
 
+:- use_module(stdlib(linear_expression),[write_le/2]).
 :- use_module(stdlib(profiling),[profiling_get_info/3]).
 :- use_module(stdlib(counters),[counter_get_value/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
+:- use_module(stdlib(set_list),[contains_sl/2]).
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 
-
+ansi_format_aux(Options,Format,Args):-current_prolog_flag(dialect,swi),ansi_format(Options,Format,Args).
+ansi_format_aux(_,Format,Args):-current_prolog_flag(dialect,yap),format(Format,Args).
 %! print_equations_refinement(+Head:term,+RefCnt:int) is det
 % print the calls from the SCC Head in the refinement phase RefCnt
 % if the verbosity is high enough
@@ -151,7 +168,7 @@ print_phase_termination_argument(_Head,_Phase,_Term_argument,_).
 %! print_chains(+RefCnt:int) is det
 %  print the inferred chains in the refinement phase RefCnt
 print_chains(Ref_phase):-
-	ansi_format([underline,bold],'Resulting Chains:~p ~n',[' ']),
+	ansi_format_aux([underline,bold],'Resulting Chains:~p ~n',[' ']),
 	print_chains_1(Ref_phase).
 
 print_chains_1(Ref_phase):-
@@ -163,22 +180,13 @@ print_chains_1(_).
 
 %! print_chain(+Entry:term,Pattern:chain) is det
 % print the chain Pattern
-print_chain(Entry,Fusion):-
-	Fusion=..[fusion|Chain_list],!,
-	maplist(reverse,Chain_list,Chain_list_inv),
-	(non_terminating_chain(Entry,_,Fusion)->
-	   %Pattern=[_|Pattern1],
-	   ansi_format([fg(red)],'~p:~p...',[Entry,fusion(Chain_list_inv)])
-	 ;
-	   ansi_format([],'~p:~p',[Entry,fusion(Chain_list_inv)])
-	).
+
 print_chain(Entry,Pattern):-
-	reverse(Pattern,Pattern_inv),
 	(non_terminating_chain(Entry,_,Pattern)->
 	   %Pattern=[_|Pattern1],
-	   ansi_format([fg(red)],'~p:~p...',[Entry,Pattern_inv])
+	   ansi_format_aux([fg(red)],'~p:~p...',[Entry,Pattern])
 	 ;
-	   ansi_format([],'~p:~p',[Entry,Pattern_inv])
+	   ansi_format_aux([],'~p:~p',[Entry,Pattern])
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,12 +208,11 @@ print_chains_entry_1(_,_):-nl.
 
 
 print_chain_simple(Pattern):-
-	reverse(Pattern,Pattern_inv),
 	(non_terminating_chain(_,_,Pattern)->
 	   %Pattern=[_|Pattern1],
-	   ansi_format([fg(red)],'~p...',[Pattern_inv])
+	   ansi_format_aux([fg(red)],'~p...',[Pattern])
 	 ;
-	   ansi_format([],'~p',[Pattern_inv])
+	   ansi_format_aux([],'~p',[Pattern])
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -214,7 +221,7 @@ print_chain_simple(Pattern):-
 % print the chains, invariants and uppuer bounds of SCC Entry in the refinement phase RefCnt
 print_results(Entry,RefCnt):-
 	ground_header(Entry),
-	ansi_format([underline,bold],'Inferred cost of ~p: ~n',[Entry]),
+	ansi_format_aux([underline,bold],'Inferred cost of ~p: ~n',[Entry]),
 	print_results_1(Entry,RefCnt).
 print_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
@@ -222,18 +229,87 @@ print_results_1(Entry,RefCnt):-
  	upper_bound(Entry,Chain,_,CExp),
 	print_chain(Entry,Chain),
 	format(': ',[]),
-	print_cost_structure(CExp),
+	print_new_cost_structure(CExp),
+	%print_cost_structure(CExp),
 	format('~n  with precondition: ~p ~n~n',[EPat_pretty]),
  	fail.
 print_results_1(_Entry,_).
 
+
+
+gen_mult_bases((A,B),A*B).
+
+print_new_cost_structure(Cost):-
+	cstr_shorten_variables_names(Cost,no_list,cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)),
+	cstr_get_unbounded_itvars(cost(Top_exps,LTop_exps,Aux_exps,Bases,Base),Unbounded),
+	partition(is_ub_aux_exp,Aux_exps,Ub_Aux_exps,Lb_Aux_exps),
+	print_base(Bases,Base,Unbounded),
+	format('~n  Such that:~12|',[]),
+	maplist(print_top_exp,Top_exps),
+	maplist(print_aux_exp,Ub_Aux_exps),
+	maplist(print_top_exp,LTop_exps),
+	maplist(print_aux_exp,Lb_Aux_exps),	
+	((get_param(debug,[]),Unbounded\=[])->
+		ansi_format_aux([fg(red)],'Unbounded itvars~n',[]),
+		maplist(itvar_recover_long_name,Unbounded,Long_names),
+		maplist(print_unbounded_itvar,Unbounded,Long_names)
+	;
+		true	
+	).
+
+print_unbounded_itvar(Short,Long):-
+	ansi_format_aux([fg(red)],'~p :  ~p~n',[Short,Long]).
+	
+print_base([],C,_):-
+	format('~p',[C]).
+print_base([(Itvar,Coeff)|Bases],C,Unbounded):-
+	(contains_sl(Unbounded,Itvar)->
+		ansi_format_aux([fg(red)],'~p',[Coeff*Itvar])
+		;
+		ansi_format_aux([],'~p',[Coeff*Itvar])
+	),
+	format('+',[]),
+	print_base(Bases,C,Unbounded).
+		
+is_ub_aux_exp(bound(ub,_,_)).
+
+print_top_exp(bound(Op,Exp,Bounded)):-
+	print_op(Op,Op_p),
+	write_sum(Bounded,Sum),
+	write_le(Exp,Exp_print),
+	format('~p ~p ~p~n',[Sum,Op_p,Exp_print]).
+
+print_aux_exp(bound(Op,Exp_0,Bounded)):-
+	print_op(Op,Op_p),
+	copy_term(Exp_0,Exp),
+	astrexp_to_cexpr(Exp,Exp2),
+	write_sum(Bounded,Sum),
+	format('~p ~p ~p~n',[Sum,Op_p,Exp2]).	
+	
+print_op(ub,'=<').
+print_op(lb,'>=').
+
+
+print_phase_cost(Phase,Head,Calls,Cost):-
+	copy_term((Head,Calls,Cost),(Headp,Callsp,Costp)),
+	ground_header(Headp),
+	(
+		Callsp==[],
+		Callp=none
+		;
+		Callsp=[Callp],
+		ground_header_prime(Callp)
+	),
+	ansi_format_aux([underline,bold],'Cost of phase ~p:~p -> ~p ~n',[Phase,Headp,Callp]),
+	print_new_cost_structure(Costp).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_closed_results(+Entry:term,+RefCnt:int) is det
 % print the chains, invariants and closed upper bounds of SCC Entry in the refinement phase RefCnt	
 print_closed_results(Entry,RefCnt):-
-	ground_header(Entry),
-	ansi_format([underline,bold],'Solved cost expressions of ~p: ~n',[Entry]),
+	copy_term(Entry,Entry_ground),
+	ground_header(Entry_ground),
+	ansi_format_aux([underline,bold],'Solved cost expressions of ~p: ~n',[Entry_ground]),
 	(get_param(prolog_format,_)->
 	  print_closed_results_prolog_format(Entry,RefCnt)
 	  ;
@@ -243,21 +319,30 @@ print_closed_results(Entry,RefCnt):-
 print_closed_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
 	maplist(pretty_print_constr,EPat,EPat_pretty),
- 	closed_upper_bound(Entry,Chain,_,CExp),
+	(get_param(compute_ubs,[])->
+ 	    closed_upper_bound_print(Entry,Chain,CExp),
+ 	    get_asymptotic_class_name(CExp,Asym_class)
+ 	    ;
+ 	    true
+ 	 ),
+ 	(get_param(compute_lbs,[])->
+ 		closed_lower_bound_print(Entry,Chain,CExp_lb),
+		get_asymptotic_class_name(CExp_lb,Asym_class1)
+		;
+		true
+	),
+	ground_header(Entry),
 	print_chain(Entry,Chain),
-	format(': ~p  with precondition: ~p ~n',[CExp,EPat_pretty]),
+	format(' with precondition: ~p ~n',[EPat_pretty]),
+	(get_param(compute_ubs,[])->
+	format('Upper bound: ~p ~n',[CExp]),
+	format(' Complexity: ~p ~n',[Asym_class]);true),
+	(get_param(compute_lbs,[])->
+	format('Lower bound: ~p ~n',[CExp_lb]),
+	format(' Complexity: ~p~n ',[Asym_class1]);true),
  	fail.
 print_closed_results_1(_Entry,_).
 
-%! print_closed_results_prolog_format(+Entry:term,+RefCnt:int) is det
-% print the chains, invariants and closed upper bounds of SCC Entry in the refinement phase RefCnt.  
-% It prints the results in prolog terms.
-print_closed_results_prolog_format(Entry,RefCnt):-
-	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
- 	closed_upper_bound(Entry,Chain,_,CExp),
-	format('eq(~p,~p,~p). ~n',[Entry,CExp,EPat]),
- 	fail.
-print_closed_results_prolog_format(_Entry,_).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -267,7 +352,7 @@ print_single_closed_result(Entry,Expr):-
 	copy_term((Entry,Expr),(Entry2,Expr2)),
 	get_asymptotic_class_name(Expr,Asym_class),
 	ground_header(Entry2),
-	ansi_format([underline,bold],'Maximum cost of ~p: ',[Entry2]),
+	ansi_format_aux([underline,bold],'Maximum cost of ~p: ',[Entry2]),
 	format('~p ~n',[Expr2]),
 	format('Asymptotic class: ~p ~n',[Asym_class]).
 
@@ -276,7 +361,7 @@ print_single_closed_result(Entry,Expr):-
 print_conditional_upper_bounds(Head):-
 	copy_term(Head,Head2),
 	ground_header(Head2),
-	ansi_format([underline,bold],'Partitioned cost of ~p: ~n',[Head2]),
+	ansi_format_aux([underline,bold],'Partitioned cost of ~p: ~n',[Head2]),
 	print_conditional_upper_bound(Head).
 
 print_conditional_upper_bound(Head):-
@@ -288,68 +373,36 @@ print_conditional_upper_bound(Head):-
 	fail.
 print_conditional_upper_bound(_).	
 
+%! print_conditional_lower_bounds(+Head:term) is det
+% print the conditional lower bounds
+print_conditional_lower_bounds(Head):-
+	copy_term(Head,Head2),
+	ground_header(Head2),
+	ansi_format_aux([underline,bold],'Partitioned lower bound of ~p: ~n',[Head2]),
+	print_conditional_lower_bound(Head),
+	print_maximum_lower_bound(Head).
+
+print_conditional_lower_bound(Head):-
+	conditional_lower_bound(Head,Cost,[Cond1|Conditions]),
+	maplist(maplist(pretty_print_constr),[Cond1|Conditions],[Cond1_pretty|Conditions_pretty]),
+	ground_header(Head),
+	format('~p ~n if ~p~n',[Cost,Cond1_pretty]),
+	maplist(print_partition_condition,Conditions_pretty),
+	fail.
+print_conditional_lower_bound(_).
+
+print_maximum_lower_bound(Head):-
+	bagof(Cost,
+		Conds^conditional_lower_bound(Head,Cost,Conds),
+		Costs),
+	get_asymptotic_class_name(max(Costs),Asym_class),
+	ground_header(Head),
+	format('Possible lower bounds : ~p~n',[Costs]),
+	format('Maximum lower bound complexity: ~p~n',[Asym_class]).
+
 print_partition_condition(Cond):-
 	format(' or ~p~n',[Cond]).
 	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%FIXME: print the minimal constraints
-print_cost_structure(cost(Exp,Loops,Conditions,IConds)):-
-	print(Exp),
-	print_cs_loops(Loops,[Conditions],[IConds],1,_,All_conditions,All_Iconditions),
-	reverse(All_conditions,All_conditions_rev),
-	ut_flat_list(All_conditions_rev,All_conditions_flat),
-	(All_conditions_flat=[]->
-	   true
-	   ;
-	   print_all_cs_conditions(All_conditions_rev,max)
-	 ),
-	reverse(All_Iconditions,All_Iconditions_rev),
-	ut_flat_list(All_Iconditions_rev,All_Iconditions_flat),
-	(All_Iconditions_flat=[]->
-	   true
-	   ;
-	   print_all_cs_conditions(All_Iconditions_rev,min)
-	 ).
-
-print_cs_loops([],Accum_conditions,Accum_Iconditions,N,N,Accum_conditions,Accum_Iconditions).
-print_cs_loops([loop(It_var,Exp,InternalLoops,Conds,IConds)|Loops],Accum_conditions,Accum_Iconditions,N,Nout,All_conditions,All_Iconditions):-
-	it_var_name(It_var,N),
-	N2 is N+1,
-	format('+~p*(~p',[It_var,Exp]),
-	print_cs_loops(InternalLoops,[Conds|Accum_conditions],[IConds|Accum_Iconditions],N2,N3,Accum_conditions1,All_Iconditions1),
-	format(')',[]),
-	print_cs_loops(Loops,Accum_conditions1,All_Iconditions1,N3,Nout,All_conditions,All_Iconditions).
-
-
-print_all_cs_conditions([First|All_conditions],Max_Min):-
-	format('~n  Such that:~12|',[]),
-	(First=[]->
-	    true
-	    ;
-	    print_cs_conditions_1(First,Max_Min)
-	),
-	maplist(print_cs_conditions(Max_Min),All_conditions).
-
-print_cs_conditions(_Max_Min,[]):-!.
-print_cs_conditions(Max_Min,Conditions):-
-	format('~n~12|',[]),
-	print_cs_conditions_1(Conditions,Max_Min).
-
-print_cs_conditions_1([C],Max_Min):-!,print_norm(C,Max_Min).
-print_cs_conditions_1([C|Cs],Max_Min):-
-	print_norm(C,Max_Min),
-	format(',',[]),
-	print_cs_conditions_1(Cs,Max_Min).
-
-print_norm(norm(Its,E),max):-
-	atomic_list_concat(Its,'+',It),
-	format('~p=<~p',[It,E]).
-print_norm(norm(Its,E),min):-
-	atomic_list_concat(Its,'+',It),
-	format('~p=<~p',[E,It]).	
-
-it_var_name(It_var,N):-
-	atom_concat(it,N,It_var).
 	
 	
 ground_header(Head):-
@@ -357,7 +410,15 @@ ground_header(Head):-
  ground_header(Head):- 
     numbervars(Head,0,_).
     
-
+ground_header_prime(Head):-
+	copy_term(Head,Head2),
+	ground_header(Head2),
+	Head2=..[F|Names],
+	maplist(prime_name,Names,Namesp),
+	Head=..[F|Namesp].
+	
+prime_name(Name,Namep):-
+	atom_concat(Name,'\'',Namep).
 
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

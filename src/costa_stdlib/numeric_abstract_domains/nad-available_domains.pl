@@ -98,3 +98,5 @@ nad_disjuncts_aux(  c_polyhedra_ppl, Cs, [Cs]).
 
 nad_all_ranking_functions_PR_aux(c_polyhedra_ppl,EntryVars,ExitVars,Cs,Rfs):-
 	ppl_all_ranking_functions_PR(c,EntryVars,ExitVars,Cs,Rfs).
+nad_all_ranking_functions_MS_aux(c_polyhedra_ppl,EntryVars,ExitVars,Cs,Rfs):-
+	ppl_all_ranking_functions_MS(c,EntryVars,ExitVars,Cs,Rfs).

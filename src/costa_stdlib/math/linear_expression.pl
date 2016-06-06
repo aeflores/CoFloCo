@@ -27,7 +27,9 @@
     split_le/3,
     normalize_le/3, semi_normalize_le/3, weak_normalize_le/3,
     integrate_le/3,
-    parse_le/2,  write_le/2
+    parse_le_fast/2,
+    parse_le/2,  
+    write_le/2
 ]).
 
 /** <module> A Linear Expression is an expression with the form 
@@ -389,6 +391,9 @@ LinearElem ::= fraction * A                         <-- fraction> 0
 LinearElem ::= A / integer                          <-- integer >= 2 
 
 */
+
+
+
 write_le([] + Const, Const) :- !.
 write_le(Coeffs+Const, ExpLin) :-
     % Cut-Implicit: Coeffs \= [] 
@@ -405,3 +410,22 @@ write_x(CSExp,Const,ExpLin) :-
 
 sign_oper(-1,'-').
 sign_oper(1,'+').
+
+parse_le_fast(Factor,Lin_exp):-
+	parse_le_fast_1(Factor,Lin_exp),!.
+parse_le_fast(Factor,_Lin_exp):-throw(hard_expression(Factor)).
+	%parse_le(Factor,Lin_exp).
+	
+parse_le_fast_1(Factor,Lin_exp):-
+		parse_factor(Factor,Lin_exp),!.
+parse_le_fast_1(Exp+Factor,Lin_exp):-
+		parse_factor(Factor,Factor_exp),!,
+		parse_le_fast_1(Exp,Lin_exp_aux),
+		sum_le(Factor_exp,Lin_exp_aux,Lin_exp).
+		
+parse_factor(Var,[(Var,1)]+0):-var(Var),!.
+parse_factor(Constant,[]+Cnt_fr):-parse_fr(Constant,Cnt_fr).
+parse_factor(Coeff*Var,[(Var,Coeff)]+0).
+
+
+

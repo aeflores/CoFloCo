@@ -5,7 +5,7 @@ This module acts as a database that stores:
   * the set of cost equations in different stages of refinement
   * the external call patterns, that summarize the possible call patterns to a refined SCC
   * the loops (which are fragments of cost equations)
-  * the generated upper bounds
+  * the generated closed-form bounds
 
 @author Antonio Flores Montoya
 
@@ -51,19 +51,28 @@ This module acts as a database that stores:
 	   add_upper_bound/3,
 	   external_upper_bound/3,
 	   add_external_upper_bound/3,
-	   closed_upper_bound/4,
+	   closed_upper_bound/3,
+	   closed_lower_bound/3,
+	   closed_upper_bound_print/3,
+	   closed_lower_bound_print/3,
 	   add_closed_upper_bound/3,
+	   add_closed_lower_bound/3,
 	   single_closed_upper_bound/2,
 	   add_single_closed_upper_bound/2,
-	   conditional_upper_bound/3,	  
-	   add_conditional_upper_bound/3,
+	   conditional_upper_bound/3,	
+	   conditional_lower_bound/3,
+	   conditional_bound/3,  
+	   add_conditional_bound/3,
 	  
        cofloco_aux_entry_name/1
        
 ]).
 :- use_module('IO/params',[get_param/2]).
 :- use_module('utils/cofloco_utils',[assign_right_vars/3]).
+:- use_module('utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
+:- use_module('utils/cost_expressions',[cexpr_simplify/3]).
 :- use_module('refinement/chains',[chain/3]).
+:- use_module('refinement/invariants',[backward_invariant/4]).
 
 :- use_module(stdlib(utils),[ut_var_member/2]).
 :- use_module(stdlib(counters),[counter_initialize/2,counter_increase/3,counter_get_value/2]).
@@ -71,7 +80,9 @@ This module acts as a database that stores:
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
 
-
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
+:-use_module(library(terms)).
 %! input_eq(?Head:term,?Id:int,-Cost:cost_expression,-Calls:list(term),-Cs:polyhedron)
 % stores a cost equation before the pre-processing
 :- dynamic input_eq/5. 
@@ -110,8 +121,8 @@ This module acts as a database that stores:
 % this is recorded in order to trace the behavior back to the original representation.
 :- dynamic eq_refined/2.
 
-%! loop_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Rec_Call:term,-Cs:polyhedron,Ids:list(equation_id),Term_flag:flag)
-% for each recursive equation loop_ph/4 stores the relation between the head and the recursive call (abstracting the cost and the other calls away)
+%! loop_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Rec_Calls:list(term),-Cs:polyhedron,Ids:list(equation_id),Term_flag:flag)
+% for each recursive equation loop_ph/4 stores the relation between the head and the recursive calls (abstracting the cost and the other calls away)
 % Ids is the list of cost equations that correspond to the loop.
 %Term_flag can be 'terminating' or 'non_terminating'
 :- dynamic  loop_ph/6.
@@ -136,10 +147,13 @@ This module acts as a database that stores:
 % Hash is the hash of part of the cost structure and can be used to compress similar cost structures
 :- dynamic external_upper_bound/3.
 
-%! closed_upper_bound(?Head:term,?Chain:chain,-Hash:int,-Cost_expression:cost_expression)
-% an cost expression that represents an upper bound of the chain Chain that belongs to the SCC Head.  
-% Hash is the hash of part of the cost structure and can be used to compress similar cost structures
-:- dynamic closed_upper_bound/4.
+%! closed_upper_bound(?Head:term,?Chain:chain,-Max_strexp:max(list(strexp)))
+% an max(list(strexp))  that represents an upper bound of the chain Chain that belongs to the SCC Head.  
+:- dynamic closed_upper_bound/3.
+
+%! closed_lower_bound(?Head:term,?Chain:chain,-Min_strexp:min(list(strexp)))
+% an min(list(strexp))  that represents an lower bound of the chain Chain that belongs to the SCC Head.  
+:- dynamic closed_lower_bound/3.
 
 %! single_closed_upper_bound(?Head:term,-Cost_expression:cost_expression)
 % an cost expression that represents an upper bound of the SCC Head.  
@@ -150,15 +164,14 @@ This module acts as a database that stores:
 % for all possible chains.
 %
 % conditional upper bound's preconditions are mutually exclusive among each other and with any other conditional upper bound
-:- dynamic conditional_upper_bound/3.
+:- dynamic conditional_bound/3.
 
 %! non_terminating_chain(?Head:term,RefCnt:int,?Chain:chain)
 % It indicates that the chain Chain is non-terminating
-% a chain whose first element is a non_terminating_stub is non-terminating
+% a chain whose last element is iterative is non-terminating
 :-dynamic non_terminating_chain/3.
 
-%non_terminating_chain(Head,[First|_]):-
-%	non_terminating_stub(Head,First).
+
 
 %! init_db is det
 % erase the database and initialize counters
@@ -174,7 +187,9 @@ init_db:-
 	retractall(upper_bound(_,_,_,_)),
 	retractall(external_upper_bound(_,_,_)),
 	retractall(closed_upper_bound(_,_,_,_)),
+	retractall(closed_lower_bound(_,_,_,_)),
 	retractall(single_closed_upper_bound(_,_)),
+	retractall(conditional_bound(_,_,_)),
 	retractall(non_terminating_stub(_,_)),
 	retractall(non_terminating_chain(_,_,_)),
 	assert((non_terminating_chain(Head,RefCnt,Chain):-
@@ -183,7 +198,8 @@ init_db:-
 	            ) ),
 	counter_initialize(input_eqs,0),
 	
-	
+	counter_initialize(aux_vars,0),
+	counter_initialize(short_terms,0),
 	counter_initialize(ubs,0),
 	counter_initialize(eq_ph,0),
 	counter_initialize(loop_ph,0),
@@ -216,17 +232,24 @@ cofloco_aux_entry_name('$cofloco_aux_entry$').
 
 non_terminating_chain_1(Head,RefCnt,Chain):-
 	chain(Head,RefCnt,Chain),
-	non_terminating_chain_2(Head,Chain).
+	reverse(Chain,Chain_rev),
+	non_terminating_chain_2(Head,Chain_rev).
 	
 non_terminating_chain_2(Head,[X|_Chain]):-
 	number(X),
 	loop_ph(Head,(X,_),_Call,_Cs,_Ids,non_terminating),!.
 
-non_terminating_chain_2(Head,[X|_Chain]):-
-	\+number(X),
-	non_terminating_chain_2(Head,X),!.
-non_terminating_chain_2(Head,[_|Chain]):-
-	non_terminating_chain_2(Head,Chain).
+non_terminating_chain_2(_Head,[X|_Chain]):-
+	X=[_|_],!.
+
+non_terminating_chain_2(Head,[multiple(_Phase,Tails)|_Chain]):-
+	maplist(reverse,Tails,Tails_rev),
+	member(Tail_rev,Tails_rev),
+	(
+	Tail_rev=[]
+	  ;
+	non_terminating_chain_2(Head,Tail_rev)
+	).
 	
 
 %! add_ground_equation_header(+Non_ground:term,+Ground:term) is det
@@ -242,20 +265,34 @@ add_ground_equation_header(_Non_ground,Ground):-
 %! add_eq_ph(+Cost_equation:cost_equation,Previous_eqs:list(equation_id)) is det
 % stores the cost equation Cost_equation in the database
 % Previous_eqs are the cost equation ids that originated this new cost equation
+
+%the cost equation already exists
+%/*
+add_eq_ph(eq_ph(Head,0,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_eqs) :-
+	eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size2,Term_flag),
+	term_variables((P_Size,P_Size2),All_vars),
+	(P_Size==P_Size2
+	;
+	 nad_entails(All_vars,P_Size,P_Size2)
+	 ;
+	 nad_entails(All_vars,P_Size2,P_Size),
+	 retract(eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size2,Term_flag)),
+	 assert(eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)) 
+	 ),!,
+	retract(eq_refined(Previous_eqs1,Id)),
+	append(Previous_eqs,Previous_eqs1,Previous_eqs2),
+	assert(eq_refined(Previous_eqs2,Id)).
+%*/
 add_eq_ph(eq_ph(Head,RefCnt,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_eqs) :-
-	(R_Calls=[_,_|_]-> 
-	        functor(Head,Name,Arity),
-	        throw(error(multiple_recursion_is_not_currently_supported([Name/Arity])))
-	; true),
 	counter_increase(eq_ph,1,Id),
 	assertz(eq_ph(Head,(Id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)),
 	assertz(eq_refined(Previous_eqs,Id)).	
 	  
-%! add_loop_ph(+Head:term,+RefCnt:int,+Call:term,+Cs:polyhedron,+Ids:list(equation_id),Term_flag:flag) is det
+%! add_loop_ph(+Head:term,+RefCnt:int,+Calls:list(term),+Cs:polyhedron,+Ids:list(equation_id),Term_flag:flag) is det
 % stores the loop corresponding to the cost equations Ids in the database
-add_loop_ph(Head,RefCnt,Call,Cs, Ids,Term_flag) :-
+add_loop_ph(Head,RefCnt,Calls,Cs, Ids,Term_flag) :-
 	counter_increase(loop_ph,1,Id),
-	assertz(loop_ph(Head,(Id,RefCnt),Call,Cs,Ids,Term_flag)).
+	assertz(loop_ph(Head,(Id,RefCnt),Calls,Cs,Ids,Term_flag)).
 	
 %! add_phase_loop(+Phase:phase,+RefCnt:int,+Head:term,+Call:term,+Cs:polyhedron) is det
 % stores the summary loop corresponding to the phase Phase in the database	
@@ -276,8 +313,7 @@ add_upper_bound(Head,Chain,CExpr) :-
 	;
 	  copy_term((Head,CExpr),(E,C)),
 	  numbervars((E,C),0,_),
-	  C=cost(_,Loops,Constr,IConstr),
-	  term_hash((Loops,Constr,IConstr),Hash),
+	  term_hash(C,Hash),
 	  assertz(upper_bound(Head,Chain,Hash,CExpr))
 	),!.
 	
@@ -293,14 +329,19 @@ add_external_upper_bound(Head,Precondition_id,CExpr) :-
 %! add_closed_upper_bound(+Head:term,+Chain:chain,+Cost_expression:cost_expression) is det
 % stores the closed upper bound of chain Chain. It computes the hash of the cost expression
 add_closed_upper_bound(Head,Chain,CExpr) :-	
-	(closed_upper_bound(Head,Chain,_,CExpr)->
+	(closed_upper_bound(Head,Chain,CExpr)->
 	 true
 	;
-	  copy_term((Head,CExpr),(E,C)),
-	  numbervars(E,0,_),
-	  term_hash(C,Hash),
-	  assertz(closed_upper_bound(Head,Chain,Hash,CExpr))
+	  assertz(closed_upper_bound(Head,Chain,CExpr))
 	),!.
+%! add_closed_lower_bound(+Head:term,+Chain:chain,+Cost_expression:cost_expression) is det
+% stores the closed lower bound of chain Chain. It computes the hash of the cost expression
+add_closed_lower_bound(Head,Chain,CExpr) :-	
+	(closed_lower_bound(Head,Chain,CExpr)->
+	 true
+	;
+	  assertz(closed_lower_bound(Head,Chain,CExpr))
+	),!.	
 	
 %! add_single_closed_upper_bound(+Head:term,+Cost_expression:cost_expression) is det
 % stores the single closed upper bound of the SCC Head.
@@ -309,5 +350,28 @@ add_single_closed_upper_bound(Head,CExpr) :-
 
 %! add_conditional_upper_bound(+Head:term,+Cost_expression:cost_expression,+Preconditions:list(polyhedron)) is det
 % stores the conditional upper bound determined by the cost Cost_expression and the precondition Precondition
-add_conditional_upper_bound(Head,CExpr,Preconditions) :-	
-	  assertz(conditional_upper_bound(Head,CExpr,Preconditions)).
+add_conditional_bound(Head,CExpr,Preconditions) :-	
+	  assertz(conditional_bound(Head,CExpr,Preconditions)).
+
+%! closed_upper_bound_print(Head:term,Chain:chain,UB1:cost_expression)
+% obtain a printable simplified cost expression from the corresponding closed upper bound
+closed_upper_bound_print(Head,Chain,UB1):-
+	closed_upper_bound(Head,Chain,Cost_max_min),
+	backward_invariant(Head,(Chain,_),_,Head_Pattern),
+	strexp_simplify_max_min(Cost_max_min,Cost_max_min_simple),
+	strexp_to_cost_expression(Cost_max_min_simple,UB),
+	cexpr_simplify(UB,Head_Pattern,UB1),!.
+
+%! closed_lower_bound_print(Head:term,Chain:chain,UB1:cost_expression)
+% obtain a printable simplified cost expression from the corresponding closed lower bound	
+closed_lower_bound_print(Head,Chain,UB1):-
+	closed_lower_bound(Head,Chain,Cost_max_min),
+	backward_invariant(Head,(Chain,_),_,Head_Pattern),
+	strexp_simplify_max_min(Cost_max_min,Cost_max_min_simple),
+	strexp_to_cost_expression(Cost_max_min_simple,UB),
+	cexpr_simplify(UB,Head_Pattern,UB1),!.
+
+conditional_upper_bound(Head,Exp,Prec):-
+	conditional_bound(Head,(Exp,_),Prec).
+conditional_lower_bound(Head,Exp,Prec):-
+	conditional_bound(Head,(_,Exp),Prec).		  

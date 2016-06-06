@@ -30,12 +30,15 @@ This module reads cost equations and stores them in the database after normalizi
 					add_ground_equation_header/2]).
 :- use_module('../utils/cofloco_utils',[normalize_constraint/2]).
 :- use_module('../utils/cost_expressions',[is_linear_exp/1,parse_cost_expression/2]).
+:- use_module('../utils/cost_structures',[cstr_from_cexpr/2]).
 :- use_module('../utils/polyhedra_optimizations',[slice_relevant_constraints/4,nad_normalize_polyhedron/2]).
 :- use_module(stdlib(counters),[counter_increase/3]).
 :- use_module(stdlib(utils),[ut_var_member_chk/2]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_normalize/2]).
 
+:-use_module(library(apply_macros)).
+:-use_module(library(lists)).
 %! read_cost_equations(+File:filename) is det
 %  read a set of cost equations from a file and call store_cost_equations/1.
 read_cost_equations(File) :-
@@ -61,13 +64,13 @@ declare_entry:-
 	   Entries=[_|_],!,
 	cofloco_aux_entry_name(Aux_Entry),
 	normalize_input_equation(eq(Aux_Entry,0,Entries,[]),eq(Aux_Entry_Normalized,Expr_Normalized,Calls_Normalized,Cs_Normalized)),
-	asserta(input_eq(Aux_Entry_Normalized,0,Expr_Normalized,Calls_Normalized,Cs_Normalized)).
+	asserta(db:input_eq(Aux_Entry_Normalized,0,Expr_Normalized,Calls_Normalized,Cs_Normalized)).
 declare_entry:-
 	input_eq(Call,_,_,_,_),
 	cofloco_aux_entry_name(Aux_Entry),
 	normalize_input_equation(eq(Aux_Entry,0,[Call],[]),eq(Aux_Entry_Normalized,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
-	asserta(input_eq(Aux_Entry_Normalized,0,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
-	assertz(entry_eq(Call,[])).
+	asserta(db:input_eq(Aux_Entry_Normalized,0,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
+	assertz(db:entry_eq(Call,[])).
 	
 
 
@@ -86,7 +89,7 @@ read_crs(CRs,_EQs) :-
 
 
 read_crs_from_file(S,EQs) :-
-	catch(read_term(S,Term,[variable_names(Bindings)]),_,fail),
+	read_term(S,Term,[variable_names(Bindings)]),
 	( 
 	  Term == end_of_file -> 
 	    EQs = []
@@ -95,6 +98,7 @@ read_crs_from_file(S,EQs) :-
 	    read_crs_from_file(S,EQs_aux)
 	).
 
+	
 %! add_equation(+Cost_equation:cost_equation) is det
 % @throws failed_to_add_equation 
 % normalize the cost equation and add it to the database
@@ -111,31 +115,31 @@ add_equation(eq(Name,Vars,Exp,Body_Calls,Size_Rel)) :-!,
      
 
 add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-!,
-	normalize_input_equation(eq(Head,Exp,Body_Calls,Size_Rel), eq(NHead,NExp,NCalls,NSize_Rel)), % Normalize the equation
-	term_variables((NHead,NExp,NCalls),Relevant_Vars),
+	normalize_input_equation(eq(Head,Exp,Body_Calls,Size_Rel), eq(NHead,Cost_structure,NCalls,NSize_Rel)), % Normalize the equation
+	term_variables((NHead,Cost_structure,NCalls),Relevant_Vars),
 	%remove constraints that do not affect anything
 	from_list_sl(Relevant_Vars,Relevant_Vars_set),
 	from_list_sl(NSize_Rel,NSize_Rel_set),
 	slice_relevant_constraints(Relevant_Vars_set,NSize_Rel_set,_,NSize_Rel_filtered),
 	%check the equation doesn't exist yet
-	((input_eq(NHead,_,NExp1,NCalls,NSize_Rel1),
+	((input_eq(NHead,_,Cost_structure1,NCalls,NSize_Rel1),
 	  NSize_Rel1==NSize_Rel_filtered,
-	  NExp1==NExp
+	  Cost_structure1==Cost_structure
 	)->
 	 true
 	;
 	counter_increase(input_eqs,1,Id),% get new id
-	assertz(input_eq(NHead,Id,NExp,NCalls,NSize_Rel_filtered))
+	assertz(db:input_eq(NHead,Id,Cost_structure,NCalls,NSize_Rel_filtered))
 	),			% add the equation to db
 	!.
 	
 	
 add_equation(entry(Term:Size_Rel)):-!,
 	  normalize_entry(entry(Term:Size_Rel), Entry_Normalized),
-	  assertz(Entry_Normalized).
+	  assertz(db:Entry_Normalized).
 
 add_equation(reset_scc(Head,Vars,Type)):-!,
-	  assertz(reset_scc(Head,Vars,Type)).	  
+	  assertz(db:reset_scc(Head,Vars,Type)).	  
 
 % throw an exception on failure
 add_equation(Eq) :-
@@ -162,9 +166,9 @@ unify_eq(X=X).
 %! remove_undefined_calls is det
 % remove the calls to equations that are not defined (and show a warning)
 remove_undefined_calls :-
-	retract(input_eq(Head,Id,Exp,Calls,Cs)),
+	retract(db:input_eq(Head,Id,Exp,Calls,Cs)),
 	remove_undefined_calls_1(Calls,Head,Calls_1),
-	assertz(input_eq(Head,Id,Exp,Calls_1,Cs)),
+	assertz(db:input_eq(Head,Id,Exp,Calls_1,Cs)),
 	fail.
 remove_undefined_calls.
 
@@ -196,7 +200,8 @@ normalize_input_equation(EQ,EQ_Normalized) :-
        maplist(normalize_constraint,Cs_aux_filtered,Cs_aux_Normalized),
        nad_normalize_polyhedron(Cs_aux_Normalized,Cs_aux_Normalized1),
 	parse_cost_expression(Cost_Expr,Expr_Normalized), %% replace by simplification
-	EQ_Normalized = eq(Head_Normalized,Expr_Normalized,Body_Normalized,Cs_aux_Normalized1).
+	cstr_from_cexpr(Expr_Normalized,Cost_structure),
+	EQ_Normalized = eq(Head_Normalized,Cost_structure,Body_Normalized,Cs_aux_Normalized1).
 
 normalize_entry(entry(Call:Cs), Entry_Normalized) :-
 	normalize_atom(Call,[],Call_Normalized,_,Cs_aux-Cs),
