@@ -55,8 +55,9 @@ It uses linear programming to infer linear expressions that satisfy a property g
 						nad_entails/3, nad_lub/6,nad_list_lub/2,
 						nad_widen/5, nad_false/1,
 						nad_all_ranking_functions_PR/4,
-						nad_glb/3]).
-:- use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2]).		
+						nad_glb/3,
+						nad_list_glb/2]).
+:- use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2,difference_sl/3]).		
 :- use_module(stdlib(list_map),[lookup_lm/3]).						
 :- use_module(stdlib(fraction),[
 	leq_fr/2,
@@ -303,7 +304,6 @@ get_sum_exp_calls(Head,Lin_exp,Call,Accum,Accum2):-
 	sum_le(Accum,Lin_exp2,Accum2).
 	
 max_min_linear_expression_list_all(Lin_exps,Vars,Vars_of_interest,Phi_1,max,Lin_exp_list):-
-	trace,
 	from_list_sl(Vars_of_interest,Vars_of_interest_set),
 	nad_normalize_polyhedron(Phi_1,Phi),
 	maplist(get_max_polyhedron(Vars,Vars_of_interest_set,Phi,max,Coeff_0),Lin_exps,Css),

@@ -1,3 +1,29 @@
+/** <module> phase_max_min_strategy
+
+This module implements the triangular_strategy.
+This strategy obtain the sum of a linear expression in the phase for cases where the linear expression is
+incremented/decremented by a constant value in each iteration.
+
+@author Antonio Flores Montoya
+
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
+
+@license This file is part of CoFloCo. 
+    CoFloCo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    CoFloCo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
 :- module(phase_triangular_strategy,[
 		triangular_strategy/8
 	]).

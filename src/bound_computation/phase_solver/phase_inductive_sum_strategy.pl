@@ -1,3 +1,37 @@
+/** <module> phase_inductive_sum_strategy
+
+This module implements 2 strategies: inductive_sum_strategy and inductive_level_sum_strategy
+-inductive_sum_strategy computes the sum of lin_exp over all the CE evaluations of a phase
+
+-inductive_level_sum_strategy computes the sum of lin_exp over all the CE evaluations of a phase at a depth (a level of the execution tree)
+
+Both strategies generate a candidate using a linear template and Farkas' Lemma 
+and then check whether the candidate is increased, decreased, reset and add the corresponding terms to the constraints
+For sums of constants we use the already computed ranking functions.
+
+If we have linear recursion, we can generate 'tail' candidates that depend on the final values of the variables of the phase
+For multiple recursion, we only generate (for now) 'head' candidates that depend on the input values.
+
+@author Antonio Flores Montoya
+
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
+
+@license This file is part of CoFloCo. 
+    CoFloCo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    CoFloCo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
 :- module(phase_inductive_sum_strategy,[
 		inductive_sum_strategy/8,
 		inductive_level_sum_strategy/7,

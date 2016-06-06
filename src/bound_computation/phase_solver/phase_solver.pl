@@ -1,23 +1,35 @@
 /** <module> phase_solver
 
-This module computes the cost structure of a phase in terms of the variables 
+This module computes the cost structure of a phase.
+If the phase has linear recursion, the cost structure is  in terms of the variables 
 at the beginning and the end of the phase.
+
+If the phase has multiple recursion the cost structure depends only on the input variables.
+The predicate for multiple recursion also receives the cost of the rest of the chain so it can also be transformed.
+For now, we can only compute upper bounds of multiple recursion.
+
+The algorithm is iterative. We have a data structure (a tuple of Pending sets) that stores constraints that need to be treated.
+For each constraint we might need to obtain the sum, the sum in a level or the maximum or minimum of the constraint in the phase.
+For this purpose, we apply the different strategies.
+
+The strategies generate new costraints for the phase and can also add elements to the Pending sets.
+The procedure uses dynamic progamming to avoid recomputing constraints that have already been computed.
+
+By default we add constraints using the ranking functions directly at the beginning of the computation.
+These constraints are useful in most cases and that allows us to simplify the rest of the strategies.
 
  Additional data structures used in this module are:
   
  Pending_constrs contains the information of the constraints that are pending to be computed
  It has the form
- pending(Head_calls,Maxs,Mins,Maxsums,Minsums)
+ pending(Head,Maxs_mins,Level_sums,Sums)
  where
-  * Head_calls are the head and call terms that define the variables of the expressions inside
-  * Maxs=list_set(Elem)
-  * Mins=list_set(Elem)
-  * Maxsums=map(loop_id,(Head_call,Elem))
-  * Minsums=map(loop_id,(Head_call,Elem))
-  And Elem=(Depth:int,Linexp:nlinexp,Bounded:list(itvar))
- an Elem (Depth,Linexp,Bounded) represents a constraint "Linexp OP Bounded"
- where OP is =< or >= depending on whether the elem is in Maxs/Maxsums or Mins/Minsums
- Depth represents the depth of the recursion and is used to avoid infinite computations
+  * Head is the head of the cost equations of the phase (the constraints in Maxs_mins are expressed in terms of these variables)
+  * Maxs_mins=list_set((Depth,Fconstr))
+  * Levels=list_set((Depth,Fconstr))
+  * Sums=map((loop_id,Loop_vars), (Depth,Fconstr))
+ Sums are for a specific loop whereas Max_mins and Levels are general for the whole phase. 
+ Depth represents the depth of the recursion and is used to avoid infinite computations.
 
 @author Antonio Flores Montoya
 
@@ -39,7 +51,7 @@ at the beginning and the end of the phase.
 */
 
 :- module(phase_solver,[
-				compute_multiple_rec_phase_cost/5,
+				compute_multiple_rec_phase_cost/6,
 				compute_phase_cost/5,
 				init_phase_solver/0,
 				
@@ -101,7 +113,7 @@ at the beginning and the end of the phase.
 			cstr_join/3]).			
 
 :- use_module('../../utils/polyhedra_optimizations',[nad_normalize_polyhedron/2 ]).						
-:- use_module(stdlib(numeric_abstract_domains),[nad_maximize/3]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_maximize/3,nad_glb/3]).
 :- use_module(stdlib(linear_expression),[
 			integrate_le/3,
 			write_le/2,
@@ -153,10 +165,11 @@ compute_phase_cost(Head,[Call],Phase,Chain_prefix,Cost_final):-
 	add_n_elem_constraints(Head,Call,Phase),
 	compute_phase_cost_generic(Head,loop_vars(Head,[Call]),Phase,Phase_vars,Costs,Empty_cost,([],[]),Cost_final).
 	
-compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,(Cost_prev,_Cs_prev_head,_Back_invariant),Cost_final):-
+compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Cost_prev,Back_invariant,Cost_final):-
 	init_solving_phase(Chain_prefix),
 	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
-	maplist(save_enriched_loop(Head,Forward_inv),Phase),
+	nad_glb(Forward_inv,Back_invariant,Total_inv),
+	maplist(save_enriched_loop(Head,Total_inv),Phase),
 	%append(Forward_inv,Cs_prev_head,Cs_prev_head_total),
 	%nad_normalize_polyhedron(Cs_prev_head_total,Cs_prev_head_total_norm),
 	%assert(enriched_loop(0,Head,[],Cs_prev_head_total_norm)),

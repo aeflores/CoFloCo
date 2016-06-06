@@ -554,94 +554,14 @@ compute_phase_transitive_star_closure(Phase,RefCnt):-
 
 
 backward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
- %   partition_invariant_and_loops(inv(Head,Inv_0),Loops,Groups_inv_loops),
- %   maplist(low_level_backward_invariant_fixpoint,Groups_inv_loops,Invs),
- %   ut_flat_list(Invs,Inv_out).
     low_level_backward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
     
 forward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
-
-%	partition_invariant_and_loops(inv(Head,Inv_0),Loops,Groups_inv_loops),
- %  maplist(low_level_forward_invariant_fixpoint,Groups_inv_loops,Invs),
- %   ut_flat_list(Invs,Inv_out).  
 	low_level_forward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
 
 transitive_closure_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head,Inv_out)):-
- %   partition_invariant_and_loops(inv(Entry,Head,Inv_0),Loops,Groups_inv_loops),
-%    maplist(low_level_transitive_closure_invariant_fixpoint,Groups_inv_loops,Invs),
-%    ut_flat_list(Invs,Inv_out).
    low_level_transitive_closure_invariant_fixpoint((inv(Entry,Head,Inv_0),Loops),Inv_out).
 
-% auxiliar procedures to split a set of loops into their independent components
-
-
-% get all the constraints of the invariant and all the loops and  unify them to a single set of variables
-% if we have variables that are independent with respect to all constraints of all loops, they will never interact in the invariant computation
-% and we can split the invariant computation into parts
-
-partition_invariant_and_loops(inv(Head,Inv_0),Loops,Groups_inv_loops):-
-	copy_term((inv(Head,Inv_0),Loops),(inv(Head_out,Inv_aux),Loops1)),
-	get_extra_connection_constraint(Inv_aux,Vars_constr),
-	foldl(accumulate_loop_constr,Loops1,(Head_out,[Vars_constr|Inv_aux]),(_,All_constraints)),
-	Head_out=..[_|Vars],
-    group_relevant_vars(Vars,All_constraints,Groups,_),  
-    maplist(get_inv_and_loop_part(Head_out,inv(Head,Inv_0),Loops),Groups,Groups_inv_loops).
-    
-partition_invariant_and_loops(inv(Entry,Head,Inv_0),Loops,Groups_inv_loops):-
-	copy_term((inv(Entry,Head,Inv_0),Loops),(inv(Entry_out,Entry_out,Inv_aux),Loops1)),
-	foldl(accumulate_loop_constr,Loops1,(Entry_out,Inv_aux),(_,All_constraints)),
-	Entry_out=..[_|Vars],
-    group_relevant_vars(Vars,All_constraints,Groups,_),
-    maplist(get_inv_and_loop_part(Entry_out,inv(Entry,Head,Inv_0),Loops),Groups,Groups_inv_loops).  
- 
-% heuristic to connect extra variables that might be related through a constant value
-% for example x>=0 y<0 implies that y<X which might be important
-% the typical example is x=0, y=0 and in each loop x=x+1 and y=y+1. We want to know that after any number of loops x=y
-get_extra_connection_constraint(Inv_aux,Vars):-
-	include(only_one_var,Inv_aux,Related_to_constants),
-	term_variables(Related_to_constants,Vars). 
-only_one_var(X):-
-	term_variables(X,[_]).	
-    
-accumulate_loop_constr((Head,Head,Cs),(Head,Css),(Head,Csss)):-
-	append(Cs,Css,Csss).
-
-
-get_inv_and_loop_part(Head_aux,inv(Head_inv,Inv),Loops,(Sel_vars,_),(inv(Head_part,Inv_part),Loops_parts_reduced)):-
-	Head_inv=..[F|Vars_total],
-	copy_term((Head_aux,Sel_vars),(Head_inv,Sel_vars1)),
-	slice_relevant_constraints_and_vars(Sel_vars1,Vars_total,Inv,_,Inv_part),
-	Head_part=..[F|Sel_vars1],
-	get_loops_parts(Head_aux,Sel_vars,Loops,Loops_parts_reduced).
-	
-get_inv_and_loop_part(Head_aux,inv(Head_inv,Call_inv,Inv),Loops,(Sel_vars,_),(inv(Head_part,Call_part,Inv_part),Loops_parts_reduced)):-
-	Head_inv=..[F|_],
-	copy_term((Head_aux,Sel_vars),(Head_inv,Sel_vars1)),
-	copy_term((Head_aux,Sel_vars),(Call_inv,Sel_vars2)),
-	append(Sel_vars1,Sel_vars2,Sel_vars_total),
-	term_variables((Head_inv,Call_inv),Vars_total),
-	slice_relevant_constraints_and_vars(Sel_vars_total,Vars_total,Inv,_,Inv_part),
-	Head_part=..[F|Sel_vars1],
-	Call_part=..[F|Sel_vars2],
-	get_loops_parts(Head_aux,Sel_vars,Loops,Loops_parts_reduced).
-		
-get_loops_parts(Head_aux,Sel_vars,Loops,Loops_parts_reduced):-
-	maplist(get_loop_part(Head_aux,Sel_vars),Loops,[Loop1|Loops_parts]),
-	foldl(unify_loop_variables,Loops_parts,Loop1,_),
-	from_list_sl([Loop1|Loops_parts],Loops_parts_reduced).
-	
-get_loop_part(Head_aux,Sel_vars,(Head_loop,Call_loop,Cs_loop),(Head_part,Call_part,Cs_part_sorted)):-
-	copy_term((Head_aux,Sel_vars),(Head_loop,Sel_vars1)),
-	copy_term((Head_aux,Sel_vars),(Call_loop,Sel_vars2)),
-	append(Sel_vars1,Sel_vars2,Sel_vars_total),
-	Head_loop=..[F|Vars_total1],Call_loop=..[F|Vars_total2],
-	append(Vars_total1,Vars_total2,Vars_total),
-	slice_relevant_constraints_and_vars(Sel_vars_total,Vars_total,Cs_loop,_,Cs_part),
-	from_list_sl(Cs_part,Cs_part_sorted),
-	Head_part=..[F|Sel_vars1],
-	Call_part=..[F|Sel_vars2].
-
-unify_loop_variables((Head,Call,_Inv),(Head,Call,Inv1),(Head,Call,Inv1)).   
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %transform the initial invariant and the loops into PPL polyhedra

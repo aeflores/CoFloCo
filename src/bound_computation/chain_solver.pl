@@ -32,7 +32,7 @@ For the constraints, this is done at the same time of the compression.
 :- module(chain_solver,[compute_chain_cost/3]).
 
 :- use_module(cost_equation_solver,[get_loop_cost/5]).
-:- use_module('phase_solver/phase_solver',[compute_phase_cost/5,compute_multiple_rec_phase_cost/5]).
+:- use_module('phase_solver/phase_solver',[compute_phase_cost/5,compute_multiple_rec_phase_cost/6]).
 :- use_module(constraints_maximization,[max_min_fconstrs_in_chain/6]).
 
 :-use_module('../db',[phase_loop/5,loop_ph/6]).
@@ -113,18 +113,18 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_next
 %multiple recursion case
 compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_simple,Cs_next):-
 	copy_term(Head_total,Head),
-	maplist(compress_chain_costs_aux([Phase|Chain_rev],Head_total,Call),Tails,Costs_prev,Css_prev),
-	nad_list_lub(Css_prev,Cs_prev),
+	maplist(compress_chain_costs_aux([Phase|Chain_rev],Head_total,Call),Tails,Costs_prev,_Css_prev),
+	%nad_list_lub(Css_prev,_Cs_prev),
 	cstr_or_compress(Costs_prev,Cost_prev),
 	
 	(get_param(debug,[])->format('computing cost of phase ~p with multiple recursion with suffix ~p and prefix ~p ~n',[Phase,Tails,Chain_rev]);true),
 	profiling_start_timer(loop_phases),
-	copy_term((Call,Cs_prev,Cost_prev),(Head,Cs_prev_head,Cost_prev2)),
+	copy_term((Call,Cost_prev),(Head,Cost_prev2)),
 	
 	forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
 	partial_backward_invariant([multiple(Phase,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern),
 	
-	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],(Cost_prev2,Cs_prev_head,Entry_pattern),Cost),
+	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],Cost_prev2,Entry_pattern,Cost),
 	profiling_stop_timer_acum(loop_phases,_),
 	cstr_join_equal_fconstr(Cost,Cost_simple),	
 	nad_list_glb([Local_inv,Entry_pattern],Cs_next).	

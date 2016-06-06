@@ -1,3 +1,31 @@
+/** <module> phase_max_min_strategy
+
+This module implements the max_min_strategy. This strategy obtains the maximum or minimum value
+of a linear expression in a phase. It does so by checking whether the expression is incremented,
+decremented or reset.
+The constraint generated is:
+
+For the maximum case: the maximum of all the resets and the expression plus the sum of all the increments
+For the minimim case: the minimum of all the resets and the expression minus the sum of all the decrements
+
+@author Antonio Flores Montoya
+
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
+
+@license This file is part of CoFloCo. 
+    CoFloCo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    CoFloCo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
+*/
 :- module(phase_max_min_strategy,[
 		max_min_strategy/7
 	]).
@@ -17,7 +45,8 @@
 			pstrexp_pair_empty/1,
 			pstrexp_pair_add/3,
 			fconstr_new/4,
-			iconstr_new/4]).						
+			iconstr_new/4]).	
+:-use_module('../../utils/template_inference',[max_min_linear_expression_list_all/6]).									
 :- use_module(stdlib(numeric_abstract_domains),[
 			nad_maximize/3,
 			nad_entails/3]).		

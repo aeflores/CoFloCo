@@ -1,3 +1,26 @@
+/** <module> phase_common
+
+Some predicates used by multiple strategies
+
+@author Antonio Flores Montoya
+
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
+
+@license This file is part of CoFloCo. 
+    CoFloCo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    CoFloCo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 :- module(phase_common,[
 	is_zero/1,
 	get_difference_version/4,

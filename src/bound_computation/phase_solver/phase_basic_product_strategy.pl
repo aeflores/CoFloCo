@@ -1,3 +1,31 @@
+/** <module> phase_basic_product_strategy
+
+This module implements 2 strategies: basic_product_strategy and level_product_strategy
+-basic_product_strategy reduces the sum of a linear expression Lin_exp to the
+product of the number of iterations of the loop and the maximum/minimum value of Lin_exp
+
+-level_sum_strategy reduces the sum of a linear expression Lin_exp over a complete phase execution
+into the sum of the linear expression in one level of the execution tree multiplied by the depth of the execution.
+
+@author Antonio Flores Montoya
+
+@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
+
+@license This file is part of CoFloCo. 
+    CoFloCo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    CoFloCo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 :- module(phase_basic_product_strategy,[
 		basic_product_strategy/6,
 		level_product_strategy/6
