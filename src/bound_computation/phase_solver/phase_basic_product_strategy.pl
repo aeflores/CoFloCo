@@ -71,7 +71,8 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 	save_pending_list(max_min,Head,Loop,Max_fconstrs,Pending,Pending_out),
     Aux_exp=bound(Op,Astrexp,Bounded),
     (get_param(debug,[])->	
-			format('~p is bounded by ~p*~p  ~n',[Bounded,Loop_itvar,Aux_itvar]);
+			format('~p is bounded by ~p*~p  ~n',[Bounded,Loop_itvar,Aux_itvar])
+	;
 	true).
     
  level_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Iconstr,Pending,Pending_out):-

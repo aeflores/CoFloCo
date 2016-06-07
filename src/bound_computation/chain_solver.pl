@@ -38,7 +38,7 @@ For the constraints, this is done at the same time of the compression.
 :-use_module('../db',[phase_loop/5,loop_ph/6]).
 :-use_module('../refinement/invariants',[
 				  backward_invariant/4,
-				  partial_backward_invariant/4,
+				  partial_backward_invariant/5,
 			      phase_transitive_closure/5,
 			      forward_invariant/4]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3]).			      
@@ -122,9 +122,9 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_simp
 	copy_term((Call,Cost_prev),(Head,Cost_prev2)),
 	
 	forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
-	partial_backward_invariant([multiple(Phase,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern),
+	partial_backward_invariant([multiple(Phase,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,Back_inv_star),
 	
-	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],Cost_prev2,Entry_pattern,Cost),
+	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],Cost_prev2,Back_inv_star,Cost),
 	profiling_stop_timer_acum(loop_phases,_),
 	cstr_join_equal_fconstr(Cost,Cost_simple),	
 	nad_list_glb([Local_inv,Entry_pattern],Cs_next).	

@@ -39,7 +39,7 @@ This module computes different kinds of invariants for the chains:
 		      clean_invariants/0,
 		      add_backward_invariant/3,
 		      backward_invariant/4,
-		      partial_backward_invariant/4,
+		      partial_backward_invariant/5,
 		      forward_invariant/4,
 		      scc_forward_invariant/3,
 		      phase_transitive_closure/5,
@@ -50,7 +50,7 @@ This module computes different kinds of invariants for the chains:
 :- use_module(chains,[chain/3,get_reversed_chains/3]).
 :- use_module(loops,[split_multiple_loops/2]).
 
-:- use_module('../utils/cofloco_utils',[assign_right_vars/3,zip_with_op2/4]).
+:- use_module('../utils/cofloco_utils',[assign_right_vars/3,zip_with_op2/4,zip_with_op2/4,ground_copy/2]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,
 					nad_consistent_constraints_group_aux/1,
 					nad_is_bottom/1,
@@ -200,7 +200,7 @@ compute_invariants_for_scc(_N,_) :-
 
 
 
-%! partial_backward_invariant(Chain:chain,Head:term,Hash_forward_inv:(int,polyhedron),Inv:polyhedron)
+%! partial_backward_invariant(Chain:chain,Head:term,Hash_forward_inv:(int,polyhedron),InvPlus:polyhedron,InvStar:polyhedron)
 % This is a cacheing mechanism to increase performance. many chains have a common 
 % prefix and that can be used to avoid redundant computations.
 %
@@ -208,7 +208,9 @@ compute_invariants_for_scc(_N,_) :-
 % because the backward invariant might depend  on the forward invariants, it contains the 
 % forward invariant that was used. 
 % Any chain that has Chain as a prefix and has the same forward invariant Hash_forward_inv will have the same backward invariant
-:-dynamic partial_backward_invariant/4.
+% InvPlus is with 1 or more iterations
+% InvStar is with 0 or more iterations
+:-dynamic partial_backward_invariant/5.
 
 
 
@@ -242,7 +244,7 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-%
     ;
 	forward_invariant(Head,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv)
 	),
-    partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv2),Entry_pattern),
+    partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv2),Entry_pattern,_),
     Local_inv==Local_inv2,!,
     counter_increase(compressed_invs,1,_),
     Entry_pattern\==[0=1].
@@ -265,7 +267,7 @@ compute_backward_invariant([Non_terminating],Prev_chain,Head,RefCnt,Entry_patter
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern),
  	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
- 	assert(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern)).
+ 	assert(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern,Entry_pattern)).
 
 compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,RefCnt,Entry_pattern):-
 	member([],Tails),!,
@@ -273,7 +275,7 @@ compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,Ref
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern),
  	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
- 	assert(partial_backward_invariant([multiple(Non_terminating,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern)).
+ 	assert(partial_backward_invariant([multiple(Non_terminating,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,Entry_pattern)).
 
 
 
@@ -293,10 +295,10 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	%even if the invariant is unfeasible, we store to save time when computing invariants with the same suffix
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1])),
+	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv)),
 	  fail
 	;
-	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
+	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv))
 	  ).
 
 % We have an iterative phase.
@@ -312,18 +314,20 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	    loop_ph(Head_loop,(Loop,RefCnt),[Call_loop],Cs_loop,_,_),
 	    nad_glb(Local_inv,Cs_loop,Cs_1)
 	    ),Loops),
-	backward_invariant_fixpoint(inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern)),
+	backward_invariant_fixpoint(inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern),inv(Head_out,It_pattern_star)),
 	Head=..[_|EVars],
 	Head=Head_out,
 	nad_project_group(EVars,Cs,Extra_conds),
 	nad_glb(Extra_conds,It_pattern,Entry_pattern),
+	nad_glb(Extra_conds,It_pattern_star,Entry_pattern_star),
 	Head=Head_loop,
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
+	nad_normalize_polyhedron(Entry_pattern_star,Entry_pattern_star_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1])),
+	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Entry_pattern_star_normalized)),
 	fail
 	;
-	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
+	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Entry_pattern_star_normalized))
 	).
 	
 %multiple recursion phase
@@ -337,16 +341,15 @@ compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pat
 	    loop_ph(Head_loop,(Ph,RefCnt),Calls_loop,Cs_loop,_,_),
 	    nad_glb(Local_inv,Cs_loop,Cs_1)
 	    ),Loops),
-	split_multiple_loops(Loops,Loops_splitted),    
-	backward_invariant_once(inv(Head,Initial_inv),Loops_splitted,inv(Head_out,Entry_pattern)),
+	backward_invariant_once(inv(Head,Initial_inv),Loops,inv(Head_out,Entry_pattern)),
 	Head=Head_out,
 	Head=Head_loop,
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1])),
+	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv)),
 	fail
 	;
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
+	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv))
 	).
 
 
@@ -356,25 +359,27 @@ compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pat
 	maplist(compute_backward_invariant_aux([Ph|Prev_chain],Head,RefCnt),Tails,Call_patterns),
 	nad_list_lub(Call_patterns,Initial_inv),
     forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
-	findall((Head_loop,Calls_loop,Cs_1),
+	findall((Head_loop,Calls_loop,Cs_loop),
 	    (
 	    member(Loop,Ph),
-	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_),
-	    nad_glb(Local_inv,Cs_loop,Cs_1)
-	    ),Loops),
-	split_multiple_loops(Loops,Loops_splitted),       
-	backward_invariant_fixpoint(inv(Head,Initial_inv),Loops_splitted,inv(Head_out,It_pattern)),
+	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_)
+%	    nad_glb(Local_inv,Cs_loop,Cs_1)
+	    ),Loops),    
+	%backward_invariant_fixpoint(inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern)),
+	backward_invariant_fixpoint(inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern),inv(Head_out,It_pattern_star)),
 	Head=..[_|EVars],
 	Head=Head_out,
 	nad_project_group(EVars,Cs,Extra_conds),
 	nad_glb(Extra_conds,It_pattern,Entry_pattern),
+	nad_glb(Extra_conds,It_pattern_star,Entry_pattern_star),
 	Head=Head_loop,
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
+	nad_normalize_polyhedron(Entry_pattern_star,Entry_pattern_star_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1])),
+	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1],Entry_pattern_star_normalized)),
 	fail
 	;
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized))
+	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Entry_pattern_star_normalized))
 	).
 	
 compute_backward_invariant_aux(Prev_chain,Head,RefCnt,Chain,Entry_pattern):-
@@ -449,7 +454,6 @@ compute_forward_invariant([Non_loop|Chain],RefCnt,Entry_Call,Inv_out):-
 	    Inv_out=none,
 	    add_forward_invariant(Entry_Call,([Non_loop|Chain],RefCnt), Inv_aux)
 	    ;
-
 		forward_invariant_once(inv(Entry_Call,Inv_aux),Loops_splitted,inv(Entry_call2,Inv_out)),
    		Entry_call2=Entry_Call,
    		(nad_is_bottom(Inv_out)->
@@ -485,22 +489,27 @@ compute_forward_invariant([Phase|Chain],RefCnt,Entry_Call, Inv_out):-!,
         add_forward_invariant(Entry_Call,([Phase|Chain],RefCnt), Inv_aux)
      ).
 
+% Apply the loops forwards or backwards once
 
-backward_invariant_once(Initial_inv,Loops_splitted,inv(Head,Inv_out)):-
-	apply_loops_backward(Loops_splitted,Initial_inv,Head,Cs_list),
+backward_invariant_once(Initial_inv,Loops,inv(Head,Inv_out)):-
+	apply_loops_backward(Loops,Initial_inv,Head,Cs_list),
 	nad_list_lub(Cs_list,Inv_out).
 	
 
 apply_loops_backward([],_,_,[]).
 
-apply_loops_backward([(Head_loop,Call_loop,Cs_loop)|Loops],inv(Call_inv,Inv),Head,[Cs|Cs_list]):-
-       copy_term(loop(Head_loop,Call_loop,Cs_loop),loop(Head,Call_inv,Cs_aux)),
-       nad_glb(Inv,Cs_aux,Cs_context),
-       Head=..[_|Vars],
+apply_loops_backward([(Head_loop,Calls_loop,Cs_loop)|Loops],inv(Call_inv,Inv),Head,[Cs_final|Cs_list]):-
+       foldl(get_call_inv,Calls_loop,(Call_inv,Inv,[]),(_,_,Total_inv)),
+       nad_glb(Total_inv,Cs_loop,Cs_context),
+       Head_loop=..[_|Vars],
        nad_project_group(Vars,Cs_context,Cs),
+       copy_term((Head_loop,Cs),(Head,Cs_final)),
        apply_loops_backward(Loops,inv(Call_inv,Inv),Head,Cs_list).
-       
 
+get_call_inv(Call,(Head,Inv_0,Inv),(Head,Inv_0,Total_inv)):-
+	copy_term((Head,Inv_0),(Call,Inv2)),
+	nad_glb(Inv,Inv2,Total_inv).
+	
 forward_invariant_once(Initial_inv,Loops_splitted,inv(Head,Inv_out)):-
 	apply_loops_forward(Loops_splitted,Initial_inv,Head,Cs_list),
 	nad_list_lub(Cs_list,Inv_out).
@@ -528,13 +537,14 @@ compute_loops_transitive_closures(_,_).
 
 compute_phase_transitive_closure(Phase,RefCnt):-
 	phase_loop(Phase,RefCnt,Head,Call,Inv_0),
-        findall((Head_loop,Call_loop,Cs_loop),
+    findall((Head_loop,Calls_loop,Cs_loop),
 	    (
 	    member(Loop,Phase),
-	    loop_ph(Head_loop,(Loop,RefCnt),[Call_loop],Cs_loop,_,_)
-	    ),Loops),
-        transitive_closure_invariant_fixpoint(inv(Head,Call,Inv_0),Loops,inv(Entry_out,Call_out, Trans_closure)),
-        add_phase_transitive_closure(Phase,RefCnt,Entry_out,Call_out,Trans_closure).
+	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_)
+	 ),Loops),
+	 split_multiple_loops(Loops,Loops_splitted),    
+     transitive_closure_invariant_fixpoint(inv(Head,Call,Inv_0),Loops_splitted,inv(Entry_out,Call_out, Trans_closure)),
+     add_phase_transitive_closure(Phase,RefCnt,Entry_out,Call_out,Trans_closure).
 
 compute_phase_transitive_star_closure(Phase,RefCnt):-
 	phase_transitive_closure(Phase,RefCnt,Head,Call,Inv),
@@ -549,108 +559,92 @@ compute_phase_transitive_star_closure(Phase,RefCnt):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Low level fixpoint computations
-% split the invariants and the loops into independent components to compute a fixpoint for
-% each component independently
 
 
-backward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
-    low_level_backward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
+
+backward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out),inv(Head,Inv_star_out)):-
+    low_level_backward_invariant_fixpoint(inv(Head,Inv_0),Loops,Inv_out,Inv_star_out).
     
 forward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
-	low_level_forward_invariant_fixpoint((inv(Head,Inv_0),Loops),Inv_out).
+	low_level_forward_invariant_fixpoint(inv(Head,Inv_0),Loops,Inv_out).
 
 transitive_closure_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head,Inv_out)):-
-   low_level_transitive_closure_invariant_fixpoint((inv(Entry,Head,Inv_0),Loops),Inv_out).
+   low_level_transitive_closure_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,Inv_out).
 
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %transform the initial invariant and the loops into PPL polyhedra
 %we use these polyhedra directly to avoid the overhead cost of translating back and forth
 
-low_level_backward_invariant_fixpoint((inv(Head_inv,Inv),Loops),Inv_out):-
-	Loops=[Loop1|_More_loops],
-	%create the ppl_polyhedra from the constraints
-	%the way the polyhedra are created and their variables named is what determines how the invariant is computed
-	copy_term(Loop1,(Head_new,Head_inv,_)),	
-	to_numbervars_nu( (Head_inv,Head_new,Inv) , _Vars, (Call_ground,Head_ground,Inv_0_ground), Dim),
+% For each loop we generate a tuple Loop_handle:(Extra_dim,Pre_maps,Post_map,Handle)
+% * Extra_dim:int  number extra dimensions that the invariant has to have to be able to combine it with this loop	
+% * Pre_maps:list(list(var-var)) list of maps (partial functions) that allow us to transform the invariant into the adequate dimensions
+%            -we obtain a transformed invariant for each map and join them together with the loop to apply it
+%            -Forward and transitive invariants have only one Pre_map
+%            -All functions are total
+% * Post_map:list(var-var) a map (partial function) used to transform and eliminate the invariants resulting from applying the loops
+%             this function is usually partial
+% * Handle:int identifier of the polyhedron object
+   
+low_level_backward_invariant_fixpoint(inv(Head_inv,Inv),Loops,Inv_plus_out,Inv_star_out):-
+	to_numbervars_nu( (Head_inv,Inv) , _Vars, (_Head_ground,Inv_0_ground), Dim),
 	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
-	maplist(get_loop_handle(Head_ground,Call_ground,Dim),Loops,Loops_handles),
-	Call_ground=..[F|Var_calls],
-	% call the fixpoint predicate
-	low_level_backward_invariant_fixpoint_1(Inv_0_handle,Var_calls,Loops_handles,Inv_final_handle),
-	% obtain the constrants of the resulting polyhedron
-	Dim2 is Dim//2,
-	length(Vars,Dim2),
-	from_ppl(c , Inv_final_handle, Dim2, Vars, Inv_out), 
-	Head_inv=..[F|Vars],
-	ppl_delete_Polyhedron(Inv_final_handle).
-
 	
-low_level_transitive_closure_invariant_fixpoint((inv(Entry_inv,Head_inv,Inv),Loops),Inv_out):-
+	maplist(get_back_loop_handle,Loops,Loop_handles),
+	low_level_apply_loops(Loop_handles,Inv_0_handle,Inv_1_handle),
+	%compute the backward invariant
+	low_level_invariant_fixpoint(0,Inv_1_handle,Loop_handles,Inv_plus),
+	%compute the upper bound of the invariant and the initial invariant
+	ppl_Polyhedron_upper_bound_assign(Inv_0_handle,Inv_plus),
+	maplist(delete_loop_handle,Loop_handles),
+	% obtain the constrants of the resulting polyhedron
+	Head_inv=..[_|Vars],
+	length(Vars,Dim),
+	from_ppl(c , Inv_0_handle, Dim, Vars, Inv_star_out), 
+	from_ppl(c , Inv_plus, Dim, Vars, Inv_plus_out), 
+	ppl_delete_Polyhedron(Inv_0_handle),
+	ppl_delete_Polyhedron(Inv_plus).
+
+low_level_forward_invariant_fixpoint(inv(Head_inv,Inv),Loops,Inv_out):-
+	to_numbervars_nu( (Head_inv,Inv) , _Vars, (_Head_ground,Inv_0_ground), Dim),
+	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
+	maplist(get_forward_loop_handle,Loops,Loop_handles),
+	% call the fixpoint predicate
+	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_final_handle),
+	maplist(delete_loop_handle,Loop_handles),
+	% obtain the constrants of the resulting polyhedron
+	Head_inv=..[_F|Vars],
+	from_ppl(c , Inv_final_handle,_, Vars, Inv_out), 
+	ppl_delete_Polyhedron(Inv_final_handle).
+		
+low_level_transitive_closure_invariant_fixpoint(inv(Entry_inv,Head_inv,Inv),Loops,Inv_out):-
 	Loops=[Loop1|_More_loops],
 	copy_term(Loop1,(Head_inv,Call,_)),
-	%create the ppl_polyhedra from the constraints
-	%the way the polyhedra are created and their variables named is what determines how the invariant is computed
-	to_numbervars_nu( (Entry_inv,Head_inv,Call,Inv) , _Vars, (_Entry_ground,Head_ground,Call_ground,Inv_0_ground), Dim),
-	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
-	maplist(get_loop_handle(Head_ground,Call_ground,Dim),Loops,Loops_handles),
-	Head_ground=..[F|Var_head],
-	% call the fixpoint predicate
-	low_level_invariant_fixpoint(0,Var_head,Inv_0_handle,Loops_handles,Inv_final_handle),
-	% obtain the constrants of the resulting polyhedron
-	Dim2 is Dim//3,
-	length(Vars1,Dim2),
-	length(Vars2,Dim2),
-	append(Vars1,Vars2,Vars),
-	Dim3 is Dim2*2,
-	from_ppl(c , Inv_final_handle, Dim3, Vars, Inv_out), 
+	%Here we do it a little bit differently, the loops' polyhedron have 3 times the variables of the head 
+	%Entry,Head and Call so we don't have to transform them every time
+	%the first variables (Entry) have no information 
+	to_numbervars_nu( (Entry_inv,Head_inv,Call,Inv) , _Vars, (Entry_ground,Head_ground,Call_ground,Inv_0_ground), _Dim),
 	Entry_inv=..[F|Vars1],
 	Head_inv=..[F|Vars2],
+	append(Vars1,Vars2,Vars),
+	length(Vars,Dim_inv),
+	to_ppl_dim(c, Dim_inv, Inv_0_ground, Inv_0_handle), 
+	maplist(get_transitive_loop_handle(Entry_ground,Head_ground,Call_ground),Loops,Loop_handles),
+	% call the fixpoint predicate
+	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_final_handle),
+	maplist(delete_loop_handle,Loop_handles),
+	% obtain the constrants of the resulting polyhedron
+
+	from_ppl(c , Inv_final_handle, _, Vars, Inv_out), 
 	ppl_delete_Polyhedron(Inv_final_handle).   
 
-low_level_forward_invariant_fixpoint((inv(Head_inv,Inv),Loops),Inv_out):-
-	Loops=[Loop1|_More_loops],
-	copy_term(Loop1,(Head_inv,Head_new,_)),	
-	%create the ppl_polyhedra from the constraints
-	%the way the polyhedra are created and their variables named is what determines how the invariant is computed
-	to_numbervars_nu( (Head_inv,Head_new,Inv) , _Vars, (Head_ground,Call_ground,Inv_0_ground), Dim),
-	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
-	maplist(get_loop_handle(Head_ground,Call_ground,Dim),Loops,Loops_handles),
-	Head_ground=..[F|Var_head],
-	% call the fixpoint predicate
-	low_level_invariant_fixpoint(0,Var_head,Inv_0_handle,Loops_handles,Inv_final_handle),
-	% obtain the constrants of the resulting polyhedron
-	Dim2 is Dim//2,
-	length(Vars,Dim2),
-	from_ppl(c , Inv_final_handle, Dim2, Vars, Inv_out), 
-	Head_inv=..[F|Vars],
-	ppl_delete_Polyhedron(Inv_final_handle).
 
 
-get_loop_handle(Head_ground,Call_ground,Dim,(Head_loop,Call_loop,Cs_loop),Loop_handle):-
-	copy_term((Head_loop,Call_loop,Cs_loop),(Head_ground,Call_ground,Cs_loop_ground)),
-	to_ppl_dim(c, Dim, Cs_loop_ground, Loop_handle).
-
-
-%first mandatory iteration
-% given the initial invariant Inv we apply each of the loops and 
-% obtain the convex hull of the results.
-% the we call the normal fixpoint	
-low_level_backward_invariant_fixpoint_1(Inv,Call_ground,Loops,Inv_out):-!,
-	low_level_apply_loops(Loops,Call_ground,Inv,NewInv),
-	ppl_delete_Polyhedron(Inv),
-	length(Call_ground,N),
-	ppl_Polyhedron_add_space_dimensions_and_embed(NewInv,N),
-	low_level_invariant_fixpoint(0,Call_ground,NewInv,Loops,Inv_out).
-
-%! low_level_invariant_fixpoint(+Count:int,+Var_head:list(number_var),+Inv:ppl_polyhedron,+Loops:list(ppl_polyhedron),-Inv_out:ppl_polyhedron) is det
+%! low_level_invariant_fixpoint(+Count:int,+Inv:ppl_polyhedron,+Loops:list(loop_handle),-Inv_out:ppl_polyhedron) is det
 % This predicate implements a fixpoint computation that apply the loops Loops to Inv iteratively until a fixpoint is reached.
-low_level_invariant_fixpoint(Count,Var_head,Inv,Loops,Inv_out):-
+low_level_invariant_fixpoint(Count,Inv,Loops,Inv_out):-
 	widening_frequency(Widening_freq),
-	low_level_apply_loops(Loops,Var_head,Inv,NewInv),
-	length(Var_head,N),
-	ppl_Polyhedron_add_space_dimensions_and_embed(NewInv,N),
-	
+	low_level_apply_loops(Loops,Inv,NewInv),
 	ppl_new_C_Polyhedron_from_C_Polyhedron(Inv,Inv_lub),
 	ppl_Polyhedron_upper_bound_assign(Inv_lub,NewInv),
 
@@ -672,23 +666,110 @@ low_level_invariant_fixpoint(Count,Var_head,Inv,Loops,Inv_out):-
 	  ppl_delete_Polyhedron(Inv),
 	  Count1 is Count+1
 	 ),
-	 low_level_invariant_fixpoint(Count1,Var_head,Next_inv,Loops,Inv_out)
+	 low_level_invariant_fixpoint(Count1,Next_inv,Loops,Inv_out)
 	).
 	
 
-%! low_level_apply_loops(+Loops:list(ppl_polyhedron),+Vars:list(number_var),+Inv:ppl_polyhedron,-Inv_aux:ppl_polyhedron) is det
+%! low_level_apply_loops(+Loops:list(loop_handle),+Inv:ppl_polyhedron,-Inv_aux:ppl_polyhedron) is det
 % apply a set of loops Loops to the initial invariant Inv and compute the upper bound of their application
-% depending on Vars and how the loops have been created, the are applied forwards, backwards or composing them.
 % at the end of the predicate only one new ppl_polyhedron is left with the resulting new invariant
-low_level_apply_loops([Loop],Vars,Inv,Inv_aux):-!,
-	ppl_new_C_Polyhedron_from_C_Polyhedron(Loop,Inv_aux),	
-	ppl_Polyhedron_intersection_assign(Inv_aux,Inv),
-	ppl_Polyhedron_remove_space_dimensions(Inv_aux,Vars).
+low_level_apply_loops(Loops,Inv,Inv_out):-
+	maplist(low_level_apply_loop(Inv),Loops,[New_inv|New_invs]),
+	foldl(compress_and_delete,New_invs,New_inv,Inv_out).
+
+
+low_level_apply_loop(Inv,(Extra_dim,Pre_map,Post_map,Loop_handle),Inv_out):-
+	ppl_new_C_Polyhedron_from_C_Polyhedron(Inv,Inv_extended),
+	ppl_Polyhedron_add_space_dimensions_and_embed(Inv_extended,Extra_dim),
+	apply_pre_maps(Pre_map,Inv_extended,Mapped_inv),
+	ppl_Polyhedron_intersection_assign(Mapped_inv,Loop_handle),
+	apply_post_map(Mapped_inv,Post_map,Inv_out).
+
+compress_and_delete(Inv2,Inv,Inv):-
+	ppl_Polyhedron_upper_bound_assign(Inv,Inv2),
+	ppl_delete_Polyhedron(Inv2).
+
+apply_pre_maps([Map],Inv_extended,Inv_extended):-!,
+	ppl_Polyhedron_map_space_dimensions(Inv_extended,Map).
+
+apply_pre_maps([Map|Maps],Inv_extended,Mapped_inv):-
+	ppl_new_C_Polyhedron_from_C_Polyhedron(Inv_extended,Inv_extended_cp),
+	ppl_Polyhedron_map_space_dimensions(Inv_extended_cp,Map),
+	apply_pre_maps(Maps,Inv_extended,Mapped_inv),
+	ppl_Polyhedron_intersection_assign(Mapped_inv,Inv_extended_cp),
+	ppl_delete_Polyhedron(Inv_extended_cp).
 	
-low_level_apply_loops([Loop|Loops],Vars,Inv,Inv_aux):-
-	low_level_apply_loops(Loops,Vars,Inv,Inv_aux),
-	ppl_new_C_Polyhedron_from_C_Polyhedron(Loop,Inv_aux2),
-	ppl_Polyhedron_intersection_assign(Inv_aux2,Inv),
-	ppl_Polyhedron_remove_space_dimensions(Inv_aux2,Vars),
-	ppl_Polyhedron_upper_bound_assign(Inv_aux,Inv_aux2),
-	ppl_delete_Polyhedron(Inv_aux2).	
+apply_post_map(Inv,Map,Inv):-
+	ppl_Polyhedron_map_space_dimensions(Inv,Map).
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+%these predicates take care of creating the loop_handle for the different kind of invariants
+	
+get_back_loop_handle((Head,Calls,Inv),(Extra_dim,Pre_maps,Post_map,Handle)):-
+	Calls=[_|_],!,
+	ground_copy((Head,Calls,Inv),(Head_gr,Calls_gr,Inv_gr)),
+	Head_gr=..[_|Head_vars],
+	term_variables(Calls,Call_vars),
+	length(Head_vars,N),
+	length(Call_vars,Extra_dim),
+	foldl(make_complete_map_to_call(Head_gr,Calls_gr),Calls_gr,[],Pre_maps),
+	identity_function(Head_vars,Post_map),
+	Dim is N+Extra_dim,
+	to_ppl_dim(c, Dim, Inv_gr, Handle).	
+	
+get_back_loop_handle((Head,Call,Inv),(Extra_dim,Pre_map,Post_map,Handle)):-
+	ground_copy((Head,Call,Inv),(Head_gr,Call_gr,Inv_gr)),
+	Head_gr=..[_|Head_vars],
+	length(Head_vars,Extra_dim),
+	make_complete_map_to_call(Head_gr,[Call_gr],Call_gr,[],Pre_map),
+	identity_function(Head_vars,Post_map),
+	Dim is Extra_dim*2,
+	to_ppl_dim(c, Dim, Inv_gr, Handle).		
+	
+get_forward_loop_handle((Head,Call,Inv),(Extra_dim,[Pre_map],Post_map,Handle)):-
+	ground_copy((Head,Call,Inv),(Head_gr,Call_gr,Inv_gr)),
+	Head_gr=..[_|Head_vars],
+	Call_gr=..[_|Call_vars],
+	append(Head_vars,Call_vars,Total_vars),
+	length(Head_vars,Extra_dim),
+	identity_function(Total_vars,Pre_map),
+	make_map_to_call(Call_gr,Head_gr,[],[Post_map]),
+	Dim is Extra_dim*2,
+	to_ppl_dim(c, Dim, Inv_gr, Handle).		
+	
+get_transitive_loop_handle(Entry_gr,Head_gr,Call_gr,(Head,Call,Inv),(Extra_dim,[Pre_map],Post_map,Handle)):-
+	ground_copy((Head,Call,Inv),(Head_gr,Call_gr,Inv_gr)),
+	Head_gr=..[_|Head_vars],
+	length(Head_vars,Extra_dim),
+	Entry_gr=..[_|Entry_vars],
+	Call_gr=..[_|Call_vars],
+	ut_flat_list([Entry_vars,Head_vars,Call_vars],All_vars),
+	identity_function(All_vars,Pre_map),
+	identity_function(Entry_vars,Post_map1),
+	make_map_to_call(Call_gr,Head_gr,[],[Post_map2]),
+	append(Post_map1,Post_map2,Post_map),
+	Dim is Extra_dim*3,
+	to_ppl_dim(c, Dim, Inv_gr, Handle).	
+
+delete_loop_handle((_,_,_,Handle)):-
+	ppl_delete_Polyhedron(Handle).
+	
+make_map_to_call(Term,Term2,Maps,[Map|Maps]):-
+	Term=..[_|Vars],
+	Term2=..[_|Vars2],
+	maplist(zip_with_op2('-'),Vars,Vars2,Map).
+make_complete_map_to_call(Head,Calls,Call,Maps,[Map|Maps]):-
+	Head=..[_|Vars],
+	Call=..[_|Vars2],
+	maplist(zip_with_op2('-'),Vars,Vars2,Map1),
+	maplist(zip_with_op2('-'),Vars2,Vars,Map2),
+	append(Map1,Map2,Map3),
+	foldl(make_complete_map_to_call_1(Call),Calls,Map3,Map).
+make_complete_map_to_call_1(Call,Call,Map,Map):-!.
+make_complete_map_to_call_1(_Call,Call2,Map,Map2):-
+	Call2=..[_|Vars2],
+	identity_function(Vars2,Map1),
+	append(Map1,Map,Map2).
+
+identity_function(Vars,Identity):-	
+	maplist(zip_with_op2('-'),Vars,Vars,Identity).

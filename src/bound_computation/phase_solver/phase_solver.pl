@@ -297,11 +297,15 @@ collect_phase_results(Loop_vars,Ub_fconstrs,Lb_fconstrs,Iconstrs_total):-
 :-dynamic enriched_loop/4.
 
 save_enriched_loop(Head,Forward_inv,Loop):-
-	loop_ph(Head,(Loop,_),Calls,Cs,_,_),	
-	append(Forward_inv,Cs,Total_cs),
+	loop_ph(Head,(Loop,_),Calls,Cs,_,_),
+	foldl(get_call_inv,Calls,(Head,Forward_inv,Forward_inv),(Head,_,Total_inv)),
+	append(Total_inv,Cs,Total_cs),
 	nad_normalize_polyhedron(Total_cs,Cs_normalized),
 	assert(enriched_loop(Loop,Head,Calls,Cs_normalized)).
 
+get_call_inv(Call,(Head,Inv_0,Inv),(Head,Inv_0,Total_inv)):-
+	copy_term((Head,Inv_0),(Call,Inv2)),
+	nad_glb(Inv,Inv2,Total_inv).
 %! max_pending_depth(N:int)
 % maximum number or 'recursive' definitions of cost 
 % it depends on the number of loops in the phase and could be adjusted
@@ -407,10 +411,9 @@ compute_sum(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs2,Pending,Pendi
 	inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pending,Pending_aux),
 	% this is an heuristic
 	% if we are computing a minsum or we have created some intermediate constraints, we apply the basic product strategy as well
-	
 	(
-	(Constr\=bound(_,[]+_,_),
-	(New_iconstrs\=[]; Constr=bound(lb,_,_)))->
+	(Constr\=bound(_,[]+_,_),%not constant
+	(New_iconstrs\=[]; Constr=bound(lb,_,_)))->%computing lower bounds or there are parts that can still fail
 	basic_product_strategy(Constr,Loop_vars,Loop,Iconstr_extra,Pending_aux,Pending_out),
 	New_iconstrs2=[Iconstr_extra|New_iconstrs]
 	;
@@ -445,6 +448,11 @@ compute_sum(Constr,Loop_vars,Loop,_Phase,[],[Iconstr],Pending,Pending_out):-
 	
 compute_sum(_Constr,_Loop_vars,_Loop,_Phase,[],[],Pending,Pending).	
 
+only_tail_constr(loop_vars(Head,_),Fconstr):-
+	copy_term((Head,Fconstr),(Head2,Fconstr2)),
+	numbervars(Head2,0,_),
+	maplist(term_variables,Fconstr2,Vars),
+	\+member([],Vars).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
