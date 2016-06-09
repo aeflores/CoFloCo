@@ -35,6 +35,7 @@ For the minimim case: the minimum of all the resets and the expression minus the
 				enriched_loop/4,
 		        save_pending_list/6]).
 		        
+:- use_module('../../db',[get_input_output_vars/3]).			        
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).		
 :- use_module('../../IO/params',[get_param/2]).					
 :- use_module('../../utils/cofloco_utils',[ground_copy/2]).	
@@ -122,7 +123,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			Resets=[],
 			Pending_out=Pending
 		;
-			term_variables(Head,Vars_head),
+			get_input_output_vars(Head,Input_vars_head,_),
 			select_important_variables(Vars,Lin_exp,Vars_of_Interest),
 			max_min_linear_expression_all(Lin_exp_diff_neg, Vars_of_Interest, Cs,max, Max_increments),
 %add an expression		
@@ -138,7 +139,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			;
 %reset		
 				copy_term((Head,Lin_exp),(Call,Lin_exp_p)),
-				max_min_linear_expression_all(Lin_exp_p, Vars_head, Cs,max, Maxs_resets),
+				max_min_linear_expression_all(Lin_exp_p, Input_vars_head, Cs,max, Maxs_resets),
 				Maxs_resets\=[],!,
 				(get_param(debug,[])->
 				    ground_copy((Head,Maxs_resets),(_,Maxs_resets_ground)),
@@ -176,8 +177,8 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			Resets=[],
 			Pending_out=Pending
 		;
-			term_variables(Head,Vars_head),
-			select_important_variables(Vars_head,Lin_exp,Vars_of_Interest),
+			get_input_output_vars(Head,Input_vars_head,_),
+			select_important_variables(Input_vars_head,Lin_exp,Vars_of_Interest),
 			max_min_linear_expression_list_all(Lin_exp_diffs_neg,Vars, Vars_of_Interest, Cs,max, Max_increments),
 %add an expression		
 			(Max_increments\=[]->
@@ -192,7 +193,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			;
 %reset		
 				maplist(get_tail_version(Head,Lin_exp),Calls,Lin_exp_tails),
-				max_min_linear_expression_list_all(Lin_exp_tails, Vars_head, Cs,max, Maxs_resets),
+				max_min_linear_expression_list_all(Lin_exp_tails,Vars, Input_vars_head, Cs,max, Maxs_resets),
 				Maxs_resets\=[],!,
 				(get_param(debug,[])->
 				    ground_copy((Head,Maxs_resets),(_,Maxs_resets_ground)),
@@ -206,7 +207,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 		)
 	).
 				
-				
+		
 
 is_positive(Vars,Cs,Lin_exp):-
 	le_print_int(Lin_exp,Lin_exp_int,_),
@@ -254,8 +255,8 @@ check_loop_min(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			Resets=[],
 			Pending_out=Pending
 		;
-			term_variables(Head,Vars_head),
-			select_important_variables(Vars_head,Lin_exp,Vars_of_Interest),
+			get_input_output_vars(Head,Input_vars_head,_),
+			select_important_variables(Input_vars_head,Lin_exp,Vars_of_Interest),
 			max_min_linear_expression_all(Lin_exp_diff, Vars_of_Interest, Cs,max, Max_increments),
 %decreases by an expression		
 			(Max_increments\=[]->
@@ -270,7 +271,7 @@ check_loop_min(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			;
 %reset		
 				copy_term((Head,Lin_exp),(Call,Lin_exp_p)),
-				max_min_linear_expression_all(Lin_exp_p, Vars_head, Cs,min, Mins_resets),
+				max_min_linear_expression_all(Lin_exp_p, Input_vars_head, Cs,min, Mins_resets),
 				Mins_resets\=[],!,
 				(get_param(debug,[])->
 					ground_copy((Head,Mins_resets),(_,Mins_resets_ground)),

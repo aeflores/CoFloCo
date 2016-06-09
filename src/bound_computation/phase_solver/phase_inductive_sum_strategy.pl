@@ -47,6 +47,7 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 		        save_pending_list/6,
 		        extract_pending/6,
 		        union_pending/3]).
+:- use_module('../../db',[get_input_output_vars/3]).			        
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).		
 :- use_module('../../IO/params',[get_param/2]).		
 :- use_module('../../ranking_functions',[partial_ranking_function/7]).	
@@ -329,7 +330,7 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Pstrexp_pair,Bounded,Pending,Pending1):-
 		Pending1=Pending,
 		(get_param(debug,[])->format('Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
 		;
-		term_variables(Head,Vars_head),
+		get_input_output_vars(Head,Input_vars_head,_),
 		%select_important_variables(Vars_head,Exp_diff_neg,Vars_of_Interest),
 		select_important_variables(Vars,Exp_diff_neg,Vars_of_Interest),
 		max_min_linear_expression_all(Exp_diff_neg, Vars_of_Interest, Cs,max, Max_increments),
@@ -345,7 +346,7 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Pstrexp_pair,Bounded,Pending,Pending1):-
 			    ;
 %reset			    
 			    Type=head,
-				max_min_linear_expression_all(Sum_calls, Vars_head, Cs,max, Max_resets),
+				max_min_linear_expression_all(Sum_calls, Input_vars_head, Cs,max, Max_resets),
 				Max_resets\=[],
 				
    				new_itvar(Aux_itvar),
@@ -367,8 +368,8 @@ check_loop_maxsum(_Head,_Candidate,Loop,[],[],_Pending,_Pending1):-
 
 %! check_loop_minsum(Head:term,Call:term,Exp_diff:nlinexp,Loop:loop_id,Pstrexp_pair:pstrexp_pair,Bounded:list(itvar),Pending:pending_constrs,Pending1:pending_constrs)
 % similar to check_loop_maxsum but checking the different possibilities in opposite order
-% for minsum there are only head-tail candidates
-check_loop_minsum(Head,(_Type,Exp),Loop,Pstrexp_pair,[],Pending,Pending1):-	
+% for minsum there are only head-tail candidatesq
+check_loop_minsum(Head,Exp,Loop,Pstrexp_pair,[],Pending,Pending1):-	
 	enriched_loop(Loop,Head,Calls,Cs),
 	foldl(get_sum_call(Head,Exp),Calls,[]+0,Sum_calls),
 	subtract_le(Exp,Sum_calls,Exp_diff),
@@ -402,7 +403,7 @@ check_loop_minsum(Head,(_Type,Exp),Loop,Pstrexp_pair,[],Pending,Pending1):-
 	).
 
 %collaborative loop	with constraint
-check_loop_minsum(Head,(_Type,Exp),Loop,Pstrexp_pair,Bounded,Pending,Pending1):-
+check_loop_minsum(Head,Exp,Loop,Pstrexp_pair,Bounded,Pending,Pending1):-
 		enriched_loop(Loop,Head,Calls,Cs),
 		foldl(get_sum_call(Head,Exp),Calls,[]+0,Sum_calls),
 		subtract_le(Exp,Sum_calls,Exp_diff),

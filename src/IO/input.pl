@@ -26,6 +26,7 @@ This module reads cost equations and stores them in the database after normalizi
 :- use_module('../db',[input_eq/5,
 					entry_eq/2,
 					reset_scc/3,
+					save_input_output_vars/3,
 					cofloco_aux_entry_name/1,
 					add_ground_equation_header/2]).
 :- use_module('../utils/cofloco_utils',[normalize_constraint/2]).
@@ -141,6 +142,9 @@ add_equation(entry(Term:Size_Rel)):-!,
 add_equation(reset_scc(Head,Vars,Type)):-!,
 	  assertz(db:reset_scc(Head,Vars,Type)).	  
 
+add_equation(input_output_vars(Head,IVars,OVars)):-!,
+	  save_input_output_vars(Head,IVars,OVars).
+	  
 % throw an exception on failure
 add_equation(Eq) :-
 	throw(cofloco_err(failed_to_add_equation,add_equation/1,[eq=Eq])).
@@ -149,6 +153,7 @@ add_equation(Eq) :-
 % get the head of the different types of input cost equations
 get_eq_head(entry(Head:_),Head).
 get_eq_head(reset_scc(Head,_,_),Head).
+get_eq_head(input_output_vars(Head,_,_),Head).
 get_eq_head(eq(Name,Vars,_Exp,_Body_Calls,_Size_Rel),Head) :-	
      Head=..[Name|Vars].
 get_eq_head(eq(Head,_Exp,_Body_Calls,_Size_Rel),Head).

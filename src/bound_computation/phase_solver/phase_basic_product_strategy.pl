@@ -44,6 +44,7 @@ into the sum of the linear expression in one level of the execution tree multipl
 			astrexp_new/2,
 			fconstr_new/4,
 			iconstr_new/4]).	
+:- use_module('../../db',[get_input_output_vars/3]).			
 :- use_module('../../IO/params',[get_param/2]).							
 :- use_module(library(apply_macros)).
 :- use_module(library(lists)).	
@@ -64,7 +65,7 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 		fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
 		Max_fconstrs=[Fconstr]
 	;
-	 Head=..[_|Vars_head],
+	 get_input_output_vars(Head,Vars_head,_),
 	 max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_exps),
 	 maplist(fconstr_new([Aux_itvar],Op),Maxs_exps,Max_fconstrs)
 	 ),
@@ -88,7 +89,7 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 		fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
 		Max_fconstrs=[Fconstr]
 	;
-	 Head=..[_|Vars_head],
+	 get_input_output_vars(Head,Vars_head,_),
 	 max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_exps),
 	 maplist(fconstr_new([Aux_itvar],Op),Maxs_exps,Max_fconstrs)
 	 ),

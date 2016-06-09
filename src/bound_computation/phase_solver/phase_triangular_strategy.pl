@@ -33,6 +33,7 @@ incremented/decremented by a constant value in each iteration.
 :- use_module(phase_solver,[			
 				enriched_loop/4,
 		        save_pending_list/6]).
+:- use_module('../../db',[get_input_output_vars/3]).			        
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).		
 :- use_module('../../IO/params',[get_param/2]).		
 :- use_module('../../utils/cost_structures',[
@@ -59,8 +60,8 @@ triangular_strategy(bound(lb,Lin_exp,Bounded_ini),loop_vars(Head,[Call]),Loop,Ph
 	(is_head_expression(Head,Lin_exp)->
 		Exp=Lin_exp
 	;
-	 Head=..[_|Vars_head],
-	 max_min_linear_expression_all(Lin_exp, Vars_head, Cs,min, Mins),
+	 get_input_output_vars(Head,Input_vars_head,_),
+	 max_min_linear_expression_all(Lin_exp, Input_vars_head, Cs,min, Mins),
 	 member(Exp,Mins)
 	),
 	%the cost is increased or decreased by a constant

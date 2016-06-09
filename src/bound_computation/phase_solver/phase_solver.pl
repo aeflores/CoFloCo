@@ -82,13 +82,14 @@ These constraints are useful in most cases and that allows us to simplify the re
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).					      
 :- use_module('../../db',[
 			   phase_loop/5,
+			   get_input_output_vars/3,
 		       loop_ph/6]).
 
 :- use_module('../../IO/params',[get_param/2]).		
 :- use_module('../../IO/output',[print_phase_cost/4]).
 :- use_module('../../ranking_functions',[ranking_function/4]).	  		
 :-use_module('../../refinement/invariants',[
-			      phase_transitive_closure/5,
+			      phase_transitive_star_closure/5,
 			      forward_invariant/4]).			
 	
 :- use_module('../../utils/cofloco_utils',[
@@ -296,9 +297,9 @@ collect_phase_results(Loop_vars,Ub_fconstrs,Lb_fconstrs,Iconstrs_total):-
 % the loop enriched with the forward invariant
 :-dynamic enriched_loop/4.
 
-save_enriched_loop(Head,Forward_inv,Loop):-
+save_enriched_loop(Head,Inv,Loop):-
 	loop_ph(Head,(Loop,_),Calls,Cs,_,_),
-	foldl(get_call_inv,Calls,(Head,Forward_inv,Forward_inv),(Head,_,Total_inv)),
+	foldl(get_call_inv,Calls,(Head,Inv,Inv),(Head,_,Total_inv)),
 	append(Total_inv,Cs,Total_cs),
 	nad_normalize_polyhedron(Total_cs,Cs_normalized),
 	assert(enriched_loop(Loop,Head,Calls,Cs_normalized)).
@@ -330,7 +331,7 @@ save_used_pending_constraint(Loop,Loop_vars,Constr):-
 	
 
 transform_max_min2_head(Head,loop_vars(Head,Calls),Loop,Maxs_mins,Maxs_mins_head):-
-	Head=..[_|Vars_head],
+	get_input_output_vars(Head,Vars_head,_),
 	enriched_loop(Loop,Head,Calls,Cs),
 	foldl(transform_max_min2_head_1(Vars_head,Cs),Maxs_mins,[],Maxs_mins_head).
 	
@@ -574,10 +575,10 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 % Transitive invariants
 transitive_invariant_strategy(bound(Op,Lin_exp,Bounded),Head,Phase,New_fconstrs):-
 	get_constr_op(Max_min,Op),
-	phase_transitive_closure(Phase,_,Head_total,Head,Cs_star_trans),
+	phase_transitive_star_closure(Phase,_,Head_total,Head,Cs_star_trans),
 	phase_loop(Phase,_,Head,_Call,Cs),
 	ut_flat_list([Cs_star_trans,Cs],Context),
-	term_variables(Head_total,Vars_of_Interest),
+	get_input_output_vars(Head_total,Vars_of_Interest,_),
 	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Maxs_out),
 	Head_total=Head,
 	maplist(fconstr_new(Bounded,Op),Maxs_out,New_fconstrs),

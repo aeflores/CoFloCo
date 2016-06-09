@@ -24,6 +24,7 @@ Some predicates used by multiple strategies
 :- module(phase_common,[
 	is_zero/1,
 	get_difference_version/4,
+	get_tail_version/4,
 	get_difference_version_aux/4,
 	le_print_int/3,
 	get_constr_op/2,
@@ -56,6 +57,8 @@ get_difference_version_aux(Head,Rf,Call,Rf_diff):-
 get_difference_version(Head,Call,Rf,Rf_diff):-
 	copy_term((Head,Rf),(Call,Rfp)),
 	subtract_le(Rf,Rfp,Rf_diff).		
+get_tail_version(Head,Lin_exp,Call,Lin_exp_call):-
+	copy_term((Head,Lin_exp),(Call,Lin_exp_call)).
 	
 le_print_int(Lin_exp,Exp,Den):-
 		integrate_le(Lin_exp,Den,Lin_exp_nat),
