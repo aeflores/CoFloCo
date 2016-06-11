@@ -267,15 +267,7 @@ add_ranking_function_1(Head,Chain_prefix,Phase,Rf):-
 	RF_1==Rf,!.
 
 add_ranking_function_1(Head,Chain_prefix,Phase,RF) :-
-	assertz(ranking_function(Head,Chain_prefix,Phase,RF)),
-	
-	(get_param(debug,[])->
-	write_le(RF,Rf_print),
-	copy_term((Head,Rf_print),(PHead,PRF)),
-	numbervars(PHead,0,_),
-	 format('~p~n',ranking_function(PHead,Chain_prefix,Phase,PRF))
-	;
-	 true).
+	assertz(ranking_function(Head,Chain_prefix,Phase,RF)).
 
 add_partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :-
 	parse_le_fast(RF,Lin_exp),
@@ -287,14 +279,7 @@ add_partial_ranking_function_1(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :
 	RF==RF2,!.
 
 add_partial_ranking_function_1(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :-
-	assertz(partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type)),
-	(get_param(debug,[])->
-	 write_le(RF,Rf_print),
-	 copy_term((Head,Rf_print),(PHead,PRF)),
-	 numbervars(PHead,0,_),
-	 format('~p~n',partial_ranking_function(PHead,Phase,Loop,PRF,Deps,Deps_type))
-	;
-	 true).
+	assertz(partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

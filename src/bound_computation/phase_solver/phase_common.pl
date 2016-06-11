@@ -30,8 +30,7 @@ Some predicates used by multiple strategies
 	get_constr_op/2,
 	select_important_variables/3,
 	put_inside_mult/2,
-	is_head_expression/2,
-	print_lin_exp_in_phase/3
+	is_head_expression/2
 	]).
 	
 :- use_module(stdlib(linear_expression),[
@@ -80,10 +79,5 @@ is_head_expression(Head,Exp):-
 	numbervars(Head2,0,_),
 	ground(Exp2).
 	
-% debugging predicates 
-print_lin_exp_in_phase(Head,Calls,Exp):-
-	copy_term((Head,Calls,Exp),(Head2,Calls2,Exp2)),
-	write_le(Exp2,Exp_print),
-	numbervars((Head2,Calls2),0,_),
-	format('~p -> ~p : ~p ~n',[Head2,Calls2,Exp_print]).
+
 

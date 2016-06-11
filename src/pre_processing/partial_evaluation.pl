@@ -34,7 +34,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 :- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[cstr_join/3,cstr_or_compress/2]).
-:- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2,nad_project_group/3]).
+:- use_module('../utils/polyhedra_optimizations',[nad_normalize_polyhedron/2,nad_consistent_constraints_group/2,nad_project_group/3]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_consistent_constraints/1]).
 :- use_module(stdlib(utils),[ut_varset/2]).
 :- use_module(stdlib(set_list)).
@@ -284,7 +284,8 @@ replace_cost_relations:-
 	ut_varset((Head,Exp,Calls),Vars),	
 	(nad_consistent_constraints_group(Vars,Size) ->	    
 	    nad_project_group(Vars,Size,P_Size),
-	    add_eq_ph(eq_ph(Head,0,Exp,NR_Calls,R_Calls,Calls,P_Size,terminating),none)
+	    nad_normalize_polyhedron(P_Size,P_Size_normalized),
+	    add_eq_ph(eq_ph(Head,0,Exp,NR_Calls,R_Calls,Calls,P_Size_normalized,terminating),none)
 	;
 	    true
 	),

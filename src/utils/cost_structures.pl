@@ -93,6 +93,9 @@
 		cstr_remove_cycles/2,
 		cstr_get_unbounded_itvars/2,
 		cstr_extend_variables_names/3,
+		itvar_shorten_name/3,
+		fconstr_shorten_name/3,
+		iconstr_shorten_name/3,
 		itvar_recover_long_name/2,
 		cstr_propagate_sums/4,
 		cstr_join/3,
@@ -129,6 +132,7 @@
 :- use_module(stdlib(set_list),[difference_sl/3,remove_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
 :-dynamic short_db/3.
+:-dynamic short_db_no_list/3.
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 :-use_module(library(terms)).
@@ -924,25 +928,26 @@ bfactor_shorten_name(Flag,(Name,Value),(Short_name,Value)):-
 % The name must always be a list except when we want to use it for the output
 itvar_shorten_name(list,Name,Short_name):-
 	term_hash(Name,Hash),
-	(short_db(Hash,Name,Short_name)->
-		true
+	(short_db(Hash,Name,Short_name_exist)->
+		Short_name=[Short_name_exist]
 		;
 	 	counter_increase(short_terms,1,Id),
-	 	assert(short_db(Hash,Name,[s(Id)])),
+	 	assert(short_db(Hash,Name,s(Id))),
 	 	Short_name=[s(Id)]
 	 	).
 itvar_shorten_name(no_list,Name,Short_name):-
 	term_hash(Name,Hash),
-	(short_db(Hash,Name,Short_name)->
+	(short_db_no_list(Hash,Name,Short_name)->
 		true
 		;
 	 	counter_increase(short_terms,1,Id),
-	 	assert(short_db(Hash,Name,s(Id))),
+	 	assert(short_db_no_list(Hash,Name,s(Id))),
 	 	Short_name=s(Id)
 	 	).	
-
+	 	
 itvar_recover_long_name(Name,Long_name2):-
-	short_db(_,Long_name1,Name),!,
+	Name\=[_|_],
+	short_db_no_list(_,Long_name1,Name),!,
 	itvar_recover_long_name(Long_name1,Long_name2).
 
 itvar_recover_long_name([Name],Long_name2):-

@@ -267,7 +267,7 @@ compute_backward_invariant([Non_terminating],Prev_chain,Head,RefCnt,Entry_patter
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern),
  	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
- 	assert(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern,Entry_pattern)).
+ 	assertz(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern,Entry_pattern)).
 
 compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,RefCnt,Entry_pattern):-
 	member([],Tails),!,
@@ -275,7 +275,7 @@ compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,Ref
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern),
  	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
- 	assert(partial_backward_invariant([multiple(Non_terminating,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,Entry_pattern)).
+ 	assertz(partial_backward_invariant([multiple(Non_terminating,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,Entry_pattern)).
 
 
 
@@ -295,10 +295,10 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	%even if the invariant is unfeasible, we store to save time when computing invariants with the same suffix
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv)),
+	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv)),
 	  fail
 	;
-	  assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv))
+	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv))
 	  ).
 
 % We have an iterative phase.
@@ -324,10 +324,10 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
 	nad_normalize_polyhedron(Entry_pattern_star,Entry_pattern_star_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Entry_pattern_star_normalized)),
+	assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Entry_pattern_star_normalized)),
 	fail
 	;
-	assert(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Entry_pattern_star_normalized))
+	assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Entry_pattern_star_normalized))
 	).
 	
 %multiple recursion phase
@@ -346,10 +346,10 @@ compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pat
 	Head=Head_loop,
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv)),
+	assertz(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv)),
 	fail
 	;
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv))
+	assertz(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv))
 	).
 
 
@@ -376,10 +376,10 @@ compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pat
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
 	nad_normalize_polyhedron(Entry_pattern_star,Entry_pattern_star_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1],Entry_pattern_star_normalized)),
+	assertz(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1],Entry_pattern_star_normalized)),
 	fail
 	;
-	assert(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Entry_pattern_star_normalized))
+	assertz(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Entry_pattern_star_normalized))
 	).
 	
 compute_backward_invariant_aux(Prev_chain,Head,RefCnt,Chain,Entry_pattern):-
@@ -457,7 +457,7 @@ compute_forward_invariant([Non_loop|Chain],RefCnt,Entry_Call,Inv_out):-
 		forward_invariant_once(inv(Entry_Call,Inv_aux),Loops_splitted,inv(Entry_call2,Inv_out)),
    		Entry_call2=Entry_Call,
    		(nad_is_bottom(Inv_out)->
-        	assert(unfeasible_chain_prefix(Entry_Call,RefCnt,[Non_loop|Chain])),
+        	assertz(unfeasible_chain_prefix(Entry_Call,RefCnt,[Non_loop|Chain])),
         	fail
         	;
         	add_forward_invariant(Entry_Call,([Non_loop|Chain],RefCnt), Inv_aux)
@@ -483,7 +483,7 @@ compute_forward_invariant([Phase|Chain],RefCnt,Entry_Call, Inv_out):-!,
 %    ((Bottoms\=[],N_bot\=N_phase)-> format(user_error,'We could eliminate ~p loops in ~p~n',[N_bot,[Phase|Chain]]);true),
     Entry_call2=Entry_Call,
    (nad_is_bottom(Inv_out)->
-        assert(unfeasible_chain_prefix(Entry_Call,RefCnt,[Phase|Chain])),
+        assertz(unfeasible_chain_prefix(Entry_Call,RefCnt,[Phase|Chain])),
         fail
      ;
         add_forward_invariant(Entry_Call,([Phase|Chain],RefCnt), Inv_aux)
