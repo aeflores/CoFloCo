@@ -193,10 +193,13 @@ compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Base_cost,Bas
 	%we add pending sums for the number of iterations of each loop as they will be needed in most occasions anyway
 	% this way, we can always assume they are computed
 	maplist(get_it_sum_constraint(ub),Phase,It_cons_max), 
-    maplist(get_it_sum_constraint(lb),Phase,It_cons_min),    
 	maplist(append,It_cons_max,Sums,Sums1),
-	maplist(append,It_cons_min,Sums1,Sums2),
-	
+	(get_param(compute_lbs,[])->
+    	maplist(get_it_sum_constraint(lb),Phase,It_cons_min),
+    	maplist(append,It_cons_min,Sums1,Sums2)
+    	;
+    	 Sums2=Sums1
+     ),
 	%add_ranking_functions_constraints(Head,Phase),
 	%main predicate
 	compute_sums_and_max_min_in_phase(Head,Phase,Phase_vars,Max_mins,Sums2,Base_max_min_levels),

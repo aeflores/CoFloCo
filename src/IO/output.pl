@@ -40,12 +40,15 @@ This module prints the results of the analysis
 		  print_product_strategy_message/2,
 		  print_candidate_in_phase/3,
 		  write_lin_exp_in_phase/3,
+		  print_removed_redundant_constr_message/2,
+		  print_joined_itvar_sets_message/1,
 		  print_results/2,
 		  print_phase_cost/4,
 		  print_single_closed_result/2,
 		  print_conditional_upper_bounds/1,
 		  print_conditional_lower_bounds/1,
 		  print_closed_results/2,
+		  print_cost_structure/1,
 		  print_aux_exp/1,
 		  print_stats/0]).
 
@@ -195,7 +198,7 @@ pretty_print_CE(Id):-
 	ground_header(Head),
 	numbervars((Cost,Calls,Cs3),0,_),
 	format('* CE ~p: ~p =~| ',[Id,Head]),
-	print_new_cost_structure(Cost),
+	print_cost_structure(Cost),
 	pretty_print_refinedCalls(Calls,'+'),nl,
 	format('     ~p ~n',[Cs3]).
 
@@ -406,22 +409,26 @@ print_chain(Entry,Pattern):-
 print_pending_set(Head,Pending):-
 	get_param(debug,[]),!,
 	copy_term((Head,Pending),(Head_gr,pending(Head_gr,Maxs_mins,Level_sums,Sums))),
-	ground_header(Head_gr),
-	print_header('Pending set ~p~n',[Head_gr],5),
-	(Maxs_mins\=[]->
-		maplist(tuple,_,Maxs_mins_cs,Maxs_mins),
-		maplist(write_top_exp,Maxs_mins_cs,Max_mins_p),
-		format('* Pmax/min: ~p~n',[Max_mins_p])
-		;true),
-	(Level_sums\=[]->	
-		maplist(tuple,_,Level_sums_cs,Level_sums),
-		maplist(write_top_exp,Level_sums_cs,Level_sums_p),
-		format('* Plevel-sum: ~p~n',[Level_sums_p])
-		;true
-	),
-	(Sums\=[]->
+    (pending(Head_gr,Maxs_mins,Level_sums,Sums)\=pending(_,[],[],[])->
+		ground_header(Head_gr),
+		print_header('Pending set ~p~n',[Head_gr],5),
+		(Maxs_mins\=[]->
+			maplist(tuple,_,Maxs_mins_cs,Maxs_mins),
+			maplist(write_top_exp,Maxs_mins_cs,Max_mins_p),
+			format('* Pmax/min: ~p~n',[Max_mins_p])
+			;true),
+		(Level_sums\=[]->	
+			maplist(tuple,_,Level_sums_cs,Level_sums),
+			maplist(write_top_exp,Level_sums_cs,Level_sums_p),
+			format('* Plevel-sum: ~p~n',[Level_sums_p])
+			;true
+		),
+		(Sums\=[]->
 		maplist(print_pending_sum,Sums);
-		true).
+		true)
+	;
+		print_header('Empy Pending set: Done ~n',[],5)
+	).
 	
 print_pending_set(_,_).	
 
@@ -506,13 +513,31 @@ print_phase_cost(Phase,Head,Calls,Cost):-
 		ground_rec_calls(Callsp,1)
 	),
 	print_header('Cost of phase ~p:~p -> ~p ~n',[Phase,Headp,Callsp],4),
-	print_new_cost_structure(Costp).
+	print_cost_structure(Costp).
 
 print_phase_cost(_,_,_,_).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+print_removed_redundant_constr_message(Constr,Removed_set):-
+	get_param(debug,[]),Removed_set\=[],!,
+	copy_term((Constr,Removed_set),(Constr_copy,Removed_set_copy)),
+	write_aux_exp(Constr_copy,Constr_print),
+	maplist(write_aux_exp,Removed_set_copy,Removed_print),
+	format(' * Removed the redundant constraints ~p (They are implied by ~p)~n',[Removed_print,Constr_print]).
+print_removed_redundant_constr_message(_,_).
 
+print_joined_itvar_sets_message(Sets):-
+	get_param(debug,[]),!,
+	maplist(print_joined_itvar_set,Sets).
+print_joined_itvar_sets_message(_).
+
+print_joined_itvar_set(Set):-
+	maplist(itvar_shorten_name(no_list),Set,[First|Rest]),
+	format(' * Joined equivalent variables ~p into ~p~n',[[First|Rest],First]).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %! print_results(+Entry:term,+RefCnt:int) is det
 % print the chains, invariants and uppuer bounds of SCC Entry in the refinement phase RefCnt
 print_results(Entry,RefCnt):-
@@ -526,7 +551,7 @@ print_results_1(Entry,RefCnt):-
  	format('* Chain ',[]),
 	print_chain_simple(Chain),
 	format(': ',[]),
-	print_new_cost_structure(CExp),
+	print_cost_structure(CExp),
 	%print_cost_structure(CExp),
 	format('~n  with precondition: ~p ~n~n',[EPat_pretty]),
  	fail.
@@ -536,7 +561,7 @@ print_results_1(_Entry,_).
 
 gen_mult_bases((A,B),A*B).
 
-print_new_cost_structure(Cost):-
+print_cost_structure(Cost):-
 	cstr_shorten_variables_names(Cost,no_list,cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)),
 	cstr_get_unbounded_itvars(cost(Top_exps,LTop_exps,Aux_exps,Bases,Base),Unbounded),
 	partition(is_ub_aux_exp,Aux_exps,Ub_Aux_exps,Lb_Aux_exps),

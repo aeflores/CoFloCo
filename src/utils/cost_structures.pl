@@ -105,12 +105,25 @@
 		cstr_shorten_variables_names/3]).
 		
 		
-:- use_module(cofloco_utils,[zip_with_op/3,is_rational/1,sort_with/3,write_sum/2,write_product/2,tuple/3,get_all_pairs/3,normalize_constraint/2]).
+:- use_module(cofloco_utils,[
+				ground_copy/2,
+				zip_with_op/3,
+				is_rational/1,
+				sort_with/3,
+				write_sum/2,
+				write_product/2,
+				tuple/3,
+				get_all_pairs/3,
+				normalize_constraint/2]).
 :- use_module(structured_cost_expression,[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).	
 :- use_module(cost_expressions,[cexpr_simplify/3,is_linear_exp/1]).	
 :- use_module(polyhedra_optimizations,[nad_entails_aux/3]).	
 :- use_module('../IO/params',[get_param/2]).
-:- use_module('../IO/output',[print_aux_exp/1]).	
+:- use_module('../IO/output',[
+	print_aux_exp/1,
+	print_cost_structure/1,
+	print_joined_itvar_sets_message/1,
+	print_removed_redundant_constr_message/2]).	
 :- use_module('../bound_computation/cost_structure_solver',[cstr_maxminimization/5]).
 :- use_module('../bound_computation/constraints_maximization',[max_min_linear_expression_all/5]).
 
@@ -408,14 +421,39 @@ cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_
 	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
 	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
 	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),
-	join_equivalent_itvars(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cost_final),
+%	Cost_aux=cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),
+	cstr_simplify_multiple_variables_constrs(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cost_aux),
+	join_equivalent_itvars(Cost_aux,Cost_final),
 	cstr_remove_cycles(Cost_final,Cost_final2).
 
 
+cstr_simplify_multiple_variables_constrs(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands,BConstant)):-
+	include(is_ub_bconstr,Itcons,Itcons_ub),
+	sort_with(Itcons_ub,constr_more_bounded_vars,Itcons_sorted),
+	incrementally_remove_redundant_iconstrs(Itcons_sorted,[],Removed_set),
+	exclude(contains_sl(Removed_set),Itcons,Itcons2).
 
+constr_more_bounded_vars(bound(_,_,Bounded),bound(_,_,Bounded2)):-
+	length(Bounded,N),
+	length(Bounded2,N2),
+	N<N2.
+incrementally_remove_redundant_iconstrs([],Removed,Removed).
+incrementally_remove_redundant_iconstrs([bound(ub,_Exp,[_])|_Constrs],Removed,Removed).
+incrementally_remove_redundant_iconstrs([bound(ub,Exp,Bounded)|Constrs],Accum,Removed):-
+	partition(is_redundant(Exp,Bounded),Constrs,Removed_aux,Constrs1),
+	from_list_sl(Removed_aux,Removed_set),
+	print_removed_redundant_constr_message(bound(ub,Exp,Bounded),Removed_set),
+	union_sl(Removed_set,Accum,Accum1),
+	incrementally_remove_redundant_iconstrs(Constrs1,Accum1,Removed).
+
+is_redundant(Exp,Bounded,bound(ub,Exp2,Bounded2)):-
+	ground_copy(Exp,Exp_gr),
+	ground_copy(Exp2,Exp_gr),
+	Bounded2\=Bounded,
+	difference_sl(Bounded2,Bounded,[]).
+	
 join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant)):-
 	partition(bconstr_bounds_multiple_itvars,Itcons,Multiple_itconstrs,Single_itconstrs),
-	%TODO: the unbounded variables that appear adding and substracting should not be joined!! 
 	% join the positive together and the negative together but do not mix them
 	foldl(add_itvar_empty_map,Bsummands,[],Map_0),
 	%Map_0=[],
@@ -426,9 +464,13 @@ join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(U
 	maplist(tuple,Itvar,Itconstr_set,Map3),
 	maplist(tuple,Itconstr_set,Itvar,Map_inv),
 	from_pair_list_mm(Map_inv,Multimap),
-	maplist(tuple,_,Itvar_sets,Multimap),
-	include(is_multiple_set,Itvar_sets,Itvar_multiple_sets),	
+	get_unitary_pairs(Multimap,Itvar_multiple_sets1,Multimap2),
+%	Multimap2=Multimap,Itvar_multiple_sets1=[],
+	maplist(tuple,_,Itvar_sets,Multimap2),
+	include(is_multiple_set,Itvar_sets,Itvar_multiple_sets2),	
+	append(Itvar_multiple_sets1,Itvar_multiple_sets2,Itvar_multiple_sets),
 	(Itvar_multiple_sets\=[]->
+		print_joined_itvar_sets_message(Itvar_multiple_sets),
 		foldl(join_itvar_set,Itvar_multiple_sets,(Itcons,Bsummands),(Itcons2,Bsummands2)),
 		join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands2,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant))
 		;
@@ -436,6 +478,12 @@ join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(U
 		Bsummands3=Bsummands
 	).
 
+get_unitary_pairs([],[],[]).
+get_unitary_pairs([([single(_Op,Itvar)],Itvar_set)|Multimap],[Itvar_set1|Itvar_sets],Multimap1):-!,
+	Itvar_set1=[Itvar|Itvar_set],
+	get_unitary_pairs(Multimap,Itvar_sets,Multimap1).
+get_unitary_pairs([Pair|Multimap],Itvar_sets,[Pair|Multimap1]):-
+	get_unitary_pairs(Multimap,Itvar_sets,Multimap1).	
 
 add_itvar_empty_map((Itvar,Coeff),Map,Map1):-
 	Coeff>0,!,
@@ -444,6 +492,10 @@ add_itvar_empty_map((Itvar,_),Map,Map1):-
 	insert_lm(Map,Itvar,[neg],Map1).	
 	
 	
+get_itconstr_for_each_itvar(bound(Op,Exp,[Itvar]),Map,Map1):-
+	Exp=exp([(Itvar2,Var)],[],add([mult([Var])]),add([])),!,
+	put_mm(Map,Itvar,single(Op,Itvar2),Map1).
+
 get_itconstr_for_each_itvar(bound(Op,Exp,[Itvar]),Map,Map1):-!,
 	copy_term(Exp,Exp2),
 	Exp2=exp(Index_pos,Index_neg,_,_),
