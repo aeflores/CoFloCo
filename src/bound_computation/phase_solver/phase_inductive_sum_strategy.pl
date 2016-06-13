@@ -196,9 +196,10 @@ generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,lb,Loop,Tail_candidates):-
 
 generate_leave_candidates(Head,Lin_exp,ub,Head_candidates):-
 	%take any loop
-	enriched_loop(_Loop,Head,Calls,Cs),	
+	enriched_loop(_Loop,Head,Calls,Cs),
 	get_param(n_rankings,[Max_candidates]),
-	farkas_leave_ub_candidate(Head,Calls,Cs,Lin_exp,Diff_list),
+	farkas_leave_ub_candidate(Head,Calls,Cs,Lin_exp,Diff_list),!,
+	
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	from_list_sl(Diff_list_selected,Diff_list_selected_set),
 	maplist(tuple(head),Diff_list_selected_set,Head_candidates),

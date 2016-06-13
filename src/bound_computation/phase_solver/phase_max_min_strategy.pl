@@ -53,7 +53,7 @@ For the minimim case: the minimum of all the resets and the expression minus the
 			nad_maximize/3,
 			nad_entails/3]).		
 :- use_module(stdlib(linear_expression),[negate_le/2]).							
-:- use_module(stdlib(fraction),[greater_fr/2]).
+:- use_module(stdlib(fraction),[greater_fr/2,max_fr/3]).
 :- use_module(library(apply_macros)).
 :- use_module(library(lists)).	
 	
