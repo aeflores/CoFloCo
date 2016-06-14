@@ -1,7 +1,7 @@
 #!/usr/bin/prolog
 
 :-set_prolog_flag(verbose, silent). 
-:-include('../src/search_paths.pl').
+:-include('../../src/search_paths.pl').
 :-initialization main.
 
 
