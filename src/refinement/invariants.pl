@@ -319,10 +319,9 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	Head=Head_out,
 	nad_project_group(EVars,Cs,Extra_conds),
 	nad_glb(Extra_conds,It_pattern,Entry_pattern),
-	nad_glb(Extra_conds,It_pattern_star,Entry_pattern_star),
 	Head=Head_loop,
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
-	nad_normalize_polyhedron(Entry_pattern_star,Entry_pattern_star_normalized),
+	nad_normalize_polyhedron(It_pattern_star,Entry_pattern_star_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
 	assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Entry_pattern_star_normalized)),
 	fail
@@ -371,10 +370,9 @@ compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pat
 	Head=Head_out,
 	nad_project_group(EVars,Cs,Extra_conds),
 	nad_glb(Extra_conds,It_pattern,Entry_pattern),
-	nad_glb(Extra_conds,It_pattern_star,Entry_pattern_star),
 	Head=Head_loop,
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
-	nad_normalize_polyhedron(Entry_pattern_star,Entry_pattern_star_normalized),
+	nad_normalize_polyhedron(It_pattern_star,Entry_pattern_star_normalized),
 	(nad_is_bottom(Entry_pattern_normalized)->
 	assertz(partial_backward_invariant([multiple(Ph,Tails)],Head,(Hash_local_inv,Local_inv),[0=1],Entry_pattern_star_normalized)),
 	fail
