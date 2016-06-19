@@ -25,7 +25,7 @@ Size relations of the basic lisp functions
 	]).
 
 
-eq('cons'(_Ai,_Al,As,_Bi,Bl,Bs,_Ci,Cl,Cs),1,[],[Cl=1+Bl,Cs=As+Bs+1]).
+eq('cons'(_Ai,Al,As,_Bi,Bl,Bs,_Ci,Cl,Cs),1,[],[Cl=1+Bl,Cs=As+Bs+1,Al>=0,As>=0,Bl>=0,Bs>=0,Cl>=0,Cs>=0]).
 
 eq('consp'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al>=1,As>=1]).
 eq('consp'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
@@ -37,9 +37,9 @@ eq('atom'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
 eq('endp'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al>=1,As>=1]).
 eq('endp'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
 
-eq('car'(_Ai,Al,As,_Bi,_Bl,Bs),1,[],[Al=<As,Al>=1,Bs+1=<As]).
+eq('car'(_Ai,Al,As,_Bi,Bl,Bs),1,[],[Al=<As,Al>=1,Bs+1=<As,As>=0,Bl>=0,Bs>=0]).
 eq('car'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
-eq('cdr'(_Ai,Al,As,_Bi,Bl,Bs),1,[],[Al=<As,Bl+1=Al,Bs+1=<As]).
+eq('cdr'(_Ai,Al,As,_Bi,Bl,Bs),1,[],[Al=<As,Bl+1=Al,Bs+1=<As,Al>=0,As>=0,Bl>=0,Bs>=0]).
 eq('cdr'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
 
 eq('or'(1,_,_,_,_,_,1,0,0),1,[],[]).

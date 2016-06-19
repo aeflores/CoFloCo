@@ -60,6 +60,18 @@ main:-
 
 
 
+nat_constraints(Args,Constrs):-nat_constrs(Args,Constrs,0),!.
+
+nat_constrs([],[],_).
+nat_constrs([Arg|Args],Constrs,N):-
+	(N rem 3) > 0,
+	var(Arg),
+	nat_constrs(Args,Constrs_next,N+1),
+	Constrs=[Arg>=0|Constrs_next],!.
+nat_constrs([_|Args],Constrs,N):-
+	nat_constrs(Args,Constrs,N+1),!.
+
+
 
 % main transformation predicate
 % take a function definition and generate a list of cost relations (and print them)	
@@ -79,7 +91,8 @@ defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relation
 	append(Args_abstract,Res_vars,All_args),
 	Head=..[Name|All_args],
 	% the main cost relation
-	Cost_relation= eq(Head,1,Body_unrolled,[]),
+	nat_constraints(All_args,Nat_constrs),
+	Cost_relation= eq(Head,1,Body_unrolled,Nat_constrs),
 	% we want closed-form bound for this cost relation
 	ut_flat_list([Cost_relation|Cost_relations],All_cost_relations),!.
 	
@@ -141,8 +154,10 @@ unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,[Res_var_i,Res_var_l,R
 	Res_vars=[Res_var_i,Res_var_l,Res_var_s],
 	append(Args,Res_vars,All_args),
 	Head_if=..[If_name|All_args],
-	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1]),
-	Cost_relation_no=eq(Head_if_no,1,No_calls_all,[Cond_bool=0]),
+	nat_constraints(All_args_yes,Nat_constrs_yes),
+	nat_constraints(All_args_no,Nat_constrs_no),
+	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1|Nat_constrs_yes]),
+	Cost_relation_no=eq(Head_if_no,1,No_calls_all,[Cond_bool=0|Nat_constrs_no]),
 	ut_flat_list([Cost_relation_yes,Cost_relation_no,Cost_relations_cond,Cost_relations_yes,Cost_relations_no],Cost_relations),
 	% for the body where the if appears, we generate a call to the if cost relation
 	Body_unrolled=[Head_if].
