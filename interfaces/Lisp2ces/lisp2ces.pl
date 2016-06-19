@@ -72,6 +72,18 @@ nat_constrs([_|Args],Constrs,N):-
 	nat_constrs(Args,Constrs,N+1),!.
 
 
+related_call_constrs([],[]).
+related_call_constrs(['car'(_,Al,As,_,_,Bs1)|Calls],Constrs):-
+	member('cdr'(_,Al,As,_,_,Bs2),Calls),
+	related_call_constrs(Calls,Constrs_next),
+	Constrs = [Bs1+Bs2+1=As|Constrs_next].
+related_call_constrs(['cdr'(_,Al,As,_,_,Bs1)|Calls],Constrs):-
+	member('car'(_,Al,As,_,_,Bs2),Calls),
+	related_call_constrs(Calls,Constrs_next),
+	Constrs = [Bs1+Bs2+1=As|Constrs_next].
+related_call_constrs([_|Calls],Constrs):-
+	related_call_constrs(Calls,Constrs).
+
 
 % main transformation predicate
 % take a function definition and generate a list of cost relations (and print them)	
@@ -92,7 +104,9 @@ defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relation
 	Head=..[Name|All_args],
 	% the main cost relation
 	nat_constraints(All_args,Nat_constrs),
-	Cost_relation= eq(Head,1,Body_unrolled,Nat_constrs),
+	related_call_constrs(Body_unrolled,Rel_call_constrs),
+	append(Nat_constrs,Rel_call_constrs,All_constrs),
+	Cost_relation= eq(Head,1,Body_unrolled,All_constrs),
 	% we want closed-form bound for this cost relation
 	ut_flat_list([Cost_relation|Cost_relations],All_cost_relations),!.
 	
@@ -156,8 +170,12 @@ unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,[Res_var_i,Res_var_l,R
 	Head_if=..[If_name|All_args],
 	nat_constraints(All_args_yes,Nat_constrs_yes),
 	nat_constraints(All_args_no,Nat_constrs_no),
-	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1|Nat_constrs_yes]),
-	Cost_relation_no=eq(Head_if_no,1,No_calls_all,[Cond_bool=0|Nat_constrs_no]),
+	related_call_constrs(Yes_calls_all,Rel_call_constrs_yes),
+	related_call_constrs(No_calls_all,Rel_call_constrs_no),
+	append(Rel_call_constrs_yes,Nat_constrs_yes,Constrs_yes),
+	append(Rel_call_constrs_no,Nat_constrs_no,Constrs_no),
+	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1|Constrs_yes]),
+	Cost_relation_no=eq(Head_if_no,1,No_calls_all,[Cond_bool=0|Constrs_no]),
 	ut_flat_list([Cost_relation_yes,Cost_relation_no,Cost_relations_cond,Cost_relations_yes,Cost_relations_no],Cost_relations),
 	% for the body where the if appears, we generate a call to the if cost relation
 	Body_unrolled=[Head_if].
