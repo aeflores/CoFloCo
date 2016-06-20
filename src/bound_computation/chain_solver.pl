@@ -32,7 +32,7 @@ For the constraints, this is done at the same time of the compression.
 :- module(chain_solver,[compute_chain_cost/3]).
 
 :- use_module(cost_equation_solver,[get_loop_cost/5]).
-:- use_module('phase_solver/phase_solver',[compute_phase_cost/5,compute_multiple_rec_phase_cost/6]).
+:- use_module('phase_solver/phase_solver',[compute_phase_cost/6,compute_multiple_rec_phase_cost/6]).
 :- use_module(constraints_maximization,[max_min_fconstrs_in_chain/6]).
 
 :-use_module('../db',[phase_loop/5,loop_ph/6]).
@@ -173,7 +173,13 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs
 	(get_param(debug,[])->
 	 	print_header('Computing cost of phase ~p with suffix ~p and prefix ~p ~n',[Phase,Chain,Chain_rev],4)
 	 	;true),
-	compute_phase_cost(Head,[Call],Phase,[Phase|Chain_rev],Cost),
+%	
+	forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
+	bagof(Back_inv_star,	
+	   Back_inv^partial_backward_invariant([Phase|Chain],Head,(Hash_local_inv,Local_inv),Back_inv,Back_inv_star),
+	       Back_invs),
+	nad_list_lub(Back_invs,Back_inv_all),
+	compute_phase_cost(Head,[Call],Phase,[Phase|Chain_rev],Back_inv_all,Cost),
 	cstr_join_equal_fconstr(Cost,Cost_simple),
 	print_phase_cost(Phase,Head,[Call],Cost_simple),
 	profiling_stop_timer_acum(loop_phases,_),

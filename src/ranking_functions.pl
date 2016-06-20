@@ -30,7 +30,7 @@ These ranking functions are used to prove termination.
 			     partial_ranking_function/7
 			     ]).
 
-:- use_module(db,[loop_ph/6,phase_loop/5]).
+:- use_module(db,[loop_ph/6,phase_loop/5,get_input_output_vars/3]).
 :- use_module('refinement/loops',[get_extended_phase/2]).	
 
 :- use_module('refinement/chains',[chain/3,get_reversed_chains/3]).	  
@@ -286,9 +286,11 @@ add_partial_ranking_function_1(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :
 
 
 compute_iterations_ubs( Head,Call,Phi, Rfs2) :-
-     Head=..[_|EntryVars],
-	 Call=..[_|ExitVars],
-	 nad_all_ranking_functions_MS(Phi,EntryVars,ExitVars,Rfs),
+	 get_input_output_vars(Head,EntryVars,_),
+	 get_input_output_vars(Call,ExitVars,_),
+	 append(EntryVars,ExitVars,Vars),
+	 nad_project(Vars,Phi,Phi_reduced),
+	 nad_all_ranking_functions_MS(Phi_reduced,EntryVars,ExitVars,Rfs),
 	 compute_offsets(Rfs,Phi,Rfs1),
      maplist(adapt_fraction,Rfs1,Rfs2).
 

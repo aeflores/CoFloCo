@@ -52,7 +52,7 @@ These constraints are useful in most cases and that allows us to simplify the re
 
 :- module(phase_solver,[
 				compute_multiple_rec_phase_cost/6,
-				compute_phase_cost/5,
+				compute_phase_cost/6,
 				init_phase_solver/0,
 				
 				used_pending_constraint/3,
@@ -97,6 +97,7 @@ These constraints are useful in most cases and that allows us to simplify the re
 	
 :- use_module('../../utils/cofloco_utils',[
 			tuple/3,
+			zip_with_op/3,
 			ground_copy/2,
 			bagof_no_fail/3]).	
 :- use_module('../../utils/cost_structures',[
@@ -116,8 +117,13 @@ These constraints are useful in most cases and that allows us to simplify the re
 			cstr_empty/1,
 			cstr_join/3]).			
 
-:- use_module('../../utils/polyhedra_optimizations',[nad_normalize_polyhedron/2 ]).						
-:- use_module(stdlib(numeric_abstract_domains),[nad_maximize/3,nad_glb/3]).
+:- use_module('../../utils/polyhedra_optimizations',[
+		nad_is_bottom/1,
+		nad_normalize_polyhedron/2 ]).			
+
+:- use_module(stdlib(numeric_abstract_domains),[
+			nad_maximize/3,
+			nad_glb/3]).
 :- use_module(stdlib(linear_expression),[
 			integrate_le/3,
 			write_le/2,
@@ -149,40 +155,41 @@ init_phase_solver:-
 %! compute_phase_cost(Phase:phase,Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Cost:cstr) is det
 % Obtain the cost of a phase given a forward invariant.
 % The cacheing case
-compute_phase_cost(Head,Calls,Phase,Chain_prefix,Cost):-
+compute_phase_cost(Head,Calls,Phase,Chain_prefix,_Back_invariant,Cost):-
 	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
 	phase_cost(Phase,Head,Calls,(Forward_hash,Forward_inv2),Cost),
 	Forward_inv2==Forward_inv,!,
 	counter_increase(compressed_phases1,1,_).
 	
 
-compute_phase_cost(Head,[Call],Phase,Chain_prefix,Cost_final):-
-	init_solving_phase(Chain_prefix),
+compute_phase_cost(Head,[Call],Phase,Chain_prefix,Back_invariant,Cost_final):-
+	init_solving_phase(Chain_prefix,Phase),
 	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
-	maplist(save_enriched_loop(Head,Forward_inv),Phase),
+	nad_glb(Forward_inv,Back_invariant,Total_inv),
+	save_enriched_loops(Head,Total_inv,Phase,Phase_feasible),
 	
     %get the cost of each iterative component of the phase	
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost((Forward_hash,Forward_inv)),Phase_vars,Phase,Costs),
+	maplist(get_equation_loop_cost((Forward_hash,Forward_inv)),Phase_vars,Phase_feasible,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
 	cstr_empty(Empty_cost),
-	add_n_elem_constraints(Head,Call,Phase),
-	compute_phase_cost_generic(Head,loop_vars(Head,[Call]),Phase,Phase_vars,Costs,Empty_cost,([],[]),Cost_final).
+	add_n_elem_constraints(Head,Call,Phase,Phase_feasible),
+	compute_phase_cost_generic(Head,loop_vars(Head,[Call]),Phase_feasible,Phase_vars,Costs,Empty_cost,([],[]),Cost_final).
 	
 compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Cost_prev,Back_invariant,Cost_final):-
-	init_solving_phase(Chain_prefix),
+	init_solving_phase(Chain_prefix,Phase),
 	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
 	nad_glb(Forward_inv,Back_invariant,Total_inv),
-	maplist(save_enriched_loop(Head,Total_inv),Phase),
+	save_enriched_loops(Head,Total_inv,Phase,Phase_feasible),
 	%get the cost of each iterative component of the phase
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost((Forward_hash,Forward_inv)),Phase_vars,Phase,Costs),
+	maplist(get_equation_loop_cost((Forward_hash,Forward_inv)),Phase_vars,Phase_feasible,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
 	cstr_propagate_sums(0,Cost_prev,Cost_prev_propagated,(Max_min,Level)),
 	get_loop_itvar(0,Itvar_last_level),
 	Max_min_sum_pair=(Max_min,[bound(ub,[]+1,[Itvar_last_level])|Level]),
-	add_depth_constraints(Head,Phase),
-	compute_phase_cost_generic(Head,loop_vars(Head,[]),Phase,Phase_vars,Costs,Cost_prev_propagated,Max_min_sum_pair,Cost_final).
+	add_depth_constraints(Head,Phase,Phase_feasible),
+	compute_phase_cost_generic(Head,loop_vars(Head,[]),Phase_feasible,Phase_vars,Costs,Cost_prev_propagated,Max_min_sum_pair,Cost_final).
 	
 compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Base_cost,Base_max_min_levels,Cost_final):-
 	maplist(cstr_join_equal_fconstr,Costs,Costs_simple),
@@ -230,14 +237,16 @@ compute_sums_and_max_min_in_phase(Head,Phase,Phase_vars,Max_mins,Sums,(Base_max_
 	retract(max_pending_depth(Max_pending)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-init_solving_phase(Chain_prefix):-
+init_solving_phase(Chain_prefix,Phase):-
 	retractall(enriched_loop(_,_,_,_)),
 	retractall(current_chain_prefix(_)),
+	retractall(current_phase(_)),
 	retractall(used_term(_,_,_,_,_,_)),
 	retractall(max_min_found(_,_,_,_,_)),
 	retractall(sum_found(_,_,_,_,_,_,_,_)),
 	retractall(used_pending_constraint(_,_,_)),
-	assertz(current_chain_prefix(Chain_prefix)).
+	assertz(current_chain_prefix(Chain_prefix)),
+	assertz(current_phase(Phase)).
 
 	
 get_equation_loop_cost((Forward_hash,Forward_inv),loop_vars(Head,Calls),Eq_id,Cost2):-
@@ -296,12 +305,27 @@ collect_phase_results(Loop_vars,Ub_fconstrs,Lb_fconstrs,Iconstrs_total):-
 % the loop enriched with the forward invariant
 :-dynamic enriched_loop/4.
 
-save_enriched_loop(Head,Inv,Loop):-
+save_enriched_loops(Head,Total_inv,Phase,Phase_feasible):-
+	maplist(save_enriched_loop(Head,Total_inv),Phase,Phase_feasible_aux),
+	partition(is_wrapped_no,Phase_feasible_aux,Excluded,Phase_feasible),
+	((get_param(debug,[]), Excluded\=[])->
+			maplist(zip_with_op(no),Excluded_print,Excluded),
+		   	format(' * The following loops are unfeasible in this instance of the phase ~p : ~p ~n',[Phase,Excluded_print])	   	
+		   	;true).
+
+is_wrapped_no(no(_)).
+	
+save_enriched_loop(Head,Inv,Loop,Loop_feasible):-
 	loop_ph(Head,(Loop,_),Calls,Cs,_,_),
 	foldl(get_call_inv,Calls,(Head,Inv,Inv),(Head,_,Total_inv)),
 	append(Total_inv,Cs,Total_cs),
 	nad_normalize_polyhedron(Total_cs,Cs_normalized),
-	assertz(enriched_loop(Loop,Head,Calls,Cs_normalized)).
+	(nad_is_bottom(Cs_normalized)->
+		Loop_feasible=no(Loop)
+	;
+		assertz(enriched_loop(Loop,Head,Calls,Cs_normalized)),
+		Loop_feasible=Loop
+	).
 
 get_call_inv(Call,(Head,Inv_0,Inv),(Head,Inv_0,Total_inv)):-
 	copy_term((Head,Inv_0),(Call,Inv2)),
@@ -319,6 +343,10 @@ get_call_inv(Call,(Head,Inv_0,Inv),(Head,Inv_0,Total_inv)):-
 % the chain to which the phase being computed belongs
 % used to 
 :- dynamic  current_chain_prefix/1.
+
+%! current_phase(Phase:list(loop_id))
+% the phase whose cost we are currently computing
+:- dynamic  current_phase/1.
 
 %! used_pending_constraint(Loop:loop_id,Loop_vars:loop_vars,Constr:fconstr)
 :-dynamic used_pending_constraint/3.
@@ -463,7 +491,7 @@ compute_max_min(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending):-
 
 %use transitive invariant
 compute_max_min(Constr,Head,Phase,New_fconstrs,[],Pending,Pending):-
-	transitive_invariant_strategy(Constr,Head,Phase,New_fconstrs),
+	transitive_invariant_strategy(Constr,Head,New_fconstrs),
 	(get_param(debug,[])->format('   - Found a solution using transitive invariants ~n',[]);true),	
 	save_max_min_found(Constr,Head,Phase).
 
@@ -485,26 +513,26 @@ compute_max_min(Constr,Head,Phase,[],[],Pending,Pending):-
 % Auxiliary strategies
 
 
-add_depth_constraints(Head,Phase):-
+add_depth_constraints(Head,Phase,Phase_feasible):-
 	get_param(n_rankings,[Max]),
 	current_chain_prefix(Chain_prefix),
 	bagof_no_fail(Rf,
 		ranking_function(Head,Chain_prefix,Phase,Rf)
 	  ,Rfs),
 	ut_split_at_pos(Rfs,Max,Rfs_selected,_),
-	maplist(get_loop_depth_itvar,Phase,Bounded),
+	maplist(get_loop_depth_itvar,Phase_feasible,Bounded),
 	maplist(fconstr_new(Bounded,ub),Rfs_selected,Fconstrs),
 	maplist(save_new_phase_fconstr(Head),Fconstrs).
 
 %! add_general_ranking_functions(Head:term,Call:term,Phase:phase) is det
 % add final constraints using the already computed ranking functions
-add_n_elem_constraints(Head,Call,Phase):-
+add_n_elem_constraints(Head,Call,Phase,Phase_feasible):-
 	get_param(n_rankings,[Max]),
 	current_chain_prefix(Chain_prefix),
-	get_ranking_functions_constraints(Max,Head,Call,Phase,Chain_prefix,Ub_fconstrs),
+	get_ranking_functions_constraints(Max,Head,Call,Phase,Phase_feasible,Chain_prefix,Ub_fconstrs),
 	maplist(save_new_phase_fconstr(loop_vars(Head,[Call])),Ub_fconstrs),
 	(get_param(compute_lbs,[])->
-	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain_prefix,Lb_fconstrs),
+	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Phase_feasible,Chain_prefix,Lb_fconstrs),
 	   maplist(save_new_phase_fconstr(loop_vars(Head,[Call])),Lb_fconstrs)
 	   ;
 	   true
@@ -513,13 +541,13 @@ add_n_elem_constraints(Head,Call,Phase):-
 % generate at most Max upper bound final constraints from the ranking functions
 % -the ranking function itself
 % -the difference between the ranking function at the beginning and at the end of the phase
-get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Fconstrs):-
+get_ranking_functions_constraints(Max,Head,Call,Phase,Phase_feasible,Chain,Fconstrs):-
 	bagof_no_fail(Rf,
 		ranking_function(Head,Chain,Phase,Rf)
 	  ,Rfs),
 	ut_split_at_pos(Rfs,Max,Rfs_selected,_),
 	maplist(get_difference_version(Head,Call),Rfs_selected,Rfs_diff),
-	maplist(get_loop_itvar,Phase,Bounded),
+	maplist(get_loop_itvar,Phase_feasible,Bounded),
 	append(Rfs_selected,Rfs_diff,Rfs_total),
 	maplist(fconstr_new(Bounded,ub),Rfs_total,Fconstrs).
 	
@@ -527,12 +555,12 @@ get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Fconstrs):-
 % generate at most Max lower bound final constraints from the ranking functions
 % -the difference between the initial and the final value of the rf divided by the maximum decrease
 % per iteration is a good lb candidate 
-get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain,Fconstrs):-
+get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Phase_feasible,Chain,Fconstrs):-
 	bagof_no_fail(Df,
 		get_lower_bound_val(Head,Call,Chain,Phase,Df)
 	,Dfs),
 	ut_split_at_pos(Dfs,Max,Dfs_selected,_),
-	maplist(get_loop_itvar,Phase,Bounded),
+	maplist(get_loop_itvar,Phase_feasible,Bounded),
 	maplist(fconstr_new(Bounded,lb),Dfs_selected,Fconstrs).
 	   
 get_lower_bound_val(Head,Call,Chain,Phase,LB):-
@@ -554,8 +582,9 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Transitive invariants
-transitive_invariant_strategy(bound(Op,Lin_exp,Bounded),Head,Phase,New_fconstrs):-
+transitive_invariant_strategy(bound(Op,Lin_exp,Bounded),Head,New_fconstrs):-
 	get_constr_op(Max_min,Op),
+	current_phase(Phase),
 	phase_transitive_star_closure(Phase,_,Head_total,Head,Cs_star_trans),
 	phase_loop(Phase,_,Head,_Call,Cs),
 	ut_flat_list([Cs_star_trans,Cs],Context),

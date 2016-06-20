@@ -39,8 +39,9 @@ This module uses the following auxiliary cost structures:
 		cstr_maxminimization/5
 	]).
 
+:- use_module('../db',[get_input_output_vars/3]).	
+:- use_module(constraints_maximization,[max_min_linear_expression_all/5]).
 :- use_module('../IO/params',[get_param/2]).	
-
 :- use_module('../utils/cost_structures',[
 		max_min_ub_lb/2,
 		cstr_empty/1,
@@ -96,10 +97,11 @@ This module uses the following auxiliary cost structures:
 % where max_min is 'max' or 'min' and equal to Max_min
 % solve a cost structure Cost_long into the maximum or minimum of a list of strexp
 cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
-	Head=..[_|Vars],
 	max_min_ub_lb(Max_min,Op),
-	cstr_shorten_variables_names(Cost_long,list,Cost_short),	
-	cstr_simplify(Cost_short,Vars,Inv,Max_min,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,BSummands,BConstant)),
+	get_input_output_vars(Head,IVars,_OVars),
+	express_in_terms_of_vars(IVars,Inv,Cost_long,Cost_input_vars),
+	cstr_shorten_variables_names(Cost_input_vars,list,Cost_short),	
+	cstr_simplify(Cost_short,IVars,Inv,Max_min,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,BSummands,BConstant)),
 	basic_cost_to_astrexp(BSummands,BConstant,Max_min,Exp_cost),
 	%join all constraints
 	ut_flat_list([Ub_fconstrs,Lb_fconstrs,Iconstrs],All_bconstrs),
@@ -113,13 +115,13 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 	% group itvars and constraints that depend on each other
 	group_remaining_constrs(Remaining_constrs,Groups),
 	% generate all possible maximizations or minimizations
-	findall((Vars,Cost_closed),
+	findall((IVars,Cost_closed),
 		(
 		incremental_maxminization(Groups,Solved_exp,Cost),
 		partial_strexp_to_strexp(Cost,Cost_closed)
 		)
 	,Costs_list),
-	assign_right_vars(Costs_list,Vars,Costs_list_right),
+	assign_right_vars(Costs_list,IVars,Costs_list_right),
 	from_list_sl(Costs_list_right,Cost_set),!,
 	%maplist(writeln,Cost_set),
 	Cost_max_min=..[Max_min,Cost_set],!.
@@ -129,7 +131,14 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 cstr_maxminimization(Cost_long,Max_min,Head,_Inv,_Cost_max_min):-
 	throw(maximization_failed(Cost_long,Max_min,Head)).	
 
-
+express_in_terms_of_vars(IVars,Inv,cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs,BSummands,BConstant),cost(Ub_fconstrs2,Lb_fconstrs2,Iconstrs,BSummands,BConstant)):-
+	foldl(constr_express_in_terms_of_vars(IVars,Inv),Ub_fconstrs1,[],Ub_fconstrs2),
+	foldl(constr_express_in_terms_of_vars(IVars,Inv),Lb_fconstrs1,[],Lb_fconstrs2).
+constr_express_in_terms_of_vars(IVars,Inv,bound(Op,Lin_exp,Bounded),Accum,[bound(Op,Lin_exp_input,Bounded)|Accum]):-
+	max_min_ub_lb(Max_min,Op),
+	max_min_linear_expression_all(Lin_exp, IVars, Inv,Max_min, Maxs_mins_head),
+	member(Lin_exp_input,Maxs_mins_head),!.
+constr_express_in_terms_of_vars(_IVars,_Inv,_,Accum,Accum).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 get_non_deterministic_vars(bound(_,_,[_Bounded]),Accum_set,Accum_set):-!.

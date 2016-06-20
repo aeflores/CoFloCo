@@ -45,14 +45,6 @@ It uses linear programming to infer linear expressions that satisfy a property g
     get_generators/4,ppl_maximize_with_point/5,ppl_minimize_with_point/5
 ]).
 
-:- use_module(stdlib(matrix_constraint),[
-    decompose_mrep/4,
-    mrep_to_constraints/3,
-    constraints_to_mrep/4,
-    from_constraints_mrep/4,
-    get_entailment_cone_mrep/3,
-    constraints_entailed_cone/5
-]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,nad_maximize/3,
 						nad_consistent_constraints/1,
 						nad_entails/3, nad_lub/6,nad_list_lub/2,
@@ -70,7 +62,6 @@ It uses linear programming to infer linear expressions that satisfy a property g
 	subtract_fr/3]).	
 :- use_module(stdlib(fraction_list), [naturalize_frl/3]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).   
-:- use_module(stdlib(matrix_constraint),[constraints_entailed_cone/5]).   
 :- use_module(stdlib(linear_expression), [
 	parse_le_fast/2,
 	parse_le/2,
