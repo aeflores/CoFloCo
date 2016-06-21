@@ -391,7 +391,7 @@ strexp_simplify_easy_maxmin(Strexp_list,Max_min,Strexp_list1):-
 	).
 strexp_simplify_easy_maxmin(Strexp_list,_Max_min,Strexp_list).	
 
-%! create_simple_maxmin_summand(Strexp_list:list(strexp_var
+%! create_simple_maxmin_summand(Strexp_list:list(strexp_var),Max_min:flag,Res:term)
 % given a list of strexp Strexp_list, create a summand with max/min(Strexp_list)
 create_simple_maxmin_summand(Strexp_list,Max_min,Res):-
 	(Strexp_list=[]->

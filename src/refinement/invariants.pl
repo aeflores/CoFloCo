@@ -40,7 +40,9 @@ This module computes different kinds of invariants for the chains:
 		      add_backward_invariant/3,
 		      backward_invariant/4,
 		      partial_backward_invariant/5,
+		      context_insensitive_backward_invariant/3,
 		      forward_invariant/4,
+		      context_insensitive_forward_invariant/3,
 		      scc_forward_invariant/3,
 		      phase_transitive_closure/5,
 		      phase_transitive_star_closure/5,
@@ -111,6 +113,18 @@ This module computes different kinds of invariants for the chains:
 % Inv is expressed in terms of the variables of Head and Call
 :- dynamic  phase_transitive_star_closure/5.
 
+
+context_insensitive_backward_invariant(Head,Phase,Backward_invariant):-
+	bagof(Back_inv_star,	
+	   Back_inv^Chain2^Fwd_inv^partial_backward_invariant([Phase|Chain2],Head,Fwd_inv,Back_inv,Back_inv_star),
+	       Back_invs),
+	nad_list_lub(Back_invs,Backward_invariant).
+
+context_insensitive_forward_invariant(Head,Phase,Forward_invariant):-
+	bagof(Fwd_inv,	
+	   Hash_fwd_inv^Chain_rev2^RefCnt^forward_invariant(Head,([Phase|Chain_rev2],RefCnt),Hash_fwd_inv,Fwd_inv),
+	       Fwd_invs),	
+	nad_list_lub(Fwd_invs,Forward_invariant).
 
 %! widening_frequency(-N:int) is det
 % how often widening is performed

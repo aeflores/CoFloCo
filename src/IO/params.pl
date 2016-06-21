@@ -64,9 +64,8 @@ parameter_dictionary('-verbosity','v',[number]).
 parameter_dictionary('-debug','debug',[bool]).
 
 parameter_dictionary('-assume_sequential','assume_sequential',[bool]).
-parameter_dictionary('-n_rankings','n_rankings',[number]).
+parameter_dictionary('-n_candidates','n_candidates',[number]).
 
-parameter_dictionary('-maximize_fast','maximize_fast',[number]).
 parameter_dictionary('-solve_fast','solve_fast',[bool]).
 
 parameter_dictionary('-compress_chains','compress_chains',[bool]).
@@ -77,6 +76,8 @@ parameter_dictionary('-compute_ubs','compute_ubs',[bool]).
 parameter_dictionary('-compute_lbs','compute_lbs',[bool]).
 parameter_dictionary('-conditional_ubs','conditional_ubs',[bool]).
 parameter_dictionary('-conditional_lbs','conditional_lbs',[bool]).
+
+parameter_dictionary('-context_sensitive','context_sensitive',[number]).
 
 :-dynamic incompatible_parameters/2.
 
@@ -92,8 +93,8 @@ clean_params:-
 %  * -maximize_fast 5
 set_default_params:-
 	parse_params(['-v','2',
-		      '-n_rankings','1',
-		      '-maximize_fast','1',
+		      '-n_candidates','1',
+		      '-context_sensitive','1',
 		      '-compute_ubs',
 		      '-compute_lbs'
 		      ]).
@@ -192,21 +193,22 @@ param_description('input','filename: Selects input program.').
 param_description('stats','Show some basic statistics').
 param_description('debug','Show debug information').
 param_description('v','0-3 : selects the level of verbosity ').
-%param_description('visual',_,'Launch the upper bound graphical visualizer ').
-%param_description('break_chains','Attempt to break phases').
+param_description('n_candidates',' nat : (default 1) Sets the maximum number of candidates considered for a strategy').
+param_description('context_sensitive',' nat : (default 1) How context sensitive the bound computation is
+ 1. Each phase is solved only once with invariants valid for all its appearances in different chains
+ 2. Each phase is solved individually for each chain taking the specific invariants of that chain into account').
 
-param_description('n_rankings',' nat : (default 1) Sets the maximum number of ranking functions that are considered for each cost equation ').
 param_description('assume_sequential',
 'Assume that the calls performed in a cost equation are done sequentially
 It is important for non-terminating programs').
-
-%param_description('solve_precise',
-%' nat : (default not active) The  maximum number of extra constraints that can be considered when solving cost structures').
-
-param_description('maximize_fast',
-'nat : (default 1) The  maximum number of upper bound of a cost expression that the maximize operation can return').
+param_description('compute_ubs',
+'Obtain closed-form upper bounds').
+param_description('compute_lbs',
+'Obtain closed-form lower bounds (If disabled, additional simplifications can be made on cost structures)').
 param_description('conditional_ubs',
 'Generate a set of conditional upper bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
+param_description('conditional_lbs',
+'Generate a set of conditional lower bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
 
 param_description('compress_chains',
 'Join chains that have the same precondition. It can increase performance greatly but in some cases it can produce upper bounds that are less tight by a constant factor (the asymptotic complexity does not change)').

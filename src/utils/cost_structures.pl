@@ -988,12 +988,14 @@ itvar_shorten_name(list,Name,Short_name):-
 	 	Short_name=[s(Id)]
 	 	).
 itvar_shorten_name(no_list,Name,Short_name):-
-	term_hash(Name,Hash),
-	(short_db_no_list(Hash,Name,Short_name)->
+	itvar_recover_long_name(Name,Name_long),
+	%Name_long=Name,
+	term_hash(Name_long,Hash),
+	(short_db_no_list(Hash,Name_long,Short_name)->
 		true
 		;
 	 	counter_increase(short_terms,1,Id),
-	 	assert(short_db_no_list(Hash,Name,s(Id))),
+	 	assert(short_db_no_list(Hash,Name_long,s(Id))),
 	 	Short_name=s(Id)
 	 	).	
 	 	

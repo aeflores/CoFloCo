@@ -756,9 +756,9 @@ ground_header_prime(Head,N):-
 unify_if_possible(X,X):-!.
 unify_if_possible(_,_):-!.	
 
-prime_name(1,Name,Namep):-
+prime_name(1,Name,Namep):-!,
 	with_output_to(atom(Namep),format('~p\'',[Name])).
-prime_name(N,Name,Namep):-N>1,
+prime_name(N,Name,Namep):-N>1,!,
 	with_output_to(atom(Namep),format('~p\'~p',[Name,N])).
 
 

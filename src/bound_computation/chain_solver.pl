@@ -60,7 +60,7 @@ For the constraints, this is done at the same time of the compression.
 :-use_module(library(lists)).
 :-use_module('../utils/cost_structures',[new_itvar/1]).	
 :-use_module('../IO/params',[get_param/2]).
-:-use_module('../IO/output',[print_header/3,print_phase_cost/4]).
+:-use_module('../IO/output',[print_phase_cost/4]).
 %! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cstr) is det
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
@@ -112,25 +112,17 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_next
 
 
 %multiple recursion case
-compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_simple,Cs_next):-
+compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs_next):-
 	copy_term(Head_total,Head),
 	maplist(compress_chain_costs_aux([Phase|Chain_rev],Head_total,Call),Tails,Costs_prev,_Css_prev),
 	%nad_list_lub(Css_prev,_Cs_prev),
 	cstr_or_compress(Costs_prev,Cost_prev),
-	
-
 	profiling_start_timer(loop_phases),
 	copy_term((Call,Cost_prev),(Head,Cost_prev2)),
-	
 	forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
-	partial_backward_invariant([multiple(Phase,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,Back_inv_star),
-	
-	(get_param(debug,[])->
-		print_header('Computing cost of phase ~p with multiple recursion with suffix ~p and prefix ~p ~n',[Phase,Tails,Chain_rev],4)
-	    ;true),
-	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],Cost_prev2,Back_inv_star,Cost),
-	cstr_join_equal_fconstr(Cost,Cost_simple),
-	print_phase_cost(Phase,Head,[],Cost_simple),
+	partial_backward_invariant([multiple(Phase,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,_),
+	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],[multiple(Phase,Tails)],Cost_prev2,Cost),
+	print_phase_cost(Phase,Head,[],Cost),
 
 	profiling_stop_timer_acum(loop_phases,_),
 	nad_list_glb([Local_inv,Entry_pattern],Cs_next).	
@@ -170,18 +162,9 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs
 	copy_term(Head_total,Call),
 	compress_chain_costs(Chain,[Phase|Chain_rev],Head_total,Call,Cost_prev,Cs_prev),
 	profiling_start_timer(loop_phases),
-	(get_param(debug,[])->
-	 	print_header('Computing cost of phase ~p with suffix ~p and prefix ~p ~n',[Phase,Chain,Chain_rev],4)
-	 	;true),
-%	
-	forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
-	bagof(Back_inv_star,	
-	   Back_inv^partial_backward_invariant([Phase|Chain],Head,(Hash_local_inv,Local_inv),Back_inv,Back_inv_star),
-	       Back_invs),
-	nad_list_lub(Back_invs,Back_inv_all),
-	compute_phase_cost(Head,[Call],Phase,[Phase|Chain_rev],Back_inv_all,Cost),
-	cstr_join_equal_fconstr(Cost,Cost_simple),
-	print_phase_cost(Phase,Head,[Call],Cost_simple),
+	compute_phase_cost(Head,[Call],Phase,[Phase|Chain_rev],[Phase|Chain],Cost),
+	
+	print_phase_cost(Phase,Head,[Call],Cost),
 	profiling_stop_timer_acum(loop_phases,_),
 	
 	profiling_start_timer(chain_solver),
@@ -190,7 +173,7 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs
 	nad_list_glb([Cs_prev|Cs_list],Cs_total),
 	% combine the upper bound and lower bound final constraints separately
 	Cost_prev=cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands_prev,BConstant_prev),
-	Cost_simple=cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant1),
+	Cost=cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant1),
 	append(Ub_fconstrs,Ub_fconstrs1,Ub_fconstrs_total),
 	append(Lb_fconstrs,Lb_fconstrs1,Lb_fconstrs_total),
 	max_min_fconstrs_in_chain(Ub_fconstrs_total,[Phase|Chain],Cs_total,Head,Ub_fconstrs_new,Ub_iconstrs_extra),
