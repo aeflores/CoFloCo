@@ -51,6 +51,7 @@ This module prints the results of the analysis
 		  print_closed_results/2,
 		  print_cost_structure/1,
 		  print_aux_exp/1,
+		  print_itvars_renaming/1,
 		  print_stats/0]).
 
 :- use_module('../db',[ground_equation_header/1,
@@ -74,6 +75,7 @@ This module prints the results of the analysis
 :- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2,tuple/3]).
 
 :- use_module('../utils/cost_structures',[
+	cstr_get_itvars/2,
 	cstr_shorten_variables_names/3,
 	cstr_get_unbounded_itvars/2,
 	itvar_recover_long_name/2,
@@ -344,7 +346,7 @@ print_partial_rfs_for_loop((Loop,Rfs)):-
 	format('  - RF of loop ~p:~n',[Loop]),
 	maplist(print_partial_rf,Rfs).
 	
-print_partial_rf((Rf,[])):-
+print_partial_rf((Rf,[])):-!,
 	write_le(Rf,Rf_print),
 	format('    ~p~n',[Rf_print]).
 print_partial_rf((Rf,Deps)):-
@@ -375,7 +377,7 @@ print_phase_termination_argument(_Head,_Phase,_Term_argument,_).
 %! print_chains_entry(+Entry:term,+RefCnt:int) is det
 % print the inferred chains in SCC Entry in the refinement phase RefCnt
 print_chains_entry(Entry,RefCnt):-
-	get_param(v,[X]),X > 2,
+	get_param(v,[X]),X > 2,!,
 	ground_header(Entry),
 	print_header('Resulting Chains:~p ~n',[Entry],3),
 	print_chains_entry_1(RefCnt,Entry).
@@ -503,8 +505,10 @@ write_lin_exp_in_phase(Loop_vars,Exp,Exp_print):-
 
 
 print_loops_costs(Phase_feasible,Phase_vars,Costs):-
+	get_param(v,[X]),X > 2,!,
 	print_header('Cost of loops ~p ~n',[Phase_feasible],4),
 	maplist(print_loop_cost,Phase_feasible,Phase_vars,Costs).
+print_loops_costs(_,_,_).
 
 print_loop_cost(Loop,loop_vars(Head,Calls),Cost):-
 	get_param(v,[X]),X > 2,
@@ -518,7 +522,6 @@ print_loop_cost(Loop,loop_vars(Head,Calls),Cost):-
 	format('~n * loop ~p:~p -> ~p ~n',[Loop,Headp,Callsp]),
 	print_cost_structure(Costp).
 
-print_loop_cost(_,_,_).	
 
 print_phase_cost(Phase,Head,Calls,Cost):-
 	get_param(v,[X]),X > 2,
@@ -574,7 +577,7 @@ print_results_1(Entry,RefCnt):-
  	fail.
 print_results_1(_Entry,_).
 
-
+	
 
 gen_mult_bases((A,B),A*B).
 
@@ -646,6 +649,22 @@ print_aux_exp(bound(Op,Exp_0,Bounded)):-
 	
 print_op(ub,'=<').
 print_op(lb,'>=').
+
+
+print_itvars_renaming(Cost):-
+	get_param(debug,[]),!,
+	cstr_get_itvars(Cost,Itvar_set),
+	(Itvar_set\=[]->
+		maplist(get_itvar_renaming,Itvar_set,Renaming),
+		format(' * Renamed intermediate variables: ~n~p~n',[Renaming])
+	;
+		true
+	).
+print_itvars_renaming(_Cost).
+	
+get_itvar_renaming([Prefix|Rest],Old >> New ):-
+		itvar_shorten_name(no_list,Rest,Old),
+		itvar_shorten_name(no_list,[Prefix|Rest],New).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
