@@ -46,7 +46,7 @@ into the sum of the linear expression in one level of the execution tree multipl
 			iconstr_new/4]).	
 :- use_module('../../db',[get_input_output_vars/3]).			
 :- use_module('../../IO/params',[get_param/2]).		
-:- use_module('../../IO/output',[print_product_strategy_message/2]).		
+:- use_module('../../IO/output',[print_product_strategy_message/3]).		
 :- use_module(library(apply_macros)).
 :- use_module(library(lists)).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,7 +73,7 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 	 ),
 	save_pending_list(max_min,Head,Loop,Max_fconstrs,Pending,Pending_out),
     Aux_exp=bound(Op,Astrexp,Bounded),
-    print_product_strategy_message(Head,Max_fconstrs).
+    print_product_strategy_message(Head,max_min,Max_fconstrs).
 
     
  level_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Iconstr,Pending,Pending_out):-
@@ -96,6 +96,6 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 	 ),
 	save_pending_list(level,Head,0,Max_fconstrs,Pending,Pending_out),
     Iconstr=bound(Op,Astrexp,Bounded),
-    print_product_strategy_message(Head,Max_fconstrs).
+    print_product_strategy_message(Head,level,Max_fconstrs).
  
     

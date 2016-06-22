@@ -37,7 +37,7 @@ This module prints the results of the analysis
 		  print_pending_set/2,
 		  print_selected_pending_constraint/3,
 		  print_new_phase_constraints/3,
-		  print_product_strategy_message/2,
+		  print_product_strategy_message/3,
 		  print_candidate_in_phase/3,
 		  write_lin_exp_in_phase/3,
 		  print_removed_redundant_constr_message/2,
@@ -477,14 +477,18 @@ print_new_phase_constraints(Head,Fconstrs,Iconstrs):-
 	
 print_new_phase_constraints(_,_,_).
 
-print_product_strategy_message(Head,Fconstrs):-
+print_product_strategy_message(Head,Type,Fconstrs):-
 	get_param(debug,[]),!,
 	copy_term((Head,Fconstrs),(Head_gr,Fconstrs_gr)),
 	ground_header(Head_gr),
 	maplist(write_top_exp,Fconstrs_gr,Fconstrs_print),
-	format('     - Adding to Pmax/min: ~p ~n',[Fconstrs_print]).
+	(Type=level->
+		format('     - Adding to Plevel-sum: ~p ~n',[Fconstrs_print])
+		;
+		format('     - Adding to Pmax/min: ~p ~n',[Fconstrs_print])
+	).
 	
-print_product_strategy_message(_,_).
+print_product_strategy_message(_,_,_).
 
 
 % debugging predicates 
