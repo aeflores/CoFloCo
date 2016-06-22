@@ -44,6 +44,7 @@ This module prints the results of the analysis
 		  print_joined_itvar_sets_message/1,
 		  print_results/2,
 		  print_phase_cost/4,
+		  print_loops_costs/3,
 		  print_single_closed_result/2,
 		  print_conditional_upper_bounds/1,
 		  print_conditional_lower_bounds/1,
@@ -91,9 +92,10 @@ This module prints the results of the analysis
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list),[contains_sl/2]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
+
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
-
+:-use_module(library(varnumbers)).
 ansi_format_aux(Options,Format,Args):-current_prolog_flag(dialect,swi),ansi_format(Options,Format,Args).
 ansi_format_aux(_,Format,Args):-current_prolog_flag(dialect,yap),format(Format,Args).
 
@@ -196,11 +198,14 @@ pretty_print_CE(Id):-
 	foldl(unify_equalities,Cs,[],Cs2),
 	maplist(pretty_print_constr,Cs2,Cs3),
 	ground_header(Head),
-	numbervars((Cost,Calls,Cs3),0,_),
+	Head=..[_|Var_names],
+	max_var_number(Var_names,0,Max),InitN is Max+1,
+	numbervars((Cost,Calls,Cs3),InitN,_),
 	format('* CE ~p: ~p =~| ',[Id,Head]),
 	print_cost_structure(Cost),
 	pretty_print_refinedCalls(Calls,'+'),nl,
 	format('     ~p ~n',[Cs3]).
+
 
 pretty_print_refinedCalls([],_).
 pretty_print_refinedCalls([(Call,external_pattern(Pattern))|Calls],Sep):-!,
@@ -386,22 +391,11 @@ print_chains_entry_1(_,_):-nl.
 
 print_chain_simple(Pattern):-
 	(non_terminating_chain(_,_,Pattern)->
-	   %Pattern=[_|Pattern1],
 	   ansi_format_aux([fg(red)],'~p...',[Pattern])
 	 ;
 	   ansi_format_aux([],'~p',[Pattern])
 	).
 
-%! print_chain(+Entry:term,Pattern:chain) is det
-% print the chain Pattern
-
-print_chain(Entry,Pattern):-
-	(non_terminating_chain(Entry,_,Pattern)->
-	   %Pattern=[_|Pattern1],
-	   ansi_format_aux([fg(red)],'~p:~p...',[Entry,Pattern])
-	 ;
-	   ansi_format_aux([],'~p:~p',[Entry,Pattern])
-	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -506,6 +500,25 @@ write_lin_exp_in_phase(Loop_vars,Exp,Exp_print):-
 	ground_header(Head_gr),
 	ground_rec_calls(Calls_gr,1),
 	write_le(Exp_gr,Exp_print).
+
+
+print_loops_costs(Phase_feasible,Phase_vars,Costs):-
+	print_header('Cost of loops ~p ~n',[Phase_feasible],4),
+	maplist(print_loop_cost,Phase_feasible,Phase_vars,Costs).
+
+print_loop_cost(Loop,loop_vars(Head,Calls),Cost):-
+	get_param(v,[X]),X > 2,
+	copy_term((Head,Calls,Cost),(Headp,Callsp,Costp)),
+	ground_header(Headp),
+	(
+		Callsp==[]
+		;
+		ground_rec_calls(Callsp,1)
+	),
+	format('~n * loop ~p:~p -> ~p ~n',[Loop,Headp,Callsp]),
+	print_cost_structure(Costp).
+
+print_loop_cost(_,_,_).	
 
 print_phase_cost(Phase,Head,Calls,Cost):-
 	get_param(v,[X]),X > 2,
