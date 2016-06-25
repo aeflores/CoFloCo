@@ -53,11 +53,17 @@ main:-
 	  compute_undefined_predicates(Total_crs,Selected_crs,Undefined_predicates),
 	  % print the crs
 	  maplist(print_cr([singletons]),Selected_crs),
+	  maplist(extract_func,Selected_crs,Selected_funcs),
+	  list_to_set(Selected_funcs,Unique_funcs),
+	  maplist(print_inout,Unique_funcs),
 	  format(user_error,'Undefined functions: ~q ~n',[Undefined_predicates])
 	  ),Fail,writeln(Fail)),
 	halt.
 
 
+extract_func(eq(Head,_,_,_),[Name,N_args]):-
+	Head =.. [Name|Args],
+	length(Args,N_args).
 
 
 nat_constraints(Args,Constrs):-nat_constrs(Args,Constrs,0),!.
@@ -364,12 +370,22 @@ fix_quotes([X|Xs],[[quote,Ls]|Xss_fixed]):-
 fix_quotes([X|Xs],[X_fixed|Xs_fixed]):-
     fix_quotes(X,X_fixed),
     fix_quotes(Xs,Xs_fixed).	
-	
+
 print_cr(Opts,Cr):-
 	copy_term(Cr,Crp),
 	numbervars(Crp,0,_,Opts),
 	format('~q.~n',[Crp]).
-	
+
+print_inout([Name,N_args]):-
+	N_args_in is N_args-3,
+	length(In_list,N_args_in),
+	length(Out_list,3),
+	numbervars(In_list,0,_),
+	numbervars(Out_list,N_args_in,_),
+	append(In_list,Out_list,Args),
+	Func_ex =.. [Name|Args],
+	format("~q.~n",[input_output_vars(Func_ex,In_list,Out_list)]).
+
 make_dicc(nil,[],[]).	
 make_dicc([],[],[]).
 make_dicc([Name|Names],[Var|Vars],Map1):-
