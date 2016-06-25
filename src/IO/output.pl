@@ -37,19 +37,21 @@ This module prints the results of the analysis
 		  print_pending_set/2,
 		  print_selected_pending_constraint/3,
 		  print_new_phase_constraints/3,
-		  print_product_strategy_message/2,
+		  print_product_strategy_message/3,
 		  print_candidate_in_phase/3,
 		  write_lin_exp_in_phase/3,
 		  print_removed_redundant_constr_message/2,
 		  print_joined_itvar_sets_message/1,
 		  print_results/2,
 		  print_phase_cost/4,
+		  print_loops_costs/3,
 		  print_single_closed_result/2,
 		  print_conditional_upper_bounds/1,
 		  print_conditional_lower_bounds/1,
 		  print_closed_results/2,
 		  print_cost_structure/1,
 		  print_aux_exp/1,
+		  print_itvars_renaming/1,
 		  print_stats/0]).
 
 :- use_module('../db',[ground_equation_header/1,
@@ -73,6 +75,7 @@ This module prints the results of the analysis
 :- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2,tuple/3]).
 
 :- use_module('../utils/cost_structures',[
+	cstr_get_itvars/2,
 	cstr_shorten_variables_names/3,
 	cstr_get_unbounded_itvars/2,
 	itvar_recover_long_name/2,
@@ -91,9 +94,10 @@ This module prints the results of the analysis
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list),[contains_sl/2]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
+
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
-
+:-use_module(library(varnumbers)).
 ansi_format_aux(Options,Format,Args):-current_prolog_flag(dialect,swi),ansi_format(Options,Format,Args).
 ansi_format_aux(_,Format,Args):-current_prolog_flag(dialect,yap),format(Format,Args).
 
@@ -196,11 +200,14 @@ pretty_print_CE(Id):-
 	foldl(unify_equalities,Cs,[],Cs2),
 	maplist(pretty_print_constr,Cs2,Cs3),
 	ground_header(Head),
-	numbervars((Cost,Calls,Cs3),0,_),
+	Head=..[_|Var_names],
+	max_var_number(Var_names,0,Max),InitN is Max+1,
+	numbervars((Cost,Calls,Cs3),InitN,_),
 	format('* CE ~p: ~p =~| ',[Id,Head]),
 	print_cost_structure(Cost),
 	pretty_print_refinedCalls(Calls,'+'),nl,
 	format('     ~p ~n',[Cs3]).
+
 
 pretty_print_refinedCalls([],_).
 pretty_print_refinedCalls([(Call,external_pattern(Pattern))|Calls],Sep):-!,
@@ -339,7 +346,7 @@ print_partial_rfs_for_loop((Loop,Rfs)):-
 	format('  - RF of loop ~p:~n',[Loop]),
 	maplist(print_partial_rf,Rfs).
 	
-print_partial_rf((Rf,[])):-
+print_partial_rf((Rf,[])):-!,
 	write_le(Rf,Rf_print),
 	format('    ~p~n',[Rf_print]).
 print_partial_rf((Rf,Deps)):-
@@ -370,7 +377,7 @@ print_phase_termination_argument(_Head,_Phase,_Term_argument,_).
 %! print_chains_entry(+Entry:term,+RefCnt:int) is det
 % print the inferred chains in SCC Entry in the refinement phase RefCnt
 print_chains_entry(Entry,RefCnt):-
-	get_param(v,[X]),X > 2,
+	get_param(v,[X]),X > 2,!,
 	ground_header(Entry),
 	print_header('Resulting Chains:~p ~n',[Entry],3),
 	print_chains_entry_1(RefCnt,Entry).
@@ -386,22 +393,11 @@ print_chains_entry_1(_,_):-nl.
 
 print_chain_simple(Pattern):-
 	(non_terminating_chain(_,_,Pattern)->
-	   %Pattern=[_|Pattern1],
 	   ansi_format_aux([fg(red)],'~p...',[Pattern])
 	 ;
 	   ansi_format_aux([],'~p',[Pattern])
 	).
 
-%! print_chain(+Entry:term,Pattern:chain) is det
-% print the chain Pattern
-
-print_chain(Entry,Pattern):-
-	(non_terminating_chain(Entry,_,Pattern)->
-	   %Pattern=[_|Pattern1],
-	   ansi_format_aux([fg(red)],'~p:~p...',[Entry,Pattern])
-	 ;
-	   ansi_format_aux([],'~p:~p',[Entry,Pattern])
-	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -477,14 +473,18 @@ print_new_phase_constraints(Head,Fconstrs,Iconstrs):-
 	
 print_new_phase_constraints(_,_,_).
 
-print_product_strategy_message(Head,Fconstrs):-
+print_product_strategy_message(Head,Type,Fconstrs):-
 	get_param(debug,[]),!,
 	copy_term((Head,Fconstrs),(Head_gr,Fconstrs_gr)),
 	ground_header(Head_gr),
 	maplist(write_top_exp,Fconstrs_gr,Fconstrs_print),
-	format('     - Adding to Pmax/min: ~p ~n',[Fconstrs_print]).
+	(Type=level->
+		format('     - Adding to Plevel-sum: ~p ~n',[Fconstrs_print])
+		;
+		format('     - Adding to Pmax/min: ~p ~n',[Fconstrs_print])
+	).
 	
-print_product_strategy_message(_,_).
+print_product_strategy_message(_,_,_).
 
 
 % debugging predicates 
@@ -502,6 +502,26 @@ write_lin_exp_in_phase(Loop_vars,Exp,Exp_print):-
 	ground_header(Head_gr),
 	ground_rec_calls(Calls_gr,1),
 	write_le(Exp_gr,Exp_print).
+
+
+print_loops_costs(Phase_feasible,Phase_vars,Costs):-
+	get_param(v,[X]),X > 2,!,
+	print_header('Cost of loops ~p ~n',[Phase_feasible],4),
+	maplist(print_loop_cost,Phase_feasible,Phase_vars,Costs).
+print_loops_costs(_,_,_).
+
+print_loop_cost(Loop,loop_vars(Head,Calls),Cost):-
+	get_param(v,[X]),X > 2,
+	copy_term((Head,Calls,Cost),(Headp,Callsp,Costp)),
+	ground_header(Headp),
+	(
+		Callsp==[]
+		;
+		ground_rec_calls(Callsp,1)
+	),
+	format('~n * loop ~p:~p -> ~p ~n',[Loop,Headp,Callsp]),
+	print_cost_structure(Costp).
+
 
 print_phase_cost(Phase,Head,Calls,Cost):-
 	get_param(v,[X]),X > 2,
@@ -557,7 +577,7 @@ print_results_1(Entry,RefCnt):-
  	fail.
 print_results_1(_Entry,_).
 
-
+	
 
 gen_mult_bases((A,B),A*B).
 
@@ -629,6 +649,22 @@ print_aux_exp(bound(Op,Exp_0,Bounded)):-
 	
 print_op(ub,'=<').
 print_op(lb,'>=').
+
+
+print_itvars_renaming(Cost):-
+	get_param(debug,[]),!,
+	cstr_get_itvars(Cost,Itvar_set),
+	(Itvar_set\=[]->
+		maplist(get_itvar_renaming,Itvar_set,Renaming),
+		format(' * Renamed intermediate variables: ~n~p~n',[Renaming])
+	;
+		true
+	).
+print_itvars_renaming(_Cost).
+	
+get_itvar_renaming([Prefix|Rest],Old >> New ):-
+		itvar_shorten_name(no_list,Rest,Old),
+		itvar_shorten_name(no_list,[Prefix|Rest],New).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

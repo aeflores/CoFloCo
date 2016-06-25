@@ -96,7 +96,7 @@ write_coeffs((Var,Coeff),Coeff*Var).
 
 %! repeat_n_times(+N:int,+Elem:A,-Elems:list(A)) is det
 % generate a list with N copies of Elem
-repeat_n_times(0,_,[]).
+repeat_n_times(0,_,[]):-!.
 repeat_n_times(N,Elem,[Elem|Is]):-
 	N>0,
 	N2 is N-1,

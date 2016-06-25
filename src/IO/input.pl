@@ -29,7 +29,7 @@ This module reads cost equations and stores them in the database after normalizi
 					save_input_output_vars/3,
 					cofloco_aux_entry_name/1,
 					add_ground_equation_header/2]).
-:- use_module('../utils/cofloco_utils',[normalize_constraint/2]).
+:- use_module('../utils/cofloco_utils',[normalize_constraint/2,zip_with_op2/4]).
 :- use_module('../utils/cost_expressions',[is_linear_exp/1,parse_cost_expression/2]).
 :- use_module('../utils/cost_structures',[cstr_from_cexpr/2]).
 :- use_module('../utils/polyhedra_optimizations',[slice_relevant_constraints/4,nad_normalize_polyhedron/2]).
@@ -40,6 +40,7 @@ This module reads cost equations and stores them in the database after normalizi
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
+:-use_module(library(varnumbers)).
 %! read_cost_equations(+File:filename) is det
 %  read a set of cost equations from a file and call store_cost_equations/1.
 read_cost_equations(File) :-
@@ -161,11 +162,51 @@ get_eq_head(eq(Head,_Exp,_Body_Calls,_Size_Rel),Head).
 %! get_ground_term(+Term:term,+Bindings:list(atom=var),-Ground_term:term) is det
 % apply the bindings of Bindings to Term
 get_ground_term(Term,Bindings,Ground_term):-
-	copy_term((Term,Bindings),(Ground_term,Bindings2)),
-	maplist(unify_eq,Bindings2).
+	copy_term((Term,Bindings),(Term2,Bindings2)),
+	maplist(substitute_numbervars,Bindings2,Bindings3),
+	max_var_number(Bindings3,0,Max),
+	Max1 is Max+1,
+	Term2=..[F|Vars],
+	maplist(unify_eq,Bindings3),
+	maplist(subtitute_constants_by_vars,Vars,Vars1),
+	numbervars(Vars1,Max1,_),
+	Ground_term=..[F|Vars1].
 	
 unify_eq(X=X).
 
+substitute_numbervars(Atom=Var,'$VAR'(Pos)=Var):-
+	atom_chars(Atom,[Capital|Number_chars]),
+	char_type(Capital,upper),
+	(
+		Number_chars=[],
+		Number=0
+	; 
+		is_number_char_list(Number_chars),
+		number_chars(Number,Number_chars)
+	),!,
+	char_code(Capital,Code),
+	char_code('A',Code_ini),
+	Pos is (Code-Code_ini)+ (26*Number).
+	
+substitute_numbervars(Atom=Var,Atom=Var).
+	
+is_number_char_list(List):-
+	char_code('0',Zero),
+	char_code('9',Nine),
+	is_number_char_list_1(List,Zero,Nine).
+	
+is_number_char_list_1([],_Zero,_Nine).
+is_number_char_list_1([Ch|Chs],Zero,Nine):-
+	char_code(Ch,Ch_code),
+	Ch_code=< Nine,
+	Ch_code>= Zero,
+	is_number_char_list_1(Chs,Zero,Nine).	
+	
+subtitute_constants_by_vars(Atom,_):-
+	atom(Atom),
+	atom_chars(Atom,Number_chars),
+	is_number_char_list(Number_chars),!.
+subtitute_constants_by_vars(X,X).
 
 
 %! remove_undefined_calls is det
