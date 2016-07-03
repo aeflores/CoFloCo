@@ -306,10 +306,6 @@ strexp_apply_distributibity(mult(Factors,Coeff),Summands_flat):-
 
 strexp_apply_distributibity(mult(Factors,Coeff),mult(Factors,Coeff)).
 
-simplify_factor(mult(Factors,Coeff),mult(Factors1,Coeff)):-
-	maplist(simplify_factor_internal,Factors,Factors1),!.
-	
-	
 multiply_by_factors(Factors1,Coeff,mult(Summand,Coeff2),mult(Factors2,Coeff3)):-
 	multiply_fr(Coeff,Coeff2,Coeff3),
 	append(Factors1,Summand,Factors2).	

@@ -189,7 +189,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 				    format('     - Loop ~p  increases the expression by ~p ~n',[Loop,Max_increments_print]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
-				save_pending_list(maxsum,Loop,((Head,Calls),Maxsums),Pending,Pending_out),
+				save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending_out),
 				Pstrexp_pair=add([mult([Aux_itvar])])-add([]),
 				Resets=[]
 			;
@@ -201,8 +201,8 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 				    maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Maxs_resets,Maxs_resets_print),
 				    format('     - Loop ~p  resets the expression to ~p ~n',[Loop,Maxs_resets_print]);true),
 				new_itvar(Aux_itvar),
-				maplist(fconstr_new([Aux_itvar],ub),Maxs_resets,Maxtops),			
-				save_pending_list(max,Loop,(Head,Maxtops),Pending,Pending_out),
+				maplist(fconstr_new([Aux_itvar],ub),Maxs_resets,Maxtops),		
+				save_pending_list(max_min,Head,Loop,Maxtops,Pending,Pending_out),	
 				pstrexp_pair_empty(Pstrexp_pair),
 				Resets=[Aux_itvar]
 			)

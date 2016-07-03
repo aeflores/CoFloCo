@@ -674,11 +674,7 @@ print_closed_results(Entry,RefCnt):-
 	copy_term(Entry,Entry_ground),
 	ground_header(Entry_ground),
 	print_header('Closed-form bounds of ~p: ~n',[Entry_ground],2),
-	(get_param(prolog_format,_)->
-	  print_closed_results_prolog_format(Entry,RefCnt)
-	  ;
-	  print_closed_results_1(Entry,RefCnt)
-	).
+	print_closed_results_1(Entry,RefCnt).
 
 print_closed_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
