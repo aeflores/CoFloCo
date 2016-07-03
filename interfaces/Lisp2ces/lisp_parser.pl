@@ -53,11 +53,18 @@ s_expression(E) --> "(",spaces, s_expressions(Exps),spaces,")",{E=Exps}.
 is_atom(string(String))-->"\'\"",anything_but_quotes(String),"\"".
 
 is_atom(Name_lower) -->
+      "|",anything_but_pipes(CHARS),"|",{atom_codes(Name,CHARS),downcase_atom(Name,Name_lower)}.
+
+is_atom(Name_lower) -->
       chars(CHARS), {atom_codes(Name, CHARS),downcase_atom(Name,Name_lower)}.
 
 anything_but_quotes([X|Y]) --> anything_but_quote(X), anything_but_quotes(Y).
 anything_but_quotes([]) --> [],!.
 anything_but_quote(X) --> [X], {\+atom_codes('\"',[X])}.
+
+anything_but_pipes([X|Y]) --> anything_but_pipe(X), anything_but_pipes(Y).
+anything_but_pipes([]) --> [],!.
+anything_but_pipe(X) --> [X], {\+atom_codes('|',[X])}.
 
 
 chars([X|Y]) --> char(X), chars(Y).
