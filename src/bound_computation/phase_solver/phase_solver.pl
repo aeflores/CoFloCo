@@ -27,7 +27,7 @@ These constraints are useful in most cases and that allows us to simplify the re
   * Head is the head of the cost equations of the phase (the constraints in Maxs_mins are expressed in terms of these variables)
   * Maxs_mins=list_set((Depth,Fconstr))
   * Levels=list_set((Depth,Fconstr))
-  * Sums=map((loop_id,Loop_vars), (Depth,Fconstr))
+  * Sums=multimap((loop_id,Loop_vars), (Depth,Fconstr))
  Sums are for a specific loop whereas Max_mins and Levels are general for the whole phase. 
  Depth represents the depth of the recursion and is used to avoid infinite computations.
 
@@ -52,7 +52,7 @@ These constraints are useful in most cases and that allows us to simplify the re
 
 :- module(phase_solver,[
 				compute_multiple_rec_phase_cost/6,
-				compute_phase_cost/5,
+				compute_phase_cost/6,
 				init_phase_solver/0,
 				
 				used_pending_constraint/3,
@@ -66,6 +66,7 @@ These constraints are useful in most cases and that allows us to simplify the re
 
 :- use_module(phase_common).
 :- use_module(phase_inductive_sum_strategy,[
+	init_inductive_sum_strategy/0,
 	inductive_sum_strategy/8,
 	inductive_level_sum_strategy/7
 	]).			
@@ -82,17 +83,28 @@ These constraints are useful in most cases and that allows us to simplify the re
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).					      
 :- use_module('../../db',[
 			   phase_loop/5,
+			   get_input_output_vars/3,
 		       loop_ph/6]).
 
 :- use_module('../../IO/params',[get_param/2]).		
-:- use_module('../../IO/output',[print_phase_cost/4]).
+:- use_module('../../IO/output',[
+	print_header/3,
+	print_pending_set/2,
+	print_loops_costs/3,
+	print_selected_pending_constraint/3,
+	print_new_phase_constraints/3]).		
 :- use_module('../../ranking_functions',[ranking_function/4]).	  		
 :-use_module('../../refinement/invariants',[
-			      phase_transitive_closure/5,
-			      forward_invariant/4]).			
+				  partial_backward_invariant/5,
+			      phase_transitive_star_closure/5,
+			      forward_invariant/4,		      
+			      context_insensitive_backward_invariant/3,
+		      	  context_insensitive_forward_invariant/3]).			
+
 	
 :- use_module('../../utils/cofloco_utils',[
 			tuple/3,
+			zip_with_op/3,
 			ground_copy/2,
 			bagof_no_fail/3]).	
 :- use_module('../../utils/cost_structures',[
@@ -112,8 +124,14 @@ These constraints are useful in most cases and that allows us to simplify the re
 			cstr_empty/1,
 			cstr_join/3]).			
 
-:- use_module('../../utils/polyhedra_optimizations',[nad_normalize_polyhedron/2 ]).						
-:- use_module(stdlib(numeric_abstract_domains),[nad_maximize/3,nad_glb/3]).
+:- use_module('../../utils/polyhedra_optimizations',[
+		nad_is_bottom/1,
+		nad_normalize_polyhedron/2 ]).			
+
+:- use_module(stdlib(numeric_abstract_domains),[
+			nad_maximize/3,
+			nad_list_lub/2,
+			nad_glb/3]).
 :- use_module(stdlib(linear_expression),[
 			integrate_le/3,
 			write_le/2,
@@ -131,71 +149,117 @@ These constraints are useful in most cases and that allows us to simplify the re
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
-%! phase_cost(Phase:phase,Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Cost:cstr)
+%! phase_cost(Phase:phase,Head:term,Calls:list(term_,Cost:cstr)
 % store the cost structure of a phase given a local invariant
 % for cacheing purposes
-:- dynamic  phase_cost/5.
+:- dynamic  phase_cost/4.
 
 %! init_phase_solver is det
 % clear all the intermediate results
 init_phase_solver:-
-	retractall(phase_cost(_,_,_,_,_,_)).
+	retractall(phase_cost(_,_,_,_)).
 
 	
 %! compute_phase_cost(Phase:phase,Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Cost:cstr) is det
 % Obtain the cost of a phase given a forward invariant.
 % The cacheing case
-compute_phase_cost(Head,Calls,Phase,Chain_prefix,Cost):-
-	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
-	phase_cost(Phase,Head,Calls,(Forward_hash,Forward_inv2),Cost),
-	Forward_inv2==Forward_inv,!,
+compute_phase_cost(Head,Calls,Phase,_Chain_prefix,_Chain_rest,Cost):-
+	get_param(context_sensitive,[Sensitivity]),Sensitivity=<1,
+	phase_cost(Phase,Head,Calls,Cost),!,
+	(get_param(debug,[])->
+	 	print_header('Found solution for phase  ~p in the cache ~n',[Phase],4)
+	 	;true),
 	counter_increase(compressed_phases1,1,_).
 	
 
-compute_phase_cost(Head,[Call],Phase,Chain_prefix,Cost_final):-
-	init_solving_phase(Chain_prefix),
-	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
-	maplist(save_enriched_loop(Head,Forward_inv),Phase),
+compute_phase_cost(Head,[Call],Phase,Chain_prefix,Chain_rest,Cost_final):-
+	get_param(context_sensitive,[Sensitivity]),
+	(Sensitivity =< 1 ->
+		context_insensitive_backward_invariant(Head,Phase,Backward_invariant),
+		context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
+	    Forward_hash=0,
+	    (get_param(debug,[])->
+	 		print_header('Computing cost of phase ~p ~n',[Phase],4)
+	 		;true),
+	 	init_solving_phase([Phase,no_chain],Phase)	
+	;
+		forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_invariant),
+		partial_backward_invariant(Chain_rest,Head,(Forward_hash,Forward_invariant),_,Backward_invariant),
+		(get_param(debug,[])->
+	 		print_header('Computing cost of phase ~p with suffix ~p and prefix ~p ~n',[Phase,Chain_rest,Chain_prefix],4)
+	 		;true),
+	 	init_solving_phase(Chain_prefix,Phase)
+	),
+	nad_glb(Forward_invariant,Backward_invariant,Total_inv),
+	save_enriched_loops(Head,Total_inv,Phase,Phase_feasible),
 	
     %get the cost of each iterative component of the phase	
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost((Forward_hash,Forward_inv)),Phase_vars,Phase,Costs),
+	maplist(get_equation_loop_cost((Forward_hash,Forward_invariant)),Phase_vars,Phase_feasible,Costs),
+	print_loops_costs(Phase_feasible,Phase_vars,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
 	cstr_empty(Empty_cost),
-	add_n_elem_constraints(Head,Call,Phase),
-	compute_phase_cost_generic(Head,loop_vars(Head,[Call]),Phase,Phase_vars,Costs,Empty_cost,([],[]),Cost_final).
+	add_n_elem_constraints(Head,Call,Phase,Phase_feasible),
+	compute_phase_cost_generic(Head,loop_vars(Head,[Call]),Phase_feasible,Phase_vars,Costs,Empty_cost,([],[]),Cost_final),
+	assertz(phase_cost(Phase,Head,[Call],Cost_final)).
 	
-compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Cost_prev,Back_invariant,Cost_final):-
-	init_solving_phase(Chain_prefix),
-	forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_inv),
-	nad_glb(Forward_inv,Back_invariant,Total_inv),
-	maplist(save_enriched_loop(Head,Total_inv),Phase),
-	%append(Forward_inv,Cs_prev_head,Cs_prev_head_total),
-	%nad_normalize_polyhedron(Cs_prev_head_total,Cs_prev_head_total_norm),
-	%assert(enriched_loop(0,Head,[],Cs_prev_head_total_norm)),
+compute_multiple_rec_phase_cost(Head,Phase,_Chain_prefix,Chain_rest,_Cost_prev,Cost):-
+	get_param(context_sensitive,[Sensitivity]),Sensitivity=<1,
+	phase_cost(Chain_rest,Head,[],Cost),!,
+	(get_param(debug,[])->
+	 	print_header('Found solution for phase  ~p in the cache ~n',[Phase],4)
+	 	;true),
+	counter_increase(compressed_phases1,1,_).
+		
+compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Cost_prev,Cost_final):-
+	Chain_rest=[multiple(Phase,Tails)],
+	get_param(context_sensitive,[Sensitivity]),
+	(Sensitivity =< 1 ->
+		
+		context_insensitive_backward_invariant(Head,multiple(Phase,Tails),Backward_invariant),
+		context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
+		Forward_hash=0,
+		(get_param(debug,[])->
+			print_header('Computing cost of phase ~p with multiple recursion~n',[Phase],4)
+	    	;true),
+	    init_solving_phase([Phase,no_chain],Phase)		
+	  ;  
+	    forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_invariant),
+	    partial_backward_invariant(Chain_rest,Head,(Forward_hash,Forward_invariant),_,Backward_invariant),
+	    (get_param(debug,[])->
+			print_header('Computing cost of phase ~p with multiple recursion with suffix ~p and prefix ~p ~n',[Phase,Tails,Chain_prefix],4)
+	    	;true),
+	    init_solving_phase(Chain_prefix,Phase)
+	),
+	nad_glb(Forward_invariant,Backward_invariant,Total_inv),
+	save_enriched_loops(Head,Total_inv,Phase,Phase_feasible),
 	%get the cost of each iterative component of the phase
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost((Forward_hash,Forward_inv)),Phase_vars,Phase,Costs),
+	maplist(get_equation_loop_cost((Forward_hash,Forward_invariant)),Phase_vars,Phase_feasible,Costs),
+	print_loops_costs(Phase_feasible,Phase_vars,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
 	cstr_propagate_sums(0,Cost_prev,Cost_prev_propagated,(Max_min,Level)),
 	get_loop_itvar(0,Itvar_last_level),
 	Max_min_sum_pair=(Max_min,[bound(ub,[]+1,[Itvar_last_level])|Level]),
-	add_depth_constraints(Head,Phase),
-	compute_phase_cost_generic(Head,loop_vars(Head,[]),Phase,Phase_vars,Costs,Cost_prev_propagated,Max_min_sum_pair,Cost_final).
+	add_depth_constraints(Head,Phase,Phase_feasible),
+	compute_phase_cost_generic(Head,loop_vars(Head,[]),Phase_feasible,Phase_vars,Costs,Cost_prev_propagated,Max_min_sum_pair,Cost_final),
+	assertz(phase_cost(Chain_rest,Head,[],Cost_final)).
 	
 compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Base_cost,Base_max_min_levels,Cost_final):-
-	maplist(cstr_join_equal_fconstr,Costs,Costs_simple),
-	maplist(cstr_propagate_sums,Phase,Costs_simple,Costs_propagated2,Max_min_pairs_Sums_pairs),
+	maplist(cstr_propagate_sums,Phase,Costs,Costs_propagated2,Max_min_pairs_Sums_pairs),
 	foldl(cstr_join,Costs_propagated2,Base_cost,cost([],[],Iconstrs,Bases,Base)),
 	%unpack result of propagation
 	maplist(tuple,Max_mins,Sums,Max_min_pairs_Sums_pairs),
 	%we add pending sums for the number of iterations of each loop as they will be needed in most occasions anyway
 	% this way, we can always assume they are computed
 	maplist(get_it_sum_constraint(ub),Phase,It_cons_max), 
-    maplist(get_it_sum_constraint(lb),Phase,It_cons_min),    
 	maplist(append,It_cons_max,Sums,Sums1),
-	maplist(append,It_cons_min,Sums1,Sums2),
-	
+	(get_param(compute_lbs,[])->
+    	maplist(get_it_sum_constraint(lb),Phase,It_cons_min),
+    	maplist(append,It_cons_min,Sums1,Sums2)
+    	;
+    	 Sums2=Sums1
+     ),
 	%add_ranking_functions_constraints(Head,Phase),
 	%main predicate
 	compute_sums_and_max_min_in_phase(Head,Phase,Phase_vars,Max_mins,Sums2,Base_max_min_levels),
@@ -203,12 +267,8 @@ compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Base_cost,Bas
 	collect_phase_results(Result_vars,Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs),
 	reverse(New_iconstrs,New_iconstrs2),
 	append(New_iconstrs2,Iconstrs,Iconstrs_final),
-	cstr_remove_cycles(cost(Final_ub_fconstrs,Final_lb_fconstrs,Iconstrs_final,Bases,Base),Cost_final),
-	(get_param(debug,[])->
-		Result_vars=loop_vars(Head,Calls),
-		print_phase_cost(Phase,Head,Calls,Cost_final)
-		;
-		true).
+	cstr_join_equal_fconstr(cost(Final_ub_fconstrs,Final_lb_fconstrs,Iconstrs_final,Bases,Base),Cost_final).
+
 
 %! compute_sums_and_max_min_in_phase(Head:term,Call:term,Phase:phase,Maxs:list(fconstrs),Mins:list(fconstrs),Max_sums:list(fconstrs),Min_sums:list(fconstrs))
 % store all the pending computations in Pending structure and compute them incrementally
@@ -217,27 +277,31 @@ compute_sums_and_max_min_in_phase(Head,Phase,Phase_vars,Max_mins,Sums,(Base_max_
 	empty_pending(Empty_pending),
 	length(Phase,N),
 	Max_pending is 2*N,
-	assert(max_pending_depth(Max_pending)),
+	assertz(max_pending_depth(Max_pending)),
 	%we start from depth 0
-	assert(current_pending_depth(0)),
+	assertz(current_pending_depth(0)),
 	maplist(transform_max_min2_head(Head),Phase_vars,Phase,Max_mins,Max_mins_head),
 	save_pending_list(max_min,Head,0,Base_max_min,Empty_pending,Pending1),
 	save_pending_list(level,Head,0,Base_levels,Pending1,Pending2),
 	foldl(save_pending_list(max_min,Head),Phase,Max_mins_head,Pending2,Pending3),
 	foldl(save_pending_list(sum),Phase_vars,Phase,Sums,Pending3,Pending4),
 	retract(current_pending_depth(0)),
+	print_pending_set(Head,Pending4),
 	compute_all_pending(Phase,Pending4),
 	retract(max_pending_depth(Max_pending)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-init_solving_phase(Chain_prefix):-
+init_solving_phase(Chain_prefix,Phase):-
+	init_inductive_sum_strategy,
 	retractall(enriched_loop(_,_,_,_)),
 	retractall(current_chain_prefix(_)),
+	retractall(current_phase(_)),
 	retractall(used_term(_,_,_,_,_,_)),
 	retractall(max_min_found(_,_,_,_,_)),
 	retractall(sum_found(_,_,_,_,_,_,_,_)),
 	retractall(used_pending_constraint(_,_,_)),
-	assert(current_chain_prefix(Chain_prefix)).
+	assertz(current_chain_prefix(Chain_prefix)),
+	assertz(current_phase(Phase)).
 
 	
 get_equation_loop_cost((Forward_hash,Forward_inv),loop_vars(Head,Calls),Eq_id,Cost2):-
@@ -265,9 +329,9 @@ get_it_sum_constraint(lb,Loop,[bound(lb,[]+1,[Loop_name])]):-
 
 
 save_new_phase_fconstr(Loop_vars,FConstr):-
-	assert(new_phase_fconstr(Loop_vars,FConstr)).
+	assertz(new_phase_fconstr(Loop_vars,FConstr)).
 save_new_phase_iconstr(Loop_vars,IConstr):-
-	assert(new_phase_iconstr(Loop_vars,IConstr)).
+	assertz(new_phase_iconstr(Loop_vars,IConstr)).
 	
 collect_phase_results(Loop_vars,Ub_fconstrs,Lb_fconstrs,Iconstrs_total):-
 	Loop_vars=loop_vars(Head,Calls),
@@ -296,12 +360,31 @@ collect_phase_results(Loop_vars,Ub_fconstrs,Lb_fconstrs,Iconstrs_total):-
 % the loop enriched with the forward invariant
 :-dynamic enriched_loop/4.
 
-save_enriched_loop(Head,Forward_inv,Loop):-
-	loop_ph(Head,(Loop,_),Calls,Cs,_,_),	
-	append(Forward_inv,Cs,Total_cs),
-	nad_normalize_polyhedron(Total_cs,Cs_normalized),
-	assert(enriched_loop(Loop,Head,Calls,Cs_normalized)).
+save_enriched_loops(Head,Total_inv,Phase,Phase_feasible):-
+	maplist(save_enriched_loop(Head,Total_inv),Phase,Phase_feasible_aux),
+	partition(is_wrapped_no,Phase_feasible_aux,Excluded,Phase_feasible),
+	((get_param(debug,[]), Excluded\=[])->
+			maplist(zip_with_op(no),Excluded_print,Excluded),
+		   	format(' * The following loops are unfeasible in this instance of the phase ~p : ~p ~n',[Phase,Excluded_print])	   	
+		   	;true).
 
+is_wrapped_no(no(_)).
+	
+save_enriched_loop(Head,Inv,Loop,Loop_feasible):-
+	loop_ph(Head,(Loop,_),Calls,Cs,_,_),
+	foldl(get_call_inv,Calls,(Head,Inv,Inv),(Head,_,Total_inv)),
+	append(Total_inv,Cs,Total_cs),
+	nad_normalize_polyhedron(Total_cs,Cs_normalized),
+	(nad_is_bottom(Cs_normalized)->
+		Loop_feasible=no(Loop)
+	;
+		assertz(enriched_loop(Loop,Head,Calls,Cs_normalized)),
+		Loop_feasible=Loop
+	).
+
+get_call_inv(Call,(Head,Inv_0,Inv),(Head,Inv_0,Total_inv)):-
+	copy_term((Head,Inv_0),(Call,Inv2)),
+	nad_glb(Inv,Inv2,Total_inv).
 %! max_pending_depth(N:int)
 % maximum number or 'recursive' definitions of cost 
 % it depends on the number of loops in the phase and could be adjusted
@@ -316,17 +399,21 @@ save_enriched_loop(Head,Forward_inv,Loop):-
 % used to 
 :- dynamic  current_chain_prefix/1.
 
+%! current_phase(Phase:list(loop_id))
+% the phase whose cost we are currently computing
+:- dynamic  current_phase/1.
+
 %! used_pending_constraint(Loop:loop_id,Loop_vars:loop_vars,Constr:fconstr)
 :-dynamic used_pending_constraint/3.
 save_used_pending_constraint(Loop,Loop_vars,Constr):-
 	used_pending_constraint(Loop,Loop_vars,Constr2),
 	Constr2==Constr,!.
 save_used_pending_constraint(Loop,Loop_vars,Constr):-
-	assert(used_pending_constraint(Loop,Loop_vars,Constr)).
+	assertz(used_pending_constraint(Loop,Loop_vars,Constr)).
 	
 
 transform_max_min2_head(Head,loop_vars(Head,Calls),Loop,Maxs_mins,Maxs_mins_head):-
-	Head=..[_|Vars_head],
+	get_input_output_vars(Head,Vars_head,_),
 	enriched_loop(Loop,Head,Calls,Cs),
 	foldl(transform_max_min2_head_1(Vars_head,Cs),Maxs_mins,[],Maxs_mins_head).
 	
@@ -344,6 +431,7 @@ transform_max_min2_head_1(_Vars_head,_Cs,_,Fconstrs,Fconstrs).
 % compute one pending element at a time unil there are no more pending elements
 compute_all_pending(Phase,Pending):-
 	compute_pending(Phase,Pending,Pending_out),
+	print_pending_set(_Head,Pending_out),
 	compute_all_pending(Phase,Pending_out).
 
 compute_all_pending(_,_).
@@ -358,14 +446,11 @@ compute_all_pending(_,_).
 compute_pending(Phase,Pending,Pending_out):-
 	get_one_pending(Pending,Type,Loop_vars,(Depth,Constr),Pending1),
 	%(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
-	assert(current_pending_depth(Depth)),
-	(get_param(debug,[])->
-		ground_copy((Loop_vars,Constr),(Loop_vars_gr,Constr_gr)),
-		format('computing ~p sum for ~p  ~p ~n',[Type,Constr_gr,Loop_vars_gr])
-	;
-		true),
+	assertz(current_pending_depth(Depth)),
+	print_selected_pending_constraint(Loop_vars,Type,Constr),
 	compute_pending_element(Type,Loop_vars,Phase,Constr,New_fconstrs,New_iconstrs,Pending1,Pending_out),	
 	retract(current_pending_depth(Depth)),
+	print_new_phase_constraints(Loop_vars,New_fconstrs,New_iconstrs),
 	maplist(save_new_phase_fconstr(Loop_vars),New_fconstrs),
 	maplist(save_new_phase_iconstr(Loop_vars),New_iconstrs).
 
@@ -390,9 +475,8 @@ compute_sum(Constr,_Loop_vars,_Loop,_Phase,[Constr],[],Pending,Pending):-
 % Stored solution
 compute_sum(Constr,Loop_vars,Loop,Phase,Fconstrs,Iconstrs,Pending,Pending):-
 	sum_cacheing_strategy(Constr,Loop_vars,Loop,Phase,Fconstrs,Iconstrs),
-	(get_param(debug,[])->
-			ground_copy((Loop_vars,Constr),(_,Constr_gr)),
-			format('Found stored solution to sum(~p) in loop ~p ~n',[Constr_gr,Loop]);true).
+	(get_param(debug,[])->format('   - Found a solution using cacheing ~n',[]);true).
+
 			
 %triangular strategy
 % valid for minsums of expressions that are not constant	
@@ -407,10 +491,9 @@ compute_sum(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs2,Pending,Pendi
 	inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pending,Pending_aux),
 	% this is an heuristic
 	% if we are computing a minsum or we have created some intermediate constraints, we apply the basic product strategy as well
-	
 	(
-	(Constr\=bound(_,[]+_,_),
-	(New_iconstrs\=[]; Constr=bound(lb,_,_)))->
+	(Constr\=bound(_,[]+_,_),%not constant
+	(New_iconstrs\=[]; Constr=bound(lb,_,_)))->%computing lower bounds or there are parts that can still fail
 	basic_product_strategy(Constr,Loop_vars,Loop,Iconstr_extra,Pending_aux,Pending_out),
 	New_iconstrs2=[Iconstr_extra|New_iconstrs]
 	;
@@ -423,9 +506,6 @@ compute_sum(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs2,Pending,Pendi
 compute_sum(Constr,Loop_vars,Loop,_Phase,[],[Iconstr1,Iconstr2],Pending,Pending_out):-
 	%multiple calls
 	Loop_vars=loop_vars(_Head,[_,_|_]),
-	(get_param(debug,[])->
-			ground_copy((Loop_vars,Constr),(_,Constr_gr)),
-			format('Applying level product to ~p in loop ~p ~n',[Constr_gr,Loop]);true),
 	level_product_strategy(Constr,Loop_vars,Loop,Iconstr1,Pending,Pending_aux),
 	basic_product_strategy(Constr,Loop_vars,Loop,Iconstr2,Pending_aux,Pending_out),
 	save_sum_found(Constr,Loop_vars,Loop,[],[Iconstr1]),
@@ -434,30 +514,25 @@ compute_sum(Constr,Loop_vars,Loop,_Phase,[],[Iconstr1,Iconstr2],Pending,Pending_
 %Basic Product strategy
 compute_sum(Constr,Loop_vars,Loop,_Phase,[],[Iconstr],Pending,Pending_out):-
 	Constr\=bound(_,[]+1,_),!,
-	(get_param(debug,[])->
-			ground_copy((Loop_vars,Constr),(_,Constr_gr)),
-			format('Applying basic product to ~p in loop ~p ~n',[Constr_gr,Loop])
-	;
-		true
-		),
 	basic_product_strategy(Constr,Loop_vars,Loop,Iconstr,Pending,Pending_out),
 	save_sum_found(Constr,Loop_vars,Loop,[],[Iconstr]).
 	
-compute_sum(_Constr,_Loop_vars,_Loop,_Phase,[],[],Pending,Pending).	
+compute_sum(_Constr,_Loop_vars,_Loop,_Phase,[],[],Pending,Pending):-
+	(get_param(debug,[])->format('   - No strategy succeeded ~n',[]);true).
 
+only_tail_constr(loop_vars(Head,_),Fconstr):-
+	copy_term((Head,Fconstr),(Head2,Fconstr2)),
+	numbervars(Head2,0,_),
+	maplist(term_variables,Fconstr2,Vars),
+	\+member([],Vars).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 compute_level_sum(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	(get_param(debug,[])->
-			ground_copy((Head,Constr),(_,Constr_gr)),
-			format('Applying level sum strategy to ~p  ~n',[Constr_gr])
-	;
-		true
-		),
 	inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out).
 
-compute_level_sum(_,_,_,[],[],Pending,Pending).
+compute_level_sum(_,_,_,[],[],Pending,Pending):-
+	(get_param(debug,[])->format('   - No strategy succeeded ~n',[]);true).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % a constant does not need to be maximized/minimized
@@ -466,16 +541,13 @@ compute_max_min(Constr,_,_Phase,[Constr],[],Pending,Pending):-
 
 compute_max_min(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending):-
 	max_min_cacheing_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs),
-	(get_param(debug,[])->
-			ground_copy((Head,Constr),(_,Constr_gr)),
-			format('Found stored solution to max/min(~p) ~n',[Constr_gr]);true).
+	(get_param(debug,[])->format('   - Found a solution using cacheing ~n',[]);true).	
+
 
 %use transitive invariant
 compute_max_min(Constr,Head,Phase,New_fconstrs,[],Pending,Pending):-
-	transitive_invariant_strategy(Constr,Head,Phase,New_fconstrs),
-	(get_param(debug,[])->
-			ground_copy((Head,Constr,New_fconstrs),(_,Constr_gr,New_fconstrs_gr)),
-			format('Found  max/min(~p) using transitive invariant: ~p  ~n',[Constr_gr,New_fconstrs_gr]);true),	
+	transitive_invariant_strategy(Constr,Head,New_fconstrs),
+	(get_param(debug,[])->format('   - Found a solution using transitive invariants ~n',[]);true),	
 	save_max_min_found(Constr,Head,Phase).
 
 %use  increments and resets procedure	
@@ -485,7 +557,8 @@ compute_max_min(Constr,Head,Phase,Fconstrs,Iconstrs,Pending,Pending_out):-
  
 %failed    
 compute_max_min(Constr,Head,Phase,[],[],Pending,Pending):-
-	save_max_min_found(Constr,Head,Phase).
+	save_max_min_found(Constr,Head,Phase),
+	(get_param(debug,[])->format('   - No strategy succeeded ~n',[]);true).
 
 
 	
@@ -495,26 +568,26 @@ compute_max_min(Constr,Head,Phase,[],[],Pending,Pending):-
 % Auxiliary strategies
 
 
-add_depth_constraints(Head,Phase):-
-	get_param(n_rankings,[Max]),
+add_depth_constraints(Head,Phase,Phase_feasible):-
+	get_param(n_candidates,[Max]),
 	current_chain_prefix(Chain_prefix),
 	bagof_no_fail(Rf,
 		ranking_function(Head,Chain_prefix,Phase,Rf)
 	  ,Rfs),
 	ut_split_at_pos(Rfs,Max,Rfs_selected,_),
-	maplist(get_loop_depth_itvar,Phase,Bounded),
+	maplist(get_loop_depth_itvar,Phase_feasible,Bounded),
 	maplist(fconstr_new(Bounded,ub),Rfs_selected,Fconstrs),
 	maplist(save_new_phase_fconstr(Head),Fconstrs).
 
 %! add_general_ranking_functions(Head:term,Call:term,Phase:phase) is det
 % add final constraints using the already computed ranking functions
-add_n_elem_constraints(Head,Call,Phase):-
-	get_param(n_rankings,[Max]),
+add_n_elem_constraints(Head,Call,Phase,Phase_feasible):-
+	get_param(n_candidates,[Max]),
 	current_chain_prefix(Chain_prefix),
-	get_ranking_functions_constraints(Max,Head,Call,Phase,Chain_prefix,Ub_fconstrs),
+	get_ranking_functions_constraints(Max,Head,Call,Phase,Phase_feasible,Chain_prefix,Ub_fconstrs),
 	maplist(save_new_phase_fconstr(loop_vars(Head,[Call])),Ub_fconstrs),
 	(get_param(compute_lbs,[])->
-	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain_prefix,Lb_fconstrs),
+	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Phase_feasible,Chain_prefix,Lb_fconstrs),
 	   maplist(save_new_phase_fconstr(loop_vars(Head,[Call])),Lb_fconstrs)
 	   ;
 	   true
@@ -523,13 +596,13 @@ add_n_elem_constraints(Head,Call,Phase):-
 % generate at most Max upper bound final constraints from the ranking functions
 % -the ranking function itself
 % -the difference between the ranking function at the beginning and at the end of the phase
-get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Fconstrs):-
+get_ranking_functions_constraints(Max,Head,Call,Phase,Phase_feasible,Chain,Fconstrs):-
 	bagof_no_fail(Rf,
 		ranking_function(Head,Chain,Phase,Rf)
 	  ,Rfs),
 	ut_split_at_pos(Rfs,Max,Rfs_selected,_),
 	maplist(get_difference_version(Head,Call),Rfs_selected,Rfs_diff),
-	maplist(get_loop_itvar,Phase,Bounded),
+	maplist(get_loop_itvar,Phase_feasible,Bounded),
 	append(Rfs_selected,Rfs_diff,Rfs_total),
 	maplist(fconstr_new(Bounded,ub),Rfs_total,Fconstrs).
 	
@@ -537,12 +610,12 @@ get_ranking_functions_constraints(Max,Head,Call,Phase,Chain,Fconstrs):-
 % generate at most Max lower bound final constraints from the ranking functions
 % -the difference between the initial and the final value of the rf divided by the maximum decrease
 % per iteration is a good lb candidate 
-get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Chain,Fconstrs):-
+get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Phase_feasible,Chain,Fconstrs):-
 	bagof_no_fail(Df,
 		get_lower_bound_val(Head,Call,Chain,Phase,Df)
 	,Dfs),
 	ut_split_at_pos(Dfs,Max,Dfs_selected,_),
-	maplist(get_loop_itvar,Phase,Bounded),
+	maplist(get_loop_itvar,Phase_feasible,Bounded),
 	maplist(fconstr_new(Bounded,lb),Dfs_selected,Fconstrs).
 	   
 get_lower_bound_val(Head,Call,Chain,Phase,LB):-
@@ -564,12 +637,13 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Transitive invariants
-transitive_invariant_strategy(bound(Op,Lin_exp,Bounded),Head,Phase,New_fconstrs):-
+transitive_invariant_strategy(bound(Op,Lin_exp,Bounded),Head,New_fconstrs):-
 	get_constr_op(Max_min,Op),
-	phase_transitive_closure(Phase,_,Head_total,Head,Cs_star_trans),
+	current_phase(Phase),
+	phase_transitive_star_closure(Phase,_,Head_total,Head,Cs_star_trans),
 	phase_loop(Phase,_,Head,_Call,Cs),
 	ut_flat_list([Cs_star_trans,Cs],Context),
-	term_variables(Head_total,Vars_of_Interest),
+	get_input_output_vars(Head_total,Vars_of_Interest,_),
 	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Maxs_out),
 	Head_total=Head,
 	maplist(fconstr_new(Bounded,Op),Maxs_out,New_fconstrs),
@@ -602,7 +676,7 @@ save_sum_found(bound(Op,Lin_exp,Bounded),Loop_vars,Loop,Fconstrs,Iconstrs):-
 	substitute_bounded_by_var(Fconstrs,Bounded_set,Var,Fconstrs1),
 	semi_normalize_le(Lin_exp,Coeff,Lin_exp_normalized),
 	ground_copy((Loop_vars,Lin_exp_normalized),(_,Lin_exp_norm_ground)),
-	assert(sum_found(Loop,Lin_exp_norm_ground,Op,Loop_vars,Coeff,Var,Fconstrs1,Iconstrs1)).
+	assertz(sum_found(Loop,Lin_exp_norm_ground,Op,Loop_vars,Coeff,Var,Fconstrs1,Iconstrs1)).
 	
 substitute_bounded_by_var([],_,_,[]).
 substitute_bounded_by_var([bound(Op,Exp,Bounded1)|Constrs],Bounded_set,Var,[bound(Op,Exp,[Var|Bounded2_set])|Constrs2]):-
@@ -637,7 +711,7 @@ sum_cacheing_strategy(bound(Op,Lin_exp,Bounded),Loop_vars,Loop,_Phase,Fconstrs1,
 
 save_max_min_found(bound(Op,Lin_exp,[Itvar]),Head,Phase):-
 	normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)),
-	assert(max_min_found(Head,Phase,(Lin_exp_normalized,Coeff,Constant),Op,Itvar)).
+	assertz(max_min_found(Head,Phase,(Lin_exp_normalized,Coeff,Constant),Op,Itvar)).
 
 normalize_max_min(Lin_exp,([]+0,1,Constant)):-
 	Lin_exp=[]+Constant,!.

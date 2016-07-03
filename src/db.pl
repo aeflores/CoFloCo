@@ -39,6 +39,8 @@ This module acts as a database that stores:
 	   entry_eq/2,   
 	   ground_equation_header/1,
 	   reset_scc/3,
+	   save_input_output_vars/3,
+	   get_input_output_vars/3,
 	   eq_ph/8,
        loop_ph/6,
 	   phase_loop/5,
@@ -102,6 +104,10 @@ This module acts as a database that stores:
 % only the information related to Vars
 % Type can be 'weak' or 'strong' 
 :-dynamic reset_scc/3.
+
+%! input_output_vars(Head:term,Vars:list(var),Vars:list(var))
+% specify which variables are input and which output
+:-dynamic input_output_vars/3.
 
 /**  eq_ph(?Head:term,?Id_RefCnt:(int,equation_id),-Cost:cost_expression,-Non_rec_Calls:list(term),-Rec_Calls:list(term),-Calls:list(term),-Cs:polyhedron,Term_flag:flag)
 
@@ -230,6 +236,25 @@ init_timers:-
 cofloco_aux_entry_name('$cofloco_aux_entry$').
 
 
+
+save_input_output_vars(Head,IVars,OVars):-
+  	input_output_vars(Head,IVars2,OVars2),!,
+  	((IVars2==IVars,OVars==OVars2)->
+  		true
+  	;
+  		numbervars(Head,0,_),
+  		format('WARNING: Incoherent annotation ~p and ~p ~n',[input_output_vars(Head,IVars,OVars),input_output_vars(Head,IVars2,OVars2)])
+  	).
+  	
+save_input_output_vars(Head,IVars,OVars):-
+  	assertz(input_output_vars(Head,IVars,OVars)).
+
+get_input_output_vars(Head,Ivars,Ovars):-
+	input_output_vars(Head,Ivars,Ovars),!.
+get_input_output_vars(Head,Ivars,[]):-
+	Head=..[_|Ivars].
+	
+	
 non_terminating_chain_1(Head,RefCnt,Chain):-
 	chain(Head,RefCnt,Chain),
 	reverse(Chain,Chain_rev),
@@ -260,7 +285,7 @@ add_ground_equation_header(Non_ground,_Ground):-
 	ground_equation_header(Non_ground2),!.
 	
 add_ground_equation_header(_Non_ground,Ground):-
-	assert(ground_equation_header(Ground)).
+	assertz(ground_equation_header(Ground)).
 
 %! add_eq_ph(+Cost_equation:cost_equation,Previous_eqs:list(equation_id)) is det
 % stores the cost equation Cost_equation in the database
@@ -277,11 +302,11 @@ add_eq_ph(eq_ph(Head,0,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_e
 	 ;
 	 nad_entails(All_vars,P_Size2,P_Size),
 	 retract(eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size2,Term_flag)),
-	 assert(eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)) 
+	 assertz(eq_ph(Head,(Id,0),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag)) 
 	 ),!,
 	retract(eq_refined(Previous_eqs1,Id)),
 	append(Previous_eqs,Previous_eqs1,Previous_eqs2),
-	assert(eq_refined(Previous_eqs2,Id)).
+	assertz(eq_refined(Previous_eqs2,Id)).
 %*/
 add_eq_ph(eq_ph(Head,RefCnt,E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),Previous_eqs) :-
 	counter_increase(eq_ph,1,Id),

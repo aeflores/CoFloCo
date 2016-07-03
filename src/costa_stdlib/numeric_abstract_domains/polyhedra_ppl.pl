@@ -67,6 +67,7 @@
      ppl_Polyhedron_difference_assign/2,
      ppl_Polyhedron_equals_Polyhedron/2, 
 	 ppl_Polyhedron_add_space_dimensions_and_embed/2,
+	 ppl_Polyhedron_map_space_dimensions/2,
 	 ppl_Polyhedron_remove_space_dimensions/2,
 	 ppl_new_C_Polyhedron_from_C_Polyhedron/2,
  

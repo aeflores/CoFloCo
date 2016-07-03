@@ -53,12 +53,44 @@ main:-
 	  compute_undefined_predicates(Total_crs,Selected_crs,Undefined_predicates),
 	  % print the crs
 	  maplist(print_cr([singletons]),Selected_crs),
+	  maplist(extract_func,Selected_crs,Selected_funcs),
+	  list_to_set(Selected_funcs,Unique_funcs),
+	  maplist(print_inout,Unique_funcs),
 	  format(user_error,'Undefined functions: ~q ~n',[Undefined_predicates])
 	  ),Fail,writeln(Fail)),
 	halt.
 
 
+extract_func(eq(Head,_,_,_),[Name,N_args]):-
+	Head =.. [Name|Args],
+	length(Args,N_args).
 
+
+nat_constraints(Args,Constrs):-nat_constrs(Args,Constrs,0),!.
+
+nat_constrs([],[],_).
+nat_constrs([Arg|Args],Constrs,N):-
+	(N rem 3) > 0,
+	var(Arg),
+	nat_constrs(Args,Constrs_next,N+1),
+	Constrs=[Arg>=0|Constrs_next],!.
+nat_constrs([_|Args],Constrs,N):-
+	nat_constrs(Args,Constrs,N+1),!.
+
+
+related_call_constrs([],[]).
+related_call_constrs(['car'(_,Al,As,_,_,Bs1)|Calls],Constrs):-
+	member('cdr'(_,Al2,As2,_,_,Bs2),Calls),
+	Al==Al2,As==As2,
+	related_call_constrs(Calls,Constrs_next),
+	Constrs = [Bs1+Bs2+1=As|Constrs_next].
+related_call_constrs(['cdr'(_,Al,As,_,_,Bs1)|Calls],Constrs):-
+	member('car'(_,Al2,As2,_,_,Bs2),Calls),
+	Al==Al2,As==As2,
+	related_call_constrs(Calls,Constrs_next),
+	Constrs = [Bs1+Bs2+1=As|Constrs_next].
+related_call_constrs([_|Calls],Constrs):-
+	related_call_constrs(Calls,Constrs).
 
 
 % main transformation predicate
@@ -79,7 +111,10 @@ defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relation
 	append(Args_abstract,Res_vars,All_args),
 	Head=..[Name|All_args],
 	% the main cost relation
-	Cost_relation= eq(Head,1,Body_unrolled,[]),
+	nat_constraints(All_args,Nat_constrs),
+	related_call_constrs(Body_unrolled,Rel_call_constrs),
+	append(Nat_constrs,Rel_call_constrs,All_constrs),
+	Cost_relation= eq(Head,1,Body_unrolled,All_constrs),
 	% we want closed-form bound for this cost relation
 	ut_flat_list([Cost_relation|Cost_relations],All_cost_relations),!.
 	
@@ -141,8 +176,14 @@ unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,[Res_var_i,Res_var_l,R
 	Res_vars=[Res_var_i,Res_var_l,Res_var_s],
 	append(Args,Res_vars,All_args),
 	Head_if=..[If_name|All_args],
-	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1]),
-	Cost_relation_no=eq(Head_if_no,1,No_calls_all,[Cond_bool=0]),
+	nat_constraints(All_args_yes,Nat_constrs_yes),
+	nat_constraints(All_args_no,Nat_constrs_no),
+	related_call_constrs(Yes_calls_all,Rel_call_constrs_yes),
+	related_call_constrs(No_calls_all,Rel_call_constrs_no),
+	append(Rel_call_constrs_yes,Nat_constrs_yes,Constrs_yes),
+	append(Rel_call_constrs_no,Nat_constrs_no,Constrs_no),
+	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1|Constrs_yes]),
+	Cost_relation_no=eq(Head_if_no,1,No_calls_all,[Cond_bool=0|Constrs_no]),
 	ut_flat_list([Cost_relation_yes,Cost_relation_no,Cost_relations_cond,Cost_relations_yes,Cost_relations_no],Cost_relations),
 	% for the body where the if appears, we generate a call to the if cost relation
 	Body_unrolled=[Head_if].
@@ -329,12 +370,22 @@ fix_quotes([X|Xs],[[quote,Ls]|Xss_fixed]):-
 fix_quotes([X|Xs],[X_fixed|Xs_fixed]):-
     fix_quotes(X,X_fixed),
     fix_quotes(Xs,Xs_fixed).	
-	
+
 print_cr(Opts,Cr):-
 	copy_term(Cr,Crp),
 	numbervars(Crp,0,_,Opts),
 	format('~q.~n',[Crp]).
-	
+
+print_inout([Name,N_args]):-
+	N_args_in is N_args-3,
+	length(In_list,N_args_in),
+	length(Out_list,3),
+	numbervars(In_list,0,_),
+	numbervars(Out_list,N_args_in,_),
+	append(In_list,Out_list,Args),
+	Func_ex =.. [Name|Args],
+	format("~q.~n",[input_output_vars(Func_ex,In_list,Out_list)]).
+
 make_dicc(nil,[],[]).	
 make_dicc([],[],[]).
 make_dicc([Name|Names],[Var|Vars],Map1):-

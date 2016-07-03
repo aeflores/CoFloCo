@@ -30,13 +30,16 @@ These ranking functions are used to prove termination.
 			     partial_ranking_function/7
 			     ]).
 
-:- use_module(db,[loop_ph/6,phase_loop/5]).
+:- use_module(db,[loop_ph/6,phase_loop/5,get_input_output_vars/3]).
 :- use_module('refinement/loops',[get_extended_phase/2]).	
 
 :- use_module('refinement/chains',[chain/3,get_reversed_chains/3]).	  
-:- use_module('refinement/invariants',[forward_invariant/4]).	
+:- use_module('refinement/invariants',[
+				forward_invariant/4,
+		      context_insensitive_forward_invariant/3]).	
 :- use_module('IO/params',[get_param/2]).
 :- use_module('utils/cofloco_utils',[
+						tuple/3,
 						repeat_n_times/3,
 						assign_right_vars/3,
 						write_sum/2,
@@ -119,39 +122,46 @@ find_chain_ranking_functions([Non_loop|Rec_elems],Head):-
 		find_chain_ranking_functions(Rec_elems,Head).
 
 find_chain_ranking_functions([Phase|Rec_elems],Head):-
-	    forward_invariant(Head,([Phase|Rec_elems],_),_,Inv),
-		compute_phase_rfs(Head,[Phase|Rec_elems],Phase,Inv),
-		compute_phase_partial_rfs(Head,[Phase|Rec_elems],Phase,Inv),
+		context_insensitive_forward_invariant(Head,Phase,Inv),
+	    forward_invariant(Head,([Phase|Rec_elems],_),_,Inv_sensitive),
+		compute_phase_rfs(Head,[Phase|Rec_elems],Phase,Inv,Inv_sensitive),
+		compute_phase_partial_rfs(Head,[Phase|Rec_elems],Phase,Inv,Inv_sensitive),
 		find_chain_ranking_functions(Rec_elems,Head).
 
 %! compute_phase_rfs(Head:term,Chain_prefix:chain_inverse_prefix,Phase:phase,Inv:polyhedron) is det 
 % try to compute ranking functions valid for all cost equations in Phase using the invariant Inv
-compute_phase_rfs(Head,Chain_prefix,Phase,_Inv):-
+compute_phase_rfs(Head,Chain_prefix,Phase,_Inv,_):-
 	computed_ranking_functions(Head,Chain_prefix,Phase),!.
 
-% we try to infer a universal rf for the phase (ignoring the given invariant)
-compute_phase_rfs(Head,_Chain_prefix,Phase,_):-
+% we try to infer a universal rf for the phase 
+compute_phase_rfs(Head,_Chain_prefix,Phase,Inv,_):-
 	%we haven't computed any rf for this phase
 	\+computed_ranking_functions(Head,_,Phase),
 	phase_loop(Phase,_,Head,Call,Cs),
-	compute_iterations_ubs( Head, Call, Cs, Iter_Ubs),
-	Iter_Ubs\=[],!,
+	nad_glb(Cs,Inv,Cs_1),
+	compute_iterations_ubs( Head, Call, Cs_1, Iter_Ubs),
+	(Iter_Ubs\=[] 
+	 ;
+	 get_param(context_sensitive,[Sensitivity]),
+	 Sensitivity =< 1
+	),!,
 	maplist(add_ranking_function(Head,_,Phase),Iter_Ubs),
 	assert(computed_ranking_functions(Head,_,Phase)).
 
 %If we failed to compute a universal ranking function, we try to compute ranking functions using the given chain invariant
-compute_phase_rfs(Head,Chain_prefix,Phase,Inv):-
-	phase_loop(Phase,_,Head,Call,Cs),
-	nad_glb(Cs,Inv,Cs_1),
-	compute_iterations_ubs( Head, Call, Cs_1, Iter_Ubs),
-	maplist(add_ranking_function(Head,Chain_prefix,Phase),Iter_Ubs),
-	assert(computed_ranking_functions(Head,Chain_prefix,Phase)).
+compute_phase_rfs(Head,Chain_prefix,Phase,_,Inv_sensitive):-
+	   get_param(context_sensitive,[Sensitivity]),Sensitivity > 1,
+       phase_loop(Phase,_,Head,Call,Cs),
+       nad_glb(Cs,Inv_sensitive,Cs_1),
+       compute_iterations_ubs( Head, Call, Cs_1, Iter_Ubs),
+       maplist(add_ranking_function(Head,Chain_prefix,Phase),Iter_Ubs),
+       assert(computed_ranking_functions(Head,Chain_prefix,Phase)).
 
 
 %! compute_phase_partial_rfs(Head:term,Chain_prefix:chain_inverse_prefix,Phase:phase,Inv:polyhedron) is det 
 % try to compute ranking functions for each cost equation in the phase and infer
 % how these ranking functions can be increased in other cost equations (the dependencies)
-compute_phase_partial_rfs(Head,Chain_prefix,Phase,_Inv):-
+compute_phase_partial_rfs(Head,Chain_prefix,Phase,_Inv,_):-
 	computed_partial_ranking_functions(Head,Chain_prefix,Phase),!.
 
 % we try to compute universal ranking functions first. If there is a cost equation that does not
@@ -159,39 +169,48 @@ compute_phase_partial_rfs(Head,Chain_prefix,Phase,_Inv):-
 %
 % This is not perfect because we might have a ranking function in every cost equation of a phase and still have a cyclic dependency
 % but it's a decent heuristic.
-compute_phase_partial_rfs(Head,Chain_prefix,Phase,_):-
+compute_phase_partial_rfs(Head,Chain_prefix,Phase,Inv,_):-
 	%we haven't computed any rf for this phase
 	\+computed_partial_ranking_functions(Head,_,Phase),
 	empty_mm(Empty_map),
 	%compute without invariant
 	get_extended_phase(Phase,Extended_phase),
-	foldl(compute_1_loop_rfs(Head,Call,[]),Extended_phase,Empty_map,Initial_map),
-	\+member((_,[]),Initial_map),
-	% exclude ranking functions that are general
-	exclude(covered_by_rf_map(Head,Extended_phase,Chain_prefix),Initial_map,Initial_map_filtered),
-	%the initial dependencies are all phases except the covered ones
-	maplist(get_initial_deps(Extended_phase),Initial_map_filtered,Init_deps),
-	maplist(check_lexicographic_deps_aux(Head,Call,[]),Initial_map_filtered,Init_deps,Deps,Type_deps),
-	maplist(add_partial_ranking_function_aux(Head,_,Phase),Initial_map_filtered,Deps,Type_deps),
-	assert(computed_partial_ranking_functions(Head,_,Phase)).
-	
-% same but taking the invariant into account
-compute_phase_partial_rfs(Head,Chain_prefix,Phase,Inv):-
-	empty_mm(Empty_map),
-	%initial map with the ranking functions and the loops they cover
-	get_extended_phase(Phase,Extended_phase),
 	foldl(compute_1_loop_rfs(Head,Call,Inv),Extended_phase,Empty_map,Initial_map),
-	Chain_saved=Chain_prefix,
+	(
+		loops_covered(Extended_phase,Initial_map)
+	;
+		get_param(context_sensitive,[Sensitivity]),
+	    Sensitivity =< 1
+	),!,
 	% exclude ranking functions that are general
 	exclude(covered_by_rf_map(Head,Extended_phase,Chain_prefix),Initial_map,Initial_map_filtered),
 	%the initial dependencies are all phases except the covered ones
 	maplist(get_initial_deps(Extended_phase),Initial_map_filtered,Init_deps),
 	maplist(check_lexicographic_deps_aux(Head,Call,Inv),Initial_map_filtered,Init_deps,Deps,Type_deps),
-	maplist(add_partial_ranking_function_aux(Head,Chain_saved,Phase),Initial_map_filtered,Deps,Type_deps),
-	assert(computed_partial_ranking_functions(Head,Chain_saved,Phase)).
-
-
+	maplist(add_partial_ranking_function_aux(Head,_,Phase),Initial_map_filtered,Deps,Type_deps),
+	assert(computed_partial_ranking_functions(Head,_,Phase)).
 	
+
+compute_phase_partial_rfs(Head,Chain_prefix,Phase,_Inv,Inv_sensitive):-
+       empty_mm(Empty_map),
+       %initial map with the ranking functions and the loops they cover
+       get_extended_phase(Phase,Extended_phase),
+       foldl(compute_1_loop_rfs(Head,Call,Inv_sensitive),Extended_phase,Empty_map,Initial_map),
+       Chain_saved=Chain_prefix,
+       % exclude ranking functions that are general
+       exclude(covered_by_rf_map(Head,Extended_phase,Chain_prefix),Initial_map,Initial_map_filtered),
+       %the initial dependencies are all phases except the covered ones
+       maplist(get_initial_deps(Extended_phase),Initial_map_filtered,Init_deps),
+       maplist(check_lexicographic_deps_aux(Head,Call,Inv_sensitive),Initial_map_filtered,Init_deps,Deps,Type_deps),
+       maplist(add_partial_ranking_function_aux(Head,Chain_saved,Phase),Initial_map_filtered,Deps,Type_deps),
+       assert(computed_partial_ranking_functions(Head,Chain_saved,Phase)).
+
+
+loops_covered(Loops,Multimap):-
+	maplist(tuple,_,Sets,Multimap),
+	from_list_sl(Loops,Loops_set),
+	unions_sl(Sets,Covered_loops),
+	difference_sl(Loops_set,Covered_loops,[]).	
 
 get_extended_loop(Head,Loop:1,Call,Cs_loop):-
 	loop_ph(Head,(Loop,_),[Call],Cs_loop,_,_),!.
@@ -267,15 +286,7 @@ add_ranking_function_1(Head,Chain_prefix,Phase,Rf):-
 	RF_1==Rf,!.
 
 add_ranking_function_1(Head,Chain_prefix,Phase,RF) :-
-	assertz(ranking_function(Head,Chain_prefix,Phase,RF)),
-	
-	(get_param(debug,[])->
-	write_le(RF,Rf_print),
-	copy_term((Head,Rf_print),(PHead,PRF)),
-	numbervars(PHead,0,_),
-	 format('~p~n',ranking_function(PHead,Chain_prefix,Phase,PRF))
-	;
-	 true).
+	assertz(ranking_function(Head,Chain_prefix,Phase,RF)).
 
 add_partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :-
 	parse_le_fast(RF,Lin_exp),
@@ -287,23 +298,18 @@ add_partial_ranking_function_1(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :
 	RF==RF2,!.
 
 add_partial_ranking_function_1(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type) :-
-	assertz(partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type)),
-	(get_param(debug,[])->
-	 write_le(RF,Rf_print),
-	 copy_term((Head,Rf_print),(PHead,PRF)),
-	 numbervars(PHead,0,_),
-	 format('~p~n',partial_ranking_function(PHead,Phase,Loop,PRF,Deps,Deps_type))
-	;
-	 true).
+	assertz(partial_ranking_function(Head,Chain_prefix,Phase,Loop,RF,Deps,Deps_type)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
 compute_iterations_ubs( Head,Call,Phi, Rfs2) :-
-     Head=..[_|EntryVars],
-	 Call=..[_|ExitVars],
-	 nad_all_ranking_functions_MS(Phi,EntryVars,ExitVars,Rfs),
+	 get_input_output_vars(Head,EntryVars,_),
+	 get_input_output_vars(Call,ExitVars,_),
+	 append(EntryVars,ExitVars,Vars),
+	 nad_project(Vars,Phi,Phi_reduced),
+	 nad_all_ranking_functions_MS(Phi_reduced,EntryVars,ExitVars,Rfs),
 	 compute_offsets(Rfs,Phi,Rfs1),
      maplist(adapt_fraction,Rfs1,Rfs2).
 

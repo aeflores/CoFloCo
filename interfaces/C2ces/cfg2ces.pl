@@ -1,7 +1,7 @@
 #!/usr/bin/prolog
 
 :-set_prolog_flag(verbose, silent). 
-:-include('../src/search_paths.pl').
+:-include('../../src/search_paths.pl').
 :-initialization main.
 
 
@@ -108,7 +108,28 @@ cfg2pubs_2(CFG,Bindings) :-
 	;
 	 throw(irreducible_cfg)
 	),
+	print_io_vars,
 	print_eqs.
+
+print_io_vars:-
+	setof((F,N),
+	 C^Call^Cs^Vars^Head^(
+	  	eq(Head,C,Call,Cs),
+	  	Head=..[F|Vars],
+	  	length(Vars,N)
+	  	),Heads),
+	maplist(print_io_vars_1,Heads).
+print_io_vars_1((Name,N)):-
+	length(Vars,N),	
+	node_in_loop(Name,Loop),
+	loop_has_new_vars(Loop,N_extra),
+	length(Out_vars,N_extra),
+	ground_term(Name,Input_vars),
+	append(Input_vars,Out_vars,Vars),
+	Head=..[Name|Vars],
+	numbervars(Head,0,_),
+	format('~p.~n',[input_output_vars(Head,Input_vars,Out_vars)]),!.
+print_io_vars_1(_).	
 
 collect_all_loops(Loop,All_loops):-
 	findall(Child,

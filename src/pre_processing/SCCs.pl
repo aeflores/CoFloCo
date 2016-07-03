@@ -131,7 +131,6 @@ compute_btc_aux(_).
 
 compute_cover_point_for_scc(SCC_N) :-
 	crs_scc(SCC_N,Type,Nodes,SCC_Graph,Entries),
-    
 	( compute_cover_point_for_scc_aux(Type,SCC_N,Nodes,SCC_Graph,Entries,Cover_Point) ->
 	    ( (Type=recursive; has_entry_node(Nodes))->
 		add_to_btc([Cover_Point]),

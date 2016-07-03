@@ -123,13 +123,17 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('bound_computation/phase_solver/phase_solver',[init_phase_solver/0]).
 :- use_module('bound_computation/cost_equation_solver',[init_cost_equation_solver/0]).    
 
-:- use_module('IO/output',[print_results/2,
+:- use_module('IO/output',[
+			  print_header/3,
+			  print_results/2,
+			  print_sccs/0,
+			  print_partially_evaluated_sccs/0,
 	          print_equations_refinement/2,
 	          print_loops_refinement/2,
 	          print_external_pattern_refinement/2,
+	          print_ranking_functions/1,
 		      print_help/0,
 		      print_closed_results/2,
-		      print_chains/1,
 		      print_chains_entry/2,
 		      print_single_closed_result/2,
 		      print_conditional_upper_bounds/1,
@@ -181,16 +185,17 @@ cofloco_query(Eqs,Params):-
 	init_database,
 	profiling_start_timer(analysis),
 	store_cost_equations(Eqs),
+	print_header('Preprocessing Cost Relations~n',[],1),
 	preprocess_cost_equations,
+	print_header('Control-Flow Refinement of Cost Relations~n',[],1),
 	refinement,
 	(get_param(only_termination,[])->
 			true
 			;
+			print_header('Computing Bounds~n',[],1),
 			upper_bounds,
-			profiling_stop_timer(analysis,T_analysis),
-			format('Time statistics:~p~n',[' ']),
-			conditional_call(get_param(stats,[]),print_stats),		
-			format("Total analysis performed in ~0f ms.~n~n",[T_analysis])  
+			profiling_stop_timer(analysis,_T_analysis),
+			print_stats
 	).
 
 	
@@ -205,17 +210,18 @@ cofloco_query(Params):-
 	profiling_start_timer(analysis),
 	(get_param(input,[File])->
 		read_cost_equations(File),
+		print_header('Preprocessing Cost Relations~n',[],1),
 		preprocess_cost_equations,
+		print_header('Control-Flow Refinement of Cost Relations~n',[],1),
 		refinement,
 		(get_param(only_termination,[])->
 			true
 			;
+			print_header('Computing Bounds~n',[],1),
 			upper_bounds
 		),	
-		profiling_stop_timer(analysis,T_analysis),
-		format('Time statistics:~p~n',[' ']),
-		conditional_call(get_param(stats,[]),print_stats),		
-		format("Total analysis performed in ~0f ms.~n~n",[T_analysis])  
+		profiling_stop_timer(analysis,_T_analysis),
+		print_stats
 	;
 		(get_param(help,[])->
 		   print_help
@@ -242,9 +248,11 @@ init_database:-
 preprocess_cost_equations:-
 	profiling_start_timer(comp_sccs),
 	compute_sccs_and_btcs,
+	print_sccs,
 	profiling_stop_timer(comp_sccs,_),
 	profiling_start_timer(pe),
 	partial_evaluation,
+	print_partially_evaluated_sccs,
 	profiling_stop_timer(pe,_).
 
 %! refinement is det
@@ -343,6 +351,8 @@ bottom_up_refinement_scc(Head) :-
 	
 	profiling_start_timer(termination),
 	find_ranking_functions(Head,2),
+	print_ranking_functions(Head),
+	
 	prove_termination(Head,2),
 	profiling_stop_timer_acum(termination,_),
 	

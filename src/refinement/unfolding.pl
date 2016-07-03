@@ -60,7 +60,7 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 :-use_module('../termination_checker',[termination_argument/4]).
 		 
 			 
-:- use_module('../IO/output',[print_chain/2]).
+:- use_module('../IO/output',[print_chain_simple/1]).
 :- use_module('../IO/params',[get_param/2]).	
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3,assign_right_vars/3,tuple/3]).
 :- use_module('../utils/polyhedra_optimizations',[
@@ -162,7 +162,9 @@ unfold_calls_aux([],[],Head,New_RefCnt,Cost,R_Calls,New_B_Calls,New_T_Calls,Cs,T
 	%get the calls in the right order
 	reverse(New_B_Calls,New_B_Calls2),
 	reverse(New_T_Calls,New_T_Calls2),
-	add_eq_ph(eq_ph(Head,New_RefCnt,Cost,New_B_Calls2,R_Calls,New_T_Calls2,Cs,Term_flag),Id),
+	nad_normalize_polyhedron(Cs,Cs_normalized),
+	Cs_normalized\==[0=1],
+	add_eq_ph(eq_ph(Head,New_RefCnt,Cost,New_B_Calls2,R_Calls,New_T_Calls2,Cs_normalized,Term_flag),Id),
 	fail.
 
 
@@ -228,18 +230,18 @@ remove_terminating_non_terminating_chains_1(Head,RefCnt):-
 	New_chain\=Chain,
 	retract(chains:chain(Head,RefCnt,Chain)),
 	(New_chain\=none->
-	   assert(chains:chain(Head,RefCnt,New_chain))
+	   assertz(chains:chain(Head,RefCnt,New_chain))
 	   ;
 	   true
 	 ),
 	numbervars(Head,0,_),
 	(get_param(debug,[])->
 	 format('Discarded unfeasible chain ',[]),
-	 print_chain(Head,Chain),
+	 print_chain_simple(Chain),
 	 format('(Non-terminating chain proved terminating)~n',[]),
 	 (New_chain\=none->
 	   format('Remaining chain: ',[]),
-	   print_chain(Head,New_chain),nl
+	   print_chain_simple(New_chain),nl
 	   ;
 	   true
 	   )

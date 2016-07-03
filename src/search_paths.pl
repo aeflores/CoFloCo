@@ -7,7 +7,7 @@
    %working_directory(Dirp, Dirp),
    %atom_concat(Dir,'/',Dirp),
     prolog_load_context(directory, Dir),
-    retractall(user:file_search_path(stdlib,_)),
+%    retractall(user:file_search_path(stdlib,_)),
    (\+user:file_search_path(stdlib,_)->
   
    atom_concat(Dir,'/costa_stdlib/',Dir_basic),

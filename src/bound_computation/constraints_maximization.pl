@@ -216,7 +216,7 @@ limit_fconstrs_selection(Fconstrs,Max_min,Dicc,Fconstrs2):-
 	;
 		reverse(Sorted_fconstrs,Sorted_fconstrs1)
 	),
-	(get_param(maximize_fast,[N]);N=1),
+	(get_param(n_candidates,[N]);N=1),
 	length(Dicc,N_vars),
 	repeat_n_times(N_vars,N,Counters),
 	maplist(tuple,_,Itvars,Dicc),
@@ -343,7 +343,7 @@ max_min_linear_expression_all(Lin_exp, Vars_of_Interest, _Context,_Max_min, Lin_
 	
 
 max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Lin_exp_out) :-
-	(get_param(maximize_fast,[N])->
+	(get_param(n_candidates,[N])->
 		true
 		;
 		N=1),

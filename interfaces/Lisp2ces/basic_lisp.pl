@@ -25,7 +25,7 @@ Size relations of the basic lisp functions
 	]).
 
 
-eq('cons'(_Ai,_Al,As,_Bi,Bl,Bs,_Ci,Cl,Cs),1,[],[Cl=1+Bl,Cs=As+Bs+1]).
+eq('cons'(_Ai,Al,As,_Bi,Bl,Bs,_Ci,Cl,Cs),1,[],[Cl=1+Bl,Cs=As+Bs+1,Al>=0,As>=0,Bl>=0,Bs>=0,Cl>=0,Cs>=0]).
 
 eq('consp'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al>=1,As>=1]).
 eq('consp'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
@@ -37,9 +37,9 @@ eq('atom'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
 eq('endp'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al>=1,As>=1]).
 eq('endp'(_Ai,Al,As,1,0,0),1,[],[Al=<As,Al=0,As=0]).
 
-eq('car'(_Ai,Al,As,_Bi,_Bl,Bs),1,[],[Al=<As,Al>=1,Bs+1=<As]).
+eq('car'(_Ai,Al,As,_Bi,Bl,Bs),1,[],[Al=<As,Al>=1,Bs+1=<As,As>=0,Bl>=0,Bs>=0]).
 eq('car'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
-eq('cdr'(_Ai,Al,As,_Bi,Bl,Bs),1,[],[Al=<As,Bl+1=Al,Bs+1=<As]).
+eq('cdr'(_Ai,Al,As,_Bi,Bl,Bs),1,[],[Al=<As,Bl+1=Al,Bs+1=<As,Al>=0,As>=0,Bl>=0,Bs>=0]).
 eq('cdr'(_Ai,Al,As,0,0,0),1,[],[Al=<As,Al=0,As=0]).
 
 eq('or'(1,_,_,_,_,_,1,0,0),1,[],[]).
@@ -53,14 +53,9 @@ eq('+'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai+Bi]).
 eq('1+'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=Ai+1]).
 eq('1-'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=Ai-1]).
 
-eq('='(Ai,_,_,Ai,_,_,1,0,0),1,[],[]).
-eq('='(Ai,_,_,Bi,_,_,0,0,0),1,[],[Ai>=Bi+1]).
-eq('='(Ai,_,_,Bi,_,_,0,0,0),1,[],[Ai+1=<Bi]).
-
-eq('eql'(Ai,_,_,Ai,_,_,1,0,0),1,[],[]).
-eq('eql'(Ai,_,_,Bi,_,_,0,0,0),1,[],[Ai>=Bi+1]).
-eq('eql'(Ai,_,_,Bi,_,_,0,0,0),1,[],[Ai+1=<Bi]).
-
+eq('='(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
+eq('='(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
+eq('='(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 
 eq('>'(Ai,_Al,_As,Bi,_Bl,_Bs,1,0,0),1,[],[Ai>=Bi+1]).
 eq('>'(Ai,_Al,_As,Bi,_Bl,_Bs,0,0,0),1,[],[Ai=<Bi]).
@@ -73,7 +68,9 @@ eq('binary--'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai-Bi]).
 eq('unary--'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=0-Ai]).
 
 eq('integerp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
+eq('integerp'(_Ai,_Al,_As,Bi,0,0),1,[],[Bi>=0,Bi=<1]).
 eq('rationalp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
+eq('rationalp'(_Ai,_Al,_As,Bi,0,0),1,[],[Bi>=0,Bi=<1]).
 
 eq('not'(A,_,_,1,0,0),1,[],[A=0]).
 eq('not'(A,_,_,0,0,0),1,[],[A=1]).
@@ -111,14 +108,24 @@ eq('binary-*'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai*Bi]).
 eq('eq'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('eq'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('eq'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
+eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
+eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
+eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+eq('eq'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
 
 eq('equal'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('equal'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('equal'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
+eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
+eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
+eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+eq('equal'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
 
 eq('eql'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
+eq('eql'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+eq('eql'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
 
 %undefined
 eq('acl2-numberp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).

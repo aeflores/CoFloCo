@@ -149,12 +149,12 @@ clean_graph:-
 add_nodes(Head,RefCnt):-	 
 	loop_ph(Head,(Id_Loop,RefCnt),Calls,_,_,_),
 	(Calls==[]->
-	  assert(node(Id_Loop,final))
+	  assertz(node(Id_Loop,final))
 	  ;
 	  (Calls=[_,_|_]->
-	  assert(node(Id_Loop,multiple_loop))
+	  assertz(node(Id_Loop,multiple_loop))
 	  ;
-	  assert(node(Id_Loop,loop))
+	  assertz(node(Id_Loop,loop))
 	  )
 	  ),
 	fail.
@@ -178,37 +178,37 @@ get_phases_edge(C1,C2):-
 
 get_phases_aux([C1|C1s],[C2|C2s]):-!,
      (get_one_edge_form_list_to_list([C1|C1s],[C2|C2s],_,_)->
-        assert(phases_edge([C1|C1s],[C2|C2s])),
-        assert(not_phases_edge([C2|C2s],[C1|C1s]))
+        assertz(phases_edge([C1|C1s],[C2|C2s])),
+        assertz(not_phases_edge([C2|C2s],[C1|C1s]))
         ;
-          assert(not_phases_edge([C1|C1s],[C2|C2s])),
+          assertz(not_phases_edge([C1|C1s],[C2|C2s])),
         fail
         ).
 get_phases_aux([C1|C1s],C2):-
      number(C2),!,	
      (get_one_edge_form_list([C1|C1s],C2,_)->
-        assert(phases_edge([C1|C1s],C2)),
-        assert(not_phases_edge(C2,[C1|C1s]))
+        assertz(phases_edge([C1|C1s],C2)),
+        assertz(not_phases_edge(C2,[C1|C1s]))
         ;
-          assert(not_phases_edge([C1|C1s],C2)),
+          assertz(not_phases_edge([C1|C1s],C2)),
         fail
         ).       
 get_phases_aux(C1,[C2|C2s]):-
      number(C1),!,	
      (get_one_edge_to_list(C1,[C2|C2s],_)->
-        assert(phases_edge(C1,[C2|C2s])),
-        assert(not_phases_edge([C2|C2s],C1))
+        assertz(phases_edge(C1,[C2|C2s])),
+        assertz(not_phases_edge([C2|C2s],C1))
         ;
-          assert(not_phases_edge(C1,[C2|C2s])),
+          assertz(not_phases_edge(C1,[C2|C2s])),
         fail
         ).       
 get_phases_aux(C1,C2):-
      number(C1),number(C2),
      (get_edge(C1,C2)->
-        assert(phases_edge(C1,C2)),
-        assert(not_phases_edge(C2,C1))
+        assertz(phases_edge(C1,C2)),
+        assertz(not_phases_edge(C2,C1))
         ;
-          assert(not_phases_edge(C1,C2)),
+          assertz(not_phases_edge(C1,C2)),
         fail
         ).      
 
@@ -251,7 +251,7 @@ save_chain(Head,RefCnt,Chain):-
 	chain(Head,RefCnt,Chain),!.
 save_chain(Head,RefCnt,Chain):-
 	%format('~p~n',chain(Head,RefCnt,Chain)),
-	assert(chain(Head,RefCnt,Chain)).
+	assertz(chain(Head,RefCnt,Chain)).
 
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -293,9 +293,9 @@ get_edge(O,D):-
    loop_ph(Head2,(D,RefCnt),_,Phi2,_,_),
    append(Phi,Phi2,Composed_cons),
    (is_edge_possible(Head2,Calls,Composed_cons)->
-	    assert(edge(O,D))
+	    assertz(edge(O,D))
 	    ;
-	    assert(not_edge(O,D)),fail
+	    assertz(not_edge(O,D)),fail
 	    ).
 
 is_edge_possible(Head2,Calls,Cs):-
@@ -323,7 +323,7 @@ strip_singular_classes(Head,RefCnt):-
 	phase([Loop],Head,RefCnt),
 	\+get_edge(Loop,Loop),
 	retract(phase([Loop],Head,RefCnt)),
-	assert(phase(Loop,Head,RefCnt)),
+	assertz(phase(Loop,Head,RefCnt)),
 	fail.
 strip_singular_classes(Head,RefCnt):-
 	node(Final,final),

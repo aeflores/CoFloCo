@@ -24,13 +24,13 @@ Some predicates used by multiple strategies
 :- module(phase_common,[
 	is_zero/1,
 	get_difference_version/4,
+	get_tail_version/4,
 	get_difference_version_aux/4,
 	le_print_int/3,
 	get_constr_op/2,
 	select_important_variables/3,
 	put_inside_mult/2,
-	is_head_expression/2,
-	print_lin_exp_in_phase/3
+	is_head_expression/2
 	]).
 	
 :- use_module(stdlib(linear_expression),[
@@ -56,6 +56,8 @@ get_difference_version_aux(Head,Rf,Call,Rf_diff):-
 get_difference_version(Head,Call,Rf,Rf_diff):-
 	copy_term((Head,Rf),(Call,Rfp)),
 	subtract_le(Rf,Rfp,Rf_diff).		
+get_tail_version(Head,Lin_exp,Call,Lin_exp_call):-
+	copy_term((Head,Lin_exp),(Call,Lin_exp_call)).
 	
 le_print_int(Lin_exp,Exp,Den):-
 		integrate_le(Lin_exp,Den,Lin_exp_nat),
@@ -77,10 +79,5 @@ is_head_expression(Head,Exp):-
 	numbervars(Head2,0,_),
 	ground(Exp2).
 	
-% debugging predicates 
-print_lin_exp_in_phase(Head,Calls,Exp):-
-	copy_term((Head,Calls,Exp),(Head2,Calls2,Exp2)),
-	write_le(Exp2,Exp_print),
-	numbervars((Head2,Calls2),0,_),
-	format('~p -> ~p : ~p ~n',[Head2,Calls2,Exp_print]).
+
 
