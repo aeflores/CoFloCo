@@ -61,6 +61,8 @@ anything_but_quote(X) --> [X], {\+atom_codes('\"',[X])}.
 
 
 chars([X|Y]) --> char(X), chars(Y).
+chars([X|Y]) --> "\\", [X], chars(Y).
+chars([X]) --> "\\", [X].
 chars([X]) --> char(X).
 %char(X) --> [X], { char_type(X,csym) }.
 char(X) --> "#\\",[X],!.
