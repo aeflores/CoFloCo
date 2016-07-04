@@ -250,6 +250,7 @@ insert_list_lm(Dicc,[Key|Keys],[Val|Vals],Dicc_new):-
 
 % predicates to deal witht the lambda expressions and let
 
+couple_definitions(nil,_,[]).
 couple_definitions(Vars,Exps,Defs):-
 	maplist(couple_definition,Vars,Exps,Defs),!.
 couple_definitions(Vars,Exps,_Defs):-
