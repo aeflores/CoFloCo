@@ -83,6 +83,7 @@
 		iconstr_new/4,
 		bconstr_get_bounded/2,
 		bconstr_annotate_bounded/2,
+		bconstr_accum_bounded_set/3,
 		astrexp_new/2,
 		pstrexp_pair_add/3,
 		pstrexp_pair_empty/1,
@@ -426,7 +427,7 @@ cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_
 %	Cost_aux=cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),
 	cstr_simplify_multiple_variables_constrs(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cost_aux),
 	join_equivalent_itvars(Cost_aux,Cost_final),
-	cstr_remove_cycles(Cost_final,Cost_final2).
+	cstr_remove_cycles(Cost_final,Cost_final2),!.
 
 
 cstr_simplify_multiple_variables_constrs(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands,BConstant)):-
