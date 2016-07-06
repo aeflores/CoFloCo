@@ -82,11 +82,9 @@ get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 	foldl(accumulate_calls,Base_calls,(Basic_cost,1),(cost(Ub_fconstrs_list,Lb_fconstrs_list,Iconstrs,Bases,Base),_)),
 	% we reverse the calls in case we want to combine cost structures incrementally
 	% this is not done now but it would allow us to detect which calls make us lose precision
-	reverse(Base_calls,Base_calls_inv),
-	maplist(term_variables,Base_calls_inv,Base_calls_vars),
-	maplist(from_list_sl,Base_calls_vars,Base_calls_sets),
-	max_min_fconstrs_in_cost_equation(Ub_fconstrs_list,Base_calls_sets,Phi1,TVars,New_Ub_fconstrs,New_iconstrs1),
-	max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls_sets,Phi1,TVars,New_Lb_fconstrs,New_iconstrs2),
+	%reverse(Base_calls,Base_calls_inv),
+	max_min_fconstrs_in_cost_equation(Ub_fconstrs_list,Base_calls,Phi1,TVars,New_Ub_fconstrs,New_iconstrs1),
+	max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Phi1,TVars,New_Lb_fconstrs,New_iconstrs2),
 	ut_flat_list([New_iconstrs1,New_iconstrs2,Iconstrs],New_iconstrs),
 	cstr_join_equal_fconstr(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost).
 

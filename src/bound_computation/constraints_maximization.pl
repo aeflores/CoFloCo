@@ -32,7 +32,9 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 				  max_min_linear_expression_all/5]).
 				  
 :- use_module('../IO/params',[get_param/2]).
-:- use_module('../db',[phase_loop/5]).
+:- use_module('../db',[
+			phase_loop/5,
+			get_input_output_vars/3]).
 :- use_module('../utils/cofloco_utils',[
 			tuple/3,
 			sort_with/3,
@@ -47,7 +49,9 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 			slice_relevant_constraints_and_vars/5]).			
 
 :- use_module('../utils/cost_structures',[
-			fconstr_new/4]).			
+			fconstr_new/4,
+			max_min_ub_lb/2,
+			bconstr_accum_bounded_set/3]).			
 					
 :- use_module(stdlib(linear_expression),[
 	is_constant_le/1,
@@ -71,10 +75,58 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 % into a simple list of final constraints expressed in terms of TVars using max_min_constrs/4
 %
 % It is prepared to originate intermediate constraints as well but not used yet
-max_min_fconstrs_in_cost_equation(Fconstrs_list,_Base_calls,Phi,TVars,Final_fconstrs,[]):-
+max_min_fconstrs_in_cost_equation(Fconstrs_list,Base_calls,Phi,TVars,Final_fconstrs,[]):-
 	ut_flat_list(Fconstrs_list,Fconstrs),
-	max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs).
+	max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs),
+	get_lost_fconstrs_expressable_as_outputs(Fconstrs_list,Final_fconstrs,Base_calls,Phi).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+
+
+get_lost_fconstrs_expressable_as_outputs(Fconstrs_list,Final_fconstrs,Base_calls,Phi):-
+	ut_flat_list(Fconstrs_list,Fconstrs),
+	reverse(Base_calls,Base_calls_rev),
+	foldl(bconstr_accum_bounded_set,Fconstrs,[],Itvar_set),
+	foldl(exclude_covered_itvars,Final_fconstrs,Itvar_set,Lost_itvar_set),
+	get_lost_fconstrs_expressable_as_outputs_1(Fconstrs_list,Base_calls_rev,Phi,Lost_itvar_set).
+
+get_lost_fconstrs_expressable_as_outputs_1(_,[],_,_):-!.
+
+get_lost_fconstrs_expressable_as_outputs_1([Fconstrs|Fconstr_list],[_Call|Base_calls],Phi,Lost_itvar_set):-
+	include(constr_bounded_in_set(Lost_itvar_set),Fconstrs,Fconstrs_lost),
+	foldl(get_call_output_vars,Base_calls,[],Out_vars),
+	get_fconstrs_expressable_with_vars(Fconstrs_lost,Out_vars,Phi,Recoverable_pairs),
+	(Recoverable_pairs\=[]->
+		copy_term((Base_calls,Recoverable_pairs),(Base_calls2,Recoverable_pairs2)),
+		numbervars(Base_calls2,0,_),
+		format(user_error,'Expression lost in terms of the output ~p~n :~p~n',[Base_calls2,Recoverable_pairs2])
+		;
+		true),
+	get_lost_fconstrs_expressable_as_outputs_1(Fconstr_list,Base_calls,Phi,Lost_itvar_set).
 	
+
+
+exclude_covered_itvars(bound(_,_,Bounded),Set,Set1):-
+	from_list_sl(Bounded,Bounded_set),
+	difference_sl(Set,Bounded_set,Set1).
+	
+constr_bounded_in_set(Set,bound(_,_,Bounded)):-
+	from_list_sl(Bounded,Bounded_set),
+	difference_sl(Bounded_set,Set,[]).
+
+get_call_output_vars((Call,_Chain),OVars,OVars2):-
+	get_input_output_vars(Call,_,OVars1),
+	append(OVars1,OVars,OVars2).
+	
+get_fconstrs_expressable_with_vars([],_,_,[]).
+get_fconstrs_expressable_with_vars([bound(Op,Lin_exp,Bounded)|Fconstrs],Out_vars,Phi,[bound(Op,Lin_exp2,Bounded)|Fconstrs2]):-
+	max_min_ub_lb(Max_min,Op),
+	max_min_linear_expression_all(Lin_exp, Out_vars, Phi,Max_min, [Lin_exp2|_]),!,
+	get_fconstrs_expressable_with_vars(Fconstrs,Out_vars,Phi,Fconstrs2).
+	
+get_fconstrs_expressable_with_vars([_|Fconstrs],Out_vars,Phi,Fconstrs2):-
+	get_fconstrs_expressable_with_vars(Fconstrs,Out_vars,Phi,Fconstrs2).
+
 %! max_min_fconstrs_in_chain(+Fconstrs:list(final_constr),+Chain:chain,Phi:polyhedron,TVars:list(Var),Fconstrs_out:list(final_cons),ICons_out:list(inter_cons)) is det
 % transform a list of final constraints from two phases
 % into a simple list of final constraints expressed in terms of TVars using max_min_constrs/4	
@@ -106,7 +158,6 @@ max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs):-
 	% put the result together
 	ut_flat_list([Extra_tops,New_top_exps],Final_fconstrs).
 	
-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
