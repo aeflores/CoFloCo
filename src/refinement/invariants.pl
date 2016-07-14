@@ -67,12 +67,8 @@ This module computes different kinds of invariants for the chains:
 	nad_false/1,nad_consistent_constraints/1]).
 :- use_module(stdlib(utils),[ut_append/3,ut_flat_list/2, ut_member/2, ut_list_to_dlist/2,ut_split_at_pos/4]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_stop_timer_acum/2]).
-:- use_module(stdlib(polyhedra_ppl),[to_ppl_dim/4,from_ppl/5]).
 
-:-use_module(stdlib(polyhedra_ppl)).
-
-
-
+:- use_module(stdlib(polyhedra_ppl)).
 :- use_module(stdlib(numvars_util),[to_numbervars_nu/4]).
 
 :-use_module(library(apply_macros)).

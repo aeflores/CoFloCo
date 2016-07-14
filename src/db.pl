@@ -41,6 +41,7 @@ This module acts as a database that stores:
 	   reset_scc/3,
 	   save_input_output_vars/3,
 	   get_input_output_vars/3,
+	   get_input_output_arities/3,
 	   eq_ph/8,
        loop_ph/6,
 	   phase_loop/5,
@@ -253,7 +254,12 @@ get_input_output_vars(Head,Ivars,Ovars):-
 	input_output_vars(Head,Ivars,Ovars),!.
 get_input_output_vars(Head,Ivars,[]):-
 	Head=..[_|Ivars].
-	
+
+get_input_output_arities(F/A,Ia,Oa):-
+	functor(Head,F,A),
+	get_input_output_vars(Head,Ivars,Ovars),
+	length(Ivars,Ia),
+	length(Ovars,Oa).	
 	
 non_terminating_chain_1(Head,RefCnt,Chain):-
 	chain(Head,RefCnt,Chain),

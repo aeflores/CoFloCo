@@ -288,7 +288,7 @@ top_down_refinement(SCC_N):-
 	(\+crs_residual_scc(SCC_N,_) 
 	;
 	(crs_residual_scc(SCC_N,F/A),ignored_scc(F/A))
-	),
+	),!,
 	Next_SCC_N is SCC_N-1,
 	top_down_refinement(Next_SCC_N).
 top_down_refinement(-1).
@@ -308,7 +308,7 @@ bottom_up_refinement(SCC_N, Max_SCC_N) :-
 	(\+crs_residual_scc(SCC_N,_) 
 	;
 	(crs_residual_scc(SCC_N,F/A),ignored_scc(F/A))
-	),
+	),!,
 	Next_SCC_N is SCC_N+1,
 	bottom_up_refinement(Next_SCC_N, Max_SCC_N).
 bottom_up_refinement(SCC_N, SCC_N_max):-SCC_N > SCC_N_max.
@@ -362,14 +362,14 @@ bottom_up_refinement_scc(Head) :-
 	%compute_forward_invariants(Head,2),	
 	compute_invariants_for_scc(Head,2),
 	profiling_stop_timer_acum(inv,_),
-	print_chains_entry(Head_aux,2).
+	print_chains_entry(Head_aux,2),
 %TODO: experiment with chain compression	
-%	conditional_call(get_param(compress_chains,[]),
-%	    (
-%		  compress_chains_execution_patterns(Head,2),
-%		  print_external_pattern_refinement(Head,2)
-%		  )
-%		 ).
+	conditional_call((get_param(compress_chains,[N]),N > 0),
+	    (
+		  compress_chains_execution_patterns(Head,2),
+		  print_external_pattern_refinement(Head,2)
+		  )
+		 ).
 	
 
 %! upper_bounds is det

@@ -35,7 +35,7 @@ This module reads cost equations and stores them in the database after normalizi
 :- use_module('../utils/polyhedra_optimizations',[slice_relevant_constraints/4,nad_normalize_polyhedron/2]).
 :- use_module(stdlib(counters),[counter_increase/3]).
 :- use_module(stdlib(utils),[ut_var_member_chk/2]).
-:- use_module(stdlib(set_list),[from_list_sl/2]).
+:- use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2,insert_sl/3]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_normalize/2]).
 
 :-use_module(library(apply_macros)).
@@ -161,6 +161,10 @@ get_eq_head(eq(Head,_Exp,_Body_Calls,_Size_Rel),Head).
 
 %! get_ground_term(+Term:term,+Bindings:list(atom=var),-Ground_term:term) is det
 % apply the bindings of Bindings to Term
+% we want to obtain a ground term to later print the results
+% if the variables were given a name, we keep that name
+% if they were given a name A,B,C ... we substitute it by the corresponding '$VAR(N)' so we can obtain the maximum and not repeat names
+% if a variable was a constant or repeated, we give it a fresh '$VAR(N)'
 get_ground_term(Term,Bindings,Ground_term):-
 	copy_term((Term,Bindings),(Term2,Bindings2)),
 	maplist(substitute_numbervars,Bindings2,Bindings3),
@@ -169,11 +173,20 @@ get_ground_term(Term,Bindings,Ground_term):-
 	Term2=..[F|Vars],
 	maplist(unify_eq,Bindings3),
 	maplist(subtitute_constants_by_vars,Vars,Vars1),
-	numbervars(Vars1,Max1,_),
-	Ground_term=..[F|Vars1].
+	avoid_repeated_names(Vars1,[],Vars2),
+	numbervars(Vars2,Max1,_),
+	Ground_term=..[F|Vars2].
 	
 unify_eq(X=X).
 
+avoid_repeated_names([],_,[]).
+avoid_repeated_names([N|Ns],Set,[_|Ns2]):-
+	contains_sl(Set,N),!,
+	avoid_repeated_names(Ns,Set,Ns2).
+avoid_repeated_names([N|Ns],Set,[N|Ns2]):-
+	insert_sl(Set,N,Set1),
+	avoid_repeated_names(Ns,Set1,Ns2).	
+	
 substitute_numbervars(Atom=Var,'$VAR'(Pos)=Var):-
 	atom_chars(Atom,[Capital|Number_chars]),
 	char_type(Capital,upper),
@@ -202,10 +215,8 @@ is_number_char_list_1([Ch|Chs],Zero,Nine):-
 	Ch_code>= Zero,
 	is_number_char_list_1(Chs,Zero,Nine).	
 	
-subtitute_constants_by_vars(Atom,_):-
-	atom(Atom),
-	atom_chars(Atom,Number_chars),
-	is_number_char_list(Number_chars),!.
+subtitute_constants_by_vars(N,_):-
+	number(N).
 subtitute_constants_by_vars(X,X).
 
 

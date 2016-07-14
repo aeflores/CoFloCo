@@ -37,9 +37,13 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 :-use_module('../IO/params',[get_param/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_lub/6]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,nad_normalize_polyhedron/2]).
-:- use_module('../utils/cofloco_utils',[assign_right_vars/3]).
+:- use_module('../utils/cofloco_utils',[
+			assign_right_vars/3,
+			merge_implied_summaries/3]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).		
-
+:- use_module(stdlib(set_list),[is_subset_sl/2,union_sl/3]).	
+:- use_module(stdlib(numeric_abstract_domains),[
+			nad_entails/3]).
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 %! compute_loops(Head:term,RefCnt:int) is det
@@ -55,8 +59,9 @@ compute_loops(Head,RefCnt):-
 	foldl(group_loop_vars,Loops,[],_),
 	maplist(normalize_loop,Loops,Normalized_loops),
 	from_pair_list_mm(Normalized_loops,Grouped_loops),
-	(get_param(compress_chains,[])->
-	maplist(group_equal_loops,Grouped_loops,Simplified_loops)
+	%merge loops that are equivalent or similar, depending on N
+	((get_param(compress_chains,[N]),N > 0)->
+	maplist(group_equal_loops(N),Grouped_loops,Simplified_loops)
 	;
 	maplist(put_in_list,Grouped_loops,Simplified_loops)
 	),	
@@ -67,9 +72,16 @@ group_loop_vars(((Head,Rec_Calls,Term_flag),_Info),Groups,Groups):-
 	member((Head,Rec_Calls,Term_flag),Groups),!.
 group_loop_vars(((Head,Rec_Calls,Term_flag),_Info),Groups,Groups1):-
 	Groups1=[(Head,Rec_Calls,Term_flag)|Groups].
-	
-group_equal_loops((Header,Info),(Header,Info_compressed)):-
+
+%merge loops that are completely equivalent	
+group_equal_loops(1,(Header,Info),(Header,Info_compressed)):-
 	from_pair_list_mm(Info,Info_compressed).
+
+%merge loops such that one is more general than another
+group_equal_loops(2,(Header,Info),(Header,Info_compressed2)):-
+	from_pair_list_mm(Info,Info_compressed),
+	term_variables(Header,Vars),
+	merge_implied_summaries(Vars,Info_compressed,Info_compressed2).
 							        	 	 	    
 get_equation(Head,Rec_Calls,RefCnt,Eq_Id,Cs,Term_flag):-
 	 eq_ph(Head,(Eq_Id,RefCnt),_,_,Rec_Calls,_,Cs,Term_flag).

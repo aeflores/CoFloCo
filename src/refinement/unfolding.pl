@@ -62,7 +62,11 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 			 
 :- use_module('../IO/output',[print_chain_simple/1]).
 :- use_module('../IO/params',[get_param/2]).	
-:- use_module('../utils/cofloco_utils',[bagof_no_fail/3,assign_right_vars/3,tuple/3]).
+:- use_module('../utils/cofloco_utils',[
+	bagof_no_fail/3,
+	assign_right_vars/3,
+	tuple/3,
+	merge_implied_summaries/3]).
 :- use_module('../utils/polyhedra_optimizations',[
 	nad_consistent_constraints_group_aux/1,
 	slice_relevant_constraints_and_vars/5,
@@ -72,8 +76,9 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 :- use_module(stdlib(utils),[ut_split_at_pos/4]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_lub/6,
 			            nad_normalize/2,
+			            nad_entails/3,
 						nad_list_lub/2,nad_glb/3,nad_project/3]).
-:- use_module(stdlib(set_list),[from_list_sl/2,unions_sl/2,union_sl/3]).
+:- use_module(stdlib(set_list),[from_list_sl/2,unions_sl/2,union_sl/3,is_subset_sl/2]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 
 
@@ -303,7 +308,14 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	
 	assign_right_vars(Ex_pats,Head,Ex_pats1),
 	% group the partitions according to the chains
-	from_pair_list_mm(Ex_pats1,Multimap_simplified),
+	from_pair_list_mm(Ex_pats1,Multimap_simplified_aux),
+	%join chains more agressively
+	((get_param(compress_chains,[N]),N > 1)->
+	term_variables(Head,Vars),
+	merge_implied_summaries(Vars,Multimap_simplified_aux,Multimap_simplified)
+	;
+	Multimap_simplified_aux=Multimap_simplified
+	),
 %TODO: experiments of how to compress chains
 %	length(Multimap_simplified,N),
 %	Head=..[_|Vars],
@@ -337,7 +349,6 @@ compress_chains_execution_patterns(Head,RefCnt):-
 	
 	foldl(save_external_execution_patterns(Head,RefCnt,terminating),Multimap_simplified_2,1,Id_N1),
 	foldl(save_external_execution_patterns(Head,RefCnt,non_terminating),Multimap_simplified_non_terminating_2,Id_N1,_).
-
 
 save_external_execution_patterns(Head,RefCnt,Terminating,(Precondition,Chains),N,N1):-
 	add_external_call_pattern(Head,(N,RefCnt),Terminating,Chains,Precondition),

@@ -43,18 +43,59 @@ of CoFloCo.
 		    write_product/2,
 		    get_all_pairs/3,
 		    normalize_constraint_wrt_var/3,
-		    normalize_constraint_wrt_vars/3]).
+		    normalize_constraint_wrt_vars/3,
+		    merge_implied_summaries/3]).
 
 
-:- use_module(polyhedra_optimizations,[nad_entails_aux/3]).
+:- use_module(polyhedra_optimizations,[nad_entails_aux/3,nad_normalize_polyhedron/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_entails/3,nad_consistent_constraints/1,nad_lub/6,nad_list_lub/2]).
 :- use_module(stdlib(linear_expression), [parse_le_fast/2,subtract_le/3,parse_le/2, integrate_le/3]).
 :- use_module(stdlib(fraction),[divide_fr/3,negate_fr/2,geq_fr/2,gcd_fr/3]).
+:- use_module(stdlib(polyhedra_ppl)).
+:- use_module(stdlib(numvars_util),[to_numbervars_nu/4]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! merge_implied_summaries(+Vars:list(var),+Multimap:list(polyhedron,set_list(id)),+Compressed:list(polyhedron,set_list(id))) is det
+% join the set_list(id) whose characteristic polyhedron is implied or implies the others
+% keeping the most general polyhedron
+merge_implied_summaries(Vars,Multimap,Compressed):-
+	% we perform the comparisons with ppl polyhedra to gain efficiency
+	maplist(generate_ppl_polyhedra_pairs(Vars),Multimap,Multimap_lowlevel),
+	merge_implied_summaries_low_level(Multimap_lowlevel,Compressed_lowlevel),
+	maplist(generate_contraints_pairs(Vars),Compressed_lowlevel,Compressed).
+	
+merge_implied_summaries_low_level([],[]).
+merge_implied_summaries_low_level([(Inv,Ids)|Multimap],[Compressed_pair|Compressed]):-
+	merge_implied_summaries_aux(Multimap,(Inv,Ids),Compressed_pair,Rest),
+	merge_implied_summaries_low_level(Rest,Compressed).
+	
+merge_implied_summaries_aux([],(Inv,Ids),(Inv,Ids),[]).
+merge_implied_summaries_aux([(Inv2,Ids2)|Multimap],(Inv,Ids),Compressed_pair,Rest):-
+	ppl_Polyhedron_contains_Polyhedron(Inv2,Inv),!,
+	ppl_delete_Polyhedron(Inv),
+	union_sl(Ids,Ids2,Ids_join),
+	merge_implied_summaries_aux(Multimap,(Inv2,Ids_join),Compressed_pair,Rest).
+merge_implied_summaries_aux([(Inv2,Ids2)|Multimap],(Inv,Ids),Compressed_pair,Rest):-
+	ppl_Polyhedron_contains_Polyhedron(Inv,Inv2),!,
+	ppl_delete_Polyhedron(Inv2),
+	union_sl(Ids,Ids2,Ids_join),
+	merge_implied_summaries_aux(Multimap,(Inv,Ids_join),Compressed_pair,Rest).	
+	
+merge_implied_summaries_aux([(Inv2,Ids2)|Multimap],(Inv,Ids),Compressed_pair,[(Inv2,Ids2)|Rest]):-
+	merge_implied_summaries_aux(Multimap,(Inv,Ids),Compressed_pair,Rest).		
+
+generate_ppl_polyhedra_pairs(Vars,(Inv,Ids),(Handle,Ids)):-
+	to_numbervars_nu( (Vars,Inv) , _, (_,Inv_ground), Dim),
+	to_ppl_dim(c, Dim, Inv_ground, Handle).
+	 
+generate_contraints_pairs(Vars,(Handle,Ids),(Inv_normalized,Ids)):-
+	from_ppl(c , Handle,_, Vars, Inv),
+	nad_normalize_polyhedron(Inv,Inv_normalized).
+
 
 get_all_pairs([],Accum_pairs,Accum_pairs).
 get_all_pairs([Var_set|Vars_sets],Accum_pairs,All_pairs):-
