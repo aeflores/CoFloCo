@@ -78,7 +78,10 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 max_min_fconstrs_in_cost_equation(Fconstrs_list,Base_calls,Phi,TVars,Final_fconstrs,[]):-
 	ut_flat_list(Fconstrs_list,Fconstrs),
 	max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs),
-	get_lost_fconstrs_expressable_as_outputs(Fconstrs_list,Final_fconstrs,Base_calls,Phi).
+	(get_param(debug,[])->
+		get_lost_fconstrs_expressable_as_outputs(Fconstrs_list,Final_fconstrs,Base_calls,Phi)
+	; 
+		true).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 

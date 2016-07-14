@@ -28,6 +28,7 @@ This module prints the results of the analysis
           print_chain_simple/1,
 		  print_chains_entry/2,
 		  print_sccs/0,
+		  print_merging_cover_points/3,
 		  print_partially_evaluated_sccs/0,
 		  print_equations_refinement/2,
 		  print_loops_refinement/2,
@@ -140,6 +141,11 @@ print_sccs.
 
 print_scc(scc(SCC_N,Type,Nodes,_Entries)):-
 	format('~p. ~p : ~p~n',[SCC_N,Type,Nodes]).
+
+print_merging_cover_points(SCC_N,Cover_points,Merged):-
+	get_param(v,[X]),X > 1,!,
+	format('~p. SCC does not have a single cut point : ~p  ~n Merged into ~p~n',[SCC_N,Cover_points,Merged]).
+print_merging_cover_points(_,_,_).	
 	
 print_partially_evaluated_sccs:-
 	get_param(v,[X]),X > 1,!,

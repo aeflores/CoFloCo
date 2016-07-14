@@ -46,6 +46,7 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 		get_input_output_arities/3,
 		get_input_output_vars/3,
 		save_input_output_vars/3]).
+:- use_module('../IO/output',[print_merging_cover_points/3]).		
 %:- use_module(recursion_loop_extraction,[try_loop_extraction/1]).
 
 :- use_module(stdlib(scc),[compute_sccs/2]).
@@ -131,13 +132,12 @@ compute_btc_aux(_).
 
 compute_cover_point_for_scc(SCC_N) :-
 	crs_scc(SCC_N,non_recursive,[Node],_SCC_Graph,_Entries),!,
-	%(has_entry_node([Node])->
+	(has_entry_node([Node])->
 		add_to_btc([Node]),
 		declare_residual_scc(SCC_N,Node)
-	%	;
-	%	true
-	%)
-	.
+		;
+		true
+	).
 	
 
 compute_cover_point_for_scc(SCC_N) :-
@@ -150,6 +150,7 @@ compute_cover_point_for_scc(SCC_N) :-
 	;
 		%a single node is not enough so we merge the multiple ones
 	    merge_multiple_cover_points(Cover_Points,Merged_cover_point),
+	    print_merging_cover_points(SCC_N,Cover_Points,Merged_cover_point),
 	    add_to_btc([Merged_cover_point]),
 		declare_residual_scc(SCC_N,Merged_cover_point)	
 	    

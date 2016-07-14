@@ -364,7 +364,7 @@ bottom_up_refinement_scc(Head) :-
 	profiling_stop_timer_acum(inv,_),
 	print_chains_entry(Head_aux,2),
 %TODO: experiment with chain compression	
-	conditional_call(get_param(compress_chains,[]),
+	conditional_call((get_param(compress_chains,[N]),N > 0),
 	    (
 		  compress_chains_execution_patterns(Head,2),
 		  print_external_pattern_refinement(Head,2)

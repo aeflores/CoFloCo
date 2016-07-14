@@ -68,7 +68,7 @@ parameter_dictionary('-n_candidates','n_candidates',[number]).
 
 parameter_dictionary('-solve_fast','solve_fast',[bool]).
 
-parameter_dictionary('-compress_chains','compress_chains',[bool]).
+parameter_dictionary('-compress_chains','compress_chains',[number]).
 
 parameter_dictionary('-only_termination','only_termination',[bool]).
 
@@ -211,4 +211,4 @@ param_description('conditional_lbs',
 'Generate a set of conditional lower bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
 
 param_description('compress_chains',
-'Join chains that have the same precondition. It can increase performance greatly but in some cases it can produce upper bounds that are less tight by a constant factor (the asymptotic complexity does not change)').
+'nat : (default 0) Join chains that have the same precondition. It can increase performance greatly but in some cases it can produce upper bounds that are less tight by a constant factor (the asymptotic complexity does not change)').
