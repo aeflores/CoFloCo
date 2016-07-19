@@ -132,7 +132,9 @@ compute_btc_aux(_).
 
 compute_cover_point_for_scc(SCC_N) :-
 	crs_scc(SCC_N,non_recursive,[Node],_SCC_Graph,_Entries),!,
-	(has_entry_node([Node])->
+	((has_entry_node([Node])
+	 ; 
+	 \+has_one_eq(Node) )->
 		add_to_btc([Node]),
 		declare_residual_scc(SCC_N,Node)
 		;
@@ -160,7 +162,7 @@ has_entry_node(Nodes):-
 	entry_eq(Head,_),
 	functor(Head,F,A),
 	member(F/A,Nodes),!.
-has_one_eq([F/A]):-
+has_one_eq(F/A):-
 	functor(Head,F,A),
 	findall(Id,input_eq(Head,Id,_,_,_),[_]).
 	
