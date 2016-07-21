@@ -229,6 +229,11 @@ bconstr_accum_bounded_set(bound(_,_,Bounded),Set,Set1):-
 fconstr_new(Bounded,Op,NLin_exp,bound(Op,NLin_exp,Bounded)).
 fconstr_new_inv(NLin_exp,Op,Bounded,bound(Op,NLin_exp,Bounded)).
 
+
+fconstr_lose_negative_constant(bound(Op,Coeffs+Cnt,Bounded),bound(Op,Coeffs+0,Bounded)):-
+	leq_fr(Cnt,0),!.
+fconstr_lose_negative_constant(bound(Op,Coeffs+Cnt,Bounded),bound(Op,Coeffs+Cnt,Bounded)).
+
 %! iconstr_new(Astrexp:astrexp,Bounded:list(itvar),Op:op,Iconstr:iconstr) is det
 % create a new intermediate constraint
 iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp,Bounded)).
@@ -385,7 +390,13 @@ cstr_from_cexpr(Exp,_):-
 %! cstr_simplify(+Cstr:cstr,+Vars:list(var),+Phi:polyhedron,+Max_min:flag,-Cstr_simple:cstr)
 % simplify the cost structure Cstr taking Phi into account
 % Max_min_both can be 'max','min' or 'both' and indicates whether we want to obtain a maximum cost, minimum or both
-cstr_simplify(Cstr,Vars,Phi,Max_min_both,Cstr_simple):-
+cstr_simplify(cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant),Vars,Phi,Max_min_both,Cstr_simple):-
+	(get_param(solve_fast,[])->
+		maplist(fconstr_lose_negative_constant,Ub_fcons,Ub_fcons2)
+		;
+		Ub_fcons2=Ub_fcons
+	),
+	Cstr=cost(Ub_fcons2,Lb_fcons,Itcons,BSummands,BConstant),
 	cstr_join_equal_fconstr(Cstr,Cstr1),
 	cstr_simplify_fconstr_nats(Cstr1,Vars,Phi,Cstr2),
 	cstr_propagate_zeroes(Cstr2,Cstr3),
@@ -420,7 +431,6 @@ cstr_get_components([cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant)|Rest],[U
 % join all the final bound constraints that have the same linear expression
 % and simplify intermediate constraints. Join intermediate variables that are subject to the same constraints
 cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_final2):-
-	%cstr_shorten_variables_names(Cost,list,cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant)),
 	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
 	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
 	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),

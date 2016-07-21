@@ -29,7 +29,7 @@ that can be passed on to the callers.
 
 :- module(bounds_main,[compute_bound_for_scc/2,
 			compute_closed_bound/1,
-			compute_single_closed_bound/2]).
+			compute_single_closed_bound/3]).
 
 :- use_module(chain_solver,[compute_chain_cost/3]).
 %:- use_module(ub_solver,[solve_system/5]).
@@ -52,7 +52,7 @@ that can be passed on to the callers.
 :- use_module('../utils/cost_structures',[cstr_join_equal_fconstr/2,cstr_or_compress/2]).
 
 :- use_module('../IO/params',[get_param/2]).
-
+:- use_module(stdlib(numeric_abstract_domains),[nad_list_lub/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
 
@@ -77,8 +77,7 @@ compute_bound_for_scc(Head,RefCnt):-
 % and store it,
 compute_chain_bound(Head,Chain):-
 	compute_chain_cost(Head,Chain,UB),!,  
-	cstr_join_equal_fconstr(UB,UB2),
-	add_upper_bound(Head,Chain,UB2).
+	add_upper_bound(Head,Chain,UB).
 compute_chain_bound(Head,Chain):-
 	throw(fatal_error('failed to compute chain bound',Head,Chain)).
 	
@@ -126,18 +125,20 @@ compute_closed_bound(_Head).
 	
 
 
-%! compute_single_closed_bound(+Head:term,-SimpleExp:cost_expression) is det
+%! compute_single_closed_bound(+Head:term,+RefCnt:int,-SimpleExp:cost_expression) is det
 % compute a closed bound that is the maximum of all the closed bounds of all the chains in a SCC Head
-compute_single_closed_bound(Head,UB1):-
+compute_single_closed_bound(Head,RefCnt,UB1):-
 	bagof_no_fail(CExp,
 		Chain^closed_upper_bound(Head,Chain,CExp),CExps),
 	maplist(zip_with_op(_),Lists,CExps),
+		bagof_no_fail(Head_Pattern,
+		Chain^X^backward_invariant(Head,(Chain,RefCnt),X,Head_Pattern),Head_Patterns),
+	nad_list_lub(Head_Patterns,General_invariant),
 	ut_flat_list(Lists,List),
 	from_list_sl(List,Set_costs),
-
 	strexp_simplify_max_min(max(Set_costs),Cost_max_min_simple),
 	strexp_to_cost_expression(Cost_max_min_simple,UB),
-	cexpr_simplify(UB,[],UB1),
+	cexpr_simplify(UB,General_invariant,UB1),
 	add_single_closed_upper_bound(Head,UB1).
 	
 
