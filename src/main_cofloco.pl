@@ -117,7 +117,7 @@ The main "data types" used in CoFloCo are the following:
 
 :- use_module('bound_computation/bounds_main',[compute_bound_for_scc/2,
 				  compute_closed_bound/1,
-				  compute_single_closed_bound/2]).
+				  compute_single_closed_bound/3]).
 :- use_module('bound_computation/conditional_bounds',[
 				  compute_conditional_bounds/1]).			  
 :- use_module('bound_computation/phase_solver/phase_solver',[init_phase_solver/0]).
@@ -428,7 +428,7 @@ compute_closed_bound_scc(Head) :-
 	   ((get_param(compute_lbs,[]),get_param(conditional_lbs,[]))->print_conditional_lower_bounds(Head_aux);true)
 	   ;
 	   (get_param(compute_ubs,[])->
-	     compute_single_closed_bound(Head_aux,Exp),
+	     compute_single_closed_bound(Head_aux,2,Exp),
 	     print_single_closed_result(Head_aux,Exp)
 	     ; true)
 	).
