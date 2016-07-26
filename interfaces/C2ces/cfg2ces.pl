@@ -101,7 +101,6 @@ cfg2pubs_2(CFG,Bindings) :-
 	(\+irreducible(_)->
 	assert(loop_header(nil)),
 	store_nodes_in_loop,
-	get_extra_loop_vars,
 	collect_all_loops(nil,Loops),
 	reverse([nil|Loops],Loops_rev),
 	maplist(extract_loop,Loops_rev)
@@ -151,8 +150,11 @@ store_node_in_loop(Node):-
 store_node_in_loop(Node):-
 	iloop_header(Node,Header),
 	assert(node_in_loop(Node,Header)).
-
-get_extra_loop_vars:-
+	
+get_extra_loop_vars(nil):-
+	save_loop_has_new_vars(nil,1).
+	
+get_extra_loop_vars(H):-
 	loop_header(H),
 	findall((Dest,N),
 		(
@@ -168,10 +170,8 @@ get_extra_loop_vars:-
 	maplist(tuple,_,N_vars,Nodes1),
 	max_list([0|N_vars],N_new_vars),
 	N_new_vars1 is N_new_vars +1,
-	save_loop_has_new_vars(H,N_new_vars1),   
-	fail.
-get_extra_loop_vars:-
-	save_loop_has_new_vars(nil,1).
+	save_loop_has_new_vars(H,N_new_vars1).
+
 
 is_in_node(Origin,Dest):-
 	node_in_loop(Origin,Loop1),
@@ -189,6 +189,7 @@ is_out_node(Origin,Dest):-
 
 
 extract_loop(H):-
+	get_extra_loop_vars(H),
 	findall(Node,node_in_loop(Node,H),Nodes),
 	maplist(transform_edges_from,Nodes).
 
@@ -257,6 +258,8 @@ transform_out_node(Node,Dest,C,cons(Head_vars,Call_vars,Cs)):-
 	append([Exit_id|New_call_vars],_,Head_loop_cont_vars),
 	
 	store_node_in_loop(LoopCont_node,Father_loop),
+	assert(cfg_edge(LoopCont_node,Dest)),
+	assert(cfg_edge_rev(Dest,LoopCont_node)),
 	assert(pcfg_edge(LoopCont_node,Dest,0,cons(Head_loop_cont_vars,New_call_vars,Cs))),!.
 
 transform_out_node(Node,Dest,_,_):-

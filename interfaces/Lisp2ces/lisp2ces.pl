@@ -38,6 +38,8 @@ Translate a list of lisp functions into a cost relation representation
 
 :-dynamic if_cnt/1.
 :-dynamic atom_size/2.
+
+nmeasures(3).
 	
 main:-
     current_prolog_flag(argv, Args),
@@ -70,7 +72,8 @@ nat_constraints(Args,Constrs):-nat_constrs(Args,Constrs,0),!.
 
 nat_constrs([],[],_).
 nat_constrs([Arg|Args],Constrs,N):-
-	(N rem 3) > 0,
+	nmeasures(Nmeasures),
+	(N rem Nmeasures) > 0,
 	var(Arg),
 	nat_constrs(Args,Constrs_next,N+1),
 	Constrs=[Arg>=0|Constrs_next],!.
@@ -93,11 +96,45 @@ related_call_constrs([_|Calls],Constrs):-
 	related_call_constrs(Calls,Constrs).
 
 
+split_at(_,[],[],[]).
+split_at(Pos,List,[],List):-
+    Pos=<0.
+split_at(Pos,[L|Ls],[L|Lefts],Right):-
+    Pos>0,
+    split_at(Pos-1,Ls,Lefts,Right).
+
+split_args(Args,In_args,Out_args):-
+	nmeasures(Nmeasures),
+	length(Args,N_args),
+	split_at(N_args-Nmeasures,Args,In_args,Out_args).
+
+
+% We assume that all Lisp functions are deterministic, but CoFloCo cannot make
+% such assumptions in general. Therefore, we explicitly unify the output
+% measures of calls with identical inputs.
+unify_equiv_calls([]).
+unify_equiv_calls([Call|Calls]):-
+	Call=..[Head|Args],
+	split_args(Args,In_args,Out_args),
+	unify_equiv_outs(Head,In_args,Out_args,Calls),
+	unify_equiv_calls(Calls).
+
+unify_equiv_outs(_,_,_,[]).
+unify_equiv_outs(Head,In_args,Out_args,[Call|Calls]):-
+	Call=..[C_head|C_args],
+	C_head==Head,
+	split_args(C_args,C_in_args,C_out_args),
+	C_in_args==In_args,
+	C_out_args=Out_args,
+	unify_equiv_outs(Head,In_args,Out_args,Calls).
+unify_equiv_outs(Head,In_args,Out_args,[_|Calls]):-
+	unify_equiv_outs(Head,In_args,Out_args,Calls).
+
+
 % main transformation predicate
 % take a function definition and generate a list of cost relations (and print them)	
 defun2cost_exp(['defun-simplified','state-fix'|_],[]):-!,
 	format(user_error,'For now, we ignore state-fix function~n',[]).
-
 
 defun2cost_exp(['defun-simplified',Name,nil,Body_with_quotes],All_cost_relations):-
 	defun2cost_exp(['defun-simplified',Name,[],Body_with_quotes],All_cost_relations).
@@ -113,6 +150,7 @@ defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relation
 	% the main cost relation
 	nat_constraints(All_args,Nat_constrs),
 	related_call_constrs(Body_unrolled,Rel_call_constrs),
+	unify_equiv_calls(Body_unrolled),
 	append(Nat_constrs,Rel_call_constrs,All_constrs),
 	Cost_relation= eq(Head,1,Body_unrolled,All_constrs),
 	% we want closed-form bound for this cost relation
@@ -121,7 +159,8 @@ defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relation
 
 defun2cost_exp(['defined-locally',Name,NArgs],[Entry]):-
 	atom_number(NArgs,Nargs_number),
-	NArgs1 is (Nargs_number+1)*3,
+	nmeasures(Nmeasures),
+	NArgs1 is (Nargs_number+1)*Nmeasures,
 	length(Args,NArgs1),
 	Head=..[Name|Args],
 	Entry= entry(Head:[]),
@@ -179,7 +218,9 @@ unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,[Res_var_i,Res_var_l,R
 	nat_constraints(All_args_yes,Nat_constrs_yes),
 	nat_constraints(All_args_no,Nat_constrs_no),
 	related_call_constrs(Yes_calls_all,Rel_call_constrs_yes),
+	unify_equiv_calls(Yes_calls_all),
 	related_call_constrs(No_calls_all,Rel_call_constrs_no),
+	unify_equiv_calls(No_calls_all),
 	append(Rel_call_constrs_yes,Nat_constrs_yes,Constrs_yes),
 	append(Rel_call_constrs_no,Nat_constrs_no,Constrs_no),
 	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1|Constrs_yes]),
@@ -378,9 +419,10 @@ print_cr(Opts,Cr):-
 	format('~q.~n',[Crp]).
 
 print_inout([Name,N_args]):-
-	N_args_in is N_args-3,
+	nmeasures(Nmeasures),
+	N_args_in is N_args-Nmeasures,
 	length(In_list,N_args_in),
-	length(Out_list,3),
+	length(Out_list,Nmeasures),
 	numbervars(In_list,0,_),
 	numbervars(Out_list,N_args_in,_),
 	append(In_list,Out_list,Args),
