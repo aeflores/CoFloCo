@@ -67,10 +67,11 @@ eq('binary-+'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai+Bi]).
 eq('binary--'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai-Bi]).
 eq('unary--'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=0-Ai]).
 
+%make them as multually exclusive as possible
 eq('integerp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
-eq('integerp'(_Ai,_Al,_As,Bi,0,0),1,[],[Bi>=0,Bi=<1]).
+eq('integerp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
 eq('rationalp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
-eq('rationalp'(_Ai,_Al,_As,Bi,0,0),1,[],[Bi>=0,Bi=<1]).
+eq('rationalp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
 
 eq('not'(A,_,_,1,0,0),1,[],[A=0]).
 eq('not'(A,_,_,0,0,0),1,[],[A=1]).
@@ -92,7 +93,8 @@ eq('the-check'(_Ai,_,_,_Bi,_,_,Ci,Cl,Cs,Ci,Cl,Cs),1,[],[]).
 
 eq('nfix'(Ai,0,0,Ai,0,0),1,[],[Ai>=0]).
 eq('nfix'(Ai,_,_,0,0,0),1,[],[Ai+1=<0]).
-eq('nfix'(_,_,As,0,0,0),1,[],[As>=1]).
+% we make the as mutually exclusive as possible
+eq('nfix'(_,1,As,0,0,0),1,[],[As>=1]).
 eq('nfix'(_,Al,_,0,0,0),1,[],[Al>=1]).
 
 eq('hide'(Ai,Al,As,Ai,Al,As),1,[],[]).   % identity function
@@ -108,24 +110,28 @@ eq('binary-*'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai*Bi]).
 eq('eq'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('eq'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('eq'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
-eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
-eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
-eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
-eq('eq'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+% we would have to distinguish also the cases where A has bigger length but smaller size than B and vice-versa
+% we just behave non-deterministically and improve performance
+%eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
+%eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
+eq('eq'(_,Al,As,_,Bl,Bs,ZeroOne,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0,0=<ZeroOne,ZeroOne=<1]).
+%eq('eq'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
 
 eq('equal'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('equal'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('equal'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
-eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
-eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
-eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
-eq('equal'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+% we would have to distinguish also the cases where A has bigger length but smaller size than B and vice-versa
+% we just behave non-deterministically and improve performance
+%eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
+%eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
+eq('equal'(_,Al,As,_,Bl,Bs,ZeroOne,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0,0=<ZeroOne,ZeroOne=<1]).
+%eq('equal'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
 
 eq('eql'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
-eq('eql'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
-eq('eql'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+eq('eql'(_,Al,As,_,Bl,Bs,ZeroOne,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0,0=<ZeroOne,ZeroOne=<1]).
+%eq('eql'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
 
 %undefined
 eq('acl2-numberp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
