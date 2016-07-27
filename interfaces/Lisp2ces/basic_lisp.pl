@@ -72,12 +72,20 @@ eq('integerp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
 eq('integerp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
 eq('rationalp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
 eq('rationalp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
+eq('complex-rationalp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
+eq('complex-rationalp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
+eq('acl2-numberp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
+eq('acl2-numberp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
 
 eq('not'(A,_,_,1,0,0),1,[],[A=0]).
 eq('not'(A,_,_,0,0,0),1,[],[A=1]).
 
 eq('zp'(A,_,_,1,0,0),1,[],[A=0]).
-eq('zp'(A,_,_,0,0,0),1,[],[A=1]).
+eq('zp'(A,_,_,0,0,0),1,[],[A>=1]).
+
+eq('zip'(A,_,_,1,0,0),1,[],[A=0]).
+eq('zip'(A,_,_,0,0,0),1,[],[A>=1]).
+eq('zip'(A,_,_,0,0,0),1,[],[A+1=<0]).
 
 eq('ash'(A,_,_,B,_,_,A,0,0),1,[],[B=0]).
 eq('ash'(A,_,_,B,_,_,C,0,0),1,[],[B>=1,2*C=<A]).
@@ -132,6 +140,19 @@ eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
 eq('eql'(_,Al,As,_,Bl,Bs,ZeroOne,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0,0=<ZeroOne,ZeroOne=<1]).
 %eq('eql'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+
+eq('floor'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('ceiling'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+
+eq('lognot'(_Ai,0,0,_Bi,0,0),1,[],[]).
+eq('binary-logand'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('binary-logior'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('binary-logxor'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+
+eq('mod'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+
+eq('realpart'(_Ai,0,0,_Bi,0,0),1,[],[]).
+eq('imagpart'(_Ai,0,0,_Bi,0,0),1,[],[]).
 
 %undefined
 eq('acl2-numberp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
