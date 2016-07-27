@@ -87,7 +87,8 @@ get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 		max_min_fconstrs_in_cost_equation(Ub_fconstrs_list,Base_calls,Phi1,TVars,New_Ub_fconstrs,New_iconstrs1),
 		max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Phi1,TVars,New_Lb_fconstrs,New_iconstrs2),
 		ut_flat_list([New_iconstrs1,New_iconstrs2,Iconstrs],New_iconstrs),
-		cstr_join_equal_fconstr(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost)
+		cstr_join_equal_fconstr(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost_aux),
+		cstr_extend_variables_names(Cost_aux,eq(Eq_id),Cost)
 	;
 		cstr_empty(Cost)
 	).

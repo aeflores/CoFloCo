@@ -434,7 +434,6 @@ cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_
 	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
 	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
 	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),
-%	Cost_aux=cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),
 	cstr_simplify_multiple_variables_constrs(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cost_aux),
 	join_equivalent_itvars(Cost_aux,Cost_final),
 	cstr_remove_cycles(Cost_final,Cost_final2),!.
@@ -478,13 +477,11 @@ join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(U
 	maplist(tuple,Itconstr_set,Itvar,Map_inv),
 	from_pair_list_mm(Map_inv,Multimap),
 	get_unitary_pairs(Multimap,Itvar_multiple_sets1,Multimap2),
-%	Multimap2=Multimap,Itvar_multiple_sets1=[],
 	maplist(tuple,_,Itvar_sets,Multimap2),
 	include(is_multiple_set,Itvar_sets,Itvar_multiple_sets2),	
 	append(Itvar_multiple_sets1,Itvar_multiple_sets2,Itvar_multiple_sets),
 	(Itvar_multiple_sets\=[]->
-		print_joined_itvar_sets_message(Itvar_multiple_sets),
-		foldl(join_itvar_set,Itvar_multiple_sets,(Itcons,Bsummands),(Itcons2,Bsummands2)),
+		join_itvar_sets(Itvar_multiple_sets,Itcons,Bsummands,Itcons2,Bsummands2),
 		join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands2,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant))
 		;
 		Itcons3=Itcons,
@@ -527,12 +524,23 @@ delete_lm_aux(Key,Map,Map1):-
 	
 is_multiple_set([_,_|_]).	
 
-join_itvar_set([Itvar|Equivalent_itvars],(Itconstrs,Bsummands),(Itconstrs4,Bsummands2)):-
+% if we have [a,|b,c] and [b|d] we want to substitute b by a in the second set
+join_itvar_sets([],Itconstrs,Bsummands,Itconstrs,Bsummands).
+
+join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_final,Bsummands_final):-
 	from_list_sl(Equivalent_itvars,Equivalent_itvars_set),
 	exclude(bconstr_bounds_itvars(Equivalent_itvars_set),Itconstrs,Itconstrs2),
 	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_set),Itconstrs2,([],[]),(_,Itconstrs3)),
 	reverse(Itconstrs3,Itconstrs4),
-	foldl(compress_basic_summands(Itvar,Equivalent_itvars_set),Bsummands,[],Bsummands2).
+	foldl(compress_basic_summands(Itvar,Equivalent_itvars_set),Bsummands,[],Bsummands2),
+	maplist(substitute_itvars_in_list(Itvar,Equivalent_itvars_set),Sets,Sets1),
+	join_itvar_sets(Sets1,Itconstrs4,Bsummands2,Itconstrs_final,Bsummands_final).
+
+substitute_itvars_in_list(Itvar,Equivalent_itvars_set,List,List1):-
+	maplist(substitute_itvar_in_list(Itvar,Equivalent_itvars_set),List,List1).
+substitute_itvar_in_list(Itvar,Set,Itvar2,Itvar):-
+	contains_sl(Set,Itvar2),!.	
+substitute_itvar_in_list(_Itvar,_Set,Itvar2,Itvar2).
 
 bconstr_bounds_itvars(Set,bound(_,_,Bounded)):-
 	from_list_sl(Bounded,Bounded_set),
@@ -1018,7 +1026,8 @@ itvar_shorten_name(no_list,Name,Short_name):-
 	itvar_recover_long_name(Name,Name_long),
 	itvar_shorten_name_cont(Name_long,Short_name).
 
-itvar_shorten_name_cont([it(Loop)],'#'(Loop)):-!.
+itvar_shorten_name_cont([it(Loop)],'#'(Loop)):-!,
+	save_short_name([it(Loop)],'#'(Loop)).
 
 itvar_shorten_name_cont([sum(Loop)|Name_long],Short_name):-!,
 	term_hash(Name_long,Hash),
@@ -1028,7 +1037,8 @@ itvar_shorten_name_cont([sum(Loop)|Name_long],Short_name):-!,
 	 	counter_increase(short_terms,1,Id),
 	 	assert(short_db_no_list(Hash,Name_long,s(Id))),
 	 	Short_name=sm(Loop,Id)
-	 	).	
+	 ),
+	 save_short_name([sum(Loop)|Name_long],Short_name).		
 	 	
 itvar_shorten_name_cont(Name_long,Short_name):-!,
 	term_hash(Name_long,Hash),
@@ -1039,7 +1049,13 @@ itvar_shorten_name_cont(Name_long,Short_name):-!,
 	 	assert(short_db_no_list(Hash,Name_long,s(Id))),
 	 	Short_name=s(Id)
 	 	).	
-	 	
+
+save_short_name(Long,Short):-
+	 term_hash(Long,Hash),
+	 (short_db_no_list(Hash,Long,Short)->
+	 	true;
+	 	assert(short_db_no_list(Hash,Long,Short))
+	 ).
 itvar_recover_long_name(Name,Long_name2):-
 	Name\=[_|_],
 	short_db_no_list(_,Long_name1,Name),!,
