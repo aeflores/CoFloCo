@@ -99,12 +99,6 @@ eq('null'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
 %type check, we assume for now that it never fails
 eq('the-check'(_Ai,_,_,_Bi,_,_,Ci,Cl,Cs,Ci,Cl,Cs),1,[],[]).
 
-eq('nfix'(Ai,0,0,Ai,0,0),1,[],[Ai>=0]).
-eq('nfix'(Ai,_,_,0,0,0),1,[],[Ai+1=<0]).
-% we make the as mutually exclusive as possible
-eq('nfix'(_,1,As,0,0,0),1,[],[As>=1]).
-eq('nfix'(_,Al,_,0,0,0),1,[],[Al>=1]).
-
 eq('hide'(Ai,Al,As,Ai,Al,As),1,[],[]).   % identity function
 eq('coerce'(Ai,Al,As,Ai,Al,As),1,[],[]).   % for now, also treat this as id
 
