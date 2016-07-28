@@ -125,6 +125,7 @@ The main "data types" used in CoFloCo are the following:
 
 :- use_module('IO/output',[
 			  print_header/3,
+			  print_or_log/2,
 			  print_results/2,
 			  print_sccs/0,
 			  print_partially_evaluated_sccs/0,
@@ -136,9 +137,11 @@ The main "data types" used in CoFloCo are the following:
 		      print_closed_results/2,
 		      print_chains_entry/2,
 		      print_single_closed_result/2,
+		      print_competition_result/1,
 		      print_conditional_upper_bounds/1,
 		      print_conditional_lower_bounds/1,
 		      print_stats/0,
+		      print_log/0,
 		      print_help/0]).
 :- use_module('IO/input',[read_cost_equations/1,store_cost_equations/1]).
 :-use_module('IO/params',[set_default_params/0,set_competition_params/0,parse_params/1,get_param/2]).
@@ -197,7 +200,8 @@ cofloco_query(Eqs,Params):-
 			upper_bounds,
 			profiling_stop_timer(analysis,_T_analysis),
 			print_stats
-	).
+	),
+	print_log.
 
 	
 %! cofloco_query(+Params:list(atom)) is det
@@ -230,7 +234,8 @@ cofloco_query(Params):-
 		;
 		   throw(error('No input file given'))
 		)
-	).
+	),
+	print_log.
 
 
 %! init_database is det
@@ -431,7 +436,8 @@ compute_closed_bound_scc(Head) :-
 	   ;
 	   (get_param(compute_ubs,[])->
 	     compute_single_closed_bound(Head_aux,2,Exp),
-	     print_single_closed_result(Head_aux,Exp)
+	     print_single_closed_result(Head_aux,Exp),
+	     print_competition_result(Exp)
 	     ; true)
 	).
 	
@@ -450,4 +456,4 @@ conditional_call(Condition,Call):-
 warn_if_no_chains(RefCnt):-
 	chain(_,RefCnt,_),!.
 warn_if_no_chains(_):-
-	conditional_call((get_param(v,[N]),N>0),format('Warning: No feasible chains found~n',[])).
+	conditional_call((get_param(v,[N]),N>0),print_or_log('Warning: No feasible chains found~n',[])).

@@ -51,7 +51,7 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 :- use_module('../../db',[get_input_output_vars/3]).			        
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).		
 :- use_module('../../IO/params',[get_param/2]).		
-:- use_module('../../IO/output',[print_candidate_in_phase/3,write_lin_exp_in_phase/3]).		
+:- use_module('../../IO/output',[print_candidate_in_phase/3,write_lin_exp_in_phase/3,print_or_log/2]).		
 :- use_module('../../ranking_functions',[partial_ranking_function/7]).	
 :- use_module('../../utils/cofloco_utils',[
 			tuple/3,
@@ -99,7 +99,7 @@ init_inductive_sum_strategy:-
 	retractall(candidate_result(_,_,_,_,_)).
 
 inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	(get_param(debug,[])->format('   - Applying inductive sum strategy ~n',[]);true),
+	(get_param(debug,[])->print_or_log('   - Applying inductive sum strategy ~n',[]);true),
 	Constr=bound(Op,Lin_exp,Bounded),
 	((Lin_exp=[]+_C, Loop_vars=loop_vars(Head,[_Call]))->
 		generate_rf_candidates(Op,Head,Loop,Candidates)
@@ -118,7 +118,7 @@ inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pen
 	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out).
 	
 inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	(get_param(debug,[])->format('   - Applying inductive level-sum strategy ~n',[]);true),
+	(get_param(debug,[])->print_or_log('   - Applying inductive level-sum strategy ~n',[]);true),
 	Constr=bound(Op,Lin_exp,Bounded),
 	Op=ub,
 	generate_leave_candidates(Head,Lin_exp,Op,Candidates),
@@ -223,13 +223,13 @@ check_loops_maxsum(Loop_vars,_,Loop,Bounded_ini,Pending,Candidate,Fconstrs,Icons
 	print_candidate_in_phase(Head,Type,Lin_exp),
 	(Classification=[]-> 
 	   (get_param(debug,[])->
-		   	format('       - We failed to classify this candidate before ~n',[]);true),
+		   	print_or_log('       - We failed to classify this candidate before ~n',[]);true),
 		Fconstrs=[],Iconstrs=[]
 		;
 		substitute_loop_classification(Classification,Loop,Bounded_ini,Classification2),
 		generate_constrs_from_classification(Classification2,ub,Candidate,Loop_vars,Fconstrs,Iconstrs),
 		(get_param(debug,[])->
-		   	format('       - The candidate was classified before. We reuse its previous classification ~n',[]);true)
+		   	print_or_log('       - The candidate was classified before. We reuse its previous classification ~n',[]);true)
 	).
 
 check_loops_maxsum(Loop_vars,Phase,Loop,Bounded_ini,Pending,Candidate,Fconstrs,Iconstrs,Pending_out):-
@@ -254,13 +254,13 @@ check_loops_minsum(Loop_vars,_,Loop,Bounded_ini,Pending,Candidate,Fconstrs,Icons
 	print_candidate_in_phase(Head,Type,Lin_exp),
 	(Classification=[]-> 
 	   (get_param(debug,[])->
-		   	format('       - We failed to classify this candidate before ~n',[]);true),
+		   	print_or_log('       - We failed to classify this candidate before ~n',[]);true),
 		Fconstrs=[],Iconstrs=[]
 		;
 		substitute_loop_classification(Classification,Loop,Bounded_ini,Classification2),
 		generate_constrs_from_classification(Classification2,lb,Candidate,Loop_vars,Fconstrs,Iconstrs),
 		(get_param(debug,[])->
-		   	format('       - The candidate was classified before. We reuse its previous classification ~n',[]);true)
+		   	print_or_log('       - The candidate was classified before. We reuse its previous classification ~n',[]);true)
 	).
 
 check_loops_minsum(Loop_vars,Phase,Loop,Bounded_ini,Pending,Candidate,Fconstrs,Iconstrs,Pending_out):-
@@ -390,12 +390,12 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 		   Class=class(cnt,Loop,Bounded),
 		   (get_param(debug,[])->
 		   	maplist(itvar_shorten_name(no_list),Bounded,Bounded_short),
-		   	format('       - Loop ~p is collaborative and bounds ~p ~n',[Loop,Bounded_short]);true)
+		   	print_or_log('       - Loop ~p is collaborative and bounds ~p ~n',[Loop,Bounded_short]);true)
 		   ;
 		   
 			Pending1=Pending,
 			Class=class(cnt,Loop,[]),
-			(get_param(debug,[])->format('       - Loop ~p is collaborative~n',[Loop]);true)
+			(get_param(debug,[])->print_or_log('       - Loop ~p is collaborative~n',[Loop]);true)
 		)
 	;
 %if add a constant	
@@ -403,7 +403,7 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 		get_loop_itvar(Loop,Loop_name),
 		Class=class(add,Loop,[mult([Loop_name,Delta])]),
 		Pending1=Pending,
-		(get_param(debug,[])->format('       - Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
+		(get_param(debug,[])->print_or_log('       - Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
 		;
 		get_input_output_vars(Head,Input_vars_head,_),
 		%select_important_variables(Vars_head,Exp_diff_neg,Vars_of_Interest),
@@ -417,7 +417,7 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 				save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending1),
 				(get_param(debug,[])->
 					maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_increments,Max_increments_print),
-					format('       - Loop ~p adds an expression ~p~n',[Loop,Max_increments_print]);true)
+					print_or_log('       - Loop ~p adds an expression ~p~n',[Loop,Max_increments_print]);true)
 			    ;
 %reset			    
 			    Type=head,
@@ -430,13 +430,13 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 				save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending1),
 				(get_param(debug,[])->
 					maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_resets,Max_resets_print),
-					format('       - Loop ~p has a reset to  ~p~n',[Loop,Max_resets_print]);true)
+					print_or_log('       - Loop ~p has a reset to  ~p~n',[Loop,Max_resets_print]);true)
 		)
 	)
 	).
 
 check_loop_maxsum(_Head,_Candidate,Loop,_,_Pending,_Pending1):-	
-	    (get_param(debug,[])->format('       - Loop ~p has undefined behavior ~n',[Loop]);true),
+	    (get_param(debug,[])->print_or_log('       - Loop ~p has undefined behavior ~n',[Loop]);true),
 		fail.	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -463,7 +463,7 @@ check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-
 			Class=class(add,Loop,[mult([Loop_name,Delta])])
 		),
 		Pending1=Pending,
-		(get_param(debug,[])->format('       - Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
+		(get_param(debug,[])->print_or_log('       - Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
 		;
 		%term_variables(Head,Vars_head),
 		select_important_variables(Vars,Exp_diff_neg,Vars_of_Interest),
@@ -476,7 +476,7 @@ check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-
 		save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending1),
 		(get_param(debug,[])->
 			maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_increments,Max_increments_print),
-			format('       - Loop ~p adds an expression ~p~n',[Loop,Max_increments_print]);true)
+			print_or_log('       - Loop ~p adds an expression ~p~n',[Loop,Max_increments_print]);true)
 	).
 
 %collaborative loop	with constraint
@@ -488,12 +488,12 @@ check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-
 		Class=class(cnt,Loop,Bounded),
 		(get_param(debug,[])->
 			maplist(itvar_shorten_name(no_list),Bounded,Bounded_short),
-			format('       - Loop ~p is collaborative and bounds ~p~n',[Loop,Bounded_short]);true).
+			print_or_log('       - Loop ~p is collaborative and bounds ~p~n',[Loop,Bounded_short]);true).
 % we don't substract loops that can decrease the bound
 % in theory this could happen, in practice it doesn't seem to happen so we skip it and fail in those cases		
 	
 check_loop_minsum(_Head,_Candidate,Loop,_,_Pending,_):-	
-	    (get_param(debug,[])->format('       - Loop ~p has undefined behavior ~n',[Loop]);true),
+	    (get_param(debug,[])->print_or_log('       - Loop ~p has undefined behavior ~n',[Loop]);true),
 		fail.	
 		
 		

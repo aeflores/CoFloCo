@@ -88,6 +88,7 @@ These constraints are useful in most cases and that allows us to simplify the re
 
 :- use_module('../../IO/params',[get_param/2]).		
 :- use_module('../../IO/output',[
+	print_or_log/2,
 	print_header/3,
 	print_pending_set/2,
 	print_loops_costs/3,
@@ -365,7 +366,7 @@ save_enriched_loops(Head,Total_inv,Phase,Phase_feasible):-
 	partition(is_wrapped_no,Phase_feasible_aux,Excluded,Phase_feasible),
 	((get_param(debug,[]), Excluded\=[])->
 			maplist(zip_with_op(no),Excluded_print,Excluded),
-		   	format(' * The following loops are unfeasible in this instance of the phase ~p : ~p ~n',[Phase,Excluded_print])	   	
+		   	print_or_log(' * The following loops are unfeasible in this instance of the phase ~p : ~p ~n',[Phase,Excluded_print])	   	
 		   	;true).
 
 is_wrapped_no(no(_)).
@@ -475,7 +476,7 @@ compute_sum(Constr,_Loop_vars,_Loop,_Phase,[Constr],[],Pending,Pending):-
 % Stored solution
 compute_sum(Constr,Loop_vars,Loop,Phase,Fconstrs,Iconstrs,Pending,Pending):-
 	sum_cacheing_strategy(Constr,Loop_vars,Loop,Phase,Fconstrs,Iconstrs),
-	(get_param(debug,[])->format('   - Found a solution using cacheing ~n',[]);true).
+	(get_param(debug,[])->print_or_log('   - Found a solution using cacheing ~n',[]);true).
 
 			
 %triangular strategy
@@ -518,7 +519,7 @@ compute_sum(Constr,Loop_vars,Loop,_Phase,[],[Iconstr],Pending,Pending_out):-
 	save_sum_found(Constr,Loop_vars,Loop,[],[Iconstr]).
 	
 compute_sum(_Constr,_Loop_vars,_Loop,_Phase,[],[],Pending,Pending):-
-	(get_param(debug,[])->format('   - No strategy succeeded ~n',[]);true).
+	(get_param(debug,[])->print_or_log('   - No strategy succeeded ~n',[]);true).
 
 only_tail_constr(loop_vars(Head,_),Fconstr):-
 	copy_term((Head,Fconstr),(Head2,Fconstr2)),
@@ -532,7 +533,7 @@ compute_level_sum(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_ou
 	inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out).
 
 compute_level_sum(_,_,_,[],[],Pending,Pending):-
-	(get_param(debug,[])->format('   - No strategy succeeded ~n',[]);true).
+	(get_param(debug,[])->print_or_log('   - No strategy succeeded ~n',[]);true).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % a constant does not need to be maximized/minimized
@@ -541,13 +542,13 @@ compute_max_min(Constr,_,_Phase,[Constr],[],Pending,Pending):-
 
 compute_max_min(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending):-
 	max_min_cacheing_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs),
-	(get_param(debug,[])->format('   - Found a solution using cacheing ~n',[]);true).	
+	(get_param(debug,[])->print_or_log('   - Found a solution using cacheing ~n',[]);true).	
 
 
 %use transitive invariant
 compute_max_min(Constr,Head,Phase,New_fconstrs,[],Pending,Pending):-
 	transitive_invariant_strategy(Constr,Head,New_fconstrs),
-	(get_param(debug,[])->format('   - Found a solution using transitive invariants ~n',[]);true),	
+	(get_param(debug,[])->print_or_log('   - Found a solution using transitive invariants ~n',[]);true),	
 	save_max_min_found(Constr,Head,Phase).
 
 %use  increments and resets procedure	
@@ -558,7 +559,7 @@ compute_max_min(Constr,Head,Phase,Fconstrs,Iconstrs,Pending,Pending_out):-
 %failed    
 compute_max_min(Constr,Head,Phase,[],[],Pending,Pending):-
 	save_max_min_found(Constr,Head,Phase),
-	(get_param(debug,[])->format('   - No strategy succeeded ~n',[]);true).
+	(get_param(debug,[])->print_or_log('   - No strategy succeeded ~n',[]);true).
 
 
 	

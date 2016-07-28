@@ -38,7 +38,7 @@ For the minimim case: the minimum of all the resets and the expression minus the
 :- use_module('../../db',[get_input_output_vars/3]).			        
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).		
 :- use_module('../../IO/params',[get_param/2]).			
-:- use_module('../../IO/output',[write_lin_exp_in_phase/3]).				
+:- use_module('../../IO/output',[write_lin_exp_in_phase/3,print_or_log/2]).				
 :- use_module('../../utils/cofloco_utils',[ground_copy/2]).	
 :- use_module('../../utils/cost_structures',[
 			new_itvar/1,
@@ -59,7 +59,7 @@ For the minimim case: the minimum of all the resets and the expression minus the
 	
 %use  increments and resets procedure	
 max_min_strategy(bound(Op,Lin_exp,Bounded),Head,Phase,[Fconstr],[Iconstr],Pending,Pending_out):-
-	(get_param(debug,[])->format('   - Applying max/min strategy ~n',[]);true),
+	(get_param(debug,[])->print_or_log('   - Applying max/min strategy ~n',[]);true),
 	%we have to consider the case where the value is not reseted
 	new_itvar(Aux_itvar),
 	fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
@@ -112,14 +112,14 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 	term_variables((Head,Call),Vars),
 % the lin_exp does not increase
 	(nad_entails(Vars,Cs,[Exp_diff_int>=0])->
-		(get_param(debug,[])->format('     - Loop ~p does not increase the expression~n',[Loop]);true),
+		(get_param(debug,[])->print_or_log('     - Loop ~p does not increase the expression~n',[Loop]);true),
 		Resets=[],
 		pstrexp_pair_empty(Pstrexp_pair),
 		Pending_out=Pending
 		;
 % add a constant
 		((nad_maximize([Exp_diff_neg_int=Exp_diff_denominator*D|Cs],[D],[Delta]),greater_fr(Delta,0))->
-			(get_param(debug,[])->format('     - Loop ~p  increases the expression by ~p ~n',[Loop,Delta]);true),
+			(get_param(debug,[])->print_or_log('     - Loop ~p  increases the expression by ~p ~n',[Loop,Delta]);true),
 			get_loop_itvar(Loop,Loop_name),
 			Pstrexp_pair=add([mult([Loop_name,Delta])])-add([]),
 			Resets=[],
@@ -132,7 +132,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			(Max_increments\=[]->
 				(get_param(debug,[])->
 					maplist(write_lin_exp_in_phase(loop_vars(Head,[Call])),Max_increments,Max_increments_print),
-				    format('     - Loop ~p  increases the expression by ~p ~n',[Loop,Max_increments_print]);true),
+				    print_or_log('     - Loop ~p  increases the expression by ~p ~n',[Loop,Max_increments_print]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
 				save_pending_list(sum,loop_vars(Head,[Call]),Loop,Maxsums,Pending,Pending_out),
@@ -145,7 +145,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 				Maxs_resets\=[],!,
 				(get_param(debug,[])->
 				    maplist(write_lin_exp_in_phase(loop_vars(Head,[Call])),Maxs_resets,Maxs_resets_print),
-				    format('     - Loop ~p  resets the expression to ~p ~n',[Loop,Maxs_resets_print]);true),
+				    print_or_log('     - Loop ~p  resets the expression to ~p ~n',[Loop,Maxs_resets_print]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Maxs_resets,Maxtops),
 				save_pending_list(max_min,Head,Loop,Maxtops,Pending,Pending_out),
@@ -165,7 +165,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 	exclude(is_positive(Vars,Cs),Lin_exp_diffs,Lin_exp_diffs_non_pos),
 % the lin_exp does not increase
 	(Lin_exp_diffs_non_pos=[]->
-		(get_param(debug,[])->format('     - Loop ~p does not increase the expression~n',[Loop]);true),
+		(get_param(debug,[])->print_or_log('     - Loop ~p does not increase the expression~n',[Loop]);true),
 		Resets=[],
 		pstrexp_pair_empty(Pstrexp_pair),
 		Pending_out=Pending
@@ -173,7 +173,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 % add a constant
 		maplist(negate_le,Lin_exp_diffs_non_pos,Lin_exp_diffs_neg),
 		(foldl(get_maximum_increase(Cs),Lin_exp_diffs_neg,0,Delta)->
-			(get_param(debug,[])->format('     - Loop ~p  increases the expression by ~p ~n',[Loop,Delta]);true),
+			(get_param(debug,[])->print_or_log('     - Loop ~p  increases the expression by ~p ~n',[Loop,Delta]);true),
 			get_loop_itvar(Loop,Loop_name),
 			Pstrexp_pair=add([mult([Loop_name,Delta])])-add([]),
 			Resets=[],
@@ -186,7 +186,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			(Max_increments\=[]->
 				(get_param(debug,[])->
 				    maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_increments,Max_increments_print),
-				    format('     - Loop ~p  increases the expression by ~p ~n',[Loop,Max_increments_print]);true),
+				    print_or_log('     - Loop ~p  increases the expression by ~p ~n',[Loop,Max_increments_print]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
 				save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending_out),
@@ -199,7 +199,7 @@ check_loop_max(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 				Maxs_resets\=[],!,
 				(get_param(debug,[])->
 				    maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Maxs_resets,Maxs_resets_print),
-				    format('     - Loop ~p  resets the expression to ~p ~n',[Loop,Maxs_resets_print]);true),
+				    print_or_log('     - Loop ~p  resets the expression to ~p ~n',[Loop,Maxs_resets_print]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Maxs_resets,Maxtops),		
 				save_pending_list(max_min,Head,Loop,Maxtops,Pending,Pending_out),	
@@ -244,14 +244,14 @@ check_loop_min(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 	term_variables((Head,Call),Vars),
 % the Lin_exp does not decrease
 	(nad_entails(Vars,Cs,[Exp_diff_int=<0])->
-		(get_param(debug,[])->format('     - Loop ~p does not decrease the expression~n',[Loop]);true),
+		(get_param(debug,[])->print_or_log('     - Loop ~p does not decrease the expression~n',[Loop]);true),
 		Resets=[],
 		pstrexp_pair_empty(Pstrexp_pair),
 		Pending_out=Pending
 		;
 % decreases by a constant
 		((nad_maximize([Exp_diff_int=Exp_diff_denominator*D|Cs],[D],[Delta]),greater_fr(Delta,0))->
-			(get_param(debug,[])->format('     - Loop ~p  decreases the expression by ~p ~n',[Loop,Delta]);true),
+			(get_param(debug,[])->print_or_log('     - Loop ~p  decreases the expression by ~p ~n',[Loop,Delta]);true),
 			get_loop_itvar(Loop,Loop_name),
 			Pstrexp_pair=add([])-add([mult([Loop_name,Delta])]),
 			Resets=[],
@@ -264,7 +264,7 @@ check_loop_min(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 			(Max_increments\=[]->
 				(get_param(debug,[])->
 					maplist(write_lin_exp_in_phase(loop_vars(Head,[Call])),Max_increments,Max_increments_print),
-					format('     - Loop ~p  decreases the expression by ~p ~n',[Loop,Max_increments_print]);true),
+					print_or_log('     - Loop ~p  decreases the expression by ~p ~n',[Loop,Max_increments_print]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
 				save_pending_list(sum,loop_vars(Head,[Call]),Loop,Maxsums,Pending,Pending_out),
@@ -277,7 +277,7 @@ check_loop_min(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 				Mins_resets\=[],!,
 				(get_param(debug,[])->
 					maplist(write_lin_exp_in_phase(loop_vars(Head,[Call])),Mins_resets,Mins_resets_print),
-					format('     - Loop ~p  resets the expression to ~p ~n',[Loop,Mins_resets_print]);true),
+					print_or_log('     - Loop ~p  resets the expression to ~p ~n',[Loop,Mins_resets_print]);true),
 				new_itvar(Aux_itvar),
 				maplist(fconstr_new([Aux_itvar],lb),Mins_resets,Maxtops),
 				save_pending_list(max_min,Head,Loop,Maxtops,Pending,Pending_out),

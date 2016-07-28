@@ -71,6 +71,7 @@ This module acts as a database that stores:
        
 ]).
 :- use_module('IO/params',[get_param/2]).
+:- use_module('IO/output',[print_warning/2]).
 :- use_module('utils/cofloco_utils',[assign_right_vars/3]).
 :- use_module('utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
 :- use_module('utils/cost_expressions',[cexpr_simplify/3]).
@@ -244,7 +245,7 @@ save_input_output_vars(Head,IVars,OVars):-
   		true
   	;
   		numbervars(Head,0,_),
-  		format('WARNING: Incoherent annotation ~p and ~p ~n',[input_output_vars(Head,IVars,OVars),input_output_vars(Head,IVars2,OVars2)])
+  		print_warning('Warning: Incoherent annotation ~p and ~p ~n',[input_output_vars(Head,IVars,OVars),input_output_vars(Head,IVars2,OVars2)])
   	).
   	
 save_input_output_vars(Head,IVars,OVars):-

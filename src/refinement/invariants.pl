@@ -146,7 +146,6 @@ add_backward_invariant(Head,(Chain,RefCnt),Inv):-
 	copy_term((Head,Inv),(E,EPat)),
 	numbervars(E,0,_),
 	term_hash(EPat,Hash),
-%	format('~p~n',[backward_invariant(E,(Chain,RefCnt),Hash,EPat)]),
 	assertz(backward_invariant(Head,(Chain,RefCnt),Hash,Inv)).
 	
 %! add_forward_invariant(+Head:term,+Chain_RefCnt:(chain,int),+Inv:polyhedron)
@@ -159,7 +158,6 @@ add_forward_invariant(Head,(Chain,RefCnt),Inv):-
 	copy_term((Head,Inv_normalized),(E,IPat)),
 	numbervars(E,0,_),
 	term_hash(IPat,Hash),
-	%format('~p~n',forward_invariant(E,(Chain,RefCnt),Hash,IPat)),
 	assertz(forward_invariant(Head,(Chain,RefCnt),Hash,Inv_normalized)).
 
 %! add_scc_forward_invariant(+Phase:phase,+RefCnt:int,+Inv:polyhedron)

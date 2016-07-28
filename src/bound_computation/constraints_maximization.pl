@@ -32,6 +32,7 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 				  max_min_linear_expression_all/5]).
 				  
 :- use_module('../IO/params',[get_param/2]).
+:- use_module('../IO/output',[print_warning/2]).
 :- use_module('../db',[
 			phase_loop/5,
 			get_input_output_vars/3]).
@@ -102,7 +103,7 @@ get_lost_fconstrs_expressable_as_outputs_1([Fconstrs|Fconstr_list],[_Call|Base_c
 	(Recoverable_pairs\=[]->
 		copy_term((Base_calls,Recoverable_pairs),(Base_calls2,Recoverable_pairs2)),
 		numbervars(Base_calls2,0,_),
-		format(user_error,'Expression lost in terms of the output ~p~n :~p~n',[Base_calls2,Recoverable_pairs2])
+		print_warning('Expression lost in terms of the output ~p~n :~p~n',[Base_calls2,Recoverable_pairs2])
 		;
 		true),
 	get_lost_fconstrs_expressable_as_outputs_1(Fconstr_list,Base_calls,Phi,Lost_itvar_set).

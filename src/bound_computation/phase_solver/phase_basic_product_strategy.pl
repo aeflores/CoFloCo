@@ -46,7 +46,7 @@ into the sum of the linear expression in one level of the execution tree multipl
 			iconstr_new/4]).	
 :- use_module('../../db',[get_input_output_vars/3]).			
 :- use_module('../../IO/params',[get_param/2]).		
-:- use_module('../../IO/output',[print_product_strategy_message/3]).		
+:- use_module('../../IO/output',[print_product_strategy_message/3,print_or_log/2]).		
 :- use_module(library(apply_macros)).
 :- use_module(library(lists)).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,7 +57,7 @@ into the sum of the linear expression in one level of the execution tree multipl
 
 
 basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_exp,Pending,Pending_out):-	
-    (get_param(debug,[])->format('   - Applying basic product strategy ~n',[]);true),
+    (get_param(debug,[])->print_or_log('   - Applying basic product strategy ~n',[]);true),
 	get_constr_op(Max_min,Op),
 	enriched_loop(Loop,Head,Calls,Cs),
 	new_itvar(Aux_itvar),
@@ -79,7 +79,7 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
  level_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Iconstr,Pending,Pending_out):-
 	%FIXME needs flag for the multiple recursion
 	Calls=[_,_|_],
-	(get_param(debug,[])->format('   - Applying level product strategy ~n',[]);true),
+	(get_param(debug,[])->print_or_log('   - Applying level product strategy ~n',[]);true),
 	get_constr_op(Max_min,Op),
 	enriched_loop(Loop,Head,Calls,Cs),
 	new_itvar(Aux_itvar),

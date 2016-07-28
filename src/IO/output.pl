@@ -25,6 +25,8 @@ This module prints the results of the analysis
 :- module(output,[
           print_help/0,
           print_header/3,
+          print_or_log/2,
+          print_or_log_nl/0,
           print_warning/2,
           print_chain_simple/1,
 		  print_chains_entry/2,
@@ -48,6 +50,8 @@ This module prints the results of the analysis
 		  print_phase_cost/4,
 		  print_loops_costs/3,
 		  print_single_closed_result/2,
+		  print_competition_result/1,
+		  print_log/0,
 		  print_conditional_upper_bounds/1,
 		  print_conditional_lower_bounds/1,
 		  print_closed_results/2,
@@ -100,39 +104,76 @@ This module prints the results of the analysis
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 :-use_module(library(varnumbers)).
+
+:-dynamic log_entry/3.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+% predicates to print or log information depending on wether with are in the competition or not
+
+print_or_log(String,Args):-
+	get_param(competition,[]),!,
+	assertz(log_entry([],String,Args)).
+	
+print_or_log(String,Args):-
+	format(String,Args).
+	
+print_or_log_nl:-
+	get_param(competition,[]),!,
+	assertz(log_entry([],'~n',[])).
+	
+print_or_log_nl:-nl.
+	
+print_log:-
+	log_entry(Options,String,Args),
+	(Options=[]->
+		format(String,Args)
+		;
+		ansi_format_aux(Options,String,Args)
+	),fail.
+	
+print_log.
+
+
+ansi_print_or_log(Options,String,Args):-
+	get_param(competition,[]),!,
+	assertz(log_entry(Options,String,Args)).
+	
+ansi_print_or_log(Options,String,Args):-
+	ansi_format_aux(Options,String,Args).
+	
 ansi_format_aux(Options,Format,Args):-current_prolog_flag(dialect,swi),ansi_format(Options,Format,Args).
 ansi_format_aux(_,Format,Args):-current_prolog_flag(dialect,yap),format(Format,Args).
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
 print_header(Text,Arguments,1):-
-	nl,
-	ansi_format_aux([bold],Text,Arguments),
-	format('=====================================~n',[]).
+	print_or_log_nl,
+	ansi_print_or_log([bold],Text,Arguments),
+	print_or_log('=====================================~n',[]).
 print_header(Text,Arguments,2):-
-	nl,
-	ansi_format_aux([bold],Text,Arguments),
-	format('-------------------------------------~n',[]).
+	print_or_log_nl,
+	ansi_print_or_log([bold],Text,Arguments),
+	print_or_log('-------------------------------------~n',[]).
 print_header(Text,Arguments,3):-
-	nl,
-	ansi_format_aux([bold],'###~p',[' ']),
-	ansi_format_aux([bold],Text,Arguments).
+	print_or_log_nl,
+	ansi_print_or_log([bold],'###~p',[' ']),
+	ansi_print_or_log([bold],Text,Arguments).
 print_header(Text,Arguments,4):-
-	nl,
-	ansi_format_aux([bold],'####~p',[' ']),
-	ansi_format_aux([bold],Text,Arguments).	
+	print_or_log_nl,
+	ansi_print_or_log([bold],'####~p',[' ']),
+	ansi_print_or_log([bold],Text,Arguments).	
 print_header(Text,Arguments,5):-
-	nl,
-	ansi_format_aux([bold],'#####~p',[' ']),
-	ansi_format_aux([bold],Text,Arguments).	
+	print_or_log_nl,
+	ansi_print_or_log([bold],'#####~p',[' ']),
+	ansi_print_or_log([bold],Text,Arguments).	
 print_header(Text,Arguments,6):-
-	nl,
-	ansi_format_aux([bold],'######~p',[' ']),
-	ansi_format_aux([bold],Text,Arguments).		
+	print_or_log_nl,
+	ansi_print_or_log([bold],'######~p',[' ']),
+	ansi_print_or_log([bold],Text,Arguments).		
 	
 print_warning(_Text,_Args):-
 	get_param(no_warnings,[]),!.
 print_warning(Text,Args):-
-	format(Text,Args).	
+	print_or_log(Text,Args).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
 print_sccs:-
@@ -146,11 +187,11 @@ print_sccs:-
 print_sccs.
 
 print_scc(scc(SCC_N,Type,Nodes,_Entries)):-
-	format('~p. ~p : ~p~n',[SCC_N,Type,Nodes]).
+	print_or_log('~p. ~p : ~p~n',[SCC_N,Type,Nodes]).
 
 print_merging_cover_points(SCC_N,Cover_points,Merged):-
 	get_param(v,[X]),X > 1,!,
-	format('~p. SCC does not have a single cut point : ~p  ~n Merged into ~p~n',[SCC_N,Cover_points,Merged]).
+	print_or_log('~p. SCC does not have a single cut point : ~p  ~n Merged into ~p~n',[SCC_N,Cover_points,Merged]).
 print_merging_cover_points(_,_,_).	
 	
 print_partially_evaluated_sccs:-
@@ -166,9 +207,9 @@ print_partially_evaluated_sccs.
 
 print_partially_evaluated(SCC_N):-
 	crs_residual_scc(SCC_N,Cover_point),!,
-	format('~p. SCC is partially evaluated into ~p~n',[SCC_N,Cover_point]).	
+	print_or_log('~p. SCC is partially evaluated into ~p~n',[SCC_N,Cover_point]).	
 print_partially_evaluated(SCC_N):-
-	format('~p. SCC is completely evaluated into other SCCs~n',[SCC_N]).		
+	print_or_log('~p. SCC is completely evaluated into other SCCs~n',[SCC_N]).		
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 %! print_equations_refinement(+Head:term,+RefCnt:int) is det
@@ -194,12 +235,12 @@ print_equations_refinement_1(Head,RefCnt):-
 	        eq_refined(Eq_id,Refined),
 	        Refined_list),
 	(Refined_list\=[]-> 
-		format('* CE ~p is refined into CE ~p ~n',[Eq_id,Refined_list])
+		print_or_log('* CE ~p is refined into CE ~p ~n',[Eq_id,Refined_list])
 		;
-		format('* CE ~p is discarded (unfeasible) ~n',[Eq_id])
+		print_or_log('* CE ~p is discarded (unfeasible) ~n',[Eq_id])
 	),
 	fail.
-print_equations_refinement_1(_,_):-nl.
+print_equations_refinement_1(_,_):-print_or_log_nl.
 
 print_refined_equations(Head,RefCnt):-
 	findall(Id,
@@ -215,21 +256,21 @@ pretty_print_CE(Id):-
 	Head=..[_|Var_names],
 	max_var_number(Var_names,0,Max),InitN is Max+1,
 	numbervars((Cost,Calls,Cs3),InitN,_),
-	format('* CE ~p: ~p =~| ',[Id,Head]),
+	print_or_log('* CE ~p: ~p =~| ',[Id,Head]),
 	print_cost_structure(Cost),
-	pretty_print_refinedCalls(Calls,'+'),nl,
-	format('     ~p ~n',[Cs3]).
+	pretty_print_refinedCalls(Calls,'+'),print_or_log_nl,
+	print_or_log('     ~p ~n',[Cs3]).
 
 
 pretty_print_refinedCalls([],_).
 pretty_print_refinedCalls([(Call,external_pattern(Pattern))|Calls],Sep):-!,
-	format('~a ~p',[Sep,Call:Pattern]),
+	print_or_log('~a ~p',[Sep,Call:Pattern]),
 	pretty_print_refinedCalls(Calls,Sep).
 pretty_print_refinedCalls([(Call,chain(Chain))|Calls],Sep):-!,
-	format('~a ~p',[Sep,Call:Chain]),
+	print_or_log('~a ~p',[Sep,Call:Chain]),
 	pretty_print_refinedCalls(Calls,Sep).
 pretty_print_refinedCalls([RecCall|Calls],Sep):-
-	format('~a ~p',[Sep,RecCall]),
+	print_or_log('~a ~p',[Sep,RecCall]),
 	pretty_print_refinedCalls(Calls,Sep).	
 		
 unify_equalities(C,Cs,Cs):-
@@ -256,25 +297,25 @@ print_loops_refinement(_,_).
 	
 print_loops_refinement_1(Head,RefCnt):-
 	loop_ph(Head,(Id,RefCnt),_,_,Eqs,_),
-	format('* CEs ~p --> Loop ~p ~n',[Eqs,Id]),
+	print_or_log('* CEs ~p --> Loop ~p ~n',[Eqs,Id]),
 	fail.
 print_loops_refinement_1(_,_).	
 
 print_refined_loops(Head,RefCnt):-
 	loop_ph(Head,(Id,RefCnt),Calls,Cs,_Eqs,_),
-	format('* Loop ~p: ',[Id]),
+	print_or_log('* Loop ~p: ',[Id]),
 	foldl(unify_equalities,Cs,[],Cs2),
 	maplist(pretty_print_constr,Cs2,Cs3),
 	ground_header(Head),
 	ground_rec_calls(Calls,1),
 	numbervars(Cs3,0,_),
-	format('~p',[Head]),
+	print_or_log('~p',[Head]),
 	(Calls\=[]->
-		format('->',[]),
-		pretty_print_refinedCalls(Calls,' '),nl,
-		format('                  ~p ~n',[Cs3])
+		print_or_log('->',[]),
+		pretty_print_refinedCalls(Calls,' '),print_or_log_nl,
+		print_or_log('                  ~p ~n',[Cs3])
 		;
-		format(' ~p ~n',[Cs3])
+		print_or_log(' ~p ~n',[Cs3])
 	),	
 	fail.	
 print_refined_loops(_,_).
@@ -292,9 +333,9 @@ print_external_pattern_refinement(_,_).
 print_external_pattern_refinement_1(Head,RefCnt):-
 	external_call_pattern(Head,(Id,RefCnt),_,Components,_),
 	maplist(reverse,Components,Components_rev),
-	format('* ~p --> ~p ~n',[Components_rev,Id]),
+	print_or_log('* ~p --> ~p ~n',[Components_rev,Id]),
 	fail.
-print_external_pattern_refinement_1(_,_):-nl.
+print_external_pattern_refinement_1(_,_):-print_or_log_nl.
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -305,7 +346,7 @@ print_ranking_functions(Head):-
 	print_header('Ranking functions of CR ~p ~n',[Head_print],3),
 	print_complete_ranking_functions(Head_print),
 	print_header('Partial ranking functions of CR ~p ~n',[Head_print],4),
-	print_partial_ranking_functions(Head_print),nl.
+	print_partial_ranking_functions(Head_print),print_or_log_nl.
 print_ranking_functions(_Head).
 
 print_complete_ranking_functions(Head):-
@@ -321,10 +362,10 @@ print_complete_ranking_functions(Head):-
 
 print_rf((Phase,Rfs)):-
 	maplist(write_le,Rfs,Rfs_print),
-	format('* RF of phase ~p: ~p~n',[Phase,Rfs_print]).
+	print_or_log('* RF of phase ~p: ~p~n',[Phase,Rfs_print]).
 print_conditional_rf(((Phase,Prefix),Rfs)):-
 	maplist(write_le,Rfs,Rfs_print),
-	format('* RF of phase ~p preceeded by ~p : ~p~n',[Phase,Prefix,Rfs_print]).	
+	print_or_log('* RF of phase ~p preceeded by ~p : ~p~n',[Phase,Prefix,Rfs_print]).	
 
 print_partial_ranking_functions(Head):-
 	findall((Phase,(Loop,(Rf,Deps))),
@@ -344,27 +385,27 @@ print_partial_ranking_functions(Head):-
 	maplist(print_conditional_partial_rfs_for_phase,Conditional_rfs_mm).	
 
 print_partial_rfs_for_phase((Phase,Loop_rf_pairs)):-
-	format('* Partial RF of phase ~p:~n',[Phase]),
+	print_or_log('* Partial RF of phase ~p:~n',[Phase]),
 	from_pair_list_mm(Loop_rf_pairs,Loop_rf_mm),
 	maplist(print_partial_rfs_for_loop,Loop_rf_mm).
 	
 
 print_conditional_partial_rfs_for_phase(((Phase,Prefix),Loop_rf_pairs)):-
-	format('  - RF of phase ~p preceeded by ~p :~n',[Phase,Prefix]),
+	print_or_log('  - RF of phase ~p preceeded by ~p :~n',[Phase,Prefix]),
 	from_pair_list_mm(Loop_rf_pairs,Loop_rf_mm),
 	maplist(print_partial_rfs_for_loop,Loop_rf_mm).
 		
 print_partial_rfs_for_loop((Loop,Rfs)):-
-	format('  - RF of loop ~p:~n',[Loop]),
+	print_or_log('  - RF of loop ~p:~n',[Loop]),
 	maplist(print_partial_rf,Rfs).
 	
 print_partial_rf((Rf,[])):-!,
 	write_le(Rf,Rf_print),
-	format('    ~p~n',[Rf_print]).
+	print_or_log('    ~p~n',[Rf_print]).
 print_partial_rf((Rf,Deps)):-
 	Deps\=[],
 	write_le(Rf,Rf_print),
-	format('    ~p depends on loops ~p ~n',[Rf_print,Deps]).
+	print_or_log('    ~p depends on loops ~p ~n',[Rf_print,Deps]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_phase_termination_argument(+Head:term,+Phase:phase,+Term_argument:termination_argument,+YesNo:flag) is det
@@ -375,13 +416,13 @@ print_phase_termination_argument(Head,Phase,Term_argument,no):-
 	Phase=[_|_],
 	copy_term((Head,Term_argument),(Head2,Term_argument2)),
 	ground_header(Head2),
-    format('~p: Phase ~p might not terminate:: ~p~n',[Head2,Phase,Term_argument2]).
+    print_or_log('~p: Phase ~p might not terminate:: ~p~n',[Head2,Phase,Term_argument2]).
 print_phase_termination_argument(Head,Phase,Term_argument,yes):-
 	get_param(v,[X]),X > 2,
 	Phase=[_|_],
 	copy_term((Head,Term_argument),(Head2,Term_argument2)),
 	ground_header(Head2),
-    format('~p: Phase ~p termination argument: ~p~n',[Head2,Phase,Term_argument2]).
+    print_or_log('~p: Phase ~p termination argument: ~p~n',[Head2,Phase,Term_argument2]).
 
 print_phase_termination_argument(_Head,_Phase,_Term_argument,_).
 
@@ -397,17 +438,17 @@ print_chains_entry(_,_).
 
 print_chains_entry_1(RefCnt,Entry):-
 	chain(Entry,RefCnt,Pattern),
-	write('* '),
-	print_chain_simple(Pattern),nl,
+	print_or_log('* ',[]),
+	print_chain_simple(Pattern),print_or_log_nl,
 	fail.
-print_chains_entry_1(_,_):-nl.
+print_chains_entry_1(_,_):-print_or_log_nl.
 
 
 print_chain_simple(Pattern):-
 	(non_terminating_chain(_,_,Pattern)->
-	   ansi_format_aux([fg(red)],'~p...',[Pattern])
+	   ansi_print_or_log([fg(red)],'~p...',[Pattern])
 	 ;
-	   ansi_format_aux([],'~p',[Pattern])
+	   ansi_print_or_log([],'~p',[Pattern])
 	).
 
 
@@ -423,12 +464,12 @@ print_pending_set(Head,Pending):-
 		(Maxs_mins\=[]->
 			maplist(tuple,_,Maxs_mins_cs,Maxs_mins),
 			maplist(write_top_exp,Maxs_mins_cs,Max_mins_p),
-			format('* Pmax/min: ~p~n',[Max_mins_p])
+			print_or_log('* Pmax/min: ~p~n',[Max_mins_p])
 			;true),
 		(Level_sums\=[]->	
 			maplist(tuple,_,Level_sums_cs,Level_sums),
 			maplist(write_top_exp,Level_sums_cs,Level_sums_p),
-			format('* Plevel-sum: ~p~n',[Level_sums_p])
+			print_or_log('* Plevel-sum: ~p~n',[Level_sums_p])
 			;true
 		),
 		(Sums\=[]->
@@ -446,7 +487,7 @@ print_pending_sum((Loop,loop_vars(Head,Calls),Sums)):-
 	ground_rec_calls(Calls,1),
 	maplist(tuple,_,Sums_cs,Sums),
 	maplist(write_top_exp,Sums_cs,Sums_p),
-	format('* Psum in loop ~p: ~p~n',[Loop,Sums_p]).
+	print_or_log('* Psum in loop ~p: ~p~n',[Loop,Sums_p]).
 
 print_selected_pending_constraint(Loop_vars,sum(Loop),Constr):-
 	get_param(debug,[]),!,
@@ -473,7 +514,7 @@ print_new_phase_constraints(loop_vars(Head,Calls),Fconstrs,Iconstrs):-
 	maplist(write_top_exp,Fconstrs_gr,Fconstrs_print),
 	maplist(write_aux_exp,Iconstrs_gr,Iconstrs_print),
 	append(Iconstrs_print,Fconstrs_print,All_constrs),
-	format(' * Adding constraints: ~p ~n',[All_constrs]).
+	print_or_log(' * Adding constraints: ~p ~n',[All_constrs]).
 print_new_phase_constraints(Head,Fconstrs,Iconstrs):-
 	get_param(debug,[]),!,
 	copy_term((Head,Fconstrs,Iconstrs),(Head_gr,Fconstrs_gr,Iconstrs_gr)),
@@ -481,7 +522,7 @@ print_new_phase_constraints(Head,Fconstrs,Iconstrs):-
 	maplist(write_top_exp,Fconstrs_gr,Fconstrs_print),
 	maplist(write_aux_exp,Iconstrs_gr,Iconstrs_print),
 	append(Iconstrs_print,Fconstrs_print,All_constrs),
-	format(' * Adding constraints:~p ~n',[All_constrs]).	
+	print_or_log(' * Adding constraints:~p ~n',[All_constrs]).	
 	
 print_new_phase_constraints(_,_,_).
 
@@ -491,9 +532,9 @@ print_product_strategy_message(Head,Type,Fconstrs):-
 	ground_header(Head_gr),
 	maplist(write_top_exp,Fconstrs_gr,Fconstrs_print),
 	(Type=level->
-		format('     - Adding to Plevel-sum: ~p ~n',[Fconstrs_print])
+		print_or_log('     - Adding to Plevel-sum: ~p ~n',[Fconstrs_print])
 		;
-		format('     - Adding to Pmax/min: ~p ~n',[Fconstrs_print])
+		print_or_log('     - Adding to Pmax/min: ~p ~n',[Fconstrs_print])
 	).
 	
 print_product_strategy_message(_,_,_).
@@ -505,7 +546,7 @@ print_candidate_in_phase(Head,Type,Exp):-
 	copy_term((Head,Exp),(Head_gr,Exp_gr)),
 	ground_header(Head_gr),
 	write_le(Exp_gr,Exp_print),
-	format('     - ~p Candidate: ~p ~n',[Type,Exp_print]).
+	print_or_log('     - ~p Candidate: ~p ~n',[Type,Exp_print]).
 
 print_candidate_in_phase(_Head,_Type,_Exp).
 
@@ -531,7 +572,7 @@ print_loop_cost(Loop,loop_vars(Head,Calls),Cost):-
 		;
 		ground_rec_calls(Callsp,1)
 	),
-	format('~n * loop ~p:~p -> ~p ~n',[Loop,Headp,Callsp]),
+	print_or_log('~n * loop ~p:~p -> ~p ~n',[Loop,Headp,Callsp]),
 	print_cost_structure(Costp).
 
 
@@ -556,7 +597,7 @@ print_removed_redundant_constr_message(Constr,Removed_set):-
 	copy_term((Constr,Removed_set),(Constr_copy,Removed_set_copy)),
 	write_aux_exp(Constr_copy,Constr_print),
 	maplist(write_aux_exp,Removed_set_copy,Removed_print),
-	format(' * Removed the redundant constraints ~p (They are implied by ~p)~n',[Removed_print,Constr_print]).
+	print_or_log(' * Removed the redundant constraints ~p (They are implied by ~p)~n',[Removed_print,Constr_print]).
 print_removed_redundant_constr_message(_,_).
 
 print_joined_itvar_sets_message(Sets):-
@@ -566,7 +607,7 @@ print_joined_itvar_sets_message(_).
 
 print_joined_itvar_set(Set):-
 	maplist(itvar_shorten_name(no_list),Set,[First|Rest]),
-	format(' * Joined equivalent variables ~p into ~p~n',[[First|Rest],First]).
+	print_or_log(' * Joined equivalent variables ~p into ~p~n',[[First|Rest],First]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -580,12 +621,12 @@ print_results_1(Entry,RefCnt):-
 	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
 	maplist(pretty_print_constr,EPat,EPat_pretty),
  	upper_bound(Entry,Chain,_,CExp),
- 	format('* Chain ',[]),
+ 	print_or_log('* Chain ',[]),
 	print_chain_simple(Chain),
-	format(': ',[]),
+	print_or_log(': ',[]),
 	print_cost_structure(CExp),
 	%print_cost_structure(CExp),
-	format('~n  with precondition: ~p ~n~n',[EPat_pretty]),
+	print_or_log('~n  with precondition: ~p ~n~n',[EPat_pretty]),
  	fail.
 print_results_1(_Entry,_).
 
@@ -601,14 +642,14 @@ print_cost_structure(Cost):-
 	((Top_exps=[],LTop_exps=[],Aux_exps=[])->
 		true
 	;
-	format('~n  Such that:~12|',[]),
+	print_or_log('~n  Such that:~12|',[]),
 	maplist(print_top_exp,Top_exps),
 	maplist(print_aux_exp,Ub_Aux_exps),
 	maplist(print_top_exp,LTop_exps),
 	maplist(print_aux_exp,Lb_Aux_exps)
 	),
 	((get_param(debug,[]),Unbounded\=[])->
-		ansi_format_aux([fg(red)],'~nUnbounded itvars~n',[]),
+		ansi_print_or_log([fg(red)],'~nUnbounded itvars~n',[]),
 		maplist(itvar_recover_long_name,Unbounded,Long_names),
 		maplist(print_unbounded_itvar,Unbounded,Long_names)
 	;
@@ -617,17 +658,17 @@ print_cost_structure(Cost):-
 
 
 print_unbounded_itvar(Short,Long):-
-	ansi_format_aux([fg(red)],'~p :  ~p~n',[Short,Long]).
+	ansi_print_or_log([fg(red)],'~p :  ~p~n',[Short,Long]).
 	
 print_base([],C,_):-
-	format('~p',[C]).
+	print_or_log('~p',[C]).
 print_base([(Itvar,Coeff)|Bases],C,Unbounded):-
 	(contains_sl(Unbounded,Itvar)->
-		ansi_format_aux([fg(red)],'~p',[Coeff*Itvar])
+		ansi_print_or_log([fg(red)],'~p',[Coeff*Itvar])
 		;
-		ansi_format_aux([],'~p',[Coeff*Itvar])
+		ansi_print_or_log([],'~p',[Coeff*Itvar])
 	),
-	format('+',[]),
+	print_or_log('+',[]),
 	print_base(Bases,C,Unbounded).
 		
 is_ub_aux_exp(bound(ub,_,_)).
@@ -650,14 +691,14 @@ print_top_exp(bound(Op,Exp,Bounded)):-
 	print_op(Op,Op_p),
 	write_sum(Bounded,Sum),
 	write_le(Exp,Exp_print),
-	format('~p ~p ~p~n',[Sum,Op_p,Exp_print]).
+	print_or_log('~p ~p ~p~n',[Sum,Op_p,Exp_print]).
 
 print_aux_exp(bound(Op,Exp_0,Bounded)):-
 	print_op(Op,Op_p),
 	copy_term(Exp_0,Exp),
 	astrexp_to_cexpr(Exp,Exp2),
 	write_sum(Bounded,Sum),
-	format('~p ~p ~p~n',[Sum,Op_p,Exp2]).	
+	print_or_log('~p ~p ~p~n',[Sum,Op_p,Exp2]).	
 	
 print_op(ub,'=<').
 print_op(lb,'>=').
@@ -668,7 +709,7 @@ print_itvars_renaming(Cost):-
 	cstr_get_itvars(Cost,Itvar_set),
 	(Itvar_set\=[]->
 		maplist(get_itvar_renaming,Itvar_set,Renaming),
-		format(' * Renamed intermediate variables: ~n~p~n',[Renaming])
+		print_or_log(' * Renamed intermediate variables: ~n~p~n',[Renaming])
 	;
 		true
 	).
@@ -704,15 +745,15 @@ print_closed_results_1(Entry,RefCnt):-
 		true
 	),
 	ground_header(Entry),
-	format('* Chain ',[]),
+	print_or_log('* Chain ',[]),
 	print_chain_simple(Chain),
-	format(' with precondition: ~p ~n',[EPat_pretty]),
+	print_or_log(' with precondition: ~p ~n',[EPat_pretty]),
 	(get_param(compute_ubs,[])->
-	format('    - Upper bound: ~p ~n',[CExp]),
-	format('    - Complexity: ~p ~n',[Asym_class]);true),
+	print_or_log('    - Upper bound: ~p ~n',[CExp]),
+	print_or_log('    - Complexity: ~p ~n',[Asym_class]);true),
 	(get_param(compute_lbs,[])->
-	format('    - Lower bound: ~p ~n',[CExp_lb]),
-	format('    - Complexity: ~p~n ',[Asym_class1]);true),
+	print_or_log('    - Lower bound: ~p ~n',[CExp_lb]),
+	print_or_log('    - Complexity: ~p~n ',[Asym_class1]);true),
  	fail.
 print_closed_results_1(_Entry,_).
 
@@ -721,28 +762,14 @@ print_closed_results_1(_Entry,_).
 
 %! print_single_closed_result(+Entry:term,+Expr:cost_expression) is det
 % print the given upper bound Expr and its asymptotic bound
-print_single_closed_result(_Entry,Expr):-
-	get_param(competition,[]),!,
-	get_asymptotic_class_name(Expr,Asym_class),
-	(Asym_class=infinity->
-		format('MAYBE~n',[])
-			;
-		get_complexity_competition_name(Asym_class,Asym_class_comp),
-		format('WORST_CASE(?,O(~p))  ~n',[Asym_class_comp])
-	).
-
-
 print_single_closed_result(Entry,Expr):-
 	copy_term((Entry,Expr),(Entry2,Expr2)),
 	get_asymptotic_class_name(Expr,Asym_class),
 	ground_header(Entry2),
 	print_header('Maximum cost of ~p: ',[Entry2],3),
-	format('~p ~n',[Expr2]),
-	format('Asymptotic class: ~p ~n',[Asym_class]).
+	print_or_log('~p ~n',[Expr2]),
+	print_or_log('Asymptotic class: ~p ~n',[Asym_class]).
 
-get_complexity_competition_name(n,n^1):-!.
-get_complexity_competition_name(constant,1):-!.
-get_complexity_competition_name(Name,Name).
 %! print_conditional_upper_bounds(+Head:term) is det
 % print the conditional upper bounds
 print_conditional_upper_bounds(Head):-
@@ -755,7 +782,7 @@ print_conditional_upper_bound(Head):-
 	conditional_upper_bound(Head,Cost,[Cond1|Conditions]),
 	maplist(maplist(pretty_print_constr),[Cond1|Conditions],[Cond1_pretty|Conditions_pretty]),
 	ground_header(Head),
-	format('* ~p ~n if ~p~n',[Cost,Cond1_pretty]),
+	print_or_log('* ~p ~n if ~p~n',[Cost,Cond1_pretty]),
 	maplist(print_partition_condition,Conditions_pretty),
 	fail.
 print_conditional_upper_bound(_).	
@@ -773,7 +800,7 @@ print_conditional_lower_bound(Head):-
 	conditional_lower_bound(Head,Cost,[Cond1|Conditions]),
 	maplist(maplist(pretty_print_constr),[Cond1|Conditions],[Cond1_pretty|Conditions_pretty]),
 	ground_header(Head),
-	format('* ~p ~n if ~p~n',[Cost,Cond1_pretty]),
+	print_or_log('* ~p ~n if ~p~n',[Cost,Cond1_pretty]),
 	maplist(print_partition_condition,Conditions_pretty),
 	fail.
 print_conditional_lower_bound(_).
@@ -784,11 +811,11 @@ print_maximum_lower_bound(Head):-
 		Costs),
 	get_asymptotic_class_name(max(Costs),Asym_class),
 	ground_header(Head),
-	format('Possible lower bounds : ~p~n',[Costs]),
-	format('Maximum lower bound complexity: ~p~n',[Asym_class]).
+	print_or_log('Possible lower bounds : ~p~n',[Costs]),
+	print_or_log('Maximum lower bound complexity: ~p~n',[Asym_class]).
 
 print_partition_condition(Cond):-
-	format(' or ~p~n',[Cond]).
+	print_or_log(' or ~p~n',[Cond]).
 	
 	
 	
@@ -821,6 +848,22 @@ prime_name(N,Name,Namep):-N>1,!,
 
 
 	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+print_competition_result(Expr):-
+	get_param(competition,[]),!,
+	get_asymptotic_class_name(Expr,Asym_class),
+	(Asym_class=infinity->
+		format('MAYBE~n',[])
+			;
+		get_complexity_competition_name(Asym_class,Asym_class_comp),
+		format('WORST_CASE(?,O(~p))  ~n',[Asym_class_comp])
+	).
+print_competition_result(_Expr).
+
+
+get_complexity_competition_name(n,n^1):-!.
+get_complexity_competition_name(constant,1):-!.
+get_complexity_competition_name(Name,Name).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_help is det
@@ -865,26 +908,26 @@ print_stats:-
 	%counter_get_value(compressed_phases1,N_compressed_phases1),
 	%counter_get_value(compressed_invs,N_compressed_invs),
 	%counter_get_value(compressed_chains,N_compressed_chains),
-	format("* Partial evaluation computed in ~0f ms.~n",[T_pe]),
-	format("* Invariants computed in ~0f ms.~n",[T_inv]),
-	format("   - Backward Invariants ~0f ms.~n",[T_inv_back]),
-	format("   - Transitive Invariants ~0f ms.~n",[T_inv_transitive]),
-	format("* Refinement performed in ~0f ms.~n",[T_unfold]),
-	format("* Termination proved in ~0f ms.~n",[T_termination]),
-	format("* Upper bounds computed in ~0f ms.~n",[T_ubs]),
-	format("   - Equation cost structures ~0f ms.~n",[T_equation_cost]),
-	format("   - Phase cost structures ~0f ms.~n",[T_loop_phases]),
-	format("   - Chain cost structures ~0f ms.~n",[T_chain_solver]),
-	format("   - Solving cost expressions ~0f ms.~n",[T_solver]),
-	%	format("~nCompressed phase information: ~p ~n",[N_compressed_phases1]),
-	%	format("Compressed Chains: ~p ~n",[N_compressed_chains]),
-	%	format("Compressed invariants: ~p ~n",[N_compressed_invs]).
+	print_or_log("* Partial evaluation computed in ~0f ms.~n",[T_pe]),
+	print_or_log("* Invariants computed in ~0f ms.~n",[T_inv]),
+	print_or_log("   - Backward Invariants ~0f ms.~n",[T_inv_back]),
+	print_or_log("   - Transitive Invariants ~0f ms.~n",[T_inv_transitive]),
+	print_or_log("* Refinement performed in ~0f ms.~n",[T_unfold]),
+	print_or_log("* Termination proved in ~0f ms.~n",[T_termination]),
+	print_or_log("* Upper bounds computed in ~0f ms.~n",[T_ubs]),
+	print_or_log("   - Equation cost structures ~0f ms.~n",[T_equation_cost]),
+	print_or_log("   - Phase cost structures ~0f ms.~n",[T_loop_phases]),
+	print_or_log("   - Chain cost structures ~0f ms.~n",[T_chain_solver]),
+	print_or_log("   - Solving cost expressions ~0f ms.~n",[T_solver]),
+	%	print_or_log("~nCompressed phase information: ~p ~n",[N_compressed_phases1]),
+	%	print_or_log("Compressed Chains: ~p ~n",[N_compressed_chains]),
+	%	print_or_log("Compressed invariants: ~p ~n",[N_compressed_invs]).
 	profiling_get_info(analysis,T_analysis,_),
-	format("* Total analysis performed in ~0f ms.~n~n",[T_analysis])
+	print_or_log("* Total analysis performed in ~0f ms.~n~n",[T_analysis])
 	;
 		((get_param(v,[N]),N>0) ->
 	   		profiling_get_info(analysis,T_analysis,_),
-			format("* Total analysis performed in ~0f ms.~n~n",[T_analysis])
+			print_or_log("* Total analysis performed in ~0f ms.~n~n",[T_analysis])
 		;
 		true)
 	).

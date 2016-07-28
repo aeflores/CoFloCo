@@ -103,14 +103,14 @@ set_default_params:-
 		      ]).
 
 set_competition_params:-
-		parse_params(['-v','0',
+		parse_params([
+%			  '-v','3',
 		      '-n_candidates','1',
 		      '-context_sensitive','1',
 		      '-compute_ubs',
 		      '-compute_lbs','no',
 		      '-solve_fast',
-		      '-compress_chains','2',
-		      '-no_warnings'
+		      '-compress_chains','2'
 		      ]).	      
 %% parse_params(Params:list(atoms)) is det
 %  parse a given list of Params and store the parsed values so they can be accesed form any part of the code

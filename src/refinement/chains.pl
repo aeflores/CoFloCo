@@ -250,7 +250,6 @@ is_linear_phase(Phase):-
 save_chain(Head,RefCnt,Chain):-
 	chain(Head,RefCnt,Chain),!.
 save_chain(Head,RefCnt,Chain):-
-	%format('~p~n',chain(Head,RefCnt,Chain)),
 	assertz(chain(Head,RefCnt,Chain)).
 
 	
