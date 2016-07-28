@@ -85,7 +85,7 @@ The main "data types" used in CoFloCo are the following:
 */
 
 
-:- module(main_cofloco,[cofloco_shell_main/0,cofloco_query/2,cofloco_query/1]).
+:- module(main_cofloco,[cofloco_shell_main/0,cofloco_bin_main/0,cofloco_query/2,cofloco_query/1]).
 :-include('search_paths.pl').
 
 
@@ -167,16 +167,23 @@ cofloco_shell_main:-
 	    print_help
 	   ),
 	   halt.
-
+cofloco_bin_main:-
+        current_prolog_flag(argv, [_|Args]),
+	   (Args=[_|_]->
+	    catch(cofloco_query(Args),E,(print_message(error, E),halt))
+	   ;
+	    print_help
+	   ),
+	   halt.
 %! save_executable is det
 % build an executable file of cofloco
-save_executable:-
-	ppl_my_initialize,
-	make,
-	check,
-	prolog_history(disable),
-	qsave_program('cofloco',[stand_alone(true),goal(main_cofloco:cofloco_shellco_main),foreign(save)]),
-	writeln('Binary package generated').
+%save_executable:-
+%	ppl_my_initialize,
+%	make,
+%	check,
+%	prolog_history(disable),
+%	qsave_program('cofloco',[stand_alone(true),goal(main_cofloco:cofloco_shellco_main),foreign(save)]),
+%	writeln('Binary package generated').
 
 
 %! cofloco_query(+Eqs:list(cost_equation),+Params:list(atom)) is det

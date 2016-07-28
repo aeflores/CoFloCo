@@ -25,7 +25,7 @@ site: http://www.cs.unipr.it/ppl/ . */
 
 
 
-:-load_foreign_library(foreign('libppl_swiprolog.so')).
+%:-load_foreign_library(foreign('libppl_swiprolog.so')).
 
 
 
