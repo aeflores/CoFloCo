@@ -141,7 +141,7 @@ The main "data types" used in CoFloCo are the following:
 		      print_stats/0,
 		      print_help/0]).
 :- use_module('IO/input',[read_cost_equations/1,store_cost_equations/1]).
-:-use_module('IO/params',[set_default_params/0,parse_params/1,get_param/2]).
+:-use_module('IO/params',[set_default_params/0,set_competition_params/0,parse_params/1,get_param/2]).
 :-use_module('utils/cofloco_utils',[tuple/3]).
 
 
@@ -181,18 +181,19 @@ save_executable:-
 cofloco_query(Eqs,Params):-
 	set_default_params,
 	parse_params(Params),
+	conditional_call(get_param(competition,[]),set_competition_params),
 	init_timers,
 	init_database,
 	profiling_start_timer(analysis),
 	store_cost_equations(Eqs),
-	print_header('Preprocessing Cost Relations~n',[],1),
+	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
 	preprocess_cost_equations,
-	print_header('Control-Flow Refinement of Cost Relations~n',[],1),
+	conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
 	refinement,
 	(get_param(only_termination,[])->
 			true
 			;
-			print_header('Computing Bounds~n',[],1),
+			conditional_call((get_param(v,[N]),N>0),print_header('Computing Bounds~n',[],1)),
 			upper_bounds,
 			profiling_stop_timer(analysis,_T_analysis),
 			print_stats
@@ -205,19 +206,20 @@ cofloco_query(Eqs,Params):-
 cofloco_query(Params):-
 	set_default_params,
 	parse_params(Params),
+	conditional_call(get_param(competition,[]),set_competition_params),
 	init_timers,
 	init_database,
 	profiling_start_timer(analysis),
 	(get_param(input,[File])->
 		read_cost_equations(File),
-		print_header('Preprocessing Cost Relations~n',[],1),
+		conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
 		preprocess_cost_equations,
-		print_header('Control-Flow Refinement of Cost Relations~n',[],1),
+		conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
 		refinement,
 		(get_param(only_termination,[])->
 			true
 			;
-			print_header('Computing Bounds~n',[],1),
+			conditional_call((get_param(v,[N]),N>0),print_header('Computing Bounds~n',[],1)),
 			upper_bounds
 		),	
 		profiling_stop_timer(analysis,_T_analysis),
@@ -448,4 +450,4 @@ conditional_call(Condition,Call):-
 warn_if_no_chains(RefCnt):-
 	chain(_,RefCnt,_),!.
 warn_if_no_chains(_):-
-	format('Warning: No feasible chains found~n',[]).
+	conditional_call((get_param(v,[N]),N>0),format('Warning: No feasible chains found~n',[])).

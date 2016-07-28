@@ -25,6 +25,7 @@ This module prints the results of the analysis
 :- module(output,[
           print_help/0,
           print_header/3,
+          print_warning/2,
           print_chain_simple/1,
 		  print_chains_entry/2,
 		  print_sccs/0,
@@ -127,6 +128,11 @@ print_header(Text,Arguments,6):-
 	nl,
 	ansi_format_aux([bold],'######~p',[' ']),
 	ansi_format_aux([bold],Text,Arguments).		
+	
+print_warning(_Text,_Args):-
+	get_param(no_warnings,[]),!.
+print_warning(Text,Args):-
+	format(Text,Args).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
 print_sccs:-
@@ -715,6 +721,17 @@ print_closed_results_1(_Entry,_).
 
 %! print_single_closed_result(+Entry:term,+Expr:cost_expression) is det
 % print the given upper bound Expr and its asymptotic bound
+print_single_closed_result(_Entry,Expr):-
+	get_param(competition,[]),!,
+	get_asymptotic_class_name(Expr,Asym_class),
+	(Asym_class=infinity->
+		format('MAYBE~n',[])
+			;
+		get_complexity_competition_name(Asym_class,Asym_class_comp),
+		format('WORST_CASE(?,O(~p))  ~n',[Asym_class_comp])
+	).
+
+
 print_single_closed_result(Entry,Expr):-
 	copy_term((Entry,Expr),(Entry2,Expr2)),
 	get_asymptotic_class_name(Expr,Asym_class),
@@ -723,6 +740,9 @@ print_single_closed_result(Entry,Expr):-
 	format('~p ~n',[Expr2]),
 	format('Asymptotic class: ~p ~n',[Asym_class]).
 
+get_complexity_competition_name(n,n^1):-!.
+get_complexity_competition_name(constant,1):-!.
+get_complexity_competition_name(Name,Name).
 %! print_conditional_upper_bounds(+Head:term) is det
 % print the conditional upper bounds
 print_conditional_upper_bounds(Head):-
@@ -826,8 +846,8 @@ print_parameters_list.
 %! print_stats is det
 % print time statistics of the different phases of the analysis
 print_stats:-
-	print_header('Time statistics:~p~n',[' '],2),
 	(get_param(stats,[])->
+	print_header('Time statistics:~p~n',[' '],2),
 	profiling_get_info(pe,T_pe,_),
 	profiling_get_info(inv,T_inv,_),
 	profiling_get_info(inv_back,T_inv_back,_),
@@ -855,15 +875,20 @@ print_stats:-
 	format("   - Equation cost structures ~0f ms.~n",[T_equation_cost]),
 	format("   - Phase cost structures ~0f ms.~n",[T_loop_phases]),
 	format("   - Chain cost structures ~0f ms.~n",[T_chain_solver]),
-	format("   - Solving cost expressions ~0f ms.~n",[T_solver])
+	format("   - Solving cost expressions ~0f ms.~n",[T_solver]),
 	%	format("~nCompressed phase information: ~p ~n",[N_compressed_phases1]),
 	%	format("Compressed Chains: ~p ~n",[N_compressed_chains]),
 	%	format("Compressed invariants: ~p ~n",[N_compressed_invs]).
-	;
-	 true
-	),
 	profiling_get_info(analysis,T_analysis,_),
-	format("* Total analysis performed in ~0f ms.~n~n",[T_analysis]). 	
+	format("* Total analysis performed in ~0f ms.~n~n",[T_analysis])
+	;
+		((get_param(v,[N]),N>0) ->
+	   		profiling_get_info(analysis,T_analysis,_),
+			format("* Total analysis performed in ~0f ms.~n~n",[T_analysis])
+		;
+		true)
+	).
+	
 
 
 print_stats.
