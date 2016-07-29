@@ -31,6 +31,6 @@ A very bad solution (but a solution anyway) is:
  * Comment the line that loads these libraries temporarily (in my case, line 57).
    This breaks this library but luckily it is not needed by CoFloCo.
  * Compile the binary 
- * Uncomment the line again to restore the your swi-prolog.
+ * Uncomment the line again to restore your swi-prolog copy.
 
 
