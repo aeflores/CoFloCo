@@ -49,7 +49,7 @@ main:-
 	  parse_lisp(File,S_expressions),!,
 	  counter_initialize(if_cnt,0),
 	  counter_initialize(atom_cnt,2),
-	  maplist(defun2cost_exp,S_expressions,All_cost_relations), 
+	  maplist(fix_and_defun,S_expressions,All_cost_relations),
 	  load_basic_lisp(Basic_lisp_crs),
 	  ut_flat_list([Basic_lisp_crs,All_cost_relations],Total_crs),
 	  compute_undefined_predicates(Total_crs,Selected_crs,Undefined_predicates),
@@ -67,6 +67,9 @@ extract_func(eq(Head,_,_,_),[Name,N_args]):-
 	Head =.. [Name|Args],
 	length(Args,N_args).
 
+fix_and_defun(S_expr,Cost_relations):-
+	fix_quotes(S_expr,S_expr_fixed),
+	defun2cost_exp(S_expr_fixed,Cost_relations).
 
 nat_constraints(Args,Constrs):-nat_constrs(Args,Constrs,0),!.
 
@@ -138,8 +141,7 @@ defun2cost_exp(['defun-simplified','state-fix'|_],[]):-!,
 
 defun2cost_exp(['defun-simplified',Name,nil,Body_with_quotes],All_cost_relations):-
 	defun2cost_exp(['defun-simplified',Name,[],Body_with_quotes],All_cost_relations).
-defun2cost_exp(['defun-simplified',Name,Args,Body_with_quotes],All_cost_relations):-
-	fix_quotes(Body_with_quotes,Body),
+defun2cost_exp(['defun-simplified',Name,Args,Body],All_cost_relations):-
 	expand_args(Args,Converted_args),
 	% create map from variable names to prolog variables
 	make_dicc(Converted_args,Args_abstract,Dicc),
