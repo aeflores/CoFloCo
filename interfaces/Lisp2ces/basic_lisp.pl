@@ -57,15 +57,19 @@ eq('='(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('='(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
 eq('='(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 
-eq('>'(Ai,_Al,_As,Bi,_Bl,_Bs,1,0,0),1,[],[Ai>=Bi+1]).
-eq('>'(Ai,_Al,_As,Bi,_Bl,_Bs,0,0,0),1,[],[Ai=<Bi]).
+eq('/='(Ai,0,0,Ai,0,0,0,0,0),1,[],[]).
+eq('/='(Ai,0,0,Bi,0,0,1,0,0),1,[],[Ai>=Bi+1]).
+eq('/='(Ai,0,0,Bi,0,0,1,0,0),1,[],[Ai+1=<Bi]).
 
-eq('<'(Ai,_Al,_As,Bi,_Bl,_Bs,1,0,0),1,[],[Ai+1=<Bi]).
-eq('<'(Ai,_Al,_As,Bi,_Bl,_Bs,0,0,0),1,[],[Ai>=Bi]).
+eq('>'(Ai,0,0,Bi,0,0,1,0,0),1,[],[Ai>=Bi+1]).
+eq('>'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai=<Bi]).
 
-eq('binary-+'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai+Bi]).
-eq('binary--'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai-Bi]).
-eq('unary--'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=0-Ai]).
+eq('<'(Ai,0,0,Bi,0,0,1,0,0),1,[],[Ai+1=<Bi]).
+eq('<'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi]).
+
+eq('binary-+'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ci=Ai+Bi]).
+eq('binary--'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ci=Ai-Bi]).
+eq('unary--'(Ai,0,0,Bi,0,0),1,[],[Bi=0-Ai]).
 
 %make them as multually exclusive as possible
 eq('integerp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
@@ -142,11 +146,17 @@ eq('lognot'(_Ai,0,0,_Bi,0,0),1,[],[]).
 eq('binary-logand'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
 eq('binary-logior'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
 eq('binary-logxor'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('logbitp'(Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[Ai>=0]).
+eq('logcount'(_Ai,0,0,_Bi,0,0),1,[],[]).
+eq('xor'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
 
 eq('mod'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('rem'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
 
 eq('realpart'(_Ai,0,0,_Bi,0,0),1,[],[]).
 eq('imagpart'(_Ai,0,0,_Bi,0,0),1,[],[]).
+
+eq('nonnegative-integer-quotient'(Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[Ai>=0]).
 
 %undefined
 eq('acl2-numberp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
