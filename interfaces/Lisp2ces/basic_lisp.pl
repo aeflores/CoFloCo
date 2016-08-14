@@ -150,7 +150,14 @@ eq('logbitp'(Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[Ai>=0]).
 eq('logcount'(_Ai,0,0,_Bi,0,0),1,[],[]).
 eq('xor'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
 
-eq('mod'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai=Bi,Ci=0]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai>=0,Bi>0,Ai>Bi,Ci<Ai,Ci<Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai>=0,Bi>0,Ai<Bi,Ci=<Ai,Ci<Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai>=0,Bi<0,Ci<Ai,Ci>Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai+1=<0,Bi>0,Ci>Ai,Ci<Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai+1=<0,Bi<0,Ai>Bi,Ci>=Ai,Ci>Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai+1=<0,Bi<0,Ai<Bi,Ci>Ai,Ci>Bi]).
+
 eq('rem'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
 
 eq('realpart'(_Ai,0,0,_Bi,0,0),1,[],[]).
