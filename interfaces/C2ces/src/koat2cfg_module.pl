@@ -40,24 +40,32 @@ save_exec:-
 read_file(File) :-
    (File=stdin->
    	    read_stream_to_codes(user_input,Content),
-        phrase(parse_koat(cfg(Rules)), Content)
+        phrase(parse_koat(cfg(Entry,Rules)), Content)
         ;
-   		phrase_from_file(parse_koat(cfg(Rules)), File)
+   		phrase_from_file(parse_koat(cfg(Entry,Rules)), File)
    	),
    maplist(save_defined_rule,Rules),
    maplist(filter_undefined_rule,Rules,Rules2),
+   put_entry_rules_first(Rules2,Entry,Rules3),
    (option(to_file(New_file))->
    		tell(New_file),
-		pretty_print_rules(cfg(Rules2)),
+		pretty_print_rules(cfg(Rules3)),
 		told
 	;
-   		pretty_print_rules(cfg(Rules2))
+   		pretty_print_rules(cfg(Rules3))
    	),!.
 
 read_file(File) :-
 	format('Failed translating: ~p~n',[File]).
 
+put_entry_rules_first(Rules,no_entry,Rules):-!.
+put_entry_rules_first(Rules,Entry,Rules2):-
+	partition(is_entry_rule(Entry),Rules,Entry_rules,Others),
+	append(Entry_rules,Others,Rules2).
 
+is_entry_rule(F,e(Term,_,_,_)):-
+	functor(Term,F,_).
+	
 save_defined_rule(e(Origin,_,_,_)):-
 	functor(Origin,Name,Arity),
 	(rule_exist(Name,Arity)->
@@ -95,18 +103,18 @@ print_rules([Rule,R2|Rules]):-
 print_rules([Rule]):-
        format('~p~n',[Rule]).
    
-parse_koat(cfg(Rules)) -->
+parse_koat(cfg(Entry,Rules)) -->
    header,spaces,
-   start_term,spaces,
+   start_term(Entry),spaces,
    vars,spaces,"(RULES",
    rules(Rules),spaces,")",spaces.
 
 header --> 
     "(GOAL COMPLEXITY)".
-start_term -->
+start_term(no_entry) -->
 	"(STARTTERM CONSTRUCTOR-BASED)".
-start_term -->
-	"(STARTTERM (FUNCTIONSYMBOLS",spaces,entry_name(_Entry),"))".
+start_term(Entry) -->
+	"(STARTTERM (FUNCTIONSYMBOLS",spaces,entry_name(Entry),"))".
 
 vars -->"(VAR ",var_names(_Names),")".
 var_names([Name|Names]) --> 

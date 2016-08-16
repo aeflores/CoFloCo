@@ -49,10 +49,11 @@ save_exec:-
 :- dynamic exit_id/2.
 
 :- dynamic eq/4.
-:- dynamic ground_term/2.
+:- dynamic ground_term/3.
 :- dynamic loop_has_new_vars/2.
 
 :- dynamic option/1.
+:- dynamic exit_location/1.
 
 init_db :-
 	retractall(traversed(_)),
@@ -67,7 +68,8 @@ init_db :-
 	retractall(pcfg_edge(_,_,_,_)),
 	retractall(cfg_entry(_)),
 	retractall(cfg_nodes(_)),
-	retractall(ground_term(_,_)),
+	retractall(ground_term(_,_,_)),
+	retractall(exit_location(_)),
 	assert(last_id(1)),
 	!.
 
@@ -93,7 +95,9 @@ process_args(['-o',File|Args]):-!,
 process_args([loop_cost_model|Args]):-!,
 	assert(option(loop_cost_model)),
 	process_args(Args).
-		
+process_args([add_outs|Args]):-!,
+	assert(option(add_outs)),
+	process_args(Args).		
 process_args([X|_Args]):-!,
 	throw(invalid_parameter(X)).	
 	
@@ -143,10 +147,10 @@ print_io_vars_1((Name,N)):-
 	node_in_loop(Name,Loop),
 	loop_has_new_vars(Loop,N_extra),
 	length(Out_vars,N_extra),
-	ground_term(Name,Input_vars),
+	ground_term(Name,Input_vars,Numvar_ini),
 	append(Input_vars,Out_vars,Vars),
 	Head=..[Name|Vars],
-	numbervars(Head,0,_),
+	numbervars(Head,Numvar_ini,_),
 	format('~p.~n',[input_output_vars(Head,Input_vars,Out_vars)]),!.
 print_io_vars_1(_).	
 
@@ -209,10 +213,42 @@ is_out_node(Origin,Dest):-
 
 
 extract_loop(H):-
+	(option(add_outs)->cond_add_abort_edge(H);true),
 	get_extra_loop_vars(H),
 	findall(Node,node_in_loop(Node,H),Nodes),
 	maplist(transform_edges_from,Nodes).
 
+cond_add_abort_edge(nil):-!.
+
+cond_add_abort_edge(H):-
+%	findall((Node,Dest),
+%		(
+%		 node_in_loop(Node,H),
+%		 cfg_edge(Node,Dest),
+%		 is_out_node(Node,Dest)
+%		)
+%	,[]),!,
+	add_abort_edge(H).
+cond_add_abort_edge(_).
+
+add_abort_edge(Loop_header):-
+	cond_add_exit_location(Exit_location),
+	%get the head vars from any edge
+	pcfg_edge(Loop_header,_,_,cons(Head_vars,_,_)),
+	assertz(pcfg_edge(Loop_header,Exit_location,0,cons(Head_vars,[],[]))),
+	%add all the other information predicates
+	assertz(cfg_edge(Loop_header,Exit_location)),
+	assertz(cfg_edge_rev(Exit_location,Loop_header)).
+
+cond_add_exit_location(Exit_location):-
+	exit_location(Exit_location),!.
+
+cond_add_exit_location(exit_location):-
+	assertz(exit_location(exit_location)),
+	assertz(iloop_header(exit_location,nil)),
+	assertz(iloop_header_rev(nil,exit_location)),
+	assertz(node_in_loop(exit_location,nil)).
+	
 transform_edges_from(Node):-
 	retract(pcfg_edge(Node,Dest,C,Cons)),
 	(is_in_node(Node,Dest)->
@@ -324,22 +360,22 @@ print_eqs:-
 	Head=..[Entry|_],!,
 	retract(eq(Head,C,Call,Cs)),
 	Head=..[Name|Vars],
-	(ground_term(Name,Input_vars)->
+	(ground_term(Name,Input_vars,Numvar_ini)->
 	  append(Input_vars,_,Vars)
 	; 
-         true),
-	numbervars(eq(Head,C,Call,Cs),0,_),
+         Numvar_ini=0),
+	numbervars(eq(Head,C,Call,Cs),Numvar_ini,_),
 	format('~p.~n',[eq(Head,C,Call,Cs)]),
 	print_eqs_1.
 
 print_eqs_1:-
 	retract(eq(Head,C,Call,Cs)),	
 	Head=..[Name|Vars],
-	(ground_term(Name,Input_vars)->
+	(ground_term(Name,Input_vars,Numvar_ini)->
 	  append(Input_vars,_,Vars)
 	; 
-          true),
-	numbervars(eq(Head,C,Call,Cs),0,_),
+      Numvar_ini=0),
+	numbervars(eq(Head,C,Call,Cs),Numvar_ini,_),
 	format('~p.~n',[eq(Head,C,Call,Cs)]),
 	fail.
 print_eqs_1.
@@ -366,14 +402,47 @@ assert_cfg_into_db_1([e(Head,Call,C,Cs)|Es],Bindings,[S,T|Ns]) :-
 	assert_cfg_into_db_1(Es,Bindings,Ns).
 
 save_ground_name(Name,_Vars,_Bindings):-
-	ground_term(Name,_),!.
+	ground_term(Name,_,_),!.
 	
 save_ground_name(Name,Vars,Bindings):-
 	copy_term((Vars,Bindings),(Vars2,Bindings2)),
-	maplist(unify_eq,Bindings2),
-	assert(ground_term(Name,Vars2)).
+	maplist(substitute_numbervars,Bindings2,Bindings3),
+	max_var_number(Bindings3,0,Max),
+	Max1 is Max+1,
+	maplist(unify_eq,Bindings3),
+	assert(ground_term(Name,Vars2,Max1)).
 	
+
 unify_eq(X=X).
+	
+substitute_numbervars(Atom=Var,'$VAR'(Pos)=Var):-
+	atom_chars(Atom,[Capital|Number_chars]),
+	char_type(Capital,upper),
+	(
+		Number_chars=[],
+		Number=0
+	; 
+		is_number_char_list(Number_chars),
+		number_chars(Number,Number_chars)
+	),!,
+	char_code(Capital,Code),
+	char_code('A',Code_ini),
+	Pos is (Code-Code_ini)+ (26*Number).
+	
+substitute_numbervars(Atom=Var,Atom=Var).
+	
+is_number_char_list(List):-
+	char_code('0',Zero),
+	char_code('9',Nine),
+	is_number_char_list_1(List,Zero,Nine).
+	
+is_number_char_list_1([],_Zero,_Nine).
+is_number_char_list_1([Ch|Chs],Zero,Nine):-
+	char_code(Ch,Ch_code),
+	Ch_code=< Nine,
+	Ch_code>= Zero,
+	is_number_char_list_1(Chs,Zero,Nine).	
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
