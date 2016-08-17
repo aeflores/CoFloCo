@@ -39,7 +39,10 @@ This script receives a control flow graph file (.koat.cfg) and generates a equiv
  By default the transformed system is printed in the standard output. This option allows to print the output in a file.
  * loop_cost_model:
  This option modifies the cost model to count the number of loop iterations (of the loops that have been detected).
- 
+ * add_outs:
+ This option adds transitions to a special exit location from every loop header. It is neccessary for obtaining
+ sound costs of transition systems without well defined exit location.
+ The resulting cost relation system models a transition system that can stop at any moment.
 Example:
 -------------
 Let's consider that we want to analyze a function written in C in a file named "Example.c". We have to execute the following commands:
