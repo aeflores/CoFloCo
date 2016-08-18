@@ -24,6 +24,7 @@ Translate a list of lisp functions into a cost relation representation
 */
 
 :-set_prolog_flag(verbose, silent). 
+:-nb_setval(compiled,false).
 :-include('../../src/search_paths.pl').
 
 :-initialization main.

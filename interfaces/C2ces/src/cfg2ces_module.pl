@@ -5,7 +5,7 @@
 :-include('../../../src/search_paths.pl').
 
 
-
+:- use_module(stdlib(node_splitting),[make_graph_reducible/2]).
 :- use_module(stdlib(linear_expression), [parse_le/2, integrate_le/3]).
 
 :- use_module(stdlib(fraction),[negate_fr/2]).
@@ -44,32 +44,34 @@ save_exec:-
 :- dynamic pcfg_edge/4.
 :- dynamic cfg_nodes/1.
 :- dynamic cfg_entry/1.
-
 :- dynamic node_in_loop/2.
 :- dynamic exit_id/2.
-
 :- dynamic eq/4.
 :- dynamic ground_term/3.
 :- dynamic loop_has_new_vars/2.
-
 :- dynamic option/1.
 :- dynamic exit_location/1.
-
+:- dynamic last_id/1.
 init_db :-
-	retractall(traversed(_)),
 	retractall(iloop_header(_,_)),
 	retractall(iloop_header_rev(_,_)),
 	retractall(dfsp_pos(_,_)),
+	retractall(traversed(_)),
 	retractall(irreducible(_)),
-	retractall(reentry(_,_)),
 	retractall(loop_header(_)),
+	retractall(reentry(_,_)),
 	retractall(cfg_edge(_,_)),
 	retractall(cfg_edge_rev(_,_)),
 	retractall(pcfg_edge(_,_,_,_)),
-	retractall(cfg_entry(_)),
 	retractall(cfg_nodes(_)),
+	retractall(cfg_entry(_)),
+	retractall(node_in_loop(_,_)),
+	retractall(exit_id(_,_)),
+	retractall(eq(_,_,_,_)),
 	retractall(ground_term(_,_,_)),
+	retractall(loop_has_new_vars(_,_)),
 	retractall(exit_location(_)),
+	retractall(last_id(_)),
 	assert(last_id(1)),
 	!.
 
@@ -123,13 +125,29 @@ cfg2ces_2(CFG,Bindings) :-
 	assert_cfg_into_db(CFG,Bindings),
 	identify_loops,
 	(\+irreducible(_)->
-	assert(loop_header(nil)),
-	store_nodes_in_loop,
-	collect_all_loops(nil,Loops),
-	reverse([nil|Loops],Loops_rev),
-	maplist(extract_loop,Loops_rev)
+		assert(loop_header(nil)),
+		store_nodes_in_loop,
+		collect_all_loops(nil,Loops),
+		reverse([nil|Loops],Loops_rev),
+		maplist(extract_loop,Loops_rev)
 	;
-	 throw(irreducible_cfg)
+
+		findall(O-D,cfg_edge(O,D),Graph),
+		make_graph_reducible(Graph,Split_nodes),
+		put_splits_inside(Split_nodes,[],Split_nodes_in),
+		%maplist(writeln,Split_nodes_in),
+		split_nodes(Split_nodes_in,CFG,CFG2),
+		%print_graph(CFG2),nl,nl,
+		
+		%re-apply
+		init_db,
+		assert_cfg_into_db(CFG2,Bindings),
+		identify_loops,
+		assert(loop_header(nil)),
+		store_nodes_in_loop,
+		collect_all_loops(nil,Loops),
+		reverse([nil|Loops],Loops_rev),
+		maplist(extract_loop,Loops_rev)
 	),
 	print_io_vars,
 	print_eqs.
@@ -618,10 +636,90 @@ deepest_loops(Ls) :-
 %%%% END: identify loops
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Code for splitting nodes and making the cfg reducible	
+put_splits_inside([],_,[]).
+put_splits_inside(Atom,Split_list,Atom2):-atom(Atom),!,
+	foldl(apply_split,Split_list,Atom,Atom2).
+
+put_splits_inside([Term:N],Sp_list,Term2):-
+	put_splits_inside(Term,[N|Sp_list],Term2).
+
+put_splits_inside([Node|Nodes],Sp_list,[Node2|Nodes2]):-
+	put_splits_inside(Node,Sp_list,Node2),
+	put_splits_inside(Nodes,Sp_list,Nodes2).
+	
+apply_split(N,Atom,Atom2):-
+	atom_concat('_sp',N,Atom1),
+	atom_concat(Atom,Atom1,Atom2).
+
+split_nodes([],cfg(CFG),cfg(CFG)).
+split_nodes([[Split,Preds]|Split_nodes],cfg(CFG),cfg(CFG_final)):-
+	split_node(CFG,Split,Preds,CFG2),
+	split_nodes(Split_nodes,cfg(CFG2),cfg(CFG_final)).	
+	
+split_node([],_,_,[]).
+
+%both_inside
+split_node([e(O,D,C,Cs)|CFG],Split,Preds,CFG3):-
+	functor(O,Of,_),
+	functor(D,Df,_),
+	member(Of,Split),
+	member(Df,Split),!,
+	length(Preds,N_splits),
+	get_split_names(O,N_splits,O_splits),
+	get_split_names(D,N_splits,D_splits),
+	maplist(create_edge(C,Cs),O_splits,D_splits,Edges),
+	split_node(CFG,Split,Preds,CFG2),
+	append(Edges,CFG2,CFG3).
+%O inside
+split_node([e(O,D,C,Cs)|CFG],Split,Preds,CFG3):-
+	functor(O,Of,_),
+	functor(D,Df,_),
+	member(Of,Split),
+	\+member(Df,Split),!,
+	length(Preds,N_splits),
+	get_split_names(O,N_splits,O_splits),
+	maplist(create_edge_inv(C,Cs,D),O_splits,Edges),
+	split_node(CFG,Split,Preds,CFG2),
+	append(Edges,CFG2,CFG3).
+		
+%D inside
+split_node([e(O,D,C,Cs)|CFG],Split,Preds,[e(O,D_split,C,Cs)|CFG2]):-
+	functor(O,Of,_),
+	functor(D,Df,_),
+	\+member(Of,Split),
+	member(Df,Split),!,
+	get_origin_index(Preds,1,Of,Index),
+	apply_split(Index,Df,Df2),
+	D=..[Df|Vars],
+	D_split=..[Df2|Vars],
+	split_node(CFG,Split,Preds,CFG2).
+
+%none inside		
+split_node([e(O,D,C,Cs)|CFG],Split,Preds,[e(O,D,C,Cs)|CFG2]):-
+	split_node(CFG,Split,Preds,CFG2).
+
+get_origin_index([Pred|_Preds],N,Of,N):-
+	member(Of,Pred),!.
+get_origin_index([_Pred|Preds],N,Of,Index):-
+	N1 is N+1,
+	get_origin_index(Preds,N1,Of,Index).
+
+create_edge(C,Cs,O,D,e(O,D,C,Cs)).	
+create_edge_inv(C,Cs,D,O,e(O,D,C,Cs)).
+
+get_split_names(_Term,0,[]).
+get_split_names(Term,N,[TermN|Terms]):-
+	N1 is N-1,
+	Term=..[F|Vars],
+	apply_split(N,F,F2),
+	TermN=..[F2|Vars],
+	get_split_names(Term,N1,Terms).
 
 
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Auxiliary predicates
 
 
@@ -693,3 +791,9 @@ inc_counter_exits:-
 	retract(counter_exits(N)),
 	N1 is N+1,
 	assert(counter_exits(N1)).
+	
+	
+print_graph(cfg(CFG2)):-
+	copy_term(CFG2,CFG),
+	numbervars(CFG,0,_),
+	maplist(writeln,CFG).
