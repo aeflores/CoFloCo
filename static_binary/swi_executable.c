@@ -5,8 +5,8 @@
 
 // defined libppl_swiprolog.a
 //
-extern install_t install(); 
-extern install_t uninstall();
+extern install_t install_libppl_swiprolog(); 
+extern install_t uninstall_libppl_swiprolog();
 
 
 int
@@ -19,12 +19,12 @@ main(int argc, char **argv)
   if ( !PL_initialise(argc, argv) )
     PL_halt(1);
 
-  install();  // install ppl interface
+  install_libppl_swiprolog();  // install ppl interface
 
   predicate_t pred = PL_predicate("main", 0, "user");
   rval = PL_call_predicate(NULL, PL_Q_NORMAL, pred, 0);
 
-  uninstall(); // uninstall ppl interface
+  uninstall_libppl_swiprolog(); // uninstall ppl interface
 
   PL_halt(rval ? 0 : 1);
 
