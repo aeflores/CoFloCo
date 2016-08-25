@@ -319,7 +319,7 @@ unroll_definitions([[_Var_name,Exp]|_Defs],_Dicc,_Dicc_final,_Calls,_Cost_relati
 	
 size_atom(nil,[0,0,0]):-!.
 size_atom(t,[1,0,0]):-!.
-size_atom(Atom,[Int,_,_]):-
+size_atom(Atom,[Int,0,0]):-
 	atom_number(Atom,Int),!.
 size_atom(String,[_,Length,Length]):-
 	atom_codes(String,[DoubleQuote|Codes]),
