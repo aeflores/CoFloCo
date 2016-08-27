@@ -135,19 +135,19 @@ parse_params([Bad_param|_Rest]):-
 process_args([],Rest,[],Rest).
 
 process_args([bool|More],[Value|Vs],[Processed_value|Pvs],Rest):-
-	term_to_atom(Processed_value,Value),
+	atom_to_term(Value,Processed_value,_),
 	member(Processed_value,[yes,no]),!,
 	process_args(More,Vs,Pvs,Rest).
 process_args([bool|More],Vs,[yes|Pvs],Rest):-
 	process_args(More,Vs,Pvs,Rest).
 	
 process_args([atom|More],[Value|Vs],[Processed_value|Pvs],Rest):-
-	term_to_atom(Processed_value,Value),!,
+	atom_to_term(Value,Processed_value,_),!,
 	process_args(More,Vs,Pvs,Rest).
 
 process_args([number|More],[Value|Vs],[Processed_value|Pvs],Rest):-
 
-	term_to_atom(Processed_value,Value),
+	atom_to_term(Value,Processed_value,_),
     number(Processed_value),
 	
 	!,

@@ -56,7 +56,7 @@ the input variables and the variables of the recursive call (if there is one)
 %! init_cost_equation_solver
 % clear all the stored intermediate results
 init_cost_equation_solver:-
-	retractall(loop_cost(_,_,_,_,_,_)).
+	retractall(loop_cost(_,_,_,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! get_loop_cost(+Head:term,+Calls:list(term),+Forward_inv_hash:(int,polyhedron),+Loop_id:loop_id,-Cost:cstr) is det

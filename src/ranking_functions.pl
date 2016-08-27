@@ -92,7 +92,9 @@ These ranking functions are used to prove termination.
 %clean the stored ranking functions
 init_ranking_functions:-
 	retractall(ranking_function(_,_,_,_)),
-	retractall(partial_ranking_function(_,_,_,_,_,_,_)).
+	retractall(partial_ranking_function(_,_,_,_,_,_,_)),
+	retractall(computed_ranking_functions(_,_,_)),
+	retractall(computed_partial_ranking_functions(_,_,_)).
 
 clean_ranking_functions(Head):-
 	retractall(ranking_function(Head,_,_,_)),

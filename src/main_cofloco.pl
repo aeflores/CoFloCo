@@ -124,6 +124,7 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('bound_computation/cost_equation_solver',[init_cost_equation_solver/0]).    
 
 :- use_module('IO/output',[
+			  init_output/0,
 			  print_header/3,
 			  print_or_log/2,
 			  print_results/2,
@@ -248,6 +249,7 @@ cofloco_query(Params):-
 %! init_database is det
 % erase all the information from previous analyses	
 init_database:-
+	init_output,
 	init_db,
 	init_ranking_functions,
 	init_termination,
