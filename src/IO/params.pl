@@ -29,6 +29,7 @@ The module also takes care of parsing the input parameters and storing them.
 
 :- module(params,[clean_params/0,
 		  set_default_params/0,
+		  set_competition_params/0,
 		  parse_params/1,
 		  get_param/2,
 		  parameter_dictionary/3,
@@ -58,11 +59,13 @@ parameter_dictionary('-i','input',[in_file]).
 %out information
 parameter_dictionary('-stats','stats',[]). 
 parameter_dictionary('-s','stats',[]).
+
 parameter_dictionary('-v','v',[number]).
 parameter_dictionary('-verbosity','v',[number]).
-
 parameter_dictionary('-debug','debug',[bool]).
+parameter_dictionary('-no_warnings','no_warnings',[]).
 
+parameter_dictionary('-competition','competition',[bool]).
 parameter_dictionary('-assume_sequential','assume_sequential',[bool]).
 parameter_dictionary('-n_candidates','n_candidates',[number]).
 
@@ -98,7 +101,17 @@ set_default_params:-
 		      '-compute_ubs',
 		      '-compute_lbs'
 		      ]).
-		      
+
+set_competition_params:-
+		parse_params([
+%			  '-v','3',
+		      '-n_candidates','1',
+		      '-context_sensitive','1',
+		      '-compute_ubs',
+		      '-compute_lbs','no',
+		      '-solve_fast',
+		      '-compress_chains','2'
+		      ]).	      
 %% parse_params(Params:list(atoms)) is det
 %  parse a given list of Params and store the parsed values so they can be accesed form any part of the code
 parse_params([]):-!.
@@ -122,19 +135,19 @@ parse_params([Bad_param|_Rest]):-
 process_args([],Rest,[],Rest).
 
 process_args([bool|More],[Value|Vs],[Processed_value|Pvs],Rest):-
-	term_to_atom(Processed_value,Value),
+	atom_to_term(Value,Processed_value,_),
 	member(Processed_value,[yes,no]),!,
 	process_args(More,Vs,Pvs,Rest).
 process_args([bool|More],Vs,[yes|Pvs],Rest):-
 	process_args(More,Vs,Pvs,Rest).
 	
 process_args([atom|More],[Value|Vs],[Processed_value|Pvs],Rest):-
-	term_to_atom(Processed_value,Value),!,
+	atom_to_term(Value,Processed_value,_),!,
 	process_args(More,Vs,Pvs,Rest).
 
 process_args([number|More],[Value|Vs],[Processed_value|Pvs],Rest):-
 
-	term_to_atom(Processed_value,Value),
+	atom_to_term(Value,Processed_value,_),
     number(Processed_value),
 	
 	!,
@@ -188,11 +201,14 @@ get_param(Param,Values):-
 	
 %% param_description(+Internal_name:atom,-Description:string) is det
 %  provides a description of each parameter so it can be printed in the help
+
 param_description('help',':Display help information').
 param_description('input','filename: Selects input program.').
 param_description('stats','Show some basic statistics').
 param_description('debug','Show debug information').
 param_description('v','0-3 : selects the level of verbosity ').
+param_description('no_warnings','Do not print any warnings').
+param_description('competition','Set output and settings for complexity competition').
 param_description('n_candidates',' nat : (default 1) Sets the maximum number of candidates considered for a strategy').
 param_description('context_sensitive',' nat : (default 1) How context sensitive the bound computation is
  1. Each phase is solved only once with invariants valid for all its appearances in different chains

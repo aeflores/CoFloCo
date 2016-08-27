@@ -57,26 +57,39 @@ eq('='(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('='(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
 eq('='(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 
-eq('>'(Ai,_Al,_As,Bi,_Bl,_Bs,1,0,0),1,[],[Ai>=Bi+1]).
-eq('>'(Ai,_Al,_As,Bi,_Bl,_Bs,0,0,0),1,[],[Ai=<Bi]).
+eq('/='(Ai,0,0,Ai,0,0,0,0,0),1,[],[]).
+eq('/='(Ai,0,0,Bi,0,0,1,0,0),1,[],[Ai>=Bi+1]).
+eq('/='(Ai,0,0,Bi,0,0,1,0,0),1,[],[Ai+1=<Bi]).
 
-eq('<'(Ai,_Al,_As,Bi,_Bl,_Bs,1,0,0),1,[],[Ai+1=<Bi]).
-eq('<'(Ai,_Al,_As,Bi,_Bl,_Bs,0,0,0),1,[],[Ai>=Bi]).
+eq('>'(Ai,0,0,Bi,0,0,1,0,0),1,[],[Ai>=Bi+1]).
+eq('>'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai=<Bi]).
 
-eq('binary-+'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai+Bi]).
-eq('binary--'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai-Bi]).
-eq('unary--'(Ai,_Al,_As,Bi,0,0),1,[],[Bi=0-Ai]).
+eq('<'(Ai,0,0,Bi,0,0,1,0,0),1,[],[Ai+1=<Bi]).
+eq('<'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi]).
 
+eq('binary-+'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ci=Ai+Bi]).
+eq('binary--'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ci=Ai-Bi]).
+eq('unary--'(Ai,0,0,Bi,0,0),1,[],[Bi=0-Ai]).
+
+%make them as multually exclusive as possible
 eq('integerp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
-eq('integerp'(_Ai,_Al,_As,Bi,0,0),1,[],[Bi>=0,Bi=<1]).
+eq('integerp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
 eq('rationalp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
-eq('rationalp'(_Ai,_Al,_As,Bi,0,0),1,[],[Bi>=0,Bi=<1]).
+eq('rationalp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
+eq('complex-rationalp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
+eq('complex-rationalp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
+eq('acl2-numberp'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
+eq('acl2-numberp'(_Ai,Al,As,Bi,0,0),1,[],[Al=0,As=0,Bi>=0,Bi=<1]).
 
 eq('not'(A,_,_,1,0,0),1,[],[A=0]).
 eq('not'(A,_,_,0,0,0),1,[],[A=1]).
 
 eq('zp'(A,_,_,1,0,0),1,[],[A=0]).
-eq('zp'(A,_,_,0,0,0),1,[],[A=1]).
+eq('zp'(A,_,_,0,0,0),1,[],[A>=1]).
+
+eq('zip'(A,_,_,1,0,0),1,[],[A=0]).
+eq('zip'(A,_,_,0,0,0),1,[],[A>=1]).
+eq('zip'(A,_,_,0,0,0),1,[],[A+1=<0]).
 
 eq('ash'(A,_,_,B,_,_,A,0,0),1,[],[B=0]).
 eq('ash'(A,_,_,B,_,_,C,0,0),1,[],[B>=1,2*C=<A]).
@@ -89,11 +102,6 @@ eq('null'(_Ai,Al,As,0,0,0),1,[],[Al>=1,As>=1]).
 
 %type check, we assume for now that it never fails
 eq('the-check'(_Ai,_,_,_Bi,_,_,Ci,Cl,Cs,Ci,Cl,Cs),1,[],[]).
-
-eq('nfix'(Ai,0,0,Ai,0,0),1,[],[Ai>=0]).
-eq('nfix'(Ai,_,_,0,0,0),1,[],[Ai+1=<0]).
-eq('nfix'(_,_,As,0,0,0),1,[],[As>=1]).
-eq('nfix'(_,Al,_,0,0,0),1,[],[Al>=1]).
 
 eq('hide'(Ai,Al,As,Ai,Al,As),1,[],[]).   % identity function
 eq('coerce'(Ai,Al,As,Ai,Al,As),1,[],[]).   % for now, also treat this as id
@@ -108,24 +116,54 @@ eq('binary-*'(Ai,_Al,_As,Bi,_Bl,_Bs,Ci,0,0),1,[],[Ci=Ai*Bi]).
 eq('eq'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('eq'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('eq'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
-eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
-eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
-eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
-eq('eq'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+% we would have to distinguish also the cases where A has bigger length but smaller size than B and vice-versa
+% we just behave non-deterministically and improve performance
+%eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
+%eq('eq'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
+eq('eq'(_,Al,As,_,Bl,Bs,ZeroOne,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0,0=<ZeroOne,ZeroOne=<1]).
+%eq('eq'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
 
 eq('equal'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('equal'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('equal'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
-eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
-eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
-eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
-eq('equal'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+% we would have to distinguish also the cases where A has bigger length but smaller size than B and vice-versa
+% we just behave non-deterministically and improve performance
+%eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As>=Bs+1,Al>=Bl+1]).
+%eq('equal'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[As=<Bs-1,Al=<Bl+1]).
+eq('equal'(_,Al,As,_,Bl,Bs,ZeroOne,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0,0=<ZeroOne,ZeroOne=<1]).
+%eq('equal'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
 
 eq('eql'(Ai,0,0,Ai,0,0,1,0,0),1,[],[]).
 eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai+1=<Bi]).
 eq('eql'(Ai,0,0,Bi,0,0,0,0,0),1,[],[Ai>=Bi+1]).
-eq('eql'(_,Al,As,_,Bl,Bs,0,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
-eq('eql'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+eq('eql'(_,Al,As,_,Bl,Bs,ZeroOne,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0,0=<ZeroOne,ZeroOne=<1]).
+%eq('eql'(_,Al,As,_,Bl,Bs,1,0,0),1,[],[Al>=0,As>=0,Bl>=0,Bs>=0]).
+
+eq('floor'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('ceiling'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+
+eq('lognot'(_Ai,0,0,_Bi,0,0),1,[],[]).
+eq('binary-logand'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('binary-logior'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('binary-logxor'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+eq('logbitp'(Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[Ai>=0]).
+eq('logcount'(_Ai,0,0,_Bi,0,0),1,[],[]).
+eq('xor'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai=Bi,Ci=0]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai>=0,Bi>0,Ai>Bi,Ci<Ai,Ci<Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai>=0,Bi>0,Ai<Bi,Ci=<Ai,Ci<Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai>=0,Bi<0,Ci<Ai,Ci>Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai+1=<0,Bi>0,Ci>Ai,Ci<Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai+1=<0,Bi<0,Ai>Bi,Ci>=Ai,Ci>Bi]).
+eq('mod'(Ai,0,0,Bi,0,0,Ci,0,0),1,[],[Ai+1=<0,Bi<0,Ai<Bi,Ci>Ai,Ci>Bi]).
+
+eq('rem'(_Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[]).
+
+eq('realpart'(_Ai,0,0,_Bi,0,0),1,[],[]).
+eq('imagpart'(_Ai,0,0,_Bi,0,0),1,[],[]).
+
+eq('nonnegative-integer-quotient'(Ai,0,0,_Bi,0,0,_Ci,0,0),1,[],[Ai>=0]).
 
 %undefined
 eq('acl2-numberp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).

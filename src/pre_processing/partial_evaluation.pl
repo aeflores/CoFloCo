@@ -32,6 +32,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 
 :- use_module('SCCs',[crs_scc/5,crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
 :- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
+:- use_module('../IO/output',[print_warning/2]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[cstr_join/3,cstr_or_compress/2]).
 :- use_module('../utils/polyhedra_optimizations',[nad_normalize_polyhedron/2,nad_consistent_constraints_group/2,nad_project_group/3]).
@@ -72,7 +73,7 @@ partial_evaluation :-
 	        ,Ignored),
 	 from_list_sl(Ignored,Ignored_set),
 	(Ignored_set\=[]->
-	   format('Warning: the following predicates are never called:~p~n',[Ignored_set]);true),
+		print_warning('Warning: the following predicates are never called:~p~n',[Ignored_set]);true),
 	 maplist(add_ignored_scc,Ignored_set).
 
 compress_segments:-

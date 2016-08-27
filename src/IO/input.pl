@@ -23,6 +23,7 @@ This module reads cost equations and stores them in the database after normalizi
 
 
 :- module(input,[read_cost_equations/1,store_cost_equations/1]).
+:- use_module(output,[print_warning/2]).
 :- use_module('../db',[input_eq/5,
 					entry_eq/2,
 					reset_scc/3,
@@ -234,7 +235,7 @@ remove_undefined_calls_1([C|Cs],Head,Cs_1) :-
 	\+ input_eq(C,_,_,_,_), \+ C=Head,
 	!,
 	functor(C,Cname,C_arity),functor(Head,Headname,Head_arity),
-	format('warning: Ignored call to ~p in equation ~p ~n',[Cname/C_arity,Headname/Head_arity]),
+	print_warning('Warning: Ignored call to ~p in equation ~p ~n',[Cname/C_arity,Headname/Head_arity]),
 	remove_undefined_calls_1(Cs,Head,Cs_1).
 remove_undefined_calls_1([C|Cs],Head,[C|Cs_1]) :-
 	remove_undefined_calls_1(Cs,Head,Cs_1).
@@ -250,7 +251,7 @@ normalize_input_equation(EQ,EQ_Normalized) :-
     (Cs_excluded\=[]->
        copy_term((EQ,Cs_excluded),(EQ_print,Cs_excluded_print)),
        numbervars((EQ_print,Cs_excluded_print),0,_),
-       format('WARNING: Excluded non-linear constraints:~p~n',[Cs_excluded_print])
+       print_warning('WARNING: Excluded non-linear constraints:~p~n',[Cs_excluded_print])
        ;
        true
        ),

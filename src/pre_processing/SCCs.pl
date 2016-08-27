@@ -110,7 +110,7 @@ init_sccs:-
 	retractall(crs_node_scc(_,_,_)),
 	retractall(crs_max_scc_id(_)),
 	retractall(crs_residual_scc(_,_)),
-	retractall(crs_ignored_scc(_)).
+	retractall(ignored_scc(_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! compute_btcs is det

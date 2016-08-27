@@ -35,7 +35,8 @@ incremented/decremented by a constant value in each iteration.
 		        save_pending_list/6]).
 :- use_module('../../db',[get_input_output_vars/3]).			        
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).		
-:- use_module('../../IO/params',[get_param/2]).		
+:- use_module('../../IO/params',[get_param/2]).	
+:- use_module('../../IO/output',[print_or_log/2]).			
 :- use_module('../../utils/cost_structures',[
 			new_itvar/1,
 			get_loop_itvar/2,
@@ -153,7 +154,7 @@ check_loop_triangle_minsum(Loop,Pos_neg,Head,Call,Pending,Exp,Bounded,Delta,Pend
 		greater_fr(0,Delta)
 	),
 	find_minsum_constraint(Loop,Head,[Call],Cs,Exp,Bounded,Pending,Pending1),!,
-	(get_param(debug,[])->format('Loop ~p is triangle collaborative with ~p ~n',[Loop,Delta]);true).
+	(get_param(debug,[])->print_or_log('Loop ~p is triangle collaborative with ~p ~n',[Loop,Delta]);true).
 
 check_loop_triangle_no_change(Loop,Head,Call,Exp):-	
 	enriched_loop(Loop,Head,[Call],Cs),

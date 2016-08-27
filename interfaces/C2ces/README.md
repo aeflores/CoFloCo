@@ -7,17 +7,42 @@ This folder contains two prolog scripts to tranform integer transition systems g
 There are two transformation scripts:
 
 #### koat2cfg.pl
-This script parses a koat file (.koat) and generates a control flow graph file in prolog format (.koat.cfg). In the process it adapts the variable names, an the constraints.
+
+This script parses a koat file (.koat) and generates a control flow graph file in prolog format (.cfg). In the process it adapts the variable names, an the constraints.
 
 It also removes calls to other functions that are not defined in the koat file. At the moment it does not support koat files that represent multiple procedures or recursive procedures.
 
+
+`./koat2cfg.pl input_file [Extra_options]`
+
+* input_file can be a file name or `stdin` to take the input from the standard input
+
+##### Extra_options
+ 
+ * -o output_file:
+ By default the transformed system is printed in the standard output. This option allows to print the output in a file.
+ 
+ * tick_cost:
 By default, each transition is assigned cost 1. However, this script admits an additional parameter "tick_cost". If koat2cfg.pl is called with "tick_cost", it assigns cost "n" to each call to the function "void tick(int c);" and 0 to all the other transitions.
 
    
 #### cfg2ces.pl
 This script receives a control flow graph file (.koat.cfg) and generates a equivalent set of cost equations. In order to do that, it detects and extracts the loops in the control flow graph. This process can fail if there is an irreducible cfg but this does not happen often in practice.
 
+`./koat2cfg.pl input_file [Extra_options]`
 
+ * input_file can be a file name or `stdin` to take the input from the standard input
+ 
+##### Extra_options
+
+ * -o output_file:
+ By default the transformed system is printed in the standard output. This option allows to print the output in a file.
+ * loop_cost_model:
+ This option modifies the cost model to count the number of loop iterations (of the loops that have been detected).
+ * add_outs:
+ This option adds transitions to a special exit location from every loop header. It is neccessary for obtaining
+ sound costs of transition systems without well defined exit location.
+ The resulting cost relation system models a transition system that can stop at any moment.
 Example:
 -------------
 Let's consider that we want to analyze a function written in C in a file named "Example.c". We have to execute the following commands:
@@ -32,16 +57,19 @@ Let's consider that we want to analyze a function written in C in a file named "
 
 * Transform the complexity tuples file into a single control-flow-graph in prolog format
 
-    `./koat2cfg.pl Example.koat`
+    `./koat2cfg.pl Example.koat -o Example.koat.cfg`
 
   If we want to count only the calls to tick(), we execute the following command instead:
 
-     `./koat2cfg.pl Example.koat tick_cost`
+     `./koat2cfg.pl Example.koat  -o Example.koat.cfg tick_cost`
 
 * Finally, tranform the control-flow-graph file into a set of cost equations
 
-    `./cfg2ces.pl Example.koat.cfg`
+    `./cfg2ces.pl Example.koat.cfg -o Example.koat.cfg.ces`
 
 * At the end of the process we will have a valid "Example.koat.cfg.ces" file that can be analyzed by CoFloCo.
 
-   
+#### Example 2:   
+ * We can also combine all the transformations (except the compilation) together:
+ 
+ `Path/to/llvm2kittel Example.bc -complexity-tuples | ./koat2cfg.pl stdin | ./cfg2ces.pl stdin -o Example.koat.cfg.ces`

@@ -85,7 +85,7 @@ The main "data types" used in CoFloCo are the following:
 */
 
 
-:- module(main_cofloco,[cofloco_shell_main/0,cofloco_query/2,cofloco_query/1]).
+:- module(main_cofloco,[cofloco_shell_main/0,cofloco_bin_main/0,cofloco_query/2,cofloco_query/1]).
 :-include('search_paths.pl').
 
 
@@ -124,7 +124,9 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('bound_computation/cost_equation_solver',[init_cost_equation_solver/0]).    
 
 :- use_module('IO/output',[
+			  init_output/0,
 			  print_header/3,
+			  print_or_log/2,
 			  print_results/2,
 			  print_sccs/0,
 			  print_partially_evaluated_sccs/0,
@@ -136,12 +138,14 @@ The main "data types" used in CoFloCo are the following:
 		      print_closed_results/2,
 		      print_chains_entry/2,
 		      print_single_closed_result/2,
+		      print_competition_result/1,
 		      print_conditional_upper_bounds/1,
 		      print_conditional_lower_bounds/1,
 		      print_stats/0,
+		      print_log/0,
 		      print_help/0]).
 :- use_module('IO/input',[read_cost_equations/1,store_cost_equations/1]).
-:-use_module('IO/params',[set_default_params/0,parse_params/1,get_param/2]).
+:-use_module('IO/params',[set_default_params/0,set_competition_params/0,parse_params/1,get_param/2]).
 :-use_module('utils/cofloco_utils',[tuple/3]).
 
 
@@ -164,16 +168,23 @@ cofloco_shell_main:-
 	    print_help
 	   ),
 	   halt.
-
+cofloco_bin_main:-
+        current_prolog_flag(argv, [_|Args]),
+	   (Args=[_|_]->
+	    catch(cofloco_query(Args),E,(print_message(error, E),halt))
+	   ;
+	    print_help
+	   ),
+	   halt.
 %! save_executable is det
 % build an executable file of cofloco
-save_executable:-
-	ppl_my_initialize,
-	make,
-	check,
-	prolog_history(disable),
-	qsave_program('cofloco',[stand_alone(true),goal(main_cofloco:cofloco_shellco_main),foreign(save)]),
-	writeln('Binary package generated').
+%save_executable:-
+%	ppl_my_initialize,
+%	make,
+%	check,
+%	prolog_history(disable),
+%	qsave_program('cofloco',[stand_alone(true),goal(main_cofloco:cofloco_shellco_main),foreign(save)]),
+%	writeln('Binary package generated').
 
 
 %! cofloco_query(+Eqs:list(cost_equation),+Params:list(atom)) is det
@@ -181,22 +192,24 @@ save_executable:-
 cofloco_query(Eqs,Params):-
 	set_default_params,
 	parse_params(Params),
+	conditional_call(get_param(competition,[]),set_competition_params),
 	init_timers,
 	init_database,
 	profiling_start_timer(analysis),
 	store_cost_equations(Eqs),
-	print_header('Preprocessing Cost Relations~n',[],1),
+	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
 	preprocess_cost_equations,
-	print_header('Control-Flow Refinement of Cost Relations~n',[],1),
+	conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
 	refinement,
 	(get_param(only_termination,[])->
 			true
 			;
-			print_header('Computing Bounds~n',[],1),
+			conditional_call((get_param(v,[N]),N>0),print_header('Computing Bounds~n',[],1)),
 			upper_bounds,
 			profiling_stop_timer(analysis,_T_analysis),
 			print_stats
-	).
+	),
+	print_log.
 
 	
 %! cofloco_query(+Params:list(atom)) is det
@@ -205,19 +218,20 @@ cofloco_query(Eqs,Params):-
 cofloco_query(Params):-
 	set_default_params,
 	parse_params(Params),
+	conditional_call(get_param(competition,[]),set_competition_params),
 	init_timers,
 	init_database,
 	profiling_start_timer(analysis),
 	(get_param(input,[File])->
 		read_cost_equations(File),
-		print_header('Preprocessing Cost Relations~n',[],1),
+		conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
 		preprocess_cost_equations,
-		print_header('Control-Flow Refinement of Cost Relations~n',[],1),
+		conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
 		refinement,
 		(get_param(only_termination,[])->
 			true
 			;
-			print_header('Computing Bounds~n',[],1),
+			conditional_call((get_param(v,[N]),N>0),print_header('Computing Bounds~n',[],1)),
 			upper_bounds
 		),	
 		profiling_stop_timer(analysis,_T_analysis),
@@ -228,12 +242,14 @@ cofloco_query(Params):-
 		;
 		   throw(error('No input file given'))
 		)
-	).
+	),
+	print_log.
 
 
 %! init_database is det
 % erase all the information from previous analyses	
 init_database:-
+	init_output,
 	init_db,
 	init_ranking_functions,
 	init_termination,
@@ -429,7 +445,8 @@ compute_closed_bound_scc(Head) :-
 	   ;
 	   (get_param(compute_ubs,[])->
 	     compute_single_closed_bound(Head_aux,2,Exp),
-	     print_single_closed_result(Head_aux,Exp)
+	     print_single_closed_result(Head_aux,Exp),
+	     print_competition_result(Exp)
 	     ; true)
 	).
 	
@@ -448,4 +465,4 @@ conditional_call(Condition,Call):-
 warn_if_no_chains(RefCnt):-
 	chain(_,RefCnt,_),!.
 warn_if_no_chains(_):-
-	format('Warning: No feasible chains found~n',[]).
+	conditional_call((get_param(v,[N]),N>0),print_or_log('Warning: No feasible chains found~n',[])).

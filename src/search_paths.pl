@@ -26,7 +26,11 @@
    asserta(user:file_search_path(stdlib, Dir_math)),
    
    (current_prolog_flag(dialect,swi)->
-     atom_concat(Dir,'/costa_stdlib/sys_dep/swi_prolog/unix/',Dir_ppl),
+     (nb_getval(compiled,true)->
+     	 atom_concat(Dir,'/costa_stdlib/sys_dep/swi_prolog/unix_compilation/',Dir_ppl)
+     	 ;
+     	 atom_concat(Dir,'/costa_stdlib/sys_dep/swi_prolog/unix/',Dir_ppl)
+     	),
      asserta(user:file_search_path(stdlib, Dir_ppl))
      ;
      atom_concat(Dir,'/costa_stdlib/sys_dep/yap/',Dir_ppl),

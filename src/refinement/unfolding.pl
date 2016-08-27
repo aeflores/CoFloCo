@@ -60,7 +60,11 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 :-use_module('../termination_checker',[termination_argument/4]).
 		 
 			 
-:- use_module('../IO/output',[print_chain_simple/1]).
+:- use_module('../IO/output',[
+		print_chain_simple/1,
+		print_warning/2,
+		print_or_log/2,
+		print_or_log_nl/0]).
 :- use_module('../IO/params',[get_param/2]).	
 :- use_module('../utils/cofloco_utils',[
 	bagof_no_fail/3,
@@ -225,7 +229,7 @@ remove_terminating_non_terminating_chains(Head,RefCnt):-
 	\+non_terminating_chain(Head,RefCnt,Chain),!,%Check if there are terminating chains
 	remove_terminating_non_terminating_chains_1(Head,RefCnt).
 remove_terminating_non_terminating_chains(Head,RefCnt):-
-	format('Warning: no base case found for predicate~n',Head),
+	print_warning('Warning: no base case found for predicate~n',Head),
 	remove_terminating_non_terminating_chains_1(Head,RefCnt).
 	
 
@@ -241,12 +245,12 @@ remove_terminating_non_terminating_chains_1(Head,RefCnt):-
 	 ),
 	numbervars(Head,0,_),
 	(get_param(debug,[])->
-	 format('Discarded unfeasible chain ',[]),
+	 print_or_log('Discarded unfeasible chain ',[]),
 	 print_chain_simple(Chain),
-	 format('(Non-terminating chain proved terminating)~n',[]),
+	 print_or_log('(Non-terminating chain proved terminating)~n',[]),
 	 (New_chain\=none->
-	   format('Remaining chain: ',[]),
-	   print_chain_simple(New_chain),nl
+	   print_or_log('Remaining chain: ',[]),
+	   print_chain_simple(New_chain),print_or_log_nl
 	   ;
 	   true
 	   )
