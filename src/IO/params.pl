@@ -227,4 +227,4 @@ param_description('conditional_lbs',
 'Generate a set of conditional lower bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
 
 param_description('compress_chains',
-'nat : (default 0) Join chains that have the same precondition. It can increase performance greatly but in some cases it can produce upper bounds that are less tight by a constant factor (the asymptotic complexity does not change)').
+'0-2 : (default 0) Join chains that have the same precondition. It can increase performance greatly but also affect precission').
