@@ -25,6 +25,7 @@ Translate a list of lisp functions into a cost relation representation
 
 :-set_prolog_flag(verbose, silent). 
 :-nb_setval(compiled,false).
+:-set_prolog_stack(global, limit(2*10**9)).
 :-include('../../src/search_paths.pl').
 
 :-initialization main.
@@ -32,14 +33,17 @@ Translate a list of lisp functions into a cost relation representation
 :-use_module(lisp_parser,[parse_lisp/2]).
 :-use_module(basic_lisp,[eq/4]).
 
+:- use_module(stdlib(scc), [compute_sccs/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).	
 :- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
-:- use_module(stdlib(set_list),[insert_sl/3,contains_sl/2,difference_sl/3,remove_sl/3]).
+:- use_module(stdlib(set_list),[from_list_sl/2,insert_sl/3,contains_sl/2,difference_sl/3,remove_sl/3]).
 :- use_module(stdlib(counters),[counter_initialize/2,counter_increase/3,counter_get_value/2]).
 
 :-dynamic if_cnt/1.
 :-dynamic atom_size/2.
 
+:-dynamic scc/1.
+:-dynamic scc_of_function/2.
 nmeasures(3).
 	
 main:-
@@ -51,8 +55,10 @@ main:-
 	  counter_initialize(if_cnt,0),
 	  counter_initialize(atom_cnt,2),
 	  maplist(fix_and_defun,S_expressions,All_cost_relations),
+	  compute_sccs(All_cost_relations),
+	  maplist(process_cost_relations,All_cost_relations,Processed_cost_relations),
 	  load_basic_lisp(Basic_lisp_crs),
-	  ut_flat_list([Basic_lisp_crs,All_cost_relations],Total_crs),
+	  ut_flat_list([Basic_lisp_crs,Processed_cost_relations],Total_crs),
 	  compute_undefined_predicates(Total_crs,Selected_crs,Undefined_predicates),
 	  % print the crs
 	  maplist(print_cr([singletons]),Selected_crs),
@@ -62,15 +68,145 @@ main:-
 	  format(user_error,'Undefined functions: ~q ~n',[Undefined_predicates])
 	  ),Fail,writeln(Fail)),
 	halt.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%compute strongly connected components
+% between functions, not counting ifs
+compute_sccs(Crs_list_list):-
+	maplist(get_edges,Crs_list_list,Edges),
+	ut_flat_list(Edges,Edges_flat),
+	compute_sccs(Edges_flat,Sccs),
+	maplist(save_scc,Sccs).
+
+save_scc((recursive,Nodes)):-
+	from_list_sl(Nodes,Nodes_set),
+	assert(scc(Nodes_set)),
+	maplist(save_scc_1(Nodes_set),Nodes_set).
+save_scc((non_recursive,_Nodes)).
+	
+save_scc_1(Nodes,Node):-
+	assert(scc_of_function(Node,Nodes)).
+
+get_edges([entry(_)],[]).
+get_edges([Main_eq|Ifs],Edges2):-
+	Main_eq=eq(Head,_,Calls,_),
+	functor(Head,O,_),
+	foldl(accumulate_calls(O),Calls,[],Edges),
+	foldl(accumulate_calls_from_ifs(O),Ifs,Edges,Edges2).
+
+accumulate_calls_from_ifs(O,eq(_,_,Calls,_),Edges,Edges2):-
+	foldl(accumulate_calls(O),Calls,Edges,Edges2).
+	
+accumulate_calls(_O,Call,Edges,Edges):-
+	functor(Call,C,_),
+	is_if(C),!.
+accumulate_calls(O,Call,Edges,Edges1):-
+	functor(Call,C,_),
+	insert_sl(Edges,O-C,Edges1).
+
+is_if(Functor):-atom_concat('if_',_,Functor).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% * partially evaluate the ifs that are involved in the recursion
+
+process_cost_relations([entry(Entry)],[entry(Entry)]):-!.
+process_cost_relations(Crs,Processed_Crs):-
+	partially_evaluate_ifs(Crs,PE_Crs),
+	maplist(process_cost_relation,PE_Crs,Processed_Crs).
 
 
-extract_func(eq(Head,_,_,_),[Name,N_args]):-
-	Head =.. [Name|Args],
-	length(Args,N_args).
+% we assume the cost equations are in the right order
+partially_evaluate_ifs([Main_eq|Ifs],Pe_crs):-
+	Main_eq=eq(Head,_C,_Calls,_Cs),
+	functor(Head,F,_),
+	(scc_of_function(F,Rec_functions); Rec_functions=[]),
+	reverse(Ifs,Ifs_rev),
+	foldl(get_recursive_ifs,Ifs_rev,Rec_functions,Rec_ifs),
+	partially_evaluate_ifs_1(Ifs,Rec_ifs,[Main_eq],Pe_crs).
 
-fix_and_defun(S_expr,Cost_relations):-
-	fix_quotes(S_expr,S_expr_fixed),
-	defun2cost_exp(S_expr_fixed,Cost_relations).
+get_recursive_ifs(eq(Head,_,Calls,_),Rec_functions,Rec_functions1):-
+	has_recursive_call(Calls,Rec_functions),!,
+	functor(Head,F,_),
+	insert_sl(Rec_functions,F,Rec_functions1).
+get_recursive_ifs(eq(_,_,_,_),Rec_functions,Rec_functions).
+
+has_recursive_call([Call|_],Rec_functions):-
+	functor(Call,F,_),
+	contains_sl(Rec_functions,F),!.
+has_recursive_call([_|Calls],Rec_functions):-
+	has_recursive_call(Calls,Rec_functions).
+
+partially_evaluate_ifs_1([],_Rec_ifs,Pe_crs,Pe_crs):-!.
+
+partially_evaluate_ifs_1([If1,If2|Rest],Rec_ifs,Crs,Pe_crs):-
+	If1=eq(Head1,_C1,_Calls1,_Cs1),
+	If2=eq(Head2,_C2,_Calls2,_Cs2),
+	functor(Head1,F,A),
+	functor(Head2,F,A),
+	contains_sl(Rec_ifs,F),!,
+	partially_evaluate_if(Crs,F,If1,If2,Crs1),
+	partially_evaluate_ifs_1(Rest,Rec_ifs,Crs1,Pe_crs).
+partially_evaluate_ifs_1([If1,If2|Rest],Rec_ifs,Crs,Pe_crs):-
+	If1=eq(Head1,_C1,_Calls1,_Cs1),
+	If2=eq(Head2,_C2,_Calls2,_Cs2),
+	functor(Head1,F,A),
+	functor(Head2,F,A),!,
+	partially_evaluate_ifs_1(Rest,Rec_ifs,[If1,If2|Crs],Pe_crs).
+	
+partially_evaluate_ifs_1(Problematic_ifs,_,_,_):-
+	throw(failed_partial_evaluation_assumption(Problematic_ifs)).
+	
+partially_evaluate_if([],_F,_If1,_If2,[]).
+partially_evaluate_if([eq(Head,C1,Calls,Cs)|Crs],F,If1,If2,[Cr1,Cr2|Crs1]):-
+	contains_call(Calls,F),!,
+	If1=eq(Head_if1,C_if1,Calls_if1,Cs_if1),
+	If2=eq(Head_if2,C_if2,Calls_if2,Cs_if2),
+	copy_term(eq(Head,C1,Calls,Cs),eq(Head1,C1,Calls1,Cs1)),
+	copy_term(eq(Head,C1,Calls,Cs),eq(Head2,C2,Calls2,Cs2)),
+	substitute_call(Calls1,Head_if1,Calls_if1,Cs_if1,Calls1_pe,Cs_if1_p),
+	substitute_call(Calls2,Head_if2,Calls_if2,Cs_if2,Calls2_pe,Cs_if2_p),
+	C1_pe is C1+C_if1,
+	C2_pe is C2+C_if2,
+	append(Cs1,Cs_if1_p,Cs1_pe),
+	append(Cs2,Cs_if2_p,Cs2_pe),
+	Cr1=eq(Head1,C1_pe,Calls1_pe,Cs1_pe),
+	Cr2=eq(Head2,C2_pe,Calls2_pe,Cs2_pe),
+	partially_evaluate_if(Crs,F,If1,If2,Crs1).
+	
+partially_evaluate_if([Ce|Crs],F,If1,If2,[Ce|Crs1]):-	
+	partially_evaluate_if(Crs,F,If1,If2,Crs1).				
+
+contains_call([Call|_Calls],F):-
+	functor(Call,F,_).
+contains_call([_|Calls],F):-
+	contains_call(Calls,F).
+	
+substitute_call([],_Head_if,_Calls_if,_Cs_if,[],[]).
+substitute_call([Head1|Calls],Head,Sub_Calls,Sub_cs,Calls2,Cs2):-
+	unifiable(Head1,Head,_),!,
+	copy_term((Head,Sub_Calls,Sub_cs),(Head1,Sub_Calls1,Sub_cs1)),
+	substitute_call(Calls,Head,Sub_Calls,Sub_cs,Calls1,Cs1),
+	append(Sub_Calls1,Calls1,Calls2),
+	append(Sub_cs1,Cs1,Cs2).
+	
+substitute_call([Head1|Calls],Head,Sub_Calls,Sub_cs,[Head1|Calls1],Cs1):-
+	substitute_call(Calls,Head,Sub_Calls,Sub_cs,Calls1,Cs1).
+
+% * add nat constraints
+% * equalize the results of calls to the same arguments
+% * add car-cdr constraints
+% * add constraints for multiplication by constant
+process_cost_relation(eq(Head,C,Calls,Cs),eq(Head,C,Calls,Cs2)):-
+	Head=..[_|Args],
+	nat_constraints(Args,Nat_constrs),
+	unify_equiv_calls(Calls),
+	related_call_constrs(Calls,Cs_car_cdr),
+	foldl(constant_mult_constrs,Calls,[],Mult_cs),
+	ut_flat_list([Nat_constrs,Cs_car_cdr,Mult_cs,Cs],Cs2),!.
+
+constant_mult_constrs('binary-*'(A,_,_,B,_,_,C,_,_),Cs,[C=A*B|Cs]):-
+	(number(A); number(B)),!.
+constant_mult_constrs(_,Cs,Cs).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
 nat_constraints(Args,Constrs):-nat_constrs(Args,Constrs,0),!.
 
@@ -135,6 +271,12 @@ unify_equiv_outs(Head,In_args,Out_args,[_|Calls]):-
 	unify_equiv_outs(Head,In_args,Out_args,Calls).
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% cost equation extraction
+
+fix_and_defun(S_expr,Cost_relations):-
+	fix_quotes(S_expr,S_expr_fixed),
+	defun2cost_exp(S_expr_fixed,Cost_relations).
 % main transformation predicate
 % take a function definition and generate a list of cost relations (and print them)	
 defun2cost_exp(['defun-simplified','state-fix'|_],[]):-!,
@@ -151,11 +293,7 @@ defun2cost_exp(['defun-simplified',Name,Args,Body],All_cost_relations):-
 	append(Args_abstract,Res_vars,All_args),
 	Head=..[Name|All_args],
 	% the main cost relation
-	nat_constraints(All_args,Nat_constrs),
-	related_call_constrs(Body_unrolled,Rel_call_constrs),
-	unify_equiv_calls(Body_unrolled),
-	append(Nat_constrs,Rel_call_constrs,All_constrs),
-	Cost_relation= eq(Head,1,Body_unrolled,All_constrs),
+	Cost_relation= eq(Head,1,Body_unrolled,[]),
 	% we want closed-form bound for this cost relation
 	ut_flat_list([Cost_relation|Cost_relations],All_cost_relations),!.
 	
@@ -218,16 +356,8 @@ unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,[Res_var_i,Res_var_l,R
 	Res_vars=[Res_var_i,Res_var_l,Res_var_s],
 	append(Args,Res_vars,All_args),
 	Head_if=..[If_name|All_args],
-	nat_constraints(All_args_yes,Nat_constrs_yes),
-	nat_constraints(All_args_no,Nat_constrs_no),
-	unify_equiv_calls(Yes_calls_all),
-	related_call_constrs(Yes_calls_all,Rel_call_constrs_yes),
-	unify_equiv_calls(No_calls_all),
-	related_call_constrs(No_calls_all,Rel_call_constrs_no),
-	append(Rel_call_constrs_yes,Nat_constrs_yes,Constrs_yes),
-	append(Rel_call_constrs_no,Nat_constrs_no,Constrs_no),
-	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1|Constrs_yes]),
-	Cost_relation_no=eq(Head_if_no,1,No_calls_all,[Cond_bool=0|Constrs_no]),
+	Cost_relation_yes=eq(Head_if_yes,1,Yes_calls_all,[Cond_bool=1]),
+	Cost_relation_no=eq(Head_if_no,1,No_calls_all,[Cond_bool=0]),
 	ut_flat_list([Cost_relation_yes,Cost_relation_no,Cost_relations_cond,Cost_relations_yes,Cost_relations_no],Cost_relations),
 	% for the body where the if appears, we generate a call to the if cost relation
 	Body_unrolled=[Head_if].
@@ -397,6 +527,10 @@ load_basic_lisp(Crs):-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % auxiliary predicates
 
+extract_func(eq(Head,_,_,_),[Name,N_args]):-
+	Head =.. [Name|Args],
+	length(Args,N_args).
+	
 fix_quotes(Atom,Atom):-
 	atom(Atom),!.
 fix_quotes(string(X),string(X)):-!.
