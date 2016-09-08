@@ -343,8 +343,17 @@ unroll_body(Dicc,[if,Cond,Cond_yes,Cond_no],Body_unrolled,[Res_var_i,Res_var_l,R
 	%get a fresh name
 	get_if_name(If_name),
 	% get the calls in the condition, the 'then' branch and the 'else' branch
-	unroll_body(Dicc,Cond,Cond_calls,[Cond_bool,_,_],Cost_relations_cond),
-	unroll_body(Dicc,Cond_yes,Yes_calls,Res_vars_yes,Cost_relations_yes),
+	unroll_body(Dicc,Cond,Cond_calls,Res_if,Cost_relations_cond),
+	Res_if=[Cond_bool,_,_],
+	
+	%detect if the if is actually an or
+	(Cond==Cond_yes-> 
+		Cost_relations_yes=[],
+		Yes_calls=[],
+		Res_vars_yes=Res_if
+		;
+		unroll_body(Dicc,Cond_yes,Yes_calls,Res_vars_yes,Cost_relations_yes)
+	),
 	unroll_body(Dicc,Cond_no,No_calls,Res_vars_no,Cost_relations_no),
 	%we generate two cost relations:
 	% when the condition is true and when it is not
