@@ -198,7 +198,6 @@ difference_constraint_farkas_multiple_ub(Head,Calls,Phi_1,Lin_exp,Lin_exp_list):
 	get_input_output_vars(Head_params,IEparams,OEparams),
 	maplist('='(0),OEparams),
 	maplist('='(0),Cparams2),
-
 	nad_glb(Cone1,Cone2,Cone_joint),
 	ut_flat_list([Ys11,Ys12,Ys2],Extra_params),
 	ut_flat_list([Eparams,Cparams,Cnt_param,Extra_params],All_vars),
@@ -227,6 +226,7 @@ farkas_leave_ub_candidate(Head,Calls,Phi_1,Lin_exp,Lin_exp_list):-
 	get_input_output_vars(Head_params,IEparams,OEparams),
 	maplist('='(0),OEparams),
 	maplist('='(0),Cparams2),
+	Cnt_param=0,
 	nad_glb(Cone1_extra,Cone2,Cone_joint),
 	ut_flat_list([Ys1,Ys2],Extra_params),
 	ut_flat_list([Eparams,Cparams,Cnt_param,Extra_params],All_vars),
