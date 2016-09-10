@@ -72,7 +72,8 @@ These constraints are useful in most cases and that allows us to simplify the re
 	]).			
 :- use_module(phase_basic_product_strategy,[
 	basic_product_strategy/6,
-	level_product_strategy/6
+	level_product_strategy/6,
+	leaf_product_strategy/5
 	]).	
 :- use_module(phase_triangular_strategy,[triangular_strategy/8]).	
 :- use_module(phase_max_min_strategy,[max_min_strategy/7]).	
@@ -532,6 +533,8 @@ only_tail_constr(loop_vars(Head,_),Fconstr):-
 compute_level_sum(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
 	inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out).
 
+compute_level_sum(Constr,Head,_Phase,[],[Iconstr],Pending,Pending_out):-
+	leaf_product_strategy(Constr,Head,Iconstr,Pending,Pending_out).
 compute_level_sum(_,_,_,[],[],Pending,Pending):-
 	(get_param(debug,[])->print_or_log('   - No strategy succeeded ~n',[]);true).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

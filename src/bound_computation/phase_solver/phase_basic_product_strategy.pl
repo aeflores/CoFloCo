@@ -1,11 +1,16 @@
 /** <module> phase_basic_product_strategy
 
-This module implements 2 strategies: basic_product_strategy and level_product_strategy
+This module implements 3 strategies: basic_product_strategy, level_product_strategy
+and leaf product strategy
 -basic_product_strategy reduces the sum of a linear expression Lin_exp to the
 product of the number of iterations of the loop and the maximum/minimum value of Lin_exp
 
 -level_sum_strategy reduces the sum of a linear expression Lin_exp over a complete phase execution
 into the sum of the linear expression in one level of the execution tree multiplied by the depth of the execution.
+
+-leaf_product_strategy reduces the sum of a linear expression over one level to
+the number of elements of this level multiplied by the maximum/minimum value of the expression
+This is only valid for the last level, the leafs of the evaluation tree
 
 @author Antonio Flores Montoya
 
@@ -28,7 +33,8 @@ into the sum of the linear expression in one level of the execution tree multipl
 
 :- module(phase_basic_product_strategy,[
 		basic_product_strategy/6,
-		level_product_strategy/6
+		level_product_strategy/6,
+		leaf_product_strategy/5
 	]).
 
 :- use_module(phase_common).
@@ -98,4 +104,20 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
     Iconstr=bound(Op,Astrexp,Bounded),
     print_product_strategy_message(Head,level,Max_fconstrs).
  
-    
+
+ leaf_product_strategy(bound(Op,Lin_exp,Bounded),Head,Iconstr,Pending,Pending_out):-
+	%check that it is the leaf level or we are computing ubs 
+	%(so any level is smaller than the leaf level) 
+	(member([sum(0)|_],Bounded); Op=ub),
+	%not for constants
+	Lin_exp\=[]+_,
+	(get_param(debug,[])->print_or_log('   - Applying leaf product strategy ~n',[]);true),!,
+	new_itvar(Aux_itvar),
+	%the leaf level
+	get_loop_itvar(0,Loop_itvar),
+	astrexp_new(add([mult([Loop_itvar,Aux_itvar])])-add([]),Astrexp),
+	fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
+	Max_fconstrs=[Fconstr],
+	save_pending_list(max_min,Head,0,Max_fconstrs,Pending,Pending_out),
+    Iconstr=bound(Op,Astrexp,Bounded),
+    print_product_strategy_message(Head,max_min,Max_fconstrs).
