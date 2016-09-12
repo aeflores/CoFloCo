@@ -170,6 +170,7 @@ eq('acl2-numberp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
 eq('characterp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
 eq('stringp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
 eq('symbolp'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
-eq('char-code'(_Ai,_Al,_As),1,[],[]).
-eq('code-char'(_Ai,_Al,_As),1,[],[]).
+eq('char-code'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
+eq('code-char'(_Ai,_Al,_As,_Bi,0,0),1,[],[]).
 eq('<<'(_Ai,_Al,_As,_Bi,_Bl,_Bs,_Ci,0,0),1,[],[]).
+eq('throw-nonexec-error'(_Ai,_Al,_As,_Bi,_Bl,_Bs,_Ci,_Cl,_Cs),1,[],[]).
