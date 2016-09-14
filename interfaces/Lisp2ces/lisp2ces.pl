@@ -32,6 +32,7 @@ Translate a list of lisp functions into a cost relation representation
 
 :-use_module(lisp_parser,[parse_lisp/2]).
 :-use_module(basic_lisp,[eq/4]).
+:-use_module(slicing,[slice_cost_equations/4,print_sliced_iout/1]).
 
 :- use_module(stdlib(scc), [compute_sccs/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).	
@@ -39,6 +40,7 @@ Translate a list of lisp functions into a cost relation representation
 :- use_module(stdlib(set_list),[from_list_sl/2,insert_sl/3,contains_sl/2,difference_sl/3,remove_sl/3]).
 :- use_module(stdlib(counters),[counter_initialize/2,counter_increase/3,counter_get_value/2]).
 
+:-dynamic option/1.
 :-dynamic if_cnt/1.
 :-dynamic atom_size/2.
 
@@ -48,7 +50,8 @@ nmeasures(3).
 	
 main:-
     current_prolog_flag(argv, Args),
-	Args=[File|_Rest],
+	Args=[File|Rest],
+	process_args(Rest),
 	catch(
 	  (
 	  parse_lisp(File,S_expressions),!,
@@ -56,18 +59,38 @@ main:-
 	  counter_initialize(atom_cnt,2),
 	  maplist(fix_and_defun,S_expressions,All_cost_relations),
 	  compute_sccs(All_cost_relations),
-	  maplist(process_cost_relations,All_cost_relations,Processed_cost_relations),
+	  maplist(process_cost_relations,All_cost_relations,Processed_cost_relations),	  
 	  load_basic_lisp(Basic_lisp_crs),
 	  ut_flat_list([Basic_lisp_crs,Processed_cost_relations],Total_crs),
-	  compute_undefined_predicates(Total_crs,Selected_crs,Undefined_predicates),
+	  partition(is_entry,Total_crs,Entries,Crs),
+	  compute_undefined_predicates(Crs,Entries,Selected_crs,Undefined_predicates),
+	  (option(slice)->
+	  	slice_cost_equations(Entries,Selected_crs,Sliced_entries,Sliced_crs)
+	  	;
+	  	Sliced_entries=Entries, 
+	  	Sliced_crs=Selected_crs
+	  	),
 	  % print the crs
-	  maplist(print_cr([singletons]),Selected_crs),
-	  maplist(extract_func,Selected_crs,Selected_funcs),
+	  maplist(print_cr([]),Sliced_entries),
+	  maplist(print_cr([singletons]),Sliced_crs),
+	  maplist(extract_func,Sliced_crs,Selected_funcs),
 	  list_to_set(Selected_funcs,Unique_funcs),
-	  maplist(print_inout,Unique_funcs),
+	 (option(slice)->
+	 	maplist(print_sliced_iout,Unique_funcs)
+	 	;
+	  	maplist(print_inout,Unique_funcs)
+	  ),
 	  format(user_error,'Undefined functions: ~q ~n',[Undefined_predicates])
 	  ),Fail,writeln(Fail)),
 	halt.
+
+process_args([]).
+process_args(['-slice'|Args]):-!,
+	assert(option(slice)),
+	process_args(Args).
+		
+process_args([X|_Args]):-!,
+	throw(invalid_parameter(X)).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %compute strongly connected components
 % between functions, not counting ifs
@@ -304,8 +327,8 @@ defun2cost_exp(['defined-locally',Name,NArgs],[Entry]):-
 	NArgs1 is (Nargs_number+1)*Nmeasures,
 	length(Args,NArgs1),
 	Head=..[Name|Args],
-	Entry= entry(Head:[]),
-	print_cr([],Entry),!.
+	Entry= entry(Head:[]),!.
+
 	
 defun2cost_exp(Other,_):-
 	format(user_error,'Failed translating S-expression: ~p~n',[Other]),
@@ -486,8 +509,7 @@ size_s_expression(_,[0,0,0]). %FIXME
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % complete the abstract program with the definitions of the basic functions (cdr, consp, etc.) that are referenced
 
-compute_undefined_predicates(Terms,Crs_selected,Undefined):-
-	partition(is_entry,Terms,Entries,Crs),
+compute_undefined_predicates(Crs,Entries,Crs_selected,Undefined):-
 	foldl(init_called,Entries,[],Called_ini),
 	compute_called(Crs,Called_ini,Called),
 	foldl(get_defined,Crs,[],Defined),
@@ -510,19 +532,19 @@ init_called(entry(Head:_),Called,Called1):-
 	insert_sl(Called,F/A,Called1).
 	
 compute_called(Eqs,Called,Called1):-
-	foldl(get_called_new,Eqs,Called,Called_aux),
+	foldl(get_called_new,Eqs,([],Called),(Remaning_eqs,Called_aux)),
 	length(Called,N),
 	length(Called_aux,N1),
 	(N1 >N ->
-	  compute_called(Eqs,Called_aux,Called1)
+	  compute_called(Remaning_eqs,Called_aux,Called1)
 	  ;
 	  Called1=Called_aux).
 
-get_called_new(eq(Head,_Cost,Calls,_Cs),Called,Called1):-
+get_called_new(eq(Head,_Cost,Calls,_Cs),(Eqs,Called),(Eqs,Called1)):-
 	functor(Head,F,A),
 	contains_sl(Called,F/A),!,
 	foldl(get_called_aux,Calls,Called,Called1).
-get_called_new(_,Called,Called).
+get_called_new(Eq,(Eqs,Called),([Eq|Eqs],Called)).
 
 get_called_aux(Call,Called,Called1):-
 	functor(Call,F,A),
