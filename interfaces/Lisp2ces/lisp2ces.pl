@@ -32,7 +32,7 @@ Translate a list of lisp functions into a cost relation representation
 
 :-use_module(lisp_parser,[parse_lisp/2]).
 :-use_module(basic_lisp,[eq/4]).
-:-use_module(slicing,[slice_cost_equations/4,print_sliced_iout/1]).
+:-use_module(slicing,[slice_cost_equations/6,print_sliced_iout/1]).
 
 :- use_module(stdlib(scc), [compute_sccs/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).	
@@ -46,6 +46,9 @@ Translate a list of lisp functions into a cost relation representation
 
 :-dynamic scc/1.
 :-dynamic scc_of_function/2.
+
+:-dynamic fn_arg_names/2.
+
 nmeasures(3).
 	
 main:-
@@ -64,14 +67,16 @@ main:-
 	  ut_flat_list([Basic_lisp_crs,Processed_cost_relations],Total_crs),
 	  partition(is_entry,Total_crs,Entries,Crs),
 	  compute_undefined_predicates(Crs,Entries,Selected_crs,Undefined_predicates),
+	  maplist(get_entry_argnames,Entries,Entry_argnames),
 	  (option(slice)->
-	  	slice_cost_equations(Entries,Selected_crs,Sliced_entries,Sliced_crs)
+		slice_cost_equations(Entries,Entry_argnames,Selected_crs,Sliced_entries,Sliced_argnames,Sliced_crs)
 	  	;
 	  	Sliced_entries=Entries, 
+		Sliced_argnames=Entry_argnames,
 	  	Sliced_crs=Selected_crs
 	  	),
 	  % print the crs
-	  maplist(print_cr([]),Sliced_entries),
+	  maplist(print_entries,Sliced_entries,Sliced_argnames),
 	  maplist(print_cr([singletons]),Sliced_crs),
 	  maplist(extract_func,Sliced_crs,Selected_funcs),
 	  list_to_set(Selected_funcs,Unique_funcs),
@@ -83,6 +88,11 @@ main:-
 	  format(user_error,'Undefined functions: ~q ~n',[Undefined_predicates])
 	  ),Fail,writeln(Fail)),
 	halt.
+
+get_entry_argnames(Entry,Argnames):-
+	Entry=entry(Fn:[]),
+	Fn=..[Head|_],
+	fn_arg_names(Head,Argnames).
 
 process_args([]).
 process_args(['-slice'|Args]):-!,
@@ -311,6 +321,8 @@ defun2cost_exp(['defun-simplified',Name,Args,Body],All_cost_relations):-
 	expand_args(Args,Converted_args),
 	% create map from variable names to prolog variables
 	make_dicc(Converted_args,Args_abstract,Dicc),
+	% store function argument names
+	assert(fn_arg_names(Name,Converted_args)),
 	% obtain a set of calls from the body (and possibly cost relations defined inside)
 	unroll_body(Dicc,Body,Body_unrolled,Res_vars,Cost_relations),
 	append(Args_abstract,Res_vars,All_args),
@@ -580,6 +592,29 @@ fix_quotes([X|Xs],[[quote,Ls]|Xss_fixed]):-
 fix_quotes([X|Xs],[X_fixed|Xs_fixed]):-
     fix_quotes(X,X_fixed),
     fix_quotes(Xs,Xs_fixed).	
+
+cleanup_char(Ch,ChC):-!,
+	(char_type(Ch,prolog_identifier_continue) -> ChC=Ch ; ChC='_').
+
+assign_var_name(Var,Name,Name_up=Var):-!,
+	atom_codes(Name,Name_chars),
+	Name_chars=[Fst|Rest],
+	to_upper(Fst,Fst_up),	% must be a variable name, i.e. start with a capital
+	maplist(cleanup_char,Rest,Rest_clean),
+	Name_up_chars=[Fst_up|Rest_clean],
+	atom_codes(Name_up,Name_up_chars).
+
+print_entries(Cr,Argnames):-
+	copy_term(Cr,Crp),
+	Crp=entry(Fn:_),
+	Fn=..[_|Vars],
+	length(Argnames,Len_argnames),
+	length(Known_vars,Len_argnames),
+	append(Known_vars,_,Vars),
+	maplist(assign_var_name,Known_vars,Argnames,Varassigns),
+	write_term(Crp,[variable_names(Varassigns),quoted(true)]),
+	format('.~n').	% supposedly, there are nl(true) and fullstop(true) for
+					% write_term, but they don't appear to have any effect
 
 print_cr(Opts,Cr):-
 	copy_term(Cr,Crp),

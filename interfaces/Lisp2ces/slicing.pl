@@ -1,5 +1,5 @@
 :- module(slicing,[
-		slice_cost_equations/4,print_sliced_iout/1
+		slice_cost_equations/6,print_sliced_iout/1
 	]).
 
 :- use_module(stdlib(set_list),[from_list_sl/2,insert_sl/3,union_sl/3,intersection_sl/3,difference_sl/3]).
@@ -14,15 +14,26 @@
 :-dynamic caller_of/2.
 :-dynamic influence_map/2.
 
-slice_cost_equations(Entries,Cost_relations,Sliced_entries,Sliced_cost_relations):-
+slice_cost_equations(Entries,Entry_argnames,Cost_relations,Sliced_entries,Sliced_argnames,Sliced_cost_relations):-
 	maplist(save_initial_eq,Cost_relations),
 	fixpoint_computation,
 	%print_important_variables,
 	get_sliced_eqs(Sliced_cost_relations),
-	maplist(slice_entries,Entries,Sliced_entries).
+	maplist(slice_entries,Entries,Entry_argnames,Sliced_entries,Sliced_argnames).
 
-slice_entries(entry(Term:Pre),entry(Term2:Pre)):-
-	remove_variables_1(Term,Term2).
+slice_entries(entry(Term:Pre),Argnames,entry(Term2:Pre),Argnames_filtered):-
+	remove_variables_1(Term,Term2),
+	Term=..[_|Term_args],
+	Term2=..[_|Term2_args],
+	filter_argnames(Term_args,Argnames,Term2_args,Argnames_filtered).
+
+% filter out names corresponding to removed arguments
+filter_argnames(_,_,[],[]).
+filter_argnames(_,[],_,[]).
+filter_argnames([Arg|Args],[Name|Names],[Arg|Args2],[Name|Names2]):-
+	filter_argnames(Args,Names,Args2,Names2).
+filter_argnames([_|Args],Names,[Arg2|Args2],Names2):-
+	filter_argnames(Args,Names,[Arg2|Args2],Names2).
 
 get_sliced_eqs(Eqs_sliced):-
 	findall(Eq,
