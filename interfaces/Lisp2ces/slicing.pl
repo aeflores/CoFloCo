@@ -30,9 +30,10 @@ slice_entries(entry(Term:Pre),Argnames,entry(Term2:Pre),Argnames_filtered):-
 % filter out names corresponding to removed arguments
 filter_argnames(_,_,[],[]).
 filter_argnames(_,[],_,[]).
-filter_argnames([Arg|Args],[Name|Names],[Arg|Args2],[Name|Names2]):-
+filter_argnames([Arg|Args],[Name|Names],[Arg2|Args2],[Name|Names2]):-
+	Arg==Arg2,
 	filter_argnames(Args,Names,Args2,Names2).
-filter_argnames([_|Args],Names,[Arg2|Args2],Names2):-
+filter_argnames([_|Args],[_|Names],[Arg2|Args2],Names2):-
 	filter_argnames(Args,Names,[Arg2|Args2],Names2).
 
 get_sliced_eqs(Eqs_sliced):-
