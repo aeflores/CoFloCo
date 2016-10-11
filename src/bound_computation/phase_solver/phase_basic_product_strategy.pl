@@ -54,7 +54,7 @@ This is only valid for the last level, the leafs of the evaluation tree
 :- use_module('../../IO/params',[get_param/2]).		
 :- use_module('../../IO/output',[print_product_strategy_message/3,
 								 print_or_log/2,
-								 print_lost_expression_in_loop_message/4]).		
+								 interesting_example_warning/2]).		
 :- use_module(library(apply_macros)).
 :- use_module(library(lists)).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,9 +77,8 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 	;
 	 get_input_output_vars(Head,Vars_head,_),
 	 max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_exps),
-	 ((Maxs_exps=[],get_param(debug,[]))->
-	 	print_lost_expression_in_loop_message(Lin_exp,Loop,Head,Calls)
-	    ;true),
+	 %WARNING to find interesting examples
+	 interesting_example_warning(failed_maximization,(Maxs_exps,Lin_exp,Loop,Head,Calls)),
 	 maplist(fconstr_new([Aux_itvar],Op),Maxs_exps,Max_fconstrs)
 	 ),
 	save_pending_list(max_min,Head,Loop,Max_fconstrs,Pending,Pending_out),

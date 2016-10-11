@@ -26,21 +26,27 @@ the input variables and the variables of the recursive call (if there is one)
 :- module(cost_equation_solver,[get_loop_cost/5,init_cost_equation_solver/0]).
 
 :- use_module(constraints_maximization,[
-			max_min_fconstrs_in_cost_equation/6]).
-
+			max_min_fconstrs_in_cost_equation/6,
+			max_min_linear_expression_all/5]).
+:- use_module('../IO/params',[get_param/2]).
+:- use_module('../IO/output',[print_warning_in_error_stream/2]).
 :- use_module('../db',[eq_ph/8,
 			     loop_ph/6,
 			     upper_bound/4,
-			     external_upper_bound/3]).
+			     external_upper_bound/3,
+			     get_input_output_vars/3]).
 
-:- use_module('../utils/cofloco_utils',[tuple/3]).
+:- use_module('../utils/cofloco_utils',[tuple/3,ground_copy/2]).
 :- use_module('../utils/cost_structures',[cstr_extend_variables_names/3,
 			cstr_empty/1,
 			cstr_join_equal_fconstr/2,
-			cstr_or_compress/2]).
+			cstr_or_compress/2,
+			max_min_ub_lb/2,
+			bconstr_accum_bounded_set/3]).
 
 
 :- use_module(stdlib(fraction),[sum_fr/3]).
+:- use_module(stdlib(linear_expression),[write_le/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[nad_glb/3,nad_consistent_constraints/1]).
@@ -85,6 +91,8 @@ get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 		% this is not done now but it would allow us to detect which calls make us lose precision
 		%reverse(Base_calls,Base_calls_inv),
 		max_min_fconstrs_in_cost_equation(Ub_fconstrs_list,Base_calls,Phi1,TVars,New_Ub_fconstrs,New_iconstrs1),
+		%for finding interesting examples
+		get_lost_fconstrs_expressable_as_outputs(Eq_id,Ub_fconstrs_list,New_Ub_fconstrs,Base_calls,Phi),
 		max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Phi1,TVars,New_Lb_fconstrs,New_iconstrs2),
 		ut_flat_list([New_iconstrs1,New_iconstrs2,Iconstrs],New_iconstrs),
 		cstr_join_equal_fconstr(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost_aux),
@@ -111,9 +119,61 @@ accumulate_calls((Call,external_pattern(Id)),(cost(Ub_fconsts1,Lb_fconsts1,Icons
     
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% predicates for finding interesting examples
 
+get_lost_fconstrs_expressable_as_outputs(Eq_id,Fconstrs_list,Final_fconstrs,Base_calls,Phi):-
+	get_param(debug,[]),!,
+	ut_flat_list(Fconstrs_list,Fconstrs),
+	reverse(Base_calls,Base_calls_rev),
+	foldl(bconstr_accum_bounded_set,Fconstrs,[],Itvar_set),
+	foldl(exclude_covered_itvars,Final_fconstrs,Itvar_set,Lost_itvar_set),
+	get_lost_fconstrs_expressable_as_outputs_1(Fconstrs_list,Base_calls_rev,Phi,Eq_id,Lost_itvar_set).
 
+get_lost_fconstrs_expressable_as_outputs(_,_,_,_,_).
 
+get_lost_fconstrs_expressable_as_outputs_1(_,[],_,_,_):-!.
+
+get_lost_fconstrs_expressable_as_outputs_1([Fconstrs|Fconstr_list],[_Call|Base_calls],Phi,Eq_id,Lost_itvar_set):-
+	include(constr_bounded_in_set(Lost_itvar_set),Fconstrs,Fconstrs_lost),
+	foldl(get_call_output_vars,Base_calls,[],Out_vars),
+	get_fconstrs_expressable_with_vars(Fconstrs_lost,Out_vars,Phi,Recoverable_exps),
+	(Recoverable_exps\=[]->
+		term_variables(Recoverable_exps,Important_vars),
+		from_list_sl(Important_vars,Important_vars_set),
+		include(term_contains_vars(Important_vars_set),Base_calls,Important_calls),
+		ground_copy((Important_calls,Recoverable_exps),(Important_calls2,Recoverable_exps2)),
+		maplist(write_le,Recoverable_exps2,Recoverable_exps_print),
+		print_warning_in_error_stream('Expressions ~p lost in CE ~p in terms of the output ~p~n',[Recoverable_exps_print,Eq_id,Important_calls2])
+		;
+		true),
+	get_lost_fconstrs_expressable_as_outputs_1(Fconstr_list,Base_calls,Phi,Eq_id,Lost_itvar_set).
+	
+term_contains_vars(Set,Term):-
+	term_variables(Term,Vars),
+	from_list_sl(Vars,Vars_set),
+	intersection_sl(Set,Vars_set,[_|_]),!.
+
+exclude_covered_itvars(bound(_,_,Bounded),Set,Set1):-
+	from_list_sl(Bounded,Bounded_set),
+	difference_sl(Set,Bounded_set,Set1).
+	
+constr_bounded_in_set(Set,bound(_,_,Bounded)):-
+	from_list_sl(Bounded,Bounded_set),
+	difference_sl(Bounded_set,Set,[]).
+
+get_call_output_vars((Call,_Chain),OVars,OVars2):-
+	get_input_output_vars(Call,_,OVars1),
+	append(OVars1,OVars,OVars2).
+	
+get_fconstrs_expressable_with_vars([],_,_,[]).
+get_fconstrs_expressable_with_vars([bound(Op,Lin_exp,_Bounded)|Fconstrs],Out_vars,Phi,[Lin_exp2|Lin_exps]):-
+	max_min_ub_lb(Max_min,Op),
+	max_min_linear_expression_all(Lin_exp, Out_vars, Phi,Max_min, [Lin_exp2|_]),!,
+	get_fconstrs_expressable_with_vars(Fconstrs,Out_vars,Phi,Lin_exps).
+	
+get_fconstrs_expressable_with_vars([_|Fconstrs],Out_vars,Phi,Lin_exps):-
+	get_fconstrs_expressable_with_vars(Fconstrs,Out_vars,Phi,Lin_exps).
 
 
 

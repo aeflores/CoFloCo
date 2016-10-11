@@ -51,7 +51,11 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 :- use_module('../../db',[get_input_output_vars/3]).			        
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).		
 :- use_module('../../IO/params',[get_param/2]).		
-:- use_module('../../IO/output',[print_candidate_in_phase/3,write_lin_exp_in_phase/3,print_or_log/2]).		
+:- use_module('../../IO/output',[
+				print_candidate_in_phase/3,
+				write_lin_exp_in_phase/3,
+				print_or_log/2,
+				interesting_example_warning/2]).		
 :- use_module('../../ranking_functions',[partial_ranking_function/7]).	
 :- use_module('../../utils/cofloco_utils',[
 			tuple/3,
@@ -116,7 +120,10 @@ inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pen
 	ut_flat_list(New_iconstrs_list,New_iconstrs),
 	empty_pending(Empty_pending),
 	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out).
-	
+
+
+
+
 inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
 	(get_param(debug,[])->print_or_log('   - Applying inductive level-sum strategy ~n',[]);true),
 	Constr=bound(Op,Lin_exp,Bounded),
@@ -189,8 +196,11 @@ generate_lecandidates(loop_vars(Head,Calls),Lin_exp,ub,Loop,Head_candidates):-
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	from_list_sl(Diff_list_selected,Diff_list_selected_set),
 	maplist(tuple(head),Diff_list_selected_set,Head_candidates),
+	%% For finding interesting examples
+	interesting_example_warning(no_candidate,(Lin_exp,loop_vars(Head,Calls),Loop,Head_candidates)),
 	Diff_list_selected_set\=[].
-	
+
+
 %FIXME lower bounds: standarize the format of the function	
 generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,lb,Loop,Tail_candidates):-
 	enriched_loop(Loop,Head,[Call],Cs),	
@@ -198,6 +208,7 @@ generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,lb,Loop,Tail_candidates):-
 	difference_constraint_farkas_lb(Head,Call,Cs,Lin_exp,Diff_list),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	maplist(tuple(tail),Diff_list_selected,Tail_candidates).	
+
 
 generate_leave_candidates(Head,Lin_exp,ub,Head_candidates):-
 	%take any loop
