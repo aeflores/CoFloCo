@@ -178,12 +178,16 @@ difference_constraint_farkas_multiple_ub(Head,Calls,Phi_1,Lin_exp,Lin_exp_list):
 	get_input_output_vars(Head,Ivars,_),
 	Head=..[F|EVars],
 	term_variables(Calls,CVars),
+	length(Calls,N_calls),
+	N_calls1 is N_calls-1,
 	append(EVars,CVars,Vars),
 	le_print_int(Lin_exp,Exp,_Den),
 	negate_le(Lin_exp,Lin_exp_neg),
-	obtain_entailed_cone_with_lin_exp([Exp>=0|Phi],Lin_exp_neg,EVars,CVars,Eparams,Cparams,Cnt_param,Cone11,Ys11),
+	obtain_entailed_cone_with_lin_exp([Exp>=0|Phi],Lin_exp_neg,EVars,CVars,Eparams,Cparams,Cnt_param_p,Cone11,Ys11),
 	get_negated_unknowns(Calls,Eparams,Cparams,Extra_cs),
-	nad_glb(Cone11,[Cnt_param=0|Extra_cs],Cone11_extra),
+    % if we have x+c >= (x'+c)+(x''+c) the constant factor is Cnt_param_p= c-(n*c)= (n-1)*c where n is the number of recursive calls
+    % and c=Cnt_param, the real constant factor
+	nad_glb([Cnt_param+N_calls1*Cnt_param_p=0|Cone11],Extra_cs,Cone11_extra),
 	obtain_entailed_cone_with_lin_exp(Phi,Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone2,Ys2),
 
 	(\+nad_entails(Vars,Phi,[Exp>=0])->
@@ -199,12 +203,13 @@ difference_constraint_farkas_multiple_ub(Head,Calls,Phi_1,Lin_exp,Lin_exp_list):
 	maplist('='(0),OEparams),
 	maplist('='(0),Cparams2),
 	nad_glb(Cone1,Cone2,Cone_joint),
-	ut_flat_list([Ys11,Ys12,Ys2],Extra_params),
+	ut_flat_list([Cnt_param_p,Ys11,Ys12,Ys2],Extra_params),
 	ut_flat_list([Eparams,Cparams,Cnt_param,Extra_params],All_vars),
 	get_generators(c,All_vars,Cone_joint,Generators),
 	%once we have the point, we can set all the coefficients variables to 0 and obtain the point in terms of Unknowns
 	maplist(=(0),Extra_params),
 	maplist(=(0),Cparams),
+	Cnt_param=1,
 	%extract the linear expressions from the points
 	copy_term((IEparams,Generators),(Ivars,Generators_copy)),	
 	get_expressions_from_points(Generators_copy,Lin_exp_list).
@@ -215,25 +220,29 @@ farkas_leave_ub_candidate(Head,Calls,Phi_1,Lin_exp,Lin_exp_list):-
 	Head=..[F|EVars],
 	get_input_output_vars(Head,Ivars,_),
 	term_variables(Calls,CVars),
+	length(Calls,N_calls),
+	N_calls1 is N_calls-1,
 	%append(EVars,CVars,Vars),
 	%le_print_int(Lin_exp,Exp,_Den),
 	negate_le(Lin_exp_calls,Lin_exp_neg),
-	obtain_entailed_cone_with_lin_exp(Phi,[]+0,EVars,CVars,Eparams,Cparams,Cnt_param,Cone1,Ys1),
+	obtain_entailed_cone_with_lin_exp(Phi,[]+0,EVars,CVars,Eparams,Cparams,Cnt_param_p,Cone1,Ys1),
 	get_negated_unknowns(Calls,Eparams,Cparams,Extra_cs),
-	nad_glb(Cone1,[Cnt_param=0|Extra_cs],Cone1_extra),
+	    % if we have x+c >= (x'+c)+(x''+c) the constant factor is Cnt_param_p= c-(n*c)= (n-1)*c where n is the number of recursive calls
+    % and c=Cnt_param, the real constant factor
+	nad_glb([Cnt_param+N_calls1*Cnt_param_p=0|Cone1],Extra_cs,Cone1_extra),
 	obtain_entailed_cone_with_lin_exp(Phi,Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone2,Ys2),
 	Head_params=..[F|Eparams],
 	get_input_output_vars(Head_params,IEparams,OEparams),
 	maplist('='(0),OEparams),
 	maplist('='(0),Cparams2),
-	Cnt_param=0,
 	nad_glb(Cone1_extra,Cone2,Cone_joint),
-	ut_flat_list([Ys1,Ys2],Extra_params),
+	ut_flat_list([Cnt_param_p,Ys1,Ys2],Extra_params),
 	ut_flat_list([Eparams,Cparams,Cnt_param,Extra_params],All_vars),
 	get_generators(c,All_vars,Cone_joint,Generators),
 	%once we have the point, we can set all the coefficients variables to 0 and obtain the point in terms of Unknowns
 	maplist(=(0),Extra_params),
 	maplist(=(0),Cparams),
+	Cnt_param=1,
 	%extract the linear expressions from the points
 	copy_term((IEparams,Generators),(Ivars,Generators_copy)),	
 	get_expressions_from_points(Generators_copy,Lin_exp_list).
@@ -278,7 +287,7 @@ get_negated_unknowns([_Call|Calls],Unknowns_head,Vars1,Characterizing_constraint
 	maplist(negation_constr,Unknowns_head,Unknowns_call,Characterizing_constraints_new),
 	append(Unknowns_call,Vars,Vars1),
 	append(Characterizing_constraints_new,Characterizing_constraints,Characterizing_constraints1).
-	
+
 obtain_entailed_cone_with_lin_exp(Phi,Lin_exp,EVars,CVars,Eparams,Cparams,Cnt_param,Cone,Ys):-
 	append(EVars,CVars,Vars),
 	copy_term(EVars,Eparams),
