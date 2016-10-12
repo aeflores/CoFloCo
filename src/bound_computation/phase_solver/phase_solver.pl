@@ -217,7 +217,6 @@ compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Cost_prev,Cos
 	Chain_rest=[multiple(Phase,Tails)],
 	get_param(context_sensitive,[Sensitivity]),
 	(Sensitivity =< 1 ->
-		
 		context_insensitive_backward_invariant(Head,multiple(Phase,Tails),Backward_invariant),
 		context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
 		Forward_hash=0,
@@ -278,7 +277,8 @@ compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Base_cost,Bas
 compute_sums_and_max_min_in_phase(Head,Phase,Phase_vars,Max_mins,Sums,(Base_max_min,Base_levels)):-
 	empty_pending(Empty_pending),
 	length(Phase,N),
-	Max_pending is 2*N,
+	%this is completely heuristic
+	Max_pending is 2*N+2,
 	assertz(max_pending_depth(Max_pending)),
 	%we start from depth 0
 	assertz(current_pending_depth(0)),

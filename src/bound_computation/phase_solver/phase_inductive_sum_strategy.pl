@@ -74,7 +74,7 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 			difference_constraint_farkas_ub/6,
 			difference_constraint_farkas_multiple_ub/5,
 			difference_constraint_farkas_lb/5,
-			farkas_leave_ub_candidate/5
+			farkas_leaf_ub_candidate/4
 	]).		
 					
 :- use_module(stdlib(numeric_abstract_domains),[
@@ -128,7 +128,7 @@ inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending
 	(get_param(debug,[])->print_or_log('   - Applying inductive level-sum strategy ~n',[]);true),
 	Constr=bound(Op,Lin_exp,Bounded),
 	Op=ub,
-	generate_leave_candidates(Head,Lin_exp,Op,Candidates),
+	generate_leaf_candidates(Head,Lin_exp,Op,Candidates),
 	maplist(check_loops_maxsum(loop_vars(Head,[]),Phase,0,Bounded,Pending),Candidates,New_fconstrs_list,New_iconstrs_list,Pending_out_list),	
 	ut_flat_list(New_fconstrs_list,New_fconstrs),
 	New_fconstrs\=[],
@@ -210,12 +210,14 @@ generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,lb,Loop,Tail_candidates):-
 	maplist(tuple(tail),Diff_list_selected,Tail_candidates).	
 
 
-generate_leave_candidates(Head,Lin_exp,ub,Head_candidates):-
-	%take any loop
-	enriched_loop(_Loop,Head,Calls,Cs),
-	nad_consistent_constraints(Cs),
+generate_leaf_candidates(Head,Lin_exp,ub,Head_candidates):-
+	%take all consistent loops
+	findall(loop(Head,Calls,Cs),
+		(enriched_loop(_Loop,Head,Calls,Cs),
+	     nad_consistent_constraints(Cs)),Loops),
+	
 	get_param(n_candidates,[Max_candidates]),
-	farkas_leave_ub_candidate(Head,Calls,Cs,Lin_exp,Diff_list),!,
+	farkas_leaf_ub_candidate(Head,Loops,Lin_exp,Diff_list),!,
 	
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	from_list_sl(Diff_list_selected,Diff_list_selected_set),
