@@ -186,17 +186,49 @@ cofloco_bin_main:-
 %	qsave_program('cofloco',[stand_alone(true),goal(main_cofloco:cofloco_shellco_main),foreign(save)]),
 %	writeln('Binary package generated').
 
-
 %! cofloco_query(+Eqs:list(cost_equation),+Params:list(atom)) is det
 % perform the main analysis on the equations Eqs with the parameters Params
 cofloco_query(Eqs,Params):-
+	cofloco_query_part1(Params),
+	store_cost_equations(Eqs),
+	cofloco_query_part2.
+
+	
+%! cofloco_query(+Params:list(atom)) is det
+% Obtains the input file, read the cost equations, preprocess the cost equations,
+% perform the main analysis and print results
+cofloco_query(Params):-
+	cofloco_query_part1(Params),
+	(get_param(input,[File])->
+		read_cost_equations(File),
+		cofloco_query_part2
+	;
+		(get_param(help,[])->
+		   print_help
+		;
+		   throw(error('No input file given'))
+		)
+	).
+
+cofloco_query_part1(Params):-
 	set_default_params,
 	parse_params(Params),
 	conditional_call(get_param(competition,[]),set_competition_params),
 	init_timers,
 	init_database,
-	profiling_start_timer(analysis),
-	store_cost_equations(Eqs),
+	profiling_start_timer(analysis).
+
+cofloco_query_part2:-
+	get_param(incremental,[]),!,
+	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
+	preprocess_cost_equations,
+	conditional_call((get_param(v,[N]),N>0),print_header('Incremental solution of Cost Relations~n',[],1)),
+	incremental_refinement_upper_bounds,
+	profiling_stop_timer(analysis,_T_analysis),
+	print_stats,
+	print_log.
+
+cofloco_query_part2:-
 	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
 	preprocess_cost_equations,
 	conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
@@ -210,42 +242,6 @@ cofloco_query(Eqs,Params):-
 			print_stats
 	),
 	print_log.
-
-	
-%! cofloco_query(+Params:list(atom)) is det
-% Obtains the input file, read the cost equations, preprocess the cost equations,
-% perform the main analysis and print results
-cofloco_query(Params):-
-	set_default_params,
-	parse_params(Params),
-	conditional_call(get_param(competition,[]),set_competition_params),
-	init_timers,
-	init_database,
-	profiling_start_timer(analysis),
-	(get_param(input,[File])->
-		read_cost_equations(File),
-		conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
-		preprocess_cost_equations,
-		conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
-		refinement,
-		(get_param(only_termination,[])->
-			true
-			;
-			conditional_call((get_param(v,[N]),N>0),print_header('Computing Bounds~n',[],1)),
-			upper_bounds
-		),	
-		profiling_stop_timer(analysis,_T_analysis),
-		print_stats
-	;
-		(get_param(help,[])->
-		   print_help
-		;
-		   throw(error('No input file given'))
-		)
-	),
-	print_log.
-
-
 %! init_database is det
 % erase all the information from previous analyses	
 init_database:-
@@ -286,7 +282,6 @@ refinement:-
 	top_down_refinement(SCC_max),
 	bottom_up_refinement(0,SCC_max),
 	warn_if_no_chains(2).
-
 
 
 %! top_down_refinement(+SCC_N:int) is det
@@ -387,7 +382,6 @@ bottom_up_refinement_scc(Head) :-
 		  )
 		 ).
 	
-
 %! upper_bounds is det
 % compute upper bounds for all SCC and a closed upper bounds for the entry SCC
 upper_bounds:-
@@ -430,6 +424,7 @@ bottom_up_upper_bounds(SCC_N, Max_SCC_N) :-
 bottom_up_upper_bounds(SCC_N, SCC_N_max):-SCC_N > SCC_N_max.   
 
 
+
 compute_closed_bound_scc(Head) :-	
 	copy_term(Head,Head_aux),
 	profiling_start_timer(solver),
@@ -450,6 +445,46 @@ compute_closed_bound_scc(Head) :-
 	     ; true)
 	).
 	
+% compute the refinement and upper bound one cost relation (SCC) at a time
+incremental_refinement_upper_bounds:-
+	findall(SCC_N,
+	  (
+	  entry_eq(Head,Cs),
+      add_scc_forward_invariant(Head,0,Cs),
+      functor(Head,F,A),
+      crs_node_scc(F,A,SCC_N)
+      ),SCC_Ns),
+    max_list(SCC_Ns,SCC_max),
+	top_down_refinement(SCC_max),
+	bottom_up_refinement_bounds(0,SCC_max).
+
+bottom_up_refinement_bounds(SCC_N, Max_SCC_N) :-
+	SCC_N =< Max_SCC_N,
+	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
+	functor(Head,F,A),
+	bottom_up_refinement_scc(Head),
+	compute_bound_for_scc(Head,2),
+	copy_term(Head,Head_aux),
+	conditional_call((get_param(v,[N]),N>1),
+		  print_results(Head_aux,2)
+		 ),
+	(entry_eq(Head,_)->
+		compute_closed_bound_scc(Head)
+		;
+		true
+	),  
+	Next_SCC_N is SCC_N+1,
+	bottom_up_refinement_bounds(Next_SCC_N, Max_SCC_N).
+bottom_up_refinement_bounds(SCC_N, Max_SCC_N) :-
+	SCC_N =< Max_SCC_N,
+	(\+crs_residual_scc(SCC_N,_) 
+	;
+	(crs_residual_scc(SCC_N,F/A),ignored_scc(F/A))
+	),!,
+	Next_SCC_N is SCC_N+1,
+	bottom_up_refinement_bounds(Next_SCC_N, Max_SCC_N).
+bottom_up_refinement_bounds(SCC_N, SCC_N_max):-SCC_N > SCC_N_max.	
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %auxiliary predicates
