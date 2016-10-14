@@ -235,14 +235,17 @@ leaf_ub_candidate_loop(Head,Lin_exp,[Cnt_param|IEparams],loop(Head,Calls,Phi),Co
 	get_negated_unknowns(Calls,Eparams,Cparams,Extra_cs),
 	    % if we have x+c >= (x'+c)+(x''+c) the constant factor is Cnt_param_p= c-(n*c)= (n-1)*c where n is the number of recursive calls
     % and c=Cnt_param, the real constant factor
-	nad_glb([Cnt_param+N_calls1*Cnt_param_p=0|Cone1],Extra_cs,Cone1_extra),
-	obtain_entailed_cone_with_lin_exp(Phi,Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone2,_Ys2),
+	append([Cnt_param+N_calls1*Cnt_param_p=0|Cone1],Extra_cs,Cone1_extra),
 	Head_params=..[F|Eparams],
 	get_input_output_vars(Head_params,IEparams,OEparams),
+	nad_project([Cnt_param|IEparams],Cone1_extra,Cone1_projected),
+	obtain_entailed_cone_with_lin_exp(Phi,Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone2,_Ys2),
+	
+	
 	maplist('='(0),OEparams),
 	maplist('='(0),Cparams2),
-	nad_glb(Cone1_extra,Cone2,Cone_joint),
-	nad_project([Cnt_param|IEparams],Cone_joint,Cone_final).
+	nad_project([Cnt_param|IEparams],Cone2,Cone2_projected),
+	append(Cone1_projected,Cone2_projected,Cone_final).
 	
 	
 get_sum_exp_calls(Head,Lin_exp,Call,Accum,Accum2):-
