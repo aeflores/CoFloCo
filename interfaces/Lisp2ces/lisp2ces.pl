@@ -427,6 +427,12 @@ unroll_body(Dicc,[[lambda,New_vars,Exp]| Def_exps],Body_unrolled,Res_vars,Cost_r
 unroll_body(Dicc,[coerce,Exp,_Type],Body_unrolled,Res_vars,Cost_relations):-!,
 	unroll_body(Dicc,Exp,Body_unrolled,Res_vars,Cost_relations).
 
+% return-last is equivalent to its last argument, and counting the
+% second-to-last one as well leads to unintended multiple recursion and other
+% issues, so we simply ignore it
+unroll_body(Dicc,['return-last',_Fn,_Exec,Last],Body_unrolled,Res_vars,Cost_relations):-!,
+	unroll_body(Dicc,Last,Body_unrolled,Res_vars,Cost_relations).
+
 
 %generic function call	
 unroll_body(Dicc,[Function|Args],Body_unrolled,[Res_var_out_i,Res_var_out_l,Res_var_out_s],Cost_relations):-
