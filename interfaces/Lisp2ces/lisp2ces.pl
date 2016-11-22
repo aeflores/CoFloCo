@@ -599,8 +599,9 @@ fix_quotes([X|Xs],[X_fixed|Xs_fixed]):-
     fix_quotes(X,X_fixed),
     fix_quotes(Xs,Xs_fixed).	
 
+% if Ch is a character which is not allowed in identifier names, replace it with _
 cleanup_char(Ch,ChC):-!,
-	(char_type(Ch,prolog_identifier_continue) -> ChC=Ch ; ChC='_').
+	(char_type(Ch,prolog_identifier_continue) -> ChC=Ch ; char_code('_',ChC)).
 
 assign_var_name(Var,Name,Name_up=Var):-!,
 	atom_codes(Name,Name_chars),
