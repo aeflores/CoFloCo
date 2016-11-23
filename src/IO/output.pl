@@ -188,7 +188,7 @@ print_warning(Text,Args):-
 interesting_example_warning(no_candidate,([]+_C,loop_vars(Head,[_|_]),Loop,[])):-
     get_param(debug,[]),!,
 	ground_copy(Head,Headp),
-	print_warning_in_error_stream('No candidate for multiple recursion ~p in loop ~p',[Headp,Loop]).
+	print_warning_in_error_stream('No candidate for multiple recursion ~p in loop ~p~n',[Headp,Loop]).
 	
 interesting_example_warning(failed_maximization,([],Lin_exp,Loop,Head,Calls)):-
 	get_param(debug,[]),!,
