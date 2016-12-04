@@ -72,7 +72,8 @@ These constraints are useful in most cases and that allows us to simplify the re
 	]).			
 :- use_module(phase_basic_product_strategy,[
 	basic_product_strategy/6,
-	level_product_strategy/6
+	level_product_strategy/6,
+	leaf_product_strategy/5
 	]).	
 :- use_module(phase_triangular_strategy,[triangular_strategy/8]).	
 :- use_module(phase_max_min_strategy,[max_min_strategy/7]).	
@@ -216,7 +217,6 @@ compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Cost_prev,Cos
 	Chain_rest=[multiple(Phase,Tails)],
 	get_param(context_sensitive,[Sensitivity]),
 	(Sensitivity =< 1 ->
-		
 		context_insensitive_backward_invariant(Head,multiple(Phase,Tails),Backward_invariant),
 		context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
 		Forward_hash=0,
@@ -277,7 +277,8 @@ compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Base_cost,Bas
 compute_sums_and_max_min_in_phase(Head,Phase,Phase_vars,Max_mins,Sums,(Base_max_min,Base_levels)):-
 	empty_pending(Empty_pending),
 	length(Phase,N),
-	Max_pending is 2*N,
+	%this is completely heuristic
+	Max_pending is 2*N+2,
 	assertz(max_pending_depth(Max_pending)),
 	%we start from depth 0
 	assertz(current_pending_depth(0)),
@@ -532,6 +533,8 @@ only_tail_constr(loop_vars(Head,_),Fconstr):-
 compute_level_sum(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
 	inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out).
 
+compute_level_sum(Constr,Head,_Phase,[],[Iconstr],Pending,Pending_out):-
+	leaf_product_strategy(Constr,Head,Iconstr,Pending,Pending_out).
 compute_level_sum(_,_,_,[],[],Pending,Pending):-
 	(get_param(debug,[])->print_or_log('   - No strategy succeeded ~n',[]);true).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

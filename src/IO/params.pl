@@ -80,6 +80,7 @@ parameter_dictionary('-compute_lbs','compute_lbs',[bool]).
 parameter_dictionary('-conditional_ubs','conditional_ubs',[bool]).
 parameter_dictionary('-conditional_lbs','conditional_lbs',[bool]).
 
+parameter_dictionary('-incremental','incremental',[bool]).
 parameter_dictionary('-context_sensitive','context_sensitive',[number]).
 
 :-dynamic incompatible_parameters/2.

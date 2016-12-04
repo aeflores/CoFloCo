@@ -29,6 +29,8 @@ This module prints the results of the analysis
           print_or_log/2,
           print_or_log_nl/0,
           print_warning/2,
+          print_warning_in_error_stream/2,
+          interesting_example_warning/2,
           print_chain_simple/1,
 		  print_chains_entry/2,
 		  print_sccs/0,
@@ -79,7 +81,11 @@ This module prints the results of the analysis
 	ranking_function/4,
 	partial_ranking_function/7]).
 :- use_module('../utils/cost_expressions',[get_asymptotic_class_name/2]).
-:- use_module('../utils/cofloco_utils',[constraint_to_coeffs_rep/2,write_sum/2,tuple/3]).
+:- use_module('../utils/cofloco_utils',[
+			constraint_to_coeffs_rep/2,
+			write_sum/2,
+			tuple/3,
+			ground_copy/2]).
 
 :- use_module('../utils/cost_structures',[
 	cstr_get_itvars/2,
@@ -177,6 +183,25 @@ print_warning(_Text,_Args):-
 	get_param(no_warnings,[]),!.
 print_warning(Text,Args):-
 	print_or_log(Text,Args).	
+
+% debugging predicate to find interesting examples
+interesting_example_warning(no_candidate,([]+_C,loop_vars(Head,[_|_]),Loop,[])):-
+    get_param(debug,[]),!,
+	ground_copy(Head,Headp),
+	print_warning_in_error_stream('No candidate for multiple recursion ~p in loop ~p~n',[Headp,Loop]).
+	
+interesting_example_warning(failed_maximization,([],Lin_exp,Loop,Head,Calls)):-
+	get_param(debug,[]),!,
+	copy_term((Lin_exp,Head,Calls),	 (Lin_exp_p,Head_p,Calls_p)),
+	write_le(Lin_exp_p,Exp_p),
+	ground_header(Head_p),
+	ground_rec_calls(Calls_p,1),
+	print_warning_in_error_stream('Failed max/minimization of ~p in ~p: ~p -> ~p~n',[Exp_p,Loop,Head_p,Calls_p]).
+
+interesting_example_warning(_,_).	
+	
+print_warning_in_error_stream(Text,Args):-	
+	format(user_error,Text,Args).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
 print_sccs:-
@@ -322,7 +347,7 @@ print_refined_loops(Head,RefCnt):-
 	),	
 	fail.	
 print_refined_loops(_,_).
-	 
+
 %! print_external_pattern_refinement(+Head:term,+RefCnt:int) is det
 % print the correspondence between external patterns and chains from the SCC Head in the refinement phase RefCnt
 % if the verbosity is high enough
@@ -592,6 +617,8 @@ print_phase_cost(Phase,Head,Calls,Cost):-
 	print_cost_structure(Costp).
 
 print_phase_cost(_,_,_,_).
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
