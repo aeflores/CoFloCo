@@ -322,7 +322,7 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	    loop_ph(Head_loop,(Loop,RefCnt),[Call_loop],Cs_loop,_,_),
 	    nad_glb(Local_inv,Cs_loop,Cs_1)
 	    ),Loops),
-	backward_invariant_fixpoint(inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern),inv(Head_out,It_pattern_star)),
+	backward_invariant_fixpoint(before,inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern),inv(Head_out,It_pattern_star)),
 	Head=..[_|EVars],
 	Head=Head_out,
 	nad_project_group(EVars,Cs,Extra_conds),
@@ -372,8 +372,7 @@ compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pat
 	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_)
 %	    nad_glb(Local_inv,Cs_loop,Cs_1)
 	    ),Loops),    
-	%backward_invariant_fixpoint(inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern)),
-	backward_invariant_fixpoint(inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern),inv(Head_out,It_pattern_star)),
+	backward_invariant_fixpoint(after,inv(Head,Initial_inv),Loops,inv(Head_out,It_pattern),inv(Head_out,It_pattern_star)),
 	Head=..[_|EVars],
 	Head=Head_out,
 	nad_project_group(EVars,Cs,Extra_conds),
@@ -567,9 +566,9 @@ compute_phase_transitive_star_closure(Phase,RefCnt):-
 % Low level fixpoint computations
 
 
-
-backward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out),inv(Head,Inv_star_out)):-
-    low_level_backward_invariant_fixpoint(inv(Head,Inv_0),Loops,Inv_out,Inv_star_out).
+%Flag is 'before' or 'after', it indicates whether one iteration is assumed at the beginning of the fixpoint or after
+backward_invariant_fixpoint(Flag,inv(Head,Inv_0),Loops,inv(Head,Inv_out),inv(Head,Inv_star_out)):-
+    low_level_backward_invariant_fixpoint(Flag,inv(Head,Inv_0),Loops,Inv_out,Inv_star_out).
     
 forward_invariant_fixpoint(inv(Head,Inv_0),Loops,inv(Head,Inv_out)):-
 	low_level_forward_invariant_fixpoint(inv(Head,Inv_0),Loops,Inv_out).
@@ -591,11 +590,16 @@ transitive_closure_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head
 % * Post_map:list(var-var) a map (partial function) used to transform and eliminate the invariants resulting from applying the loops
 %             this function is usually partial
 % * Handle:int identifier of the polyhedron object
-   
-low_level_backward_invariant_fixpoint(inv(Head_inv,Inv),Loops,Inv_plus_out,Inv_star_out):-
+
+% we know that the phase is applied at least one time, we can assume this application at the beginning
+% or at the end. I believe applyig it at the beginning is problably better for precision
+% but it is not correct for multiple recursion. 
+% hence, we have the two versions: 
+% before: for linear recursion
+% after: for multiple recursion
+ low_level_backward_invariant_fixpoint(before,inv(Head_inv,Inv),Loops,Inv_plus_out,Inv_star_out):-!,
 	to_numbervars_nu( (Head_inv,Inv) , _Vars, (_Head_ground,Inv_0_ground), Dim),
 	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
-	
 	maplist(get_back_loop_handle,Loops,Loop_handles),
 	low_level_apply_loops(Loop_handles,Inv_0_handle,Inv_1_handle),
 	%compute the backward invariant
@@ -610,6 +614,26 @@ low_level_backward_invariant_fixpoint(inv(Head_inv,Inv),Loops,Inv_plus_out,Inv_s
 	from_ppl(c , Inv_plus, Dim, Vars, Inv_plus_out), 
 	ppl_delete_Polyhedron(Inv_0_handle),
 	ppl_delete_Polyhedron(Inv_plus).
+	
+	
+ low_level_backward_invariant_fixpoint(after,inv(Head_inv,Inv),Loops,Inv_plus_out,Inv_star_out):-!,
+	to_numbervars_nu( (Head_inv,Inv) , _Vars, (_Head_ground,Inv_0_ground), Dim),
+	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
+	maplist(get_back_loop_handle,Loops,Loop_handles),
+	%compute the backward invariant
+	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_star),
+	% apply the minimum iteration afterwards
+	low_level_apply_loops(Loop_handles,Inv_star,Inv_plus),
+	%compute the upper bound of the invariant and the initial invariant
+	maplist(delete_loop_handle,Loop_handles),
+	% obtain the constrants of the resulting polyhedron
+	Head_inv=..[_|Vars],
+	length(Vars,Dim),
+	from_ppl(c , Inv_star, Dim, Vars, Inv_star_out), 
+	from_ppl(c , Inv_plus, Dim, Vars, Inv_plus_out), 
+	ppl_delete_Polyhedron(Inv_star),
+	ppl_delete_Polyhedron(Inv_plus).	  
+
 
 low_level_forward_invariant_fixpoint(inv(Head_inv,Inv),Loops,Inv_out):-
 	to_numbervars_nu( (Head_inv,Inv) , _Vars, (_Head_ground,Inv_0_ground), Dim),
@@ -690,7 +714,7 @@ low_level_apply_loop(Inv,(Extra_dim,Pre_map,Post_map,Loop_handle),Inv_out):-
 	apply_pre_maps(Pre_map,Inv_extended,Mapped_inv),
 	ppl_Polyhedron_intersection_assign(Mapped_inv,Loop_handle),
 	apply_post_map(Mapped_inv,Post_map,Inv_out).
-
+	
 compress_and_delete(Inv2,Inv,Inv):-
 	ppl_Polyhedron_upper_bound_assign(Inv,Inv2),
 	ppl_delete_Polyhedron(Inv2).
