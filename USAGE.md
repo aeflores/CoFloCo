@@ -127,7 +127,10 @@ for all the variables in the Head.
     % the cost relation of the inner loop
     eq(innerLoop(M,Mout),1,[innerLoop(M-1,Mout)],[1=<M]).
     eq(innerLoop(M,Mout),0,[],[M=0,M=Mout]).
-
+    
+    % we can specify that Mout is an output variable of the inner loop
+    input_output_variables(innerLoop(M,Mout),[M],[Mout]).
+    
     % you can also have implicit equalities by reusing variable names or having constant
     % values instead of variables
     % the last equation is equivalent to:
