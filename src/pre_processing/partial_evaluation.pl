@@ -77,10 +77,10 @@ partial_evaluation :-
 	 maplist(add_ignored_scc,Ignored_set).
 
 compress_segments:-
-	crs_scc(_N,recursive,Nodes,_Sub_Graph,Entries),
+	crs_scc(SCC_N,recursive,Nodes,_Sub_Graph,_),
 	from_list_sl(Nodes,Nodes_set),
-	from_list_sl(Entries,Entries_set),
-	difference_sl(Nodes_set,Entries_set,Unfoldable_nodes),
+	crs_residual_scc(SCC_N,BTC/BTC_a),
+	difference_sl(Nodes_set,[BTC/BTC_a],Unfoldable_nodes),
 	compress_segments_in_scc(Unfoldable_nodes,[],1),
 	fail.
 compress_segments.	
