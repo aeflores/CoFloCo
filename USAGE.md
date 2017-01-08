@@ -9,6 +9,8 @@ Usage: cofloco [Options]
 * [-v,-verbosity]  0-3 : selects the level of verbosity  
 * [-no_warnings]  Do not print any warnings 
 * [-competition]  Set output and settings for complexity competition 
+* [-incremental]  The usual analysis performs the control-flow refinement of the  complete cost relation system first and all the bound computation later. 
+  With this option, the refinement and the bound computation are done bottom up for one cost relation at a time 
 * [-n_candidates]   nat : (default 1) Sets the maximum number of candidates considered for a strategy 
 * [-context_sensitive]   nat : (default 1) How context sensitive the bound computation is
  1. Each phase is solved only once with invariants valid for all its appearances in different chains
@@ -19,6 +21,7 @@ It is important for non-terminating programs
 * [-compute_lbs]  Obtain closed-form lower bounds (If disabled, additional simplifications can be made on cost structures) 
 * [-conditional_ubs]  Generate a set of conditional upper bounds (whose preconditions are mutually exclusive) instead of a single unconditional one 
 * [-conditional_lbs]  Generate a set of conditional lower bounds (whose preconditions are mutually exclusive) instead of a single unconditional one 
+* [-solve_fast]  Solve cost structures into closed form bounds with a greedy strategy instead of an exhaustive search
 * [-compress_chains]  0-2 : (default 0) Join chains that have the same precondition. It can increase performance greatly but also affect precision 
 
 ### Example:
@@ -124,7 +127,10 @@ for all the variables in the Head.
     % the cost relation of the inner loop
     eq(innerLoop(M,Mout),1,[innerLoop(M-1,Mout)],[1=<M]).
     eq(innerLoop(M,Mout),0,[],[M=0,M=Mout]).
-
+    
+    % we can specify that Mout is an output variable of the inner loop
+    input_output_variables(innerLoop(M,Mout),[M],[Mout]).
+    
     % you can also have implicit equalities by reusing variable names or having constant
     % values instead of variables
     % the last equation is equivalent to:

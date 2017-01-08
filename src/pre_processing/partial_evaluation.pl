@@ -77,10 +77,10 @@ partial_evaluation :-
 	 maplist(add_ignored_scc,Ignored_set).
 
 compress_segments:-
-	crs_scc(_N,recursive,Nodes,_Sub_Graph,Entries),
+	crs_scc(SCC_N,recursive,Nodes,_Sub_Graph,_),
 	from_list_sl(Nodes,Nodes_set),
-	from_list_sl(Entries,Entries_set),
-	difference_sl(Nodes_set,Entries_set,Unfoldable_nodes),
+	crs_residual_scc(SCC_N,BTC/BTC_a),
+	difference_sl(Nodes_set,[BTC/BTC_a],Unfoldable_nodes),
 	compress_segments_in_scc(Unfoldable_nodes,[],1),
 	fail.
 compress_segments.	
@@ -90,9 +90,14 @@ compress_segments_in_scc([F/A|Unfoldable_nodes],Not_compressed,Level):-
 	findall(Id,input_eq(Head,Id,_,_,_),Ids),
 	length(Ids,N_eqs),
 	N_eqs =< Level,
-	!,
 	findall(Caller_id,(input_eq(_,Caller_id,_,Calls,_),member(Head,Calls)),Caller_ids),
-	substitute_caller(Caller_ids,Ids),
+	from_list_sl(Caller_ids,Caller_ids_set),
+	% we do not compress CR that are called multiple times
+	% if that is the case, there are repeated ids in Caller_ids
+	length(Caller_ids,N_calls),
+	length(Caller_ids_set,N_callers),
+	N_calls=N_callers,!,	
+	substitute_caller(Caller_ids_set,Ids),
 	%writeln(segment(F/A)),
 	compress_segments_in_scc(Unfoldable_nodes,Not_compressed,Level).
 

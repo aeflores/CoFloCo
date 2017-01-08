@@ -210,6 +210,8 @@ param_description('debug','Show debug information').
 param_description('v','0-3 : selects the level of verbosity ').
 param_description('no_warnings','Do not print any warnings').
 param_description('competition','Set output and settings for complexity competition').
+param_description('incremental','The usual analysis performs the control-flow refinement of the complete cost relation system first and all the bound computation later. 
+With this option, the refinement and the bound computation are done bottom up for one cost relation at a time').
 param_description('n_candidates',' nat : (default 1) Sets the maximum number of candidates considered for a strategy').
 param_description('context_sensitive',' nat : (default 1) How context sensitive the bound computation is
  1. Each phase is solved only once with invariants valid for all its appearances in different chains
@@ -227,5 +229,8 @@ param_description('conditional_ubs',
 param_description('conditional_lbs',
 'Generate a set of conditional lower bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
 
+param_description('solve_fast',
+'Solve cost structures into closed form bounds with a greedy strategy instead of an exhaustive search
+It still produces sound bounds but (possibly) less precise').
 param_description('compress_chains',
 '0-2 : (default 0) Join chains that have the same precondition. It can increase performance greatly but also affect precission').
