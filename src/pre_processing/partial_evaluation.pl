@@ -90,9 +90,14 @@ compress_segments_in_scc([F/A|Unfoldable_nodes],Not_compressed,Level):-
 	findall(Id,input_eq(Head,Id,_,_,_),Ids),
 	length(Ids,N_eqs),
 	N_eqs =< Level,
-	!,
 	findall(Caller_id,(input_eq(_,Caller_id,_,Calls,_),member(Head,Calls)),Caller_ids),
-	substitute_caller(Caller_ids,Ids),
+	from_list_sl(Caller_ids,Caller_ids_set),
+	% we do not compress CR that are called multiple times
+	% if that is the case, there are repeated ids in Caller_ids
+	length(Caller_ids,N_calls),
+	length(Caller_ids_set,N_callers),
+	N_calls=N_callers,!,	
+	substitute_caller(Caller_ids_set,Ids),
 	%writeln(segment(F/A)),
 	compress_segments_in_scc(Unfoldable_nodes,Not_compressed,Level).
 
