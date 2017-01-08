@@ -231,6 +231,7 @@ compute_backward_invariants(Head,RefCnt):-
     (compute_backward_invariant(Chain,[],Head,RefCnt,Entry_pattern)->
     add_backward_invariant(Head,(Chain,RefCnt),Entry_pattern)
     ;
+    %format(user_error,'discarded chain ~p~n',[Chain]),
     retract(chains:chain(Head,RefCnt,Chain))
     ),
     fail.
@@ -275,7 +276,7 @@ compute_backward_invariant([Non_terminating],Prev_chain,Head,RefCnt,Entry_patter
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern),
  	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
- 	assertz(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern,Entry_pattern)).
+ 	assertz(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern,[])).
 
 compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,RefCnt,Entry_pattern):-
 	member([],Tails),!,
@@ -283,7 +284,7 @@ compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,Ref
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern),
  	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
- 	assertz(partial_backward_invariant([multiple(Non_terminating,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,Entry_pattern)).
+ 	assertz(partial_backward_invariant([multiple(Non_terminating,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,[])).
 
 
 
