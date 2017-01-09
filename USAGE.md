@@ -96,7 +96,7 @@ and which ones are output variables. This can be important to avoid obtaining cl
 bounds expressed in terms of output variables.
 The syntax to define the input and output variables of a cost relation is:
 
-    InputOutputVariables ::= input_output_variables(Head,ListOfInputVariables,ListOfOutputVariables).
+    InputOutputVariables ::= input_output_vars(Head,ListOfInputVariables,ListOfOutputVariables).
 
     ListOfInputVariables ::= ListOfVariables
     ListOfOutputVariables ::= ListOfVariables
@@ -129,7 +129,7 @@ for all the variables in the Head.
     eq(innerLoop(M,Mout),0,[],[M=0,M=Mout]).
     
     % we can specify that Mout is an output variable of the inner loop
-    input_output_variables(innerLoop(M,Mout),[M],[Mout]).
+    input_output_vars(innerLoop(M,Mout),[M],[Mout]).
     
     % you can also have implicit equalities by reusing variable names or having constant
     % values instead of variables
