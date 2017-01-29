@@ -504,14 +504,22 @@ compute_sum(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs2,Pending,Pendi
 	),
 	save_sum_found(Constr,Loop_vars,Loop,New_fconstrs,New_iconstrs2).
 
-%Level sum strategy
-compute_sum(Constr,Loop_vars,Loop,_Phase,[],[Iconstr1,Iconstr2],Pending,Pending_out):-
+%Level sum strategy for non-constants
+compute_sum(Constr,Loop_vars,Loop,_Phase,[],New_IConstrs,Pending,Pending_out):-
 	%multiple calls
 	Loop_vars=loop_vars(_Head,[_,_|_]),
 	level_product_strategy(Constr,Loop_vars,Loop,Iconstr1,Pending,Pending_aux),
-	basic_product_strategy(Constr,Loop_vars,Loop,Iconstr2,Pending_aux,Pending_out),
 	save_sum_found(Constr,Loop_vars,Loop,[],[Iconstr1]),
-	save_sum_found(Constr,Loop_vars,Loop,[],[Iconstr2]).
+	%if it is not a constant we try the basic product as well
+	(Constr\=bound(_,[]+1,_)->
+	 	basic_product_strategy(Constr,Loop_vars,Loop,Iconstr2,Pending_aux,Pending_out),
+		save_sum_found(Constr,Loop_vars,Loop,[],[Iconstr2]),
+		New_IConstrs=[Iconstr1,Iconstr2]
+		;
+		New_IConstrs=[Iconstr1],
+		Pending_out=Pending_aux
+		).
+
 
 %Basic Product strategy
 compute_sum(Constr,Loop_vars,Loop,_Phase,[],[Iconstr],Pending,Pending_out):-
