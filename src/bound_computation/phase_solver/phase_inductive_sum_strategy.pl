@@ -182,6 +182,11 @@ generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,ub,Loop,Candidates):-!,
 	enriched_loop(Loop,Head,[Call],Cs),	
 	get_param(n_candidates,[Max_candidates]),
 	difference_constraint_farkas_ub(Head,Call,Cs,Lin_exp,Diff_list,Diff_list2),
+	%check that the candidates are correct
+			(get_param(debug,[])->
+		maplist(check_candidate(Head,[Call],Loop,Lin_exp,'>='),Diff_list),
+		maplist(check_candidate(Head,[Call],Loop,Lin_exp,'>='),Diff_list2)
+		;true),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	ut_split_at_pos(Diff_list2,Max_candidates,Diff_list_selected2,_),
 	maplist(tuple(tail),Diff_list_selected,Head_candidates),
@@ -191,8 +196,11 @@ generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,ub,Loop,Candidates):-!,
 generate_lecandidates(loop_vars(Head,Calls),Lin_exp,ub,Loop,Head_candidates):-
 	Calls=[_,_|_],
 	enriched_loop(Loop,Head,Calls,Cs),	
+	nad_consistent_constraints(Cs),
 	get_param(n_candidates,[Max_candidates]),
 	difference_constraint_farkas_multiple_ub(Head,Calls,Cs,Lin_exp,Diff_list),
+	%check that the candidates are correct
+	(get_param(debug,[])->maplist(check_candidate(Head,Calls,Loop,Lin_exp,'>='),Diff_list);true),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	from_list_sl(Diff_list_selected,Diff_list_selected_set),
 	maplist(tuple(head),Diff_list_selected_set,Head_candidates),
@@ -206,6 +214,8 @@ generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,lb,Loop,Tail_candidates):-
 	enriched_loop(Loop,Head,[Call],Cs),	
 	get_param(n_candidates,[Max_candidates]),
 	difference_constraint_farkas_lb(Head,Call,Cs,Lin_exp,Diff_list),
+	%check that the candidates are correct
+	(get_param(debug,[])-> maplist(check_candidate(Head,[Call],Loop,Lin_exp,'=<'),Diff_list);true),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	maplist(tuple(tail),Diff_list_selected,Tail_candidates).	
 
@@ -218,11 +228,53 @@ generate_leaf_candidates(Head,Lin_exp,ub,Head_candidates):-
 	
 	get_param(n_candidates,[Max_candidates]),
 	farkas_leaf_ub_candidate(Head,Loops,Lin_exp,Diff_list),!,
-	
+	(get_param(debug,[])-> 
+	  maplist(check_leaf_candidate(Loops,Lin_exp,'>='),Diff_list)
+	  ;true),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	from_list_sl(Diff_list_selected,Diff_list_selected_set),
 	maplist(tuple(head),Diff_list_selected_set,Head_candidates),
 	Diff_list_selected_set\=[].
+
+
+check_leaf_candidate(Loops,Linexp,Op,Exp):-
+	maplist(check_leaf_candidate_loop(Linexp,Op,Exp),Loops).
+
+check_leaf_candidate_loop(Linexp,Op,Exp,loop(Head,Calls,Cs)):-
+	foldl(get_sum_call(Head,Linexp),Calls,[]+0,Sum_calls),
+	term_variables((Head,Calls),Vars),	
+	subtract_le(Exp,Sum_calls,Exp_diff),
+	le_print_int(Exp_diff,Exp_diff_print_int,_),
+	Constr=..[Op,Exp_diff_print_int,0],
+	nad_entails(Vars,Cs,[Constr]),!.
+	
+check_leaf_candidate_loop(Linexp,_Op,Exp,loop(Head,Calls,_Cs)):-
+	write_lin_exp_in_phase(loop_vars(Head,Calls),Linexp,Linexp_print),
+	write_lin_exp_in_phase(loop_vars(Head,Calls),Exp,Exp_print),
+	throw(incorrect_leaf_candidate(Linexp_print,Exp_print)).
+
+
+check_candidate(Head,Calls,Loop,Linexp,Op,Exp):-
+	enriched_loop(Loop,Head,Calls,Cs),
+	foldl(get_sum_call(Head,Exp),Calls,[]+0,Sum_calls),
+	term_variables((Head,Calls),Vars),	
+	subtract_le(Exp,Sum_calls,Exp_diff),
+	subtract_le(Exp_diff,Linexp,Exp_diff2),
+	
+	le_print_int(Linexp,Linexp_print_int,_),
+
+	le_print_int(Exp_diff,Exp_diff_print_int,_),
+	le_print_int(Exp_diff2,Exp_diff_print_int2,_),
+	Constr=..[Op,Exp_diff_print_int,0],
+	Constr2=..[Op,Exp_diff_print_int2,0],
+	nad_entails(Vars,[Linexp_print_int=<0|Cs],[Constr]),
+	nad_entails(Vars,[Linexp_print_int>=0|Cs],[Constr2]),!.
+	
+check_candidate(Head,Calls,Loop,Linexp,_Op,Exp):-
+	write_lin_exp_in_phase(loop_vars(Head,Calls),Linexp,Linexp_print),
+	write_lin_exp_in_phase(loop_vars(Head,Calls),Exp,Exp_print),
+	throw(incorrect_candidate(Loop,Linexp_print,Exp_print)).
+
 	
 % check_loops_maxsum(Head:term,Call:term,Phase:phase,Loop:loop_id,Bounded_ini:list(itvar),Pending:pending_constrs,Exp:nlinexp,Fconstrs:list(fconstr),Iconstrs:list(iconstr),Pending_out:pending_constrs) is semidet
 % check the effect of the loops of Phase on the candidate Exp and generate the corresponding constraints Fconstrs and Iconstrs

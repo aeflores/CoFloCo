@@ -87,21 +87,17 @@ difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Lin_exp_list2,Lin_exp_list
 	le_print_int(Lin_exp,Exp,_Den),
 	negate_le(Lin_exp,Lin_exp_neg),
 	obtain_entailed_cone_with_lin_exp([Exp>=0|Phi],Lin_exp_neg,EVars,CVars,Eparams,Cparams,Cnt_param,Cone11,Ys11),
-	obtain_entailed_cone_with_lin_exp([Exp>=0|Phi],Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone21,Ys21),
+	obtain_entailed_cone_with_lin_exp(Phi,Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone2,Ys21),
 	maplist(negation_constr,Eparams,Cparams,Extra_cs),
 	nad_glb(Cone11,[Cnt_param=0|Extra_cs],Cone11_extra),
 	(\+nad_entails(Vars,Phi,[Exp>=0])->
 		obtain_entailed_cone_with_lin_exp([Exp=<0|Phi],[]+0,EVars,CVars,Eparams,Cparams,Cnt_param,Cone12,Ys12),
-		nad_project(Eparams,Cone12,Cone12_projected),
-		nad_glb(Cone11_extra,Cone12_projected,Cone1),
-		obtain_entailed_cone_with_lin_exp([Exp=<0|Phi],[]+0,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone22,Ys22),
-		nad_project(Eparams,Cone22,Cone22_projected),
-		nad_glb(Cone21,Cone22_projected,Cone2)
+		append([Cnt_param=0|Extra_cs],Cone12,Cone12_with_extra),
+		nad_project(Eparams,Cone12_with_extra,Cone12_projected),
+		nad_glb(Cone11_extra,Cone12_projected,Cone1)
 	;
 	  	Cone1=Cone11_extra,
-	  	Ys12=[],
-	  	Cone2=Cone21,
-	  	Ys22=[]
+	  	Ys12=[]
 	),
 	Head_params=..[F|Eparams],
 	Call_params=..[F|Cparams],
@@ -110,7 +106,7 @@ difference_constraint_farkas_ub(Head,Call,Phi,Lin_exp,Lin_exp_list2,Lin_exp_list
 	maplist('='(0),OEparams),
 	maplist('='(0),OCparams),
 	maplist('='(0),Cparams2),
-	ut_flat_list([Ys11,Ys12,Ys21,Ys22],Extra_params),
+	ut_flat_list([Ys11,Ys12,Ys21],Extra_params),
 	Ys11=[Var|_],!,
 	%obtain a point of the resulting polyhedron
 	(ppl_minimize_with_point(c,Cone1,Var,_,Point1)->
@@ -148,17 +144,17 @@ difference_constraint_farkas_lb(Head,Call,Phi,Lin_exp,Lin_exps_non_constant):-
 	maplist(negation_constr,Eparams,Cparams,Extra_cs),
 	nad_glb(Cone1,[Cnt_param=0|Extra_cs],Cone1_extra),
 	(\+nad_entails(Vars,Phi,[Exp>=0])->
-		obtain_entailed_cone_with_lin_exp([Exp>=0|Phi],[]+0,EVars,CVars,Eparams,Cparams,Cnt_param,Cone2,Ys2)
+		obtain_entailed_cone_with_lin_exp([Exp=<0|Phi],[]+0,EVars,CVars,Eparams,Cparams,Cnt_param,Cone2,Ys2)
 		;
 		Cone2=[],
 		Ys2=[]
 	),
-	ut_flat_list([Eparams,Cparams,Cnt_param,Ys1,Ys2],All_vars),
 	append(Cone1_extra,Cone2,Cone_joint),
 	Head_params=..[F|Eparams],
 	Call_params=..[F|Cparams],
 	get_input_output_vars(Head_params,IEparams,OEparams),
-	get_input_output_vars(Call_params,_,OCparams),
+	get_input_output_vars(Call_params,ICparams,OCparams),
+	ut_flat_list([IEparams,ICparams,Cnt_param,Ys1,Ys2],All_vars),
 	maplist('='(0),OEparams),
 	maplist('='(0),OCparams),
 	% here we get multiple candidates
@@ -179,19 +175,19 @@ difference_constraint_farkas_multiple_ub(Head,Calls,Phi_1,Lin_exp,Lin_exp_list):
 	Head=..[F|EVars],
 	term_variables(Calls,CVars),
 	length(Calls,N_calls),
-	N_calls1 is N_calls-1,
+	N_calls1 is 1-N_calls,
 	append(EVars,CVars,Vars),
 	le_print_int(Lin_exp,Exp,_Den),
 	negate_le(Lin_exp,Lin_exp_neg),
 	obtain_entailed_cone_with_lin_exp([Exp>=0|Phi],Lin_exp_neg,EVars,CVars,Eparams,Cparams,Cnt_param_p,Cone11,Ys11),
 	get_negated_unknowns(Calls,Eparams,Cparams,Extra_cs),
-    % if we have x+c >= (x'+c)+(x''+c) the constant factor is Cnt_param_p= c-(n*c)= (n-1)*c where n is the number of recursive calls
+    % if we have x+c >= (x'+c)+(x''+c) the constant factor is Cnt_param_p=c*(1-n) where n is the number of recursive calls
     % and c=Cnt_param, the real constant factor
-	nad_glb([Cnt_param+N_calls1*Cnt_param_p=0|Cone11],Extra_cs,Cone11_extra),
-	obtain_entailed_cone_with_lin_exp(Phi,Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone2,Ys2),
-
+    nad_glb([N_calls1*Cnt_param=Cnt_param_p,Cnt_param2=Cnt_param|Cone11],Extra_cs,Cone11_extra),	
+	obtain_entailed_cone_with_lin_exp(Phi,Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param2,Cone2,Ys2),
+	
 	(\+nad_entails(Vars,Phi,[Exp>=0])->
-		obtain_entailed_cone_with_lin_exp([Exp=<0|Phi],[]+0,EVars,CVars,Eparams,Cparams,Cnt_param,Cone12,Ys12),
+		obtain_entailed_cone_with_lin_exp([Exp=<0|Phi],[]+0,EVars,CVars,Eparams,Cparams,Cnt_param_p,Cone12,Ys12),
 		nad_project(Eparams,Cone12,Cone12_projected),
 		nad_glb(Cone11_extra,Cone12_projected,Cone1)
 	;
@@ -203,14 +199,15 @@ difference_constraint_farkas_multiple_ub(Head,Calls,Phi_1,Lin_exp,Lin_exp_list):
 	maplist('='(0),OEparams),
 	maplist('='(0),Cparams2),
 	nad_glb(Cone1,Cone2,Cone_joint),
-	ut_flat_list([Cnt_param_p,Ys11,Ys12,Ys2],Extra_params),
-	ut_flat_list([Eparams,Cparams,Cnt_param,Extra_params],All_vars),
+	ut_flat_list([Cnt_param_p,Cnt_param2,Ys11,Ys12,Ys2],Extra_params),
+	ut_flat_list([IEparams,Cparams,Cnt_param,Extra_params],All_vars),
 	get_generators(c,All_vars,Cone_joint,Generators),
 	%once we have the point, we can set all the coefficients variables to 0 and obtain the point in terms of Unknowns
 	maplist(=(0),Extra_params),
 	maplist(=(0),Cparams),
 	Cnt_param=1,
 	%extract the linear expressions from the points
+	%copy_term((Head_params,Generators),(Head,Generators_copy)),	
 	copy_term((IEparams,Generators),(Ivars,Generators_copy)),	
 	get_expressions_from_points(Generators_copy,Lin_exp_list).
 
@@ -228,20 +225,18 @@ leaf_ub_candidate_loop(Head,Lin_exp,[Cnt_param|IEparams],loop(Head,Calls,Phi),Co
 	foldl(get_sum_exp_calls(Head,Lin_exp),Calls,[]+0,Lin_exp_calls),
 	negate_le(Lin_exp_calls,Lin_exp_neg),
 	length(Calls,N_calls),
-	N_calls1 is N_calls-1,
+	N_calls1 is 1-N_calls,
 	Head=..[F|EVars],
 	term_variables(Calls,CVars),
 	obtain_entailed_cone_with_lin_exp(Phi,[]+0,EVars,CVars,Eparams,Cparams,Cnt_param_p,Cone1,_Ys1),
 	get_negated_unknowns(Calls,Eparams,Cparams,Extra_cs),
 	    % if we have x+c >= (x'+c)+(x''+c) the constant factor is Cnt_param_p= c-(n*c)= (n-1)*c where n is the number of recursive calls
     % and c=Cnt_param, the real constant factor
-	append([Cnt_param+N_calls1*Cnt_param_p=0|Cone1],Extra_cs,Cone1_extra),
+	append([N_calls1*Cnt_param=Cnt_param_p|Cone1],Extra_cs,Cone1_extra),
 	Head_params=..[F|Eparams],
 	get_input_output_vars(Head_params,IEparams,OEparams),
 	nad_project([Cnt_param|IEparams],Cone1_extra,Cone1_projected),
 	obtain_entailed_cone_with_lin_exp(Phi,Lin_exp_neg,EVars,CVars,Eparams,Cparams2,Cnt_param,Cone2,_Ys2),
-	
-	
 	maplist('='(0),OEparams),
 	maplist('='(0),Cparams2),
 	nad_project([Cnt_param|IEparams],Cone2,Cone2_projected),
