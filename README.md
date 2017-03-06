@@ -73,6 +73,14 @@ Complete Installation
    
 	Some extra options might be necessary depending on your system. PPL provides documentation
 	on how to configure and compile in different systems.
+
+    Note: According to our experience, using a sparse representation for polyhedra generally results in better performance. To compile PPL with this option, you have to change the following line in Polyhedron_defs.hh:
+
+     `static const Representation default_con_sys_repr = DENSE;`
+
+   to become
+
+     `static const Representation default_con_sys_repr = SPARSE;`
    
    
  * Once installed all the requirements, you can call CoFloCo with the script "cofloco" in the main directory: 
