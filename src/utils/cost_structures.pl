@@ -528,28 +528,40 @@ is_multiple_set([_,_|_]).
 join_itvar_sets([],Itconstrs,Bsummands,Itconstrs,Bsummands).
 
 join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_final,Bsummands_final):-
-	from_list_sl(Equivalent_itvars,Equivalent_itvars_set),
-	exclude(bconstr_bounds_itvars(Equivalent_itvars_set),Itconstrs,Itconstrs2),
-	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_set),Itconstrs2,([],[]),(_,Itconstrs3)),
+	single_list_to_assocSet(Equivalent_itvars,Equivalent_itvars_assocSet),
+	exclude(bconstr_bounds_itvars(Equivalent_itvars_assocSet),Itconstrs,Itconstrs2),
+	empty_assoc(Empty_assocSet),
+	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_assocSet),Itconstrs2,(Empty_assocSet,[]),(_,Itconstrs3)),
 	reverse(Itconstrs3,Itconstrs4),
-	foldl(compress_basic_summands(Itvar,Equivalent_itvars_set),Bsummands,[],Bsummands2),
-	maplist(substitute_itvars_in_list(Itvar,Equivalent_itvars_set),Sets,Sets1),
+	compress_basic_summands(Bsummands,Itvar,Equivalent_itvars_assocSet,Bsummands2),
+	maplist(substitute_itvars_in_list(Itvar,Equivalent_itvars_assocSet),Sets,Sets1),!,
 	join_itvar_sets(Sets1,Itconstrs4,Bsummands2,Itconstrs_final,Bsummands_final).
 
-substitute_itvars_in_list(Itvar,Equivalent_itvars_set,List,List1):-
-	maplist(substitute_itvar_in_list(Itvar,Equivalent_itvars_set),List,List1).
-substitute_itvar_in_list(Itvar,Set,Itvar2,Itvar):-
-	contains_sl(Set,Itvar2),!.	
+single_list_to_assocSet(List,Assoc):-
+	maplist(make_trivial_pair,List,List_pair),
+	list_to_assoc(List_pair,Assoc).
+make_trivial_pair(E,E-0).
+
+contains_assocSet(AssocSet,Elem):-
+	get_assoc(Elem,AssocSet,0),!.
+insert_assocSet(AssocSet,Elem,AssocSet1):-
+	put_assoc(Elem,AssocSet, 0, AssocSet1),!.
+	
+substitute_itvars_in_list(Itvar,Equivalent_itvars_assocSet,List,List1):-
+	maplist(substitute_itvar_in_list(Itvar,Equivalent_itvars_assocSet),List,List1).
+substitute_itvar_in_list(Itvar,AssocSet,Itvar2,Itvar):-
+	contains_assocSet(AssocSet,Itvar2),!.	
 substitute_itvar_in_list(_Itvar,_Set,Itvar2,Itvar2).
 
-bconstr_bounds_itvars(Set,bound(_,_,Bounded)):-
-	from_list_sl(Bounded,Bounded_set),
-	intersection_sl(Set,Bounded_set,[_|_]).
+bconstr_bounds_itvars(AssocSet,bound(_,_,Bounded)):-
+	member(B,Bounded),
+	contains_assocSet(AssocSet,B),!.
 
-itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_set,bound(Op,Exp,Bounded),(Bconstrs_hash_set,Bconstrs),Pair1):-
+
+itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_assocSet,bound(Op,Exp,Bounded),(Bconstrs_hash_assocSet,Bconstrs),Pair1):-
 	Exp=exp(Index_pos,Index_neg,Pos,Neg),
-	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_set),Index_pos,Index_pos2),
-	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_set),Index_neg,Index_neg2),
+	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_assocSet),Index_pos,Index_pos2),
+	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_assocSet),Index_neg,Index_neg2),
 	Exp2=exp(Index_pos2,Index_neg2,Pos,Neg),
 	copy_term(Exp2,Exp_ground),
 	Exp_ground=exp(Index_pos_ground,Index_neg_ground,_,_),
@@ -557,33 +569,39 @@ itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_set,bound(Op,Exp,Bounded),(B
 	maplist(ground_index,Index_pos_ground),
 	maplist(ground_index,Index_neg_ground),
 	term_hash(bound(Op,Exp_ground,Bounded),Hash_new_bconstr),
-	(contains_sl(Bconstrs_hash_set,Hash_new_bconstr)->
-		Pair1=(Bconstrs_hash_set,Bconstrs)
+	(contains_assocSet(Bconstrs_hash_assocSet,Hash_new_bconstr)->
+		Pair1=(Bconstrs_hash_assocSet,Bconstrs)
 		;
-		insert_sl(Bconstrs_hash_set,Hash_new_bconstr,Bconstrs_hash_set1),
 		Bconstrs1=[bound(Op,Exp2,Bounded)|Bconstrs],
-		Pair1=(Bconstrs_hash_set1,Bconstrs1)
+		insert_assocSet(Bconstrs_hash_assocSet,Hash_new_bconstr,Bconstrs_hash_assocSet1),
+		Pair1=(Bconstrs_hash_assocSet1,Bconstrs1)
 	).
 
-substitute_itvars_in_index(Itvar,Equiv_itvar_set,(Itvar2,Var),(Itvar,Var)):-
-	contains_sl(Equiv_itvar_set,Itvar2),!.
-substitute_itvars_in_index(_Itvar,_Equiv_itvar_set,(Itvar2,Var),(Itvar2,Var)).
+substitute_itvars_in_index(Itvar,Equiv_itvar_assocSet,(Itvar2,Var),(Itvar,Var)):-
+	contains_assocSet(Equiv_itvar_assocSet,Itvar2),!.
+substitute_itvars_in_index(_Itvar,_Equiv_itvar_assocSet,(Itvar2,Var),(Itvar2,Var)).
 
-compress_basic_summands(Itvar,Equiv_itvars_set,(Itvar2,Coeff),Map,Map1):-
-	contains_sl(Equiv_itvars_set,Itvar2),!,
-	accum_basic_summand(Itvar,Coeff,Map,Map1).
-	
-compress_basic_summands(_Itvar,_Equiv_itvars_set,(Itvar2,Coeff),Map,Map1):-
-	accum_basic_summand(Itvar2,Coeff,Map,Map1).	
 
-accum_basic_summand(Itvar,Coeff,Map,Map1):-
-	(lookup_lm(Map,Itvar,Coeff2)->
-		sum_fr(Coeff,Coeff2,Coeff3),
-		insert_lm(Map,Itvar,Coeff3,Map1)
-	;
-		insert_lm(Map,Itvar,Coeff,Map1)
-	).
-	
+compress_basic_summands(Bsummands,Itvar,Equivalent_itvars_assocSet,Bsummands3):-
+	reverse(Bsummands,Bsummands_rev),
+	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_assocSet,[],0,Coeff_sum,Bsummands2),
+	insert_lm(Bsummands2,Itvar,Coeff_sum,Bsummands3).
+
+
+accum_equivalent_summands([],_Itvar,_Equivalent_itvars_assocSet,Accum_summands,Accum_coeff,Accum_coeff,Accum_summands).
+accum_equivalent_summands([(Itvar,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-!,
+	sum_fr(Coeff,Accum_coeff,Accum_coeff2),
+	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff2,Coeff_sum,Bsummands_final).
+
+accum_equivalent_summands([(Itvar2,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-
+	contains_assocSet(Equivalent_itvars_assocSet,Itvar2),!,
+	sum_fr(Coeff,Accum_coeff,Accum_coeff2),
+	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff2,Coeff_sum,Bsummands_final).	
+
+accum_equivalent_summands([(Itvar2,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-
+	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_assocSet,[(Itvar2,Coeff)|Accum_summands],Accum_coeff,Coeff_sum,Bsummands_final).	
+
+
 ground_index((X,X)):-!.
 ground_index(_).
  %! fconstr_join_equal_expressions(Fcons:list(fconstr),Fcons2:list(fconstr),New_Iconstrs:list(iconstr)) is det
@@ -1013,6 +1031,10 @@ bfactor_shorten_name(Flag,(Name,Value),(Short_name,Value)):-
 % create an abbreviation of the intermediate variable name
 % the flag determines is the new name is a list or not. 
 % The name must always be a list except when we want to use it for the output
+
+%do not shorten terms that are already short
+itvar_shorten_name(list,[Name],[Name]):-!.
+
 itvar_shorten_name(list,Name,Short_name):-
 	term_hash(Name,Hash),
 	(short_db(Hash,Name,Short_name_exist)->
@@ -1023,7 +1045,11 @@ itvar_shorten_name(list,Name,Short_name):-
 	 	Short_name=[s(Id)]
 	 	).
 itvar_shorten_name(no_list,Name,Short_name):-
-	itvar_recover_long_name(Name,Name_long),
+	(Name=[One]->
+		(short_db(_,Name_long,One);Name_long=Name)
+		;
+		Name_long=Name
+		),!,
 	itvar_shorten_name_cont(Name_long,Short_name).
 
 itvar_shorten_name_cont([it(Loop)],'#'(Loop)):-!,
