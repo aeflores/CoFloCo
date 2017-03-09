@@ -39,7 +39,7 @@ the input variables and the variables of the recursive call (if there is one)
 :- use_module('../utils/cofloco_utils',[tuple/3,ground_copy/2]).
 :- use_module('../utils/cost_structures',[cstr_extend_variables_names/3,
 			cstr_empty/1,
-			cstr_join_equal_fconstr/2,
+			cstr_simplify/2,
 			cstr_or_compress/2,
 			max_min_ub_lb/2,
 			bconstr_accum_bounded_set/3]).
@@ -86,7 +86,7 @@ get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 	nad_glb(Forward_inv,Phi,Phi1),
 	(nad_consistent_constraints(Phi1)->
 		term_variables((Head,Calls),TVars),
-		foldl(accumulate_calls,Base_calls,(Basic_cost,1),(cost(Ub_fconstrs_list,Lb_fconstrs_list,Iconstrs,Bases,Base),_)),
+		foldl(accumulate_calls(Eq_id),Base_calls,(Basic_cost,1),(cost(Ub_fconstrs_list,Lb_fconstrs_list,Iconstrs,Bases,Base),_)),
 		% we reverse the calls in case we want to combine cost structures incrementally
 		% this is not done now but it would allow us to detect which calls make us lose precision
 		%reverse(Base_calls,Base_calls_inv),
@@ -95,25 +95,24 @@ get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 		get_lost_fconstrs_expressable_as_outputs(Eq_id,Ub_fconstrs_list,New_Ub_fconstrs,Base_calls,Phi),
 		max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Phi1,TVars,New_Lb_fconstrs,New_iconstrs2),
 		ut_flat_list([New_iconstrs1,New_iconstrs2,Iconstrs],New_iconstrs),
-		cstr_join_equal_fconstr(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost_aux),
-		cstr_extend_variables_names(Cost_aux,eq(Eq_id),Cost)
+		cstr_simplify(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost)
 	;
 		cstr_empty(Cost)
 	).
 	
-accumulate_calls((Call,chain(Chain)),(cost(Ub_fconsts1,Lb_fconsts1,Iconstrs1,Bases1,Base1),N),(cost([Ub_fconsts2|Ub_fconsts1],[Lb_fconsts2|Lb_fconsts1],[Iconstrs2|Iconstrs1],Bases,Base),N1)) :-
+accumulate_calls(Eq_id,(Call,chain(Chain)),(cost(Ub_fconsts1,Lb_fconsts1,Iconstrs1,Bases1,Base1),N),(cost([Ub_fconsts2|Ub_fconsts1],[Lb_fconsts2|Lb_fconsts1],[Iconstrs2|Iconstrs1],Bases,Base),N1)) :-
     N1 is N+1,
     upper_bound(Call,Chain,_Hash,Cost_call),
     % we extend the names of the intermediate variables to ensure they are unique
-    cstr_extend_variables_names(Cost_call,n(N),cost(Ub_fconsts2,Lb_fconsts2,Iconstrs2,Bases2,Base2)),
+    cstr_extend_variables_names(Cost_call,eq(Eq_id,N),cost(Ub_fconsts2,Lb_fconsts2,Iconstrs2,Bases2,Base2)),
     sum_fr(Base1,Base2,Base),
     append(Bases2,Bases1,Bases).
 
-accumulate_calls((Call,external_pattern(Id)),(cost(Ub_fconsts1,Lb_fconsts1,Iconstrs1,Bases1,Base1),N),(cost([Ub_fconsts2|Ub_fconsts1],[Lb_fconsts2|Lb_fconsts1],[Iconstrs2|Iconstrs1],Bases,Base),N1)) :-
+accumulate_calls(Eq_id,(Call,external_pattern(Id)),(cost(Ub_fconsts1,Lb_fconsts1,Iconstrs1,Bases1,Base1),N),(cost([Ub_fconsts2|Ub_fconsts1],[Lb_fconsts2|Lb_fconsts1],[Iconstrs2|Iconstrs1],Bases,Base),N1)) :-
     N1 is N+1,
     external_upper_bound(Call,Id,Cost_call),
     % we extend the names of the intermediate variables to ensure they are unique
-    cstr_extend_variables_names(Cost_call,n(N),cost(Ub_fconsts2,Lb_fconsts2,Iconstrs2,Bases2,Base2)),
+    cstr_extend_variables_names(Cost_call,eq(Eq_id,N),cost(Ub_fconsts2,Lb_fconsts2,Iconstrs2,Bases2,Base2)),
     sum_fr(Base1,Base2,Base),
     append(Bases2,Bases1,Bases).   
     

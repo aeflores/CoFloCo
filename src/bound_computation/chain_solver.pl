@@ -45,7 +45,7 @@ For the constraints, this is done at the same time of the compression.
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[
 		 cstr_extend_variables_names/3,
-		 cstr_join_equal_fconstr/2,
+		 cstr_simplify/2,
 		 cstr_or_compress/2,
 		 cstr_join/3,
 		 new_itvar/1]).
@@ -65,9 +65,9 @@ For the constraints, this is done at the same time of the compression.
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
 %   * compress the costs of different phases
-compute_chain_cost(Head,Chain,Cost_total1):-
+compute_chain_cost(Head,Chain,Cost_total):-
 	compress_chain_costs(Chain,[],Head,Head,Cost_total,_),
-	cstr_extend_variables_names(Cost_total,ch(Chain),Cost_total1),
+	%cstr_extend_variables_names(Cost_total,ch(Chain),Cost_total1),
 	!.
 
 compress_chain_costs([],_Chain_rev,_Head_total,_Head,Cost_base,[]):-
@@ -79,7 +79,7 @@ compress_chain_costs([Base_case],Chain_rev,Head_total,Head,Cost_base,Cs_base):-
 	profiling_start_timer(equation_cost),
 	get_loop_cost(Head,[],(Forward_hash,Forward_inv),Base_case,Cost),
 	profiling_stop_timer_acum(equation_cost,_),
-	cstr_join_equal_fconstr(Cost,Cost_base),
+	cstr_simplify(Cost,Cost_base),
 	loop_ph(Head,(Base_case,_),[],Cs,_,_),
 	ut_flat_list([Forward_inv,Cs],Cs_base).
 
@@ -105,7 +105,7 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_next
     ut_flat_list([Ub_iconstrs_extra,Lb_iconstrs_extra,Iconstrs],Aux_exps_new),
     %the cost is the sum of the individual costs
     Cost_next=cost(Ub_fconstrs_new,Lb_fconstrs_new,Aux_exps_new,Bsummands,BConstant),
- 	cstr_join_equal_fconstr(Cost_next,Cost_next_simple),
+ 	cstr_simplify(Cost_next,Cost_next_simple),
  	Head=..[_|EVars],
  	%prepare  information for next iteration
 	nad_project_group(EVars,Cs_total,Cs_next).	
@@ -152,7 +152,7 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs_n
     append(Bsummands_prev,Bsummands1,Bsummands_total),
     cexpr_simplify_ctx_free(BConstant_prev+BConstant1,BConstant2),
     Cost_next=cost(Ub_fconstrs_new,Lb_fconstrs_new,Aux_exps_new,Bsummands_total,BConstant2),
- 	cstr_join_equal_fconstr(Cost_next,Cost_next_simple),
+ 	cstr_simplify(Cost_next,Cost_next_simple),
  	Head=..[_|EVars],
  	%prepare  information for next iteration
 	nad_project_group(EVars,Cs_total,Cs_next).	
@@ -185,7 +185,7 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs
 	cexpr_simplify_ctx_free(BConstant_prev+BConstant1,BConstant2),
 	Cost_next=cost(Ub_fconstrs_new,Lb_fconstrs_new,Aux_exps_new,Bsummands_total,BConstant2),
 	% simplify resulting cost structure
-	cstr_join_equal_fconstr(Cost_next,Cost_next_simple),
+	cstr_simplify(Cost_next,Cost_next_simple),
 	Head=..[_|EVars],
 	%prepare  information for next iteration
 	nad_project_group(EVars,Cs_total,Cs_next),

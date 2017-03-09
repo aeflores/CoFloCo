@@ -49,7 +49,8 @@ that can be passed on to the callers.
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3,zip_with_op/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
 :- use_module('../utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
-:- use_module('../utils/cost_structures',[cstr_join_equal_fconstr/2,cstr_or_compress/2]).
+:- use_module('../utils/cost_structures',[cstr_or_compress/2,
+										  cstr_extend_variables_names/3]).
 
 :- use_module('../IO/params',[get_param/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_list_lub/2]).
@@ -90,9 +91,15 @@ compute_chain_bound(Head,Chain):-
 % is obtained by compressing the upper bound of these chains into one.
 compress_bounds_for_external_calls(Head,RefCnt):-
 	external_call_pattern(Head,(Precondition_id,RefCnt),_Terminating,Components,_Inv),
-	bagof_no_fail(Cost_structure,Chain^E1^(
+	bagof_no_fail(Cost_structure,Chain^E1^Cost_structure_1^(
 		    member(Chain,Components),
-	        upper_bound(Head,Chain,E1,Cost_structure)
+	        upper_bound(Head,Chain,E1,Cost_structure_1),
+	        %only extend if there are several
+	        (Components\=[_]->
+	        	cstr_extend_variables_names(Cost_structure_1,ch(Chain),Cost_structure)
+	        	;
+	        	Cost_structure_1=Cost_structure
+	        )
 	        ),Cost_structures),       
 	cstr_or_compress(Cost_structures,Final_cost_structure),
 	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),

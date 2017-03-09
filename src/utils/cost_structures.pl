@@ -91,7 +91,6 @@
 		astrexp_to_cexpr/2,
 		basic_cost_to_astrexp/4,
 		cstr_from_cexpr/2,
-		cstr_remove_cycles/2,
 		cstr_get_itvars/2,
 		cstr_get_unbounded_itvars/2,
 		cstr_extend_variables_names/3,
@@ -102,8 +101,9 @@
 		cstr_propagate_sums/4,
 		cstr_join/3,
 		cstr_or_compress/2,
-		cstr_join_equal_fconstr/2,
-		cstr_simplify/5,
+		cstr_simplify/2,
+		cstr_sort_iconstrs/4,
+		cstr_simplify_for_solving/5,
 		cstr_shorten_variables_names/3]).
 		
 		
@@ -147,11 +147,14 @@
 :- use_module(stdlib(fraction_list)).
 :- use_module(stdlib(set_list),[difference_sl/3,remove_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
 
+
+
 :-dynamic short_db/3.
 :-dynamic short_db_no_list/3.
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 :-use_module(library(terms)).
+:-use_module(library(rbtrees)).
 
 
 
@@ -220,13 +223,13 @@ bconstr_bounds_multiple_itvars(bound(_,_,[_,_|_])).
 
 %bconstr_accum_bounded_set(Bconstr:bconstr,Set:list_set(itvar),Set1:list_set(itvar)) is det
 % add the bounded itvars of Bconstr to Set
-bconstr_accum_bounded_set(bound(_,_,Bounded),Set,Set1):-
-	from_list_sl(Bounded,Bounded_set),
+bconstr_accum_bounded_set(bound(_,_,Bounded_set),Set,Set1):-
 	union_sl(Bounded_set,Set,Set1).
 
 %! fconstr_new(Bounded:list(itvar),Op:op,NLin_exp:nlin_exp,Fconstr:fconstr) is det
 % create a new final constraint
-fconstr_new(Bounded,Op,NLin_exp,bound(Op,NLin_exp,Bounded)).
+fconstr_new(Bounded,Op,NLin_exp,bound(Op,NLin_exp,Bounded_set)):-
+	from_list_sl(Bounded,Bounded_set).
 fconstr_new_inv(NLin_exp,Op,Bounded,bound(Op,NLin_exp,Bounded)).
 
 
@@ -236,7 +239,8 @@ fconstr_lose_negative_constant(bound(Op,Coeffs+Cnt,Bounded),bound(Op,Coeffs+Cnt,
 
 %! iconstr_new(Astrexp:astrexp,Bounded:list(itvar),Op:op,Iconstr:iconstr) is det
 % create a new intermediate constraint
-iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp,Bounded)).
+iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp,Bounded_set)):-
+	from_list_sl(Bounded,Bounded_set).
 
 
 %! bconstr_annotate_bounded(+Bconstr:bconstr,-Bconstr1:bconstr)
@@ -253,8 +257,7 @@ bconstr_annotate_bounded(bound(Op,Top,Bounded),bound(Op,Top,Bounded_set)):-
 
 %! bconstr_remove_bounded(Set:list_set(itvar),Bconstr:bconstr,Bconstr:bconstr)
 %  remove the itvars in Set from bounded itvars of Bconstr
-bconstr_remove_bounded(Set,bound(Op,Exp,Bounded),bound(Op,Exp,Bounded_set1)):-
-	from_list_sl(Bounded,Bounded_set),
+bconstr_remove_bounded(Set,bound(Op,Exp,Bounded_set),bound(Op,Exp,Bounded_set1)):-
 	difference_sl(Bounded_set,Set,Bounded_set1).
 	
 % predicates on abstract structured expressions (astrexp)
@@ -390,18 +393,16 @@ cstr_from_cexpr(Exp,_):-
 %! cstr_simplify(+Cstr:cstr,+Vars:list(var),+Phi:polyhedron,+Max_min:flag,-Cstr_simple:cstr)
 % simplify the cost structure Cstr taking Phi into account
 % Max_min_both can be 'max','min' or 'both' and indicates whether we want to obtain a maximum cost, minimum or both
-cstr_simplify(cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant),Vars,Phi,Max_min_both,Cstr_simple):-
+cstr_simplify_for_solving(cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant),Vars,Phi,Max_min_both,Cstr_simple):-
 	(get_param(solve_fast,[])->
 		maplist(fconstr_lose_negative_constant,Ub_fcons,Ub_fcons2)
 		;
 		Ub_fcons2=Ub_fcons
 	),
 	Cstr=cost(Ub_fcons2,Lb_fcons,Itcons,BSummands,BConstant),
-	cstr_join_equal_fconstr(Cstr,Cstr1),
-	cstr_simplify_fconstr_nats(Cstr1,Vars,Phi,Cstr2),
-	cstr_propagate_zeroes(Cstr2,Cstr3),
-	cstr_remove_useless_constrs(Cstr3,Max_min_both,Cstr4),
-	Cstr4=Cstr_simple.
+	cstr_simplify_fconstr_nats(Cstr,Vars,Phi,Cstr2),
+	cstr_simplify_1(Cstr2,Max_min_both,Cstr3),
+	Cstr3=Cstr_simple.
 
 	
 cstr_simplify_fconstr_nats(Cstr,Vars,Phi,Cstr_simple):-
@@ -430,38 +431,85 @@ cstr_get_components([cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant)|Rest],[U
 %! cstr_join_equal_fconstr(+Cost:cstr,-Cost_simple:cstr) is det
 % join all the final bound constraints that have the same linear expression
 % and simplify intermediate constraints. Join intermediate variables that are subject to the same constraints
-cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Cost_final2):-
+cstr_simplify(Cstr,Cstr_final):-
+	cstr_simplify_1(Cstr,both,Cstr_final).
+
+cstr_simplify_1(Cstr,Max_min_both,Cstr_final):-
+	cstr_shorten_variables_names(Cstr,list,cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant)),
 	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
 	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
-	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),
-	cstr_simplify_multiple_variables_constrs(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cost_aux),
-	join_equivalent_itvars(Cost_aux,Cost_final),
-	cstr_remove_cycles(Cost_final,Cost_final2),!.
+	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),!,
+	%cstr_simplify_multiple_variables_constrs(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cstr_aux),
+	cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant)=Cstr_aux2,
+	%join_equivalent_itvars(Cstr_aux,Cstr_aux2),!,
+	cstr_remove_undefined(Cstr_aux2,Cstr_aux3),
+	%Some other simplifications
+	cstr_propagate_zeroes(Cstr_aux3,Cstr_aux4),
+	cstr_remove_useless_constrs(Cstr_aux4,Max_min_both,Cstr_final),!.
+	%cstr_count_appearances(Cstr_final).
+	
+	
+cstr_get_unbounded_itvars(cost(Top_exps,_LTop_exps,Aux_exps,Bases,_Base),Unbounded):-
+      foldl(get_bounded_itvars(ub),Top_exps,[],Bounded_aux),
+       foldl(get_bounded_itvars(ub),Aux_exps,Bounded_aux,Bounded),
+       maplist(tuple,Itvars,_,Bases),
+       from_list_sl(Itvars,Itvars_set),
+       difference_sl(Itvars_set,Bounded,Unbounded).
+get_bounded_itvars(Op,bound(Op,_,Bounded_set_new),Bounded_set,Bounded_set1):-!,
+       union_sl(Bounded_set,Bounded_set_new,Bounded_set1).
+get_bounded_itvars(_,_,Bounded_set,Bounded_set).
+	
+	
+/*	
+cstr_count_appearances(cost(Ub_fcons,Lb_fcons,Itcons,_Bsummands,_BConstant)):-
+	rb_empty(Empty_tree),
+	foldl(constr_count_appearances,Ub_fcons,Empty_tree,Appearances1),
+	foldl(constr_count_appearances,Lb_fcons,Appearances1,Appearances2),
+	foldl(constr_count_appearances,Itcons,Appearances2,Appearances3),
+	rb_visit(Appearances3,Pair_list),
+	include(one_occur,Pair_list,Pair_uni),
+	length(Pair_uni,N),
+	writeln(pairs(N,Pair_uni)).
 
+one_occur(_-1).
+
+constr_count_appearances(bound(_,_,Bounded),Appear_tree,Appear_tree1):-
+	foldl(count_appearance,Bounded,Appear_tree,Appear_tree1).
+
+
+count_appearance(Itvar,Appear_tree,Appear_tree1):-
+	rb_apply(Appear_tree,Itvar,(increment),Appear_tree1),!.
+count_appearance(Itvar,Appear_tree,Appear_tree1):-
+	rb_insert(Appear_tree,Itvar,1,Appear_tree1).
+
+
+increment(X,X1):-
+	X1 is X+1.
+*/	
 
 cstr_simplify_multiple_variables_constrs(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands,BConstant)):-
 	include(is_ub_bconstr,Itcons,Itcons_ub),
 	sort_with(Itcons_ub,constr_more_bounded_vars,Itcons_sorted),
-	incrementally_remove_redundant_iconstrs(Itcons_sorted,[],Removed_set),
-	exclude(contains_sl(Removed_set),Itcons,Itcons2).
+	empty_setTree(Empty_setTree),
+	incrementally_remove_redundant_iconstrs(Itcons_sorted,Empty_setTree,Removed_setTree),
+	exclude(contains_setTree(Removed_setTree),Itcons,Itcons2).
 
-constr_more_bounded_vars(bound(_,_,Bounded),bound(_,_,Bounded2)):-
-	length(Bounded,N),
-	length(Bounded2,N2),
-	N<N2.
-incrementally_remove_redundant_iconstrs([],Removed,Removed).
-incrementally_remove_redundant_iconstrs([bound(ub,_Exp,[_])|_Constrs],Removed,Removed).
-incrementally_remove_redundant_iconstrs([bound(ub,Exp,Bounded)|Constrs],Accum,Removed):-
+ constr_more_bounded_vars(bound(_,_,Bounded),bound(_,_,Bounded2)):-
+        length(Bounded,N),
+        length(Bounded2,N2),
+        N<N2.
+
+incrementally_remove_redundant_iconstrs([],Rem_setTree,Rem_setTree).
+incrementally_remove_redundant_iconstrs([bound(ub,_Exp,[_])|_Constrs],Rem_setTree,Rem_setTree).
+incrementally_remove_redundant_iconstrs([bound(ub,Exp,Bounded)|Constrs],Rem_setTree_accum,Rem_setTree):-
 	partition(is_redundant(Exp,Bounded),Constrs,Removed_aux,Constrs1),
-	from_list_sl(Removed_aux,Removed_set),
-	print_removed_redundant_constr_message(bound(ub,Exp,Bounded),Removed_set),
-	union_sl(Removed_set,Accum,Accum1),
-	incrementally_remove_redundant_iconstrs(Constrs1,Accum1,Removed).
+	print_removed_redundant_constr_message(bound(ub,Exp,Bounded),Removed_aux),
+	insert_list_setTree(Removed_aux,Rem_setTree_accum,Rem_setTree_accum2),
+	incrementally_remove_redundant_iconstrs(Constrs1,Rem_setTree_accum2,Rem_setTree).
 
 is_redundant(Exp,Bounded,bound(ub,Exp2,Bounded2)):-
 	ground_copy(Exp,Exp_gr),
 	ground_copy(Exp2,Exp_gr),
-	Bounded2\=Bounded,
 	difference_sl(Bounded2,Bounded,[]).
 	
 join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant)):-
@@ -528,40 +576,50 @@ is_multiple_set([_,_|_]).
 join_itvar_sets([],Itconstrs,Bsummands,Itconstrs,Bsummands).
 
 join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_final,Bsummands_final):-
-	single_list_to_assocSet(Equivalent_itvars,Equivalent_itvars_assocSet),
-	exclude(bconstr_bounds_itvars(Equivalent_itvars_assocSet),Itconstrs,Itconstrs2),
-	empty_assoc(Empty_assocSet),
-	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_assocSet),Itconstrs2,(Empty_assocSet,[]),(_,Itconstrs3)),
+	single_list_to_setTree(Equivalent_itvars,Equivalent_itvars_setTree),
+	exclude(bconstr_bounds_itvars(Equivalent_itvars_setTree),Itconstrs,Itconstrs2),
+	empty_setTree(Empty_setTree),
+	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_setTree),Itconstrs2,(Empty_setTree,[]),(_,Itconstrs3)),
 	reverse(Itconstrs3,Itconstrs4),
-	compress_basic_summands(Bsummands,Itvar,Equivalent_itvars_assocSet,Bsummands2),
-	maplist(substitute_itvars_in_list(Itvar,Equivalent_itvars_assocSet),Sets,Sets1),!,
+	compress_basic_summands(Bsummands,Itvar,Equivalent_itvars_setTree,Bsummands2),
+	maplist(substitute_itvars_in_list(Itvar,Equivalent_itvars_setTree),Sets,Sets1),!,
 	join_itvar_sets(Sets1,Itconstrs4,Bsummands2,Itconstrs_final,Bsummands_final).
 
-single_list_to_assocSet(List,Assoc):-
+single_list_to_setTree(List,Set):-
 	maplist(make_trivial_pair,List,List_pair),
-	list_to_assoc(List_pair,Assoc).
+	list_to_rbtree(List_pair,Set).
 make_trivial_pair(E,E-0).
 
-contains_assocSet(AssocSet,Elem):-
-	get_assoc(Elem,AssocSet,0),!.
-insert_assocSet(AssocSet,Elem,AssocSet1):-
-	put_assoc(Elem,AssocSet, 0, AssocSet1),!.
+empty_setTree(Empty):-
+	rb_empty(Empty).
 	
-substitute_itvars_in_list(Itvar,Equivalent_itvars_assocSet,List,List1):-
-	maplist(substitute_itvar_in_list(Itvar,Equivalent_itvars_assocSet),List,List1).
-substitute_itvar_in_list(Itvar,AssocSet,Itvar2,Itvar):-
-	contains_assocSet(AssocSet,Itvar2),!.	
+contains_setTree(Set,Elem):-
+	rb_lookup(Elem,0,Set),!.
+	
+insert_list_setTree([],Set,Set).
+insert_list_setTree([Elem|Elems],Set,Set_final):-
+	rb_insert(Set, Elem, 0, Set1),
+	insert_list_setTree(Elems,Set1,Set_final).
+	
+insert_setTree(Set,Elem,Set1):-
+	rb_insert(Set, Elem, 0, Set1),!.
+
+	
+substitute_itvars_in_list(Itvar,Equivalent_itvars_setTree,List,List1):-
+	maplist(substitute_itvar_in_list(Itvar,Equivalent_itvars_setTree),List,List1).
+substitute_itvar_in_list(Itvar,SetTree,Itvar2,Itvar):-
+	contains_setTree(SetTree,Itvar2),!.	
 substitute_itvar_in_list(_Itvar,_Set,Itvar2,Itvar2).
 
-bconstr_bounds_itvars(AssocSet,bound(_,_,Bounded)):-
+bconstr_bounds_itvars(SetTree,bound(_,_,Bounded)):-
 	member(B,Bounded),
-	contains_assocSet(AssocSet,B),!.
+	contains_setTree(SetTree,B),!.
 
 
-itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_assocSet,bound(Op,Exp,Bounded),(Bconstrs_hash_assocSet,Bconstrs),Pair1):-
+itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_setTree,bound(Op,Exp,Bounded),(Bconstrs_hash_setTree,Bconstrs),Pair1):-
 	Exp=exp(Index_pos,Index_neg,Pos,Neg),
-	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_assocSet),Index_pos,Index_pos2),
-	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_assocSet),Index_neg,Index_neg2),
+	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_setTree),Index_pos,Index_pos2),
+	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_setTree),Index_neg,Index_neg2),
 	Exp2=exp(Index_pos2,Index_neg2,Pos,Neg),
 	copy_term(Exp2,Exp_ground),
 	Exp_ground=exp(Index_pos_ground,Index_neg_ground,_,_),
@@ -569,37 +627,37 @@ itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_assocSet,bound(Op,Exp,Bounde
 	maplist(ground_index,Index_pos_ground),
 	maplist(ground_index,Index_neg_ground),
 	term_hash(bound(Op,Exp_ground,Bounded),Hash_new_bconstr),
-	(contains_assocSet(Bconstrs_hash_assocSet,Hash_new_bconstr)->
-		Pair1=(Bconstrs_hash_assocSet,Bconstrs)
+	(contains_setTree(Bconstrs_hash_setTree,Hash_new_bconstr)->
+		Pair1=(Bconstrs_hash_setTree,Bconstrs)
 		;
 		Bconstrs1=[bound(Op,Exp2,Bounded)|Bconstrs],
-		insert_assocSet(Bconstrs_hash_assocSet,Hash_new_bconstr,Bconstrs_hash_assocSet1),
-		Pair1=(Bconstrs_hash_assocSet1,Bconstrs1)
+		insert_setTree(Bconstrs_hash_setTree,Hash_new_bconstr,Bconstrs_hash_setTree1),
+		Pair1=(Bconstrs_hash_setTree1,Bconstrs1)
 	).
 
-substitute_itvars_in_index(Itvar,Equiv_itvar_assocSet,(Itvar2,Var),(Itvar,Var)):-
-	contains_assocSet(Equiv_itvar_assocSet,Itvar2),!.
-substitute_itvars_in_index(_Itvar,_Equiv_itvar_assocSet,(Itvar2,Var),(Itvar2,Var)).
+substitute_itvars_in_index(Itvar,Equiv_itvar_setTree,(Itvar2,Var),(Itvar,Var)):-
+	contains_setTree(Equiv_itvar_setTree,Itvar2),!.
+substitute_itvars_in_index(_Itvar,_Equiv_itvar_setTree,(Itvar2,Var),(Itvar2,Var)).
 
 
-compress_basic_summands(Bsummands,Itvar,Equivalent_itvars_assocSet,Bsummands3):-
+compress_basic_summands(Bsummands,Itvar,Equivalent_itvars_setTree,Bsummands3):-
 	reverse(Bsummands,Bsummands_rev),
-	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_assocSet,[],0,Coeff_sum,Bsummands2),
+	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_setTree,[],0,Coeff_sum,Bsummands2),
 	insert_lm(Bsummands2,Itvar,Coeff_sum,Bsummands3).
 
 
-accum_equivalent_summands([],_Itvar,_Equivalent_itvars_assocSet,Accum_summands,Accum_coeff,Accum_coeff,Accum_summands).
-accum_equivalent_summands([(Itvar,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-!,
+accum_equivalent_summands([],_Itvar,_Equivalent_itvars_setTree,Accum_summands,Accum_coeff,Accum_coeff,Accum_summands).
+accum_equivalent_summands([(Itvar,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_setTree,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-!,
 	sum_fr(Coeff,Accum_coeff,Accum_coeff2),
-	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff2,Coeff_sum,Bsummands_final).
+	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_setTree,Accum_summands,Accum_coeff2,Coeff_sum,Bsummands_final).
 
-accum_equivalent_summands([(Itvar2,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-
-	contains_assocSet(Equivalent_itvars_assocSet,Itvar2),!,
+accum_equivalent_summands([(Itvar2,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_setTree,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-
+	contains_setTree(Equivalent_itvars_setTree,Itvar2),!,
 	sum_fr(Coeff,Accum_coeff,Accum_coeff2),
-	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff2,Coeff_sum,Bsummands_final).	
+	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_setTree,Accum_summands,Accum_coeff2,Coeff_sum,Bsummands_final).	
 
-accum_equivalent_summands([(Itvar2,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_assocSet,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-
-	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_assocSet,[(Itvar2,Coeff)|Accum_summands],Accum_coeff,Coeff_sum,Bsummands_final).	
+accum_equivalent_summands([(Itvar2,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars_setTree,Accum_summands,Accum_coeff,Coeff_sum,Bsummands_final):-
+	accum_equivalent_summands(Bsummands_rev,Itvar,Equivalent_itvars_setTree,[(Itvar2,Coeff)|Accum_summands],Accum_coeff,Coeff_sum,Bsummands_final).	
 
 
 ground_index((X,X)):-!.
@@ -634,7 +692,6 @@ ground_index(_).
 	astrexp_new_simple_itvar(Name,Astrexp),
 	maplist(iconstr_new(Astrexp,Op),Bounded_list,New_iconstrs).
 	
-
 	
 %! cstr_propagate_zeroes(+Cstr:cstr,-Cstr_simplified:cstr) is det
 % simplify cost structure by eliminating final constraints with expressions that are guaranteed to be
@@ -696,192 +753,137 @@ zero_summand(mult(Factors)):-
 	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%/*
 
-%! cstr_remove_cycles(+Cost:cstr,-Short:cstr) is det
-% one of the main simplifying predicates for cost structures
-% remove constraints that depend on variables that are not bounded anywhere
-% get rid of circular dependencies	
-
-
-cstr_remove_cycles(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Short):-
+%cstr_sort_iconstrs(+Ub_fconstrs:list(fconstr),+Lb_fconstrs:list(fconstr),+Iconstrs:list(iconstr),-Iconstrs3:list(iconstr)) is det
+% sort the Iconstrs topologically according to the itvars that they use and define
+% there might be cycles in the iconstrs, in case a cycle is found, we remove "redundant" constraints
+% that is, constraints that define itvars that have already been defined 
+%
+% even with that, it is possible that the cycle is not resolve, in which case we discard the remaining constraints
+% FIXME: improve this
+cstr_sort_iconstrs(Ub_fconstrs,Lb_fconstrs,Iconstrs,Iconstrs3):-
 	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Ub_Bounded_set),
 	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
-%	find_cycles(Iconstrs,Iconstrs1),!,
-%	find_cycles(Iconstrs1,Iconstrs11),!,
-%	find_cycles(Iconstrs11,Iconstrs2),!,
-	Iconstrs=Iconstrs2,
-	remove_not_bounded(Iconstrs2,Ub_Bounded_set,Lb_Bounded_set,Iconstrs3),
-	%Some other simplifications
-	cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs3,Bsummands,BConstant),Simplified1),
-	cstr_remove_useless_constrs(Simplified1,both,Simplified),
-	cstr_shorten_variables_names(Simplified,list,Short).
+	cstr_topological_sort((Ub_Bounded_set,Lb_Bounded_set),Iconstrs,Iconstrs3).
 
-:- use_module(stdlib(scc),[compute_sccs/2]).
+cstr_topological_sort(Bounded_itvars,Iconstrs,Iconstrs2):-
+	assign_numbers(1,Iconstrs,Iconstrs_num),
+	compute_predecessors(Iconstrs_num,Iconstrs_num,[],Map_pred),
+	get_sorting(Map_pred,Bounded_itvars,Iconstrs2).
 
-find_cycles(Iconstrs,Iconstrs2):-
-	foldl(iconstr_create_edges,Iconstrs,[],Graph),
-	compute_sccs(Graph,SCCs),
-	include(is_recursive_scc,SCCs,Recursive),
-	foldl(solve_cycle,Recursive,Iconstrs,Iconstrs2).
-
-solve_cycle((recursive,Itvars),Iconstrs,Iconstrs2):-
-	from_list_sl(Itvars,Itvars_set),
-	partition(involved_iconstr(Itvars_set),Iconstrs,Involved,Innocent),
-	(
-	solve_cycle_1(Itvars_set,Involved,New_constrs)
-	;
-	New_constrs=Involved
-	),
-	append(New_constrs,Innocent,Iconstrs2).
-
-
-
-
-involved_iconstr(Itvars_set,bound(_,exp(Index_pos,Index_neg,_,_),Bounded)):-
-	from_list_sl(Bounded,Bounded_set),
-	intersection_sl(Itvars_set,Bounded_set,[_|_]),
-	(
-	member((Itvar,_),Index_pos),
-	contains_sl(Itvars_set,Itvar)
-	;
-	member((Itvar,_),Index_neg),
-	contains_sl(Itvars_set,Itvar)
-	),!.
-
-solve_cycle_1(Itvars_set,Iconstrs,[Extra_iconstr|Iconstrs2]):-
-	maplist(writeln,Iconstrs),
-	foldl(get_positive_linear_constraint(Itvars_set),Iconstrs,([],[]),(Map,Linear_constrs)),
-	term_variables(Map,Vars),
-	maplist(lookup_lm(Map),Itvars_set,Bad_vars),
-	from_list_sl(Bad_vars,Bad_vars_set),
-	from_list_sl(Vars,Vars_set),
-
-	%(Name=[it(18)];true),
-	%trace,
-	%(member([it(Loop)],Itvars_set),Name=[it(Loop)]
-	%;
-	member(Name,Itvars_set)
-	%)
-	,
-	lookup_lm(Map,Name,Var),
-	difference_sl(Vars_set,Bad_vars_set,Vars_of_interest),
-	max_min_linear_expression_all([(Var,1)]+0, Vars_of_interest, Linear_constrs,max, Lin_exp_out),
-	Lin_exp_out=[BSummands+BConstant|_],!,
-	writeln(solved),
-	maplist(unify_pair,Map),
-	foldl(get_summands_aux,BSummands,[mult([BConstant])],Summands),
-	astrexp_new(add(Summands)-add([]),Exp),
-	%Iconstrs=Iconstrs2,
-	exclude(contains_bounded_var(Var),Iconstrs,Iconstrs2),
-	Extra_iconstr=bound(ub,Exp,[Var]).
+assign_numbers(_N,[],[]).
+assign_numbers(N,[Iconstr|Iconstrs],[N:Iconstr|Iconstrs_num]):-
+	N1 is N+1,
+	assign_numbers(N1,Iconstrs,Iconstrs_num).
 	
-get_summands_aux((X,1),Summands,[mult([X])|Summands]):-!.
-get_summands_aux((X,Coeff),Summands,[mult([X,Coeff])|Summands]).
+compute_predecessors([],_All_Iconstrs,Map,Map).
+
+compute_predecessors([N:Iconstr|Iconstrs],All_Iconstrs,Map_accum,Map):-
+	include(is_pred_iconstr(Iconstr),All_Iconstrs,Pred),
+	maplist(get_iconstr_id,Pred,Pred_ids),
+	from_list_sl(Pred_ids,Pred_set),
+	insert_lm(Map_accum,N:Iconstr,Pred_set,Map_accum2),
+	compute_predecessors(Iconstrs,All_Iconstrs,Map_accum2,Map).
+
+get_iconstr_id(N:_,N).
+
+is_pred_iconstr(bound(ub,exp(Index,_Index_neg,_Exp,_Exp_neg),_),_N:bound(ub,_,Def_set)):-
+	maplist(tuple,Names,_Vars,Index),
+	from_list_sl(Names,Used_set),
+	intersection_sl(Def_set,Used_set,[_|_]).
 	
+is_pred_iconstr(bound(lb,exp(_Index,Index_neg,_Exp,_Exp_neg),_),_N:bound(ub,_,Def_set)):-
+	maplist(tuple,Names,_Vars,Index_neg),
+	from_list_sl(Names,Used_set),
+	intersection_sl(Def_set,Used_set,[_|_]).	
+
+is_pred_iconstr(bound(lb,exp(Index,_Index_neg,_Exp,_Exp_neg),_),_N:bound(lb,_,Def_set)):-
+	maplist(tuple,Names,_Vars,Index),
+	from_list_sl(Names,Used_set),
+	intersection_sl(Def_set,Used_set,[_|_]).		
 	
-contains_bounded_var(Var,bound(_,_,[Bounded])):-
-	Var=Bounded.
+get_sorting([],_,[]):-!.
 
-%it asumes that cycles and undefined constraints have been removed 
-cstr_get_unbounded_itvars(cost(Top_exps,_LTop_exps,Aux_exps,Bases,_Base),Unbounded):-
-	foldl(get_bounded_itvars(ub),Top_exps,[],Bounded_aux),
-	foldl(get_bounded_itvars(ub),Aux_exps,Bounded_aux,Bounded),
-	maplist(tuple,Itvars,_,Bases),
-	from_list_sl(Itvars,Itvars_set),
-	difference_sl(Itvars_set,Bounded,Unbounded).
-get_bounded_itvars(Op,bound(Op,_,Bounded),Bounded_set,Bounded_set1):-!,
-	from_list_sl(Bounded,Bounded_set_new),
-	union_sl(Bounded_set,Bounded_set_new,Bounded_set1).
-get_bounded_itvars(_,_,Bounded_set,Bounded_set).
+get_sorting(Map_pred,Bounded_itvars,Iconstrs_final):-
+	get_no_pred(Map_pred,Iconstrs,Iconstrs_ids,Map_pred2),
+	(Iconstrs\=[]->
+		from_list_sl(Iconstrs_ids,Iconstrs_ids_set),
+		maplist(remove_preds(Iconstrs_ids_set),Map_pred2,Map_pred3),
+		foldl(get_newly_defined_itvars,Iconstrs,Bounded_itvars,Bounded_itvars2),
+		get_sorting(Map_pred3,Bounded_itvars2,Iconstrs2),
+		append(Iconstrs,Iconstrs2,Iconstrs_final)
+		;
+		remove_redundant_constraints(Map_pred2,Bounded_itvars,Map_pred3,[],Redundant_ids_set),
 
-
-get_positive_linear_constraint(_Itvars_set,bound(Op,exp(Index_pos,[],add(Summands),add([])),Bounded),(Map,Lin_exps),(Map2,[Lin_exp_norm|Lin_exps])):-
-	copy_term((Index_pos,Summands),(Index_pos_c,Summands_c)),
-	maplist(unify_pair,Index_pos_c),
-	foldl(get_left_side,Summands_c,(Map,[]),(Map1,Summands_left)),
-	write_sum(Summands_left,Left),
-	foldl(translate,Bounded,(Map1,[]),(Map2,List_vars)),
-	write_sum(List_vars,Right),
-	get_rel_op(Op,Rel_op),
-	Lin_exp=..[Rel_op,Left,Right],
-	normalize_constraint(Lin_exp,Lin_exp_norm),!.
-	
-get_positive_linear_constraint(_Itvars_set,_,(Map,Lin_exps),(Map,Lin_exps)).
-
-
-get_left_side(mult(Factors),(Map,Summands),(Map1,[Summand|Summands])):-
-	partition(is_rational,Factors,Coeffs,Vars),
-	product_frl([1|Coeffs],Coeff),
-	(Vars=[]->
-		Summand=Coeff,
-		Map1=Map
-	;
-	Vars=[Var],
-	Var\=max(_),Var\=min(_),
-	translate(Var,(Map,[]),(Map1,[Var2])),
-	Summand=Coeff*Var2
+		(Redundant_ids_set\=[]->
+			maplist(remove_preds(Redundant_ids_set),Map_pred3,Map_pred4),
+			get_sorting(Map_pred4,Bounded_itvars,Iconstrs_final)
+			;
+			format(user_error,'this should never happen',[]),Iconstrs_final=[]
+			)
 	).
-
-translate(Name,(Map,Vars),(Map,[Var|Vars])):-
-	lookup_lm(Map,Name,Var),!.
-translate(Name,(Map,Vars),(Map1,[Var|Vars])):-
-	insert_lm(Map,Name,Var,Map1),!.	
 	
-get_rel_op(ub,'>=').
-get_rel_op(lb,'=<').
+remove_redundant_constraints([],_Bounded_itvars,[],Removed_accum,Removed_accum).
 
-unify_pair((X,X)).
-is_recursive_scc((recursive,_)).
-
-iconstr_create_edges(bound(ub,exp(Index_pos,_Index_neg,_,_),Bounded),Edges_accum,Edges):-
-	maplist(tuple,Target_vars1,_,Index_pos),
-	%maplist(tuple,Target_vars2,_,Index_neg),
-	foldl(get_all_combinations(Target_vars1),Bounded,Edges_accum,Edges).
+remove_redundant_constraints([(Id:bound(ub,_Exp,Bounded_set),_Preds)|Map],(Ub_set,Lb_set),Map_final,Removed_accum,Removed):-
+	difference_sl(Bounded_set,Ub_set,[]),!,
+	insert_sl(Removed_accum,Id,Removed_accum2),
+	remove_redundant_constraints(Map,(Ub_set,Lb_set),Map_final,Removed_accum2,Removed).
 	
-iconstr_create_edges(bound(lb,exp(_Index_pos,Index_neg,_,_),Bounded),Edges_accum,Edges):-
-	%maplist(tuple,Target_vars1,_,Index_pos),
-	maplist(tuple,Target_vars2,_,Index_neg),
-	foldl(get_all_combinations(Target_vars2),Bounded,Edges_accum,Edges).
-
-get_all_combinations(Xs,Y,Edges_accum,Edges):-
-	foldl(get_all_combinations1(Y),Xs,Edges_accum,Edges).
-
-get_all_combinations1(Y,X,Edges,[Y-X|Edges]).
-
-%! remove_not_bounded(Iconstrs:list(iconstrs),Ub_Set:list_set(itvar),Lb_Set:list_set(itvar),Iconstrs_out:list(iconstrs)) is det
-%  in each iteration accumulate the iconstrs that are well defined (all the itvars in their expressions are bounded)
-%  also accumulate the itvars that become well defined by the selected iconstrs
-%  keep iterating until no more iconstrs can be included (a fixpoint has been reached)
-remove_not_bounded(Iconstrs,Ub_Set,Lb_Set,Iconstrs_out):-
-	split_bounded(Iconstrs,Ub_Set,Lb_Set,Ub_Set_1,Lb_Set_1,Bounded,Not_bounded),
-	(Bounded=[]->
-	  Iconstrs_out=[]
-	  %,(Not_bounded\=[]->trace,maplist(print_aux_exp,Not_bounded);true)
-	;
-	  remove_not_bounded(Not_bounded,Ub_Set_1,Lb_Set_1,Iconstrs_aux),
-	  append(Bounded,Iconstrs_aux,Iconstrs_out)
-	  ).
+remove_redundant_constraints([(Id:bound(lb,_Exp,Bounded_set),_Preds)|Map],(Ub_set,Lb_set),Map_final,Removed_accum,Removed):-
+	difference_sl(Bounded_set,Lb_set,[]),!,
+	insert_sl(Removed_accum,Id,Removed_accum2),
+	remove_redundant_constraints(Map,(Ub_set,Lb_set),Map_final,Removed_accum2,Removed).	
+	
+remove_redundant_constraints([Pair|Map],Bounded_itvars,[Pair|Map_final],Removed_accum,Removed):-
+	remove_redundant_constraints(Map,Bounded_itvars,Map_final,Removed_accum,Removed).	
+	
+get_no_pred([],[],[],[]).
+get_no_pred([(Iconstr_id:Iconstr,[])|Map],[Iconstr|Iconstrs],[Iconstr_id|Iconstrs_ids],Map_out):-!,
+	get_no_pred(Map,Iconstrs,Iconstrs_ids,Map_out).
+get_no_pred([Other|Map],Iconstrs,Iconstr_ids,[Other|Map_out]):-
+	get_no_pred(Map,Iconstrs,Iconstr_ids,Map_out).	
+	
+remove_preds(Pred_set,(Iconstr,Set),(Iconstr,Set2)):-
+	difference_sl(Set,Pred_set,Set2).
+	
+		
+get_newly_defined_itvars(bound(ub,_,Bounded_set),(Ub_accum,Lb_Bounded_set),(Ub_Bounded_set,Lb_Bounded_set)):-
+	union_sl(Bounded_set,Ub_accum,Ub_Bounded_set).
+	
+get_newly_defined_itvars(bound(lb,_,Bounded_set),(Ub_Bounded_set,Lb_accum),(Ub_Bounded_set,Lb_Bounded_set)):-
+	union_sl(Bounded_set,Lb_accum,Lb_Bounded_set).	
+	
+%! cstr_remove_undefined(+Cost:cstr,-Short:cstr) is det
+% Given a cost structure where the Iconstrs are topologically sorted, it filters out the ones that are not well defined (they depend on an itvar that is not defined)
+cstr_remove_undefined(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),cost(Ub_fconstrs,Lb_fconstrs,Bounded,Bsummands,BConstant)):-
+	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Ub_Bounded_set),
+	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
+	split_bounded(Iconstrs,Ub_Bounded_set,Lb_Bounded_set,_,_,Bounded,_).
 	  
 split_bounded([],Ub_Set,Lb_Set,Ub_Set,Lb_Set,[],[]).
 
-split_bounded([bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
+split_bounded([bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Exp_Bounded],Exp_Not_bounded):-
 	% the positive summands have to be well defined
 	maplist(tuple,Names,_Vars,Index),
-	maplist(contains_sl(Ub_Set),Names),!,
+	from_list_sl(Names,Names_set),
+	difference_sl(Names_set,Ub_Set,[]),!,
 	%include Bounded into the Ub_set
-	from_list_sl(Bounded,Bounded_set),
 	union_sl(Bounded_set,Ub_Set,Ub_Set_aux),
 	split_bounded(Iconstrs,Ub_Set_aux,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).
 
 % FIXME: the positive summands do not need to be well defined in theory but it might help...make some experiments
-split_bounded([bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded)|Exp_Bounded],Exp_Not_bounded):-
+split_bounded([bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Exp_Bounded],Exp_Not_bounded):-
 	% the negative summands have to be well defined
 	maplist(tuple,Names,_,Index),
-	maplist(contains_sl(Lb_Set),Names),
+	from_list_sl(Names,Names_set),
+	difference_sl(Names_set,Lb_Set,[]),
+	
 	maplist(tuple,Names_neg,_,Index_neg),
-	maplist(contains_sl(Ub_Set),Names_neg),!,
+	from_list_sl(Names_neg,Names_neg_set),
+	difference_sl(Names_neg_set,Ub_Set,[]),!,
 	%include Bounded into the Lb_set
-	from_list_sl(Bounded,Bounded_set),
 	union_sl(Bounded_set,Lb_Set,Lb_Set_aux),
 	split_bounded(Iconstrs,Ub_Set,Lb_Set_aux,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).	
 	
@@ -920,8 +922,6 @@ compute_initial_reference_set(max,(Name,Value),(Bsummands,Ref_set),([(Name,Value
 		;
 		insert_sl(Ref_set,lb(Name),Ref_set2)
 		).	
-
-
 
 remove_useless_iconstrs([],Ref_set,Iconstrs,Ref_set,Iconstrs).
 remove_useless_iconstrs([bound(Op,Exp,Bounded)|Iconstrs],Ref_set_accum,Iconstrs_accum,Ref_set,Iconstrs_out):-
@@ -974,16 +974,16 @@ cstr_extend_variables_names(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BCon
 		maplist(bfactor_extend_name(Prefix),Bsummands,Bsummands1),
 		print_itvars_renaming(cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant)).
 		
-	
 
 
-
-iconstr_extend_name(Prefix,bound(Op,Exp,Bounded),bound(Op,Exp1,Bounded2)):-
+iconstr_extend_name(Prefix,bound(Op,Exp,Bounded),bound(Op,Exp1,Bounded_set)):-
 	astrexp_extend_name(Prefix,Exp,Exp1),
-	maplist(append([Prefix]),Bounded,Bounded2).
+	maplist(append([Prefix]),Bounded,Bounded2),
+	from_list_sl(Bounded2,Bounded_set).
 	
-fconstr_extend_name(Prefix,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded2)):-
-	maplist(append([Prefix]),Bounded,Bounded2).	
+fconstr_extend_name(Prefix,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded_set)):-
+	maplist(append([Prefix]),Bounded,Bounded2),
+	from_list_sl(Bounded2,Bounded_set).
 	
 astrexp_extend_name(Prefix,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
 	maplist(bfactor_extend_name(Prefix),Index,Index2),
@@ -1013,12 +1013,14 @@ cstr_shorten_variables_names(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BCo
 		maplist(bfactor_shorten_name(Flag),Bsummands,Bsummands1).
 		
 
-iconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression2,Bounded2)):-
+iconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression2,Bounded_set)):-
 	astrexp_shorten_name(Flag,Expression,Expression2),
-	maplist(itvar_shorten_name(Flag),Bounded,Bounded2).
+	maplist(itvar_shorten_name(Flag),Bounded,Bounded2),
+	from_list_sl(Bounded2,Bounded_set).
 	
-fconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded2)):-
-	maplist(itvar_shorten_name(Flag),Bounded,Bounded2).		
+fconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded_set)):-
+	maplist(itvar_shorten_name(Flag),Bounded,Bounded2),
+	from_list_sl(Bounded2,Bounded_set).	
 
 astrexp_shorten_name(Flag,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
 	maplist(bfactor_shorten_name(Flag),Index,Index2),
@@ -1315,7 +1317,7 @@ cstr_or_compress(Costs,Cost_final):-
 	        cstr_infinite(Cost_final)
 	        )
 	;
-	 cstr_join_equal_fconstr(cost(Ub_fcons_flat,[],Itcons_flat,BSummands_flat,BConstant),Cost_final)
+	 cstr_simplify(cost(Ub_fcons_flat,[],Itcons_flat,BSummands_flat,BConstant),Cost_final)
 	 ).
 
 %FIXME 
@@ -1351,7 +1353,7 @@ cstr_or_compress(Costs,Cost_final):-
 	ut_flat_list([Top_extra,Pos_disjunct_fconstrs,Ub_fcons_list,Neg_disjunct_fconstrs,Lb_fcons_list],Fcons_all),
 	partition(is_ub_bconstr,Fcons_all,Ub_fcons,Lb_fcons),
 	ut_flat_list([Itcons_list,Iconstrs_extra,Pos_disjunct_auxs,Neg_disjunct_auxs],Iconstrs),
-	cstr_join_equal_fconstr(cost(Ub_fcons,Lb_fcons,Iconstrs,BSummands1,0),Cost_final).
+	cstr_simplify(cost(Ub_fcons,Lb_fcons,Iconstrs,BSummands1,0),Cost_final).
 
 
 get_disjunction_aux([],[],[]):-!.

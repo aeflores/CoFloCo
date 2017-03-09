@@ -111,8 +111,8 @@ These constraints are useful in most cases and that allows us to simplify the re
 			bagof_no_fail/3]).	
 :- use_module('../../utils/cost_structures',[
 			cstr_extend_variables_names/3,
-			cstr_join_equal_fconstr/2,
-			cstr_remove_cycles/2,
+			cstr_simplify/2,
+			cstr_sort_iconstrs/4,
 			new_itvar/1,
 			get_loop_itvar/2,
 			get_loop_depth_itvar/2,
@@ -267,8 +267,9 @@ compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Base_cost,Bas
 	%collect stored results
 	collect_phase_results(Result_vars,Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs),
 	reverse(New_iconstrs,New_iconstrs2),
-	append(New_iconstrs2,Iconstrs,Iconstrs_final),
-	cstr_join_equal_fconstr(cost(Final_ub_fconstrs,Final_lb_fconstrs,Iconstrs_final,Bases,Base),Cost_final).
+	cstr_sort_iconstrs(Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs2,New_iconstrs_sorted),
+	append(New_iconstrs_sorted,Iconstrs,Iconstrs_final),
+	cstr_simplify(cost(Final_ub_fconstrs,Final_lb_fconstrs,Iconstrs_final,Bases,Base),Cost_final).
 
 
 %! compute_sums_and_max_min_in_phase(Head:term,Call:term,Phase:phase,Maxs:list(fconstrs),Mins:list(fconstrs),Max_sums:list(fconstrs),Min_sums:list(fconstrs))
