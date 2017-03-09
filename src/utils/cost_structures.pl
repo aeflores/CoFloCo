@@ -439,11 +439,9 @@ cstr_simplify_1(Cstr,Max_min_both,Cstr_final):-
 	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
 	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
 	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),!,
-	%cstr_simplify_multiple_variables_constrs(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cstr_aux),
-	cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant)=Cstr_aux2,
-	%join_equivalent_itvars(Cstr_aux,Cstr_aux2),!,
+	cstr_simplify_multiple_variables_constrs(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cstr_aux),
+	join_equivalent_itvars(Cstr_aux,Cstr_aux2),
 	cstr_remove_undefined(Cstr_aux2,Cstr_aux3),
-	%Some other simplifications
 	cstr_propagate_zeroes(Cstr_aux3,Cstr_aux4),
 	cstr_remove_useless_constrs(Cstr_aux4,Max_min_both,Cstr_final),!.
 	%cstr_count_appearances(Cstr_final).
@@ -576,8 +574,9 @@ is_multiple_set([_,_|_]).
 join_itvar_sets([],Itconstrs,Bsummands,Itconstrs,Bsummands).
 
 join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_final,Bsummands_final):-
+	%get_first_appearance
 	single_list_to_setTree(Equivalent_itvars,Equivalent_itvars_setTree),
-	exclude(bconstr_bounds_itvars(Equivalent_itvars_setTree),Itconstrs,Itconstrs2),
+	keep_first_appearances(Itconstrs,Itvar,Equivalent_itvars_setTree,[],Itconstrs2),
 	empty_setTree(Empty_setTree),
 	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_setTree),Itconstrs2,(Empty_setTree,[]),(_,Itconstrs3)),
 	reverse(Itconstrs3,Itconstrs4),
@@ -585,6 +584,31 @@ join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_f
 	maplist(substitute_itvars_in_list(Itvar,Equivalent_itvars_setTree),Sets,Sets1),!,
 	join_itvar_sets(Sets1,Itconstrs4,Bsummands2,Itconstrs_final,Bsummands_final).
 
+keep_first_appearances([],_,_,_,[]).
+keep_first_appearances([bound(Op,Exp,[Itvar])|Itconstrs],Itvar,SetTree,Appeared,Itconstrs_final):-!,
+	(contains_sl(Appeared,bound(Op,Exp,[Itvar]))->
+	    Itconstrs_final=Itconstrs2,
+	    Appeared2=Appeared
+	    ;
+	    insert_sl(Appeared,bound(Op,Exp,[Itvar]),Appeared2),
+	    Itconstrs_final=[bound(Op,Exp,[Itvar])|Itconstrs2]
+	),
+	keep_first_appearances(Itconstrs,Itvar,SetTree,Appeared2,Itconstrs2).
+	
+keep_first_appearances([bound(Op,Exp,[Itvar2])|Itconstrs],Itvar,SetTree,Appeared,Itconstrs_final):-
+	contains_setTree(SetTree,Itvar2),!,
+	(contains_sl(Appeared,bound(Op,Exp,[Itvar]))->
+	    Itconstrs_final=Itconstrs2,
+	    Appeared2=Appeared
+	    ;
+	    insert_sl(Appeared,bound(Op,Exp,[Itvar]),Appeared2),
+	    Itconstrs_final=[bound(Op,Exp,[Itvar])|Itconstrs2]
+	),
+	keep_first_appearances(Itconstrs,Itvar,SetTree,Appeared2,Itconstrs2).
+
+keep_first_appearances([Other|Itconstrs],Itvar,SetTree,Appeared,[Other|Itconstrs2]):-
+	keep_first_appearances(Itconstrs,Itvar,SetTree,Appeared,Itconstrs2).
+	
 single_list_to_setTree(List,Set):-
 	maplist(make_trivial_pair,List,List_pair),
 	list_to_rbtree(List_pair,Set).
@@ -610,11 +634,6 @@ substitute_itvars_in_list(Itvar,Equivalent_itvars_setTree,List,List1):-
 substitute_itvar_in_list(Itvar,SetTree,Itvar2,Itvar):-
 	contains_setTree(SetTree,Itvar2),!.	
 substitute_itvar_in_list(_Itvar,_Set,Itvar2,Itvar2).
-
-bconstr_bounds_itvars(SetTree,bound(_,_,Bounded)):-
-	member(B,Bounded),
-	contains_setTree(SetTree,B),!.
-
 
 itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_setTree,bound(Op,Exp,Bounded),(Bconstrs_hash_setTree,Bconstrs),Pair1):-
 	Exp=exp(Index_pos,Index_neg,Pos,Neg),
@@ -867,8 +886,7 @@ split_bounded([],Ub_Set,Lb_Set,Ub_Set,Lb_Set,[],[]).
 split_bounded([bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Exp_Bounded],Exp_Not_bounded):-
 	% the positive summands have to be well defined
 	maplist(tuple,Names,_Vars,Index),
-	from_list_sl(Names,Names_set),
-	difference_sl(Names_set,Ub_Set,[]),!,
+	maplist(contains_sl(Ub_Set),Names),!,
 	%include Bounded into the Ub_set
 	union_sl(Bounded_set,Ub_Set,Ub_Set_aux),
 	split_bounded(Iconstrs,Ub_Set_aux,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).
@@ -877,12 +895,9 @@ split_bounded([bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Iconstrs],
 split_bounded([bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Exp_Bounded],Exp_Not_bounded):-
 	% the negative summands have to be well defined
 	maplist(tuple,Names,_,Index),
-	from_list_sl(Names,Names_set),
-	difference_sl(Names_set,Lb_Set,[]),
-	
+	maplist(contains_sl(Lb_Set),Names),
 	maplist(tuple,Names_neg,_,Index_neg),
-	from_list_sl(Names_neg,Names_neg_set),
-	difference_sl(Names_neg_set,Ub_Set,[]),!,
+	maplist(contains_sl(Ub_Set),Names_neg),!,
 	%include Bounded into the Lb_set
 	union_sl(Bounded_set,Lb_Set,Lb_Set_aux),
 	split_bounded(Iconstrs,Ub_Set,Lb_Set_aux,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).	
