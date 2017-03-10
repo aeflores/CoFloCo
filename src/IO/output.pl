@@ -49,6 +49,9 @@ This module prints the results of the analysis
 		  write_lin_exp_in_phase/3,
 		  print_removed_redundant_constr_message/2,
 		  print_joined_itvar_sets_message/1,
+		  print_cycle_in_cstr_warning/0,
+		  print_removed_possibly_redundant_cstrs/1,
+		  print_removed_unresolved_cstrs_cycle/1, 
 		  print_results/2,
 		  print_phase_cost/4,
 		  print_loops_costs/3,
@@ -118,6 +121,11 @@ init_output:-
 	retractall(log_entry(_,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 % predicates to print or log information depending on wether with are in the competition or not
+
+print_or_log_list([]).
+print_or_log_list([Elem|List]):-
+	print_or_log('~p~n',[Elem]),
+	print_or_log_list(List).
 
 print_or_log(String,Args):-
 	get_param(competition,[]),!,
@@ -621,7 +629,34 @@ print_phase_cost(_,_,_,_).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+print_cycle_in_cstr_warning:-
+	(get_param(debug,[])->
+		print_warning('Found a cycle in the non-final constraints~n',[])
+	; 
+		true
+	).
+print_removed_possibly_redundant_cstrs(Removed_iconstrs):-
+	get_param(debug,[]),!,
+	copy_term(Removed_iconstrs,Removed_iconstrs_copy),
+	maplist(write_aux_exp,Removed_iconstrs_copy,Removed_iconstrs_print),
+	print_or_log(' Removed possibly redundant constraints to solve a cycle in the cost structure ~n',[]),
+	print_or_log_list(Removed_iconstrs_print).
+	
+print_removed_possibly_redundant_cstrs(_).	
 
+print_removed_unresolved_cstrs_cycle(Pred_graph):-
+	get_param(debug,[]),!,
+	maplist(get_iconstr_from_graph,Pred_graph,Iconstrs),
+	copy_term(Iconstrs,Iconstrs_copy),
+	maplist(write_aux_exp,Iconstrs_copy,Iconstrs_print),
+	print_or_log('Could not solve cycle in cost structure.~n Discarded constraints:  ~n',[]),
+	print_or_log_list(Iconstrs_print).
+	
+print_removed_unresolved_cstrs_cycle(_).
+
+get_iconstr_from_graph((_Id:Iconstr,_Preds),Iconstr).
+	
+	
 print_removed_redundant_constr_message(Constr,Removed_set):-
 	get_param(debug,[]),Removed_set\=[],!,
 	copy_term((Constr,Removed_set),(Constr_copy,Removed_set_copy)),
