@@ -549,7 +549,8 @@ add_itvar_empty_map((Itvar,_),Map,Map1):-
 	
 	
 get_itconstr_for_each_itvar(bound(Op,Exp,[Itvar]),Map,Map1):-
-	Exp=exp([(Itvar2,Var)],[],add([mult([Var])]),add([])),!,
+	Exp=exp([(Itvar2,Var)],[],add([mult([Var])]),add([])),
+	var(Var),!,
 	put_mm(Map,Itvar,single(Op,Itvar2),Map1).
 
 get_itconstr_for_each_itvar(bound(Op,Exp,[Itvar]),Map,Map1):-!,
@@ -585,6 +586,12 @@ join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_f
 	join_itvar_sets(Sets1,Itconstrs4,Bsummands2,Itconstrs_final,Bsummands_final).
 
 keep_first_appearances([],_,_,_,[]).
+
+keep_first_appearances([bound(ub,exp([(Itvar2,_)],_Index_neg,_Pos,_Neg),[Itvar3])|Itconstrs],Itvar,SetTree,Appeared,Itconstrs_final):-
+	(Itvar=Itvar2;contains_setTree(SetTree,Itvar2)),
+	(Itvar=Itvar3;contains_setTree(SetTree,Itvar3)),!,
+	keep_first_appearances(Itconstrs,Itvar,SetTree,Appeared,Itconstrs_final).
+
 keep_first_appearances([bound(Op,Exp,[Itvar])|Itconstrs],Itvar,SetTree,Appeared,Itconstrs_final):-!,
 	(contains_sl(Appeared,bound(Op,Exp,[Itvar]))->
 	    Itconstrs_final=Itconstrs2,
