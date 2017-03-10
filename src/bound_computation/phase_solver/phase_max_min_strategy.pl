@@ -89,12 +89,16 @@ max_min_strategy(bound(Op,Lin_exp,Bounded),Head,Phase,[Fconstr],[Iconstr],Pendin
     
 check_loops_max([],_Head,_Lin_exp,[],Empty_pstrexp_pair,Pending,Pending):-
 	pstrexp_pair_empty(Empty_pstrexp_pair).
-	
+
 check_loops_max([Loop|Loops],Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	number(Loop),
 	check_loop_max(Loop,Head,Lin_exp,Resets1,Pstrexp_pair1,Pending,Pending_aux),
 	check_loops_max(Loops,Head,Lin_exp,Resets2,Pstrexp_pair2,Pending_aux,Pending_out),
 	append(Resets1,Resets2,Resets),
-	pstrexp_pair_add(Pstrexp_pair1,Pstrexp_pair2,Pstrexp_pair).
+	pstrexp_pair_add(Pstrexp_pair1,Pstrexp_pair2,Pstrexp_pair).	
+check_loops_max([Loop|Loops],Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	\+number(Loop),%it is a chain
+	check_loops_max(Loops,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out).
 
 %! check_loops_max(Loop:loop_id,Head:term,Call:term,Lin_exp:alinexp,Resets:list(itvar),Pstrexp_pair:pstrexp_pair,Pending:pending_constrs,Pending_out:pending_constrs)
 % check the different possible behaviors of Loop with respect to Lin_exp
@@ -227,11 +231,17 @@ check_loops_min([],_Head,_Lin_exp,[],Empty_pstrexp_pair,Pending,Pending):-
 	pstrexp_pair_empty(Empty_pstrexp_pair).
 	
 check_loops_min([Loop|Loops],Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	number(Loop),%it is a chain
 	check_loop_min(Loop,Head,Lin_exp,Resets1,Pstrexp_pair1,Pending,Pending_aux),
 	check_loops_min(Loops,Head,Lin_exp,Resets2,Pstrexp_pair2,Pending_aux,Pending_out),
 	append(Resets1,Resets2,Resets),
 	pstrexp_pair_add(Pstrexp_pair1,Pstrexp_pair2,Pstrexp_pair).
-
+	
+check_loops_min([Loop|Loops],Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	\+number(Loop),%it is a chain
+	check_loops_max(Loops,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out).
+	
+	
 %! check_loop_min(Loop:loop_id,Head:term,Lin_exp:alinexp,Resets:list(itvar),Pstrexp_pair:pstrexp_pair,Pending:pending_constrs,Pending_out:pending_constrs)
 % check the different possible behaviors of Loop with respect to Lin_exp
 % similar to check_loops_max
@@ -285,4 +295,62 @@ check_loop_min(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
 				Resets=[Aux_itvar]
 			)
 		)
-	).    
+	).   
+	
+	
+check_loop_min(Loop,Head,Lin_exp,Resets,Pstrexp_pair,Pending,Pending_out):-
+	%for multiple recursion
+	enriched_loop(Loop,Head,Calls,Cs),
+	Calls=[_,_|_],
+	maplist(get_difference_version_aux(Head,Lin_exp),Calls,Lin_exp_diffs),
+	term_variables((Head,Calls),Vars),
+	exclude(is_positive(Vars,Cs),Lin_exp_diffs,Lin_exp_diffs_non_pos),
+% the lin_exp does not increase
+	(Lin_exp_diffs_non_pos=[]->
+		(get_param(debug,[])->print_or_log('     - Loop ~p does not increase the expression~n',[Loop]);true),
+		Resets=[],
+		pstrexp_pair_empty(Pstrexp_pair),
+		Pending_out=Pending
+		;
+% remove a constant
+		(foldl(get_maximum_increase(Cs),Lin_exp_diffs_non_pos,0,Delta)->
+		    (get_param(debug,[])->print_or_log('     - Loop ~p  decreases the expression by ~p ~n',[Loop,Delta]);true),
+			get_loop_itvar(Loop,Loop_name),
+			Pstrexp_pair=add([mult([Loop_name,Delta])])-add([]),
+			Resets=[],
+			Pending_out=Pending
+		;
+			get_input_output_vars(Head,Input_vars_head,_),
+			select_important_variables(Input_vars_head,Lin_exp,Vars_of_Interest),
+			max_min_linear_expression_list_all(Lin_exp_diffs_non_pos,Vars, Vars_of_Interest, Cs,max, Max_increments),
+%add an expression		
+			(Max_increments\=[]->
+				(get_param(debug,[])->
+				    maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_increments,Max_increments_print),
+				    print_or_log('     - Loop ~p  increases the expression by ~p ~n',[Loop,Max_increments_print]);true),
+				new_itvar(Aux_itvar),
+				maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
+				save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending_out),
+				Pstrexp_pair=add([mult([Aux_itvar])])-add([]),
+				Resets=[]
+			;
+%reset		
+				maplist(get_tail_version(Head,Lin_exp),Calls,Lin_exp_tails),
+				max_min_linear_expression_list_all(Lin_exp_tails,Vars, Input_vars_head, Cs,min, Mins_resets),
+				Mins_resets\=[],!,
+				(get_param(debug,[])->
+				    maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Mins_resets,Mins_resets_print),
+				    print_or_log('     - Loop ~p  resets the expression to ~p ~n',[Loop,Mins_resets_print]);true),
+				new_itvar(Aux_itvar),
+				maplist(fconstr_new([Aux_itvar],lb),Mins_resets,Maxtops),		
+				save_pending_list(max_min,Head,Loop,Maxtops,Pending,Pending_out),	
+				pstrexp_pair_empty(Pstrexp_pair),
+				Resets=[Aux_itvar]
+			)
+		)
+	).	 
+	
+is_negative(Vars,Cs,Lin_exp):-
+	le_print_int(Lin_exp,Lin_exp_int,_),
+	nad_entails(Vars,Cs,[Lin_exp_int=<0]).
+	

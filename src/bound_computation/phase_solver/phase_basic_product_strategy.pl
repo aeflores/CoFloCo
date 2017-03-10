@@ -32,9 +32,7 @@ This is only valid for the last level, the leafs of the evaluation tree
 */
 
 :- module(phase_basic_product_strategy,[
-		basic_product_strategy/6,
-		level_product_strategy/6,
-		leaf_product_strategy/5
+		basic_product_strategy/6
 	]).
 
 :- use_module(phase_common).
@@ -85,7 +83,8 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
     Aux_exp=bound(Op,Astrexp,Bounded),
     print_product_strategy_message(Head,max_min,Max_fconstrs).
 
-    
+ /*
+   
  level_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Iconstr,Pending,Pending_out):-
 	%FIXME needs flag for the multiple recursion
 	Calls=[_,_|_],
@@ -125,3 +124,5 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 	save_pending_list(max_min,Head,0,Max_fconstrs,Pending,Pending_out),
     Iconstr=bound(Op,Astrexp,Bounded),
     print_product_strategy_message(Head,max_min,Max_fconstrs).
+    
+  */

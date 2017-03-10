@@ -35,11 +35,11 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 :- module(phase_inductive_sum_strategy,[
 		init_inductive_sum_strategy/0,
 		inductive_sum_strategy/8,
-		inductive_level_sum_strategy/7,
 		find_minsum_constraint/8
 	]).
 :- use_module(phase_common).	
 :- use_module(phase_solver,[
+				phase_type/1,
 				used_pending_constraint/3,
 				save_used_pending_constraint/3,
 				enriched_loop/4,
@@ -71,10 +71,9 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 			fconstr_new/4,
 			iconstr_new/4]).			
 :-use_module('../../utils/template_inference',[
-			difference_constraint_farkas_ub/6,
-			difference_constraint_farkas_multiple_ub/5,
-			difference_constraint_farkas_lb/5,
-			farkas_leaf_ub_candidate/4
+			difference_constraint_farkas_ub/5,
+			difference_constraint_farkas_ub_leaf/6,
+			difference_constraint_farkas_lb/5
 	]).		
 					
 :- use_module(stdlib(numeric_abstract_domains),[
@@ -122,7 +121,7 @@ inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pen
 	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out).
 
 
-
+/*
 
 inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
 	(get_param(debug,[])->print_or_log('   - Applying inductive level-sum strategy ~n',[]);true),
@@ -135,6 +134,7 @@ inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending
 	ut_flat_list(New_iconstrs_list,New_iconstrs),
 	empty_pending(Empty_pending),
 	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out).
+*/
 
 generate_rf_candidates(ub,Head,Loop,Candidates):-
 	current_chain_prefix(Chain_prefix),
@@ -178,80 +178,47 @@ get_partial_lower_bound(Head,Chain,Loop,Lb):-
 % sum of all the instances of Lin_exp in Loop 
 %
 % use Farkas lemma
-generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,ub,Loop,Candidates):-!,
-	enriched_loop(Loop,Head,[Call],Cs),	
-	get_param(n_candidates,[Max_candidates]),
-	difference_constraint_farkas_ub(Head,Call,Cs,Lin_exp,Diff_list,Diff_list2),
-	%check that the candidates are correct
-			(get_param(debug,[])->
-		maplist(check_candidate(Head,[Call],Loop,Lin_exp,'>='),Diff_list),
-		maplist(check_candidate(Head,[Call],Loop,Lin_exp,'>='),Diff_list2)
-		;true),
-	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
-	ut_split_at_pos(Diff_list2,Max_candidates,Diff_list_selected2,_),
-	maplist(tuple(tail),Diff_list_selected,Head_candidates),
-	maplist(tuple(head),Diff_list_selected2,Tail_candidates),
-	append(Head_candidates,Tail_candidates,Candidates).
-
-generate_lecandidates(loop_vars(Head,Calls),Lin_exp,ub,Loop,Head_candidates):-
-	Calls=[_,_|_],
+generate_lecandidates(loop_vars(Head,Calls),Lin_exp,ub,Loop,Candidates):-!,
 	enriched_loop(Loop,Head,Calls,Cs),	
-	nad_consistent_constraints(Cs),
 	get_param(n_candidates,[Max_candidates]),
-	difference_constraint_farkas_multiple_ub(Head,Calls,Cs,Lin_exp,Diff_list),
+	%add extra for leafs
+	(Calls=[]->
+	   enriched_loop(_Loop2,Head,Calls2,Cs2),
+	   Calls2=[_|_],
+	   difference_constraint_farkas_ub_leaf(Head,Calls,Cs,Lin_exp,(Calls2,Cs2),Diff_list)
+	   ;
+	   difference_constraint_farkas_ub(Head,Calls,Cs,Lin_exp,Diff_list)
+	),
 	%check that the candidates are correct
-	(get_param(debug,[])->maplist(check_candidate(Head,Calls,Loop,Lin_exp,'>='),Diff_list);true),
+	(get_param(debug,[])->
+		maplist(check_candidate(Head,Calls,Loop,Lin_exp,'>='),Diff_list)
+		;
+		true
+	),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
-	from_list_sl(Diff_list_selected,Diff_list_selected_set),
-	maplist(tuple(head),Diff_list_selected_set,Head_candidates),
+	maplist(tuple(tail),Diff_list_selected,Head_candidates),
+	
+	% the strategy without resets is not applicable in non-terminating chains
+	(phase_type(non_terminating)->
+		Tail_candidates=[]
+		;
+		maplist(tuple(head),Diff_list_selected,Tail_candidates)
+	),
 	%% For finding interesting examples
 	interesting_example_warning(no_candidate,(Lin_exp,loop_vars(Head,Calls),Loop,Head_candidates)),
-	Diff_list_selected_set\=[].
+	append(Head_candidates,Tail_candidates,Candidates).
 
 
 %FIXME lower bounds: standarize the format of the function	
-generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,lb,Loop,Tail_candidates):-
-	enriched_loop(Loop,Head,[Call],Cs),	
+generate_lecandidates(loop_vars(Head,Calls),Lin_exp,lb,Loop,Tail_candidates):-
+	\+phase_type(non_terminating),
+	enriched_loop(Loop,Head,Calls,Cs),	
 	get_param(n_candidates,[Max_candidates]),
-	difference_constraint_farkas_lb(Head,Call,Cs,Lin_exp,Diff_list),
+	difference_constraint_farkas_lb(Head,Calls,Cs,Lin_exp,Diff_list),
 	%check that the candidates are correct
-	(get_param(debug,[])-> maplist(check_candidate(Head,[Call],Loop,Lin_exp,'=<'),Diff_list);true),
+	(get_param(debug,[])-> maplist(check_candidate(Head,Calls,Loop,Lin_exp,'=<'),Diff_list);true),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	maplist(tuple(tail),Diff_list_selected,Tail_candidates).	
-
-
-generate_leaf_candidates(Head,Lin_exp,ub,Head_candidates):-
-	%take all consistent loops
-	findall(loop(Head,Calls,Cs),
-		(enriched_loop(_Loop,Head,Calls,Cs),
-	     nad_consistent_constraints(Cs)),Loops),
-	
-	get_param(n_candidates,[Max_candidates]),
-	farkas_leaf_ub_candidate(Head,Loops,Lin_exp,Diff_list),!,
-	(get_param(debug,[])-> 
-	  maplist(check_leaf_candidate(Loops,Lin_exp,'>='),Diff_list)
-	  ;true),
-	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
-	from_list_sl(Diff_list_selected,Diff_list_selected_set),
-	maplist(tuple(head),Diff_list_selected_set,Head_candidates),
-	Diff_list_selected_set\=[].
-
-
-check_leaf_candidate(Loops,Linexp,Op,Exp):-
-	maplist(check_leaf_candidate_loop(Linexp,Op,Exp),Loops).
-
-check_leaf_candidate_loop(Linexp,Op,Exp,loop(Head,Calls,Cs)):-
-	foldl(get_sum_call(Head,Linexp),Calls,[]+0,Sum_calls),
-	term_variables((Head,Calls),Vars),	
-	subtract_le(Exp,Sum_calls,Exp_diff),
-	le_print_int(Exp_diff,Exp_diff_print_int,_),
-	Constr=..[Op,Exp_diff_print_int,0],
-	nad_entails(Vars,Cs,[Constr]),!.
-	
-check_leaf_candidate_loop(Linexp,_Op,Exp,loop(Head,Calls,_Cs)):-
-	write_lin_exp_in_phase(loop_vars(Head,Calls),Linexp,Linexp_print),
-	write_lin_exp_in_phase(loop_vars(Head,Calls),Exp,Exp_print),
-	throw(incorrect_leaf_candidate(Linexp_print,Exp_print)).
 
 
 check_candidate(Head,Calls,Loop,Linexp,Op,Exp):-
@@ -347,7 +314,7 @@ generate_constrs_from_classification(Classification,ub,(Type,Lin_exp),Loop_vars,
 	partition(is_class(cnt),Classification,Cnt_class,Other_classes),
 	foldl(join_class_elements,Cnt_class,[],Bounded_vars),
 	from_list_sl(Bounded_vars,Bounded_set),
-	(Type=head->
+	((Type=head;phase_solver:phase_type(multiple))->
 		Sum=Lin_exp
 		;
 		Loop_vars=loop_vars(Head,[Call]),
@@ -372,8 +339,12 @@ generate_constrs_from_classification(Classification,lb,(tail,Lin_exp),Loop_vars,
 	partition(is_class(cnt),Classification,Cnt_class,Other_classes),
 	foldl(join_class_elements,Cnt_class,[],Bounded_vars),
 	from_list_sl(Bounded_vars,Bounded_set),
-	Loop_vars=loop_vars(Head,[Call]),
-	get_difference_version(Head,Call,Lin_exp,Sum),
+	(phase_solver:phase_type(multiple)->
+		Sum=Lin_exp
+		;
+		Loop_vars=loop_vars(Head,[Call]),
+		get_difference_version(Head,Call,Lin_exp,Sum)
+	),
 	(Other_classes=[] ->
 		fconstr_new(Bounded_set,lb,Sum,Ub_fconstr),
 		Fconstrs=[Ub_fconstr],
@@ -463,6 +434,13 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 			(get_param(debug,[])->print_or_log('       - Loop ~p is collaborative~n',[Loop]);true)
 		)
 	;
+	% If we have Inductive strategy with resets, we can ignore the leafs
+	((Calls=[],Type=head)->
+			Pending1=Pending,
+			Class=class(cnt,Loop,[]),
+			(get_param(debug,[])->print_or_log('       - Chain ~p is ignored~n',[Loop]);true)
+	;
+	
 %if add a constant	
 	(nad_maximize([Exp_diff_neg_int=Exp_diff_denominator*D|Cs],[D],[Delta])->
 		get_loop_itvar(Loop,Loop_name),
@@ -497,6 +475,7 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 					maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_resets,Max_resets_print),
 					print_or_log('       - Loop ~p has a reset to  ~p~n',[Loop,Max_resets_print]);true)
 		)
+	)
 	)
 	).
 
