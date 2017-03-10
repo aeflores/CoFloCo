@@ -60,7 +60,8 @@ For the constraints, this is done at the same time of the compression.
 :-use_module(library(lists)).
 :-use_module('../utils/cost_structures',[new_itvar/1]).	
 :-use_module('../IO/params',[get_param/2]).
-:-use_module('../IO/output',[print_phase_cost/4]).
+:-use_module('../IO/output',[print_phase_cost/4,
+	print_header/3]).
 %! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cstr) is det
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
@@ -72,14 +73,13 @@ compute_chain_cost(Head,Chain,Cost_total):-
 
 compress_chain_costs([],_Chain_rev,_Head_total,_Head,Cost_base,[]):-
 	Cost_base=cost([],[],[],[],0).
-compress_chain_costs([Base_case],Chain_rev,Head_total,Head,Cost_base,Cs_base):-
+compress_chain_costs([Base_case],Chain_rev,Head_total,Head,Cost,Cs_base):-
 	number(Base_case),!,
 	copy_term(Head_total,Head),
 	forward_invariant(Head,([Base_case|Chain_rev],_),Forward_hash,Forward_inv),
 	profiling_start_timer(equation_cost),
 	get_loop_cost(Head,[],(Forward_hash,Forward_inv),Base_case,Cost),
 	profiling_stop_timer_acum(equation_cost,_),
-	cstr_simplify(Cost,Cost_base),
 	loop_ph(Head,(Base_case,_),[],Cs,_,_),
 	ut_flat_list([Forward_inv,Cs],Cs_base).
 
@@ -105,6 +105,9 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_next
     ut_flat_list([Ub_iconstrs_extra,Lb_iconstrs_extra,Iconstrs],Aux_exps_new),
     %the cost is the sum of the individual costs
     Cost_next=cost(Ub_fconstrs_new,Lb_fconstrs_new,Aux_exps_new,Bsummands,BConstant),
+    
+    (get_param(debug,[])->print_header('Simplifying cost structure of chain ~p ~n',[[multiple(Phase,Tails)]],4);true),
+    
  	cstr_simplify(Cost_next,Cost_next_simple),
  	Head=..[_|EVars],
  	%prepare  information for next iteration
@@ -152,6 +155,8 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs_n
     append(Bsummands_prev,Bsummands1,Bsummands_total),
     cexpr_simplify_ctx_free(BConstant_prev+BConstant1,BConstant2),
     Cost_next=cost(Ub_fconstrs_new,Lb_fconstrs_new,Aux_exps_new,Bsummands_total,BConstant2),
+    
+    (get_param(debug,[])->print_header('Simplifying cost structure of chain ~p ~n',[[Phase|Chain]],4);true),
  	cstr_simplify(Cost_next,Cost_next_simple),
  	Head=..[_|EVars],
  	%prepare  information for next iteration
@@ -185,6 +190,7 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs
 	cexpr_simplify_ctx_free(BConstant_prev+BConstant1,BConstant2),
 	Cost_next=cost(Ub_fconstrs_new,Lb_fconstrs_new,Aux_exps_new,Bsummands_total,BConstant2),
 	% simplify resulting cost structure
+	(get_param(debug,[])->print_header('Simplifying cost structure of chain ~p ~n',[[Phase|Chain]],4);true),
 	cstr_simplify(Cost_next,Cost_next_simple),
 	Head=..[_|EVars],
 	%prepare  information for next iteration

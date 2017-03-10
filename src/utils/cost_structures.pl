@@ -42,7 +42,7 @@
     -  bound(op,Exp,Bounded)
       where:
        * Op \in {ub,lb}
-       * Bounded: list(itvar)
+       * Bounded: list_set(itvar)
        * In a final constraint, Exp is a normalized linear expression (nlin_exp)
        * In an intermediate constraint, Exp is an abstract structured cost (astrexp)
      A constraint bound(op,Exp,Bounded) represents:
@@ -53,6 +53,12 @@
      Ub_FCons contains the final constraints with Op=ub
      Lb_FCons contains the final constraints with Op=lb
      Iconstrs contains all the intermediate constraints
+     
+     The iconstrs are kept sorted topologically. The order is given by the itvars that they define and the ones that they use
+     A iconstr:=bound(op,Exp,Bounded) uses the itvars in Exp and defines the ones in Bounded
+       def(iconstr)=Bounded
+       uses(iconstr)=itvars(Exp)
+       iconstr1 =< iconstr2 if intersection_sl(uses(iconstr2),def(iconstr1)) is not empty
      
     - Itvar: list(basic_identifiers) intermediate vars identifiers are a list of identifiers that allows to track
       the intermediate variable to the point of the analysis where it was created
@@ -125,6 +131,9 @@
 	print_itvars_renaming/1,
 	print_aux_exp/1,
 	print_cost_structure/1,
+	print_cycle_in_cstr_warning/0,
+	print_removed_possibly_redundant_cstrs/1,
+	print_removed_unresolved_cstrs_cycle/1, 
 	print_joined_itvar_sets_message/1,
 	print_removed_redundant_constr_message/2]).	
 :- use_module('../bound_computation/cost_structure_solver',[cstr_maxminimization/5]).
@@ -390,7 +399,29 @@ cstr_from_cexpr(nat(Exp),cost(Ub_fconstrs,Lb_fconstrs,[],[(Aux1,1)],0)):-
 cstr_from_cexpr(Exp,_):-
 	throw(invalid_cost_expression(Exp)).
 
-%! cstr_simplify(+Cstr:cstr,+Vars:list(var),+Phi:polyhedron,+Max_min:flag,-Cstr_simple:cstr)
+
+%! cstr_get_components(+Costs:list(cstr),-Ub_fcons:list(list(fconstr)),-Lb_fcons:list(list(fconstr)),-Itcons:list(list(iconstr)),-BSummands:list(list(bsummands)),-BConstants:list(constant)) is det
+% obtain lists of the components of a cost structure separated
+cstr_get_components([],[],[],[],[],[]).
+cstr_get_components([cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant)|Rest],[Ub_fcons|Ub_fcons_rest],[Lb_fcons|Lb_fcons_rest],[Itcons|Itcons_rest],[BSummands|BSummands_res],[BConstant|BConstant_rest]):-
+	cstr_get_components(Rest,Ub_fcons_rest,Lb_fcons_rest,Itcons_rest,BSummands_res,BConstant_rest).
+	
+	
+%! cstr_get_unbounded_itvars(+Cstr:cstr,-Unbounded:set(itvar)) is det
+% compute a set of itvars that are not bound by any constraint
+cstr_get_unbounded_itvars(cost(Top_exps,_LTop_exps,Aux_exps,Bases,_Base),Unbounded):-
+      foldl(get_bounded_itvars(ub),Top_exps,[],Bounded_aux),
+       foldl(get_bounded_itvars(ub),Aux_exps,Bounded_aux,Bounded),
+       maplist(tuple,Itvars,_,Bases),
+       from_list_sl(Itvars,Itvars_set),
+       difference_sl(Itvars_set,Bounded,Unbounded).
+get_bounded_itvars(Op,bound(Op,_,Bounded_set_new),Bounded_set,Bounded_set1):-!,
+       union_sl(Bounded_set,Bounded_set_new,Bounded_set1).
+get_bounded_itvars(_,_,Bounded_set,Bounded_set).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%! cstr_simplify_for_solving(+Cstr:cstr,+Vars:list(var),+Phi:polyhedron,+Max_min:flag,-Cstr_simple:cstr)
 % simplify the cost structure Cstr taking Phi into account
 % Max_min_both can be 'max','min' or 'both' and indicates whether we want to obtain a maximum cost, minimum or both
 cstr_simplify_for_solving(cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant),Vars,Phi,Max_min_both,Cstr_simple):-
@@ -404,7 +435,7 @@ cstr_simplify_for_solving(cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant),Var
 	cstr_simplify_1(Cstr2,Max_min_both,Cstr3),
 	Cstr3=Cstr_simple.
 
-	
+% simplify nat(linexp) that turn out to be zero	
 cstr_simplify_fconstr_nats(Cstr,Vars,Phi,Cstr_simple):-
 	Cstr=cost(Ub_fconstrs,Lb_fconstrs,Itcons,BSummands,BConstant),
 	maplist(simplify_fconstr_nats(Vars,Phi),Ub_fconstrs,Ub_fconstrs1),
@@ -418,19 +449,15 @@ simplify_fconstr_nats(Vars,Phi,bound(Op,Lin_exp,Bounded),bound(Op,[]+0,Bounded))
 	
 simplify_fconstr_nats(_,_,Fconstr,Fconstr).
 
-
-%! cstr_get_components(+Costs:list(cstr),-Ub_fcons:list(list(fconstr)),-Lb_fcons:list(list(fconstr)),-Itcons:list(list(iconstr)),-BSummands:list(list(bsummands)),-BConstants:list(constant)) is det
-% obtain lists of the components of a cost structure separated
-cstr_get_components([],[],[],[],[],[]).
-cstr_get_components([cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant)|Rest],[Ub_fcons|Ub_fcons_rest],[Lb_fcons|Lb_fcons_rest],[Itcons|Itcons_rest],[BSummands|BSummands_res],[BConstant|BConstant_rest]):-
-	cstr_get_components(Rest,Ub_fcons_rest,Lb_fcons_rest,Itcons_rest,BSummands_res,BConstant_rest).
-	
-	
-
-
-%! cstr_join_equal_fconstr(+Cost:cstr,-Cost_simple:cstr) is det
-% join all the final bound constraints that have the same linear expression
-% and simplify intermediate constraints. Join intermediate variables that are subject to the same constraints
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%! cstr_simplify(+Cost:cstr,-Cost_simple:cstr) is det
+% join all the fconstr that have the same linear expression
+% and simplify intermediate constraints:
+%  - Discard redundant constraints i.e. if we have  it1+it2 =< A and it1 =< A, the second constraint is redundant
+%  - Join intermediate variables that are subject to the same constraints
+%  - remove contraints that depend on undefined itvars
+%  - propagate nat(linexp) that turn out to be zero
+%  - remove constraints that bound itvars that are not needed
 cstr_simplify(Cstr,Cstr_final):-
 	cstr_simplify_1(Cstr,both,Cstr_final).
 
@@ -446,16 +473,7 @@ cstr_simplify_1(Cstr,Max_min_both,Cstr_final):-
 	cstr_remove_useless_constrs(Cstr_aux4,Max_min_both,Cstr_final),!.
 	%cstr_count_appearances(Cstr_final).
 	
-	
-cstr_get_unbounded_itvars(cost(Top_exps,_LTop_exps,Aux_exps,Bases,_Base),Unbounded):-
-      foldl(get_bounded_itvars(ub),Top_exps,[],Bounded_aux),
-       foldl(get_bounded_itvars(ub),Aux_exps,Bounded_aux,Bounded),
-       maplist(tuple,Itvars,_,Bases),
-       from_list_sl(Itvars,Itvars_set),
-       difference_sl(Itvars_set,Bounded,Unbounded).
-get_bounded_itvars(Op,bound(Op,_,Bounded_set_new),Bounded_set,Bounded_set1):-!,
-       union_sl(Bounded_set,Bounded_set_new,Bounded_set1).
-get_bounded_itvars(_,_,Bounded_set,Bounded_set).
+
 	
 	
 /*	
@@ -485,6 +503,9 @@ increment(X,X1):-
 	X1 is X+1.
 */	
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%  Discard redundant constraints i.e. if we have  it1+it2 =< A and it1 =< A, the second constraint is redundant
 cstr_simplify_multiple_variables_constrs(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands,BConstant)):-
 	include(is_ub_bconstr,Itcons,Itcons_ub),
 	sort_with(Itcons_ub,constr_more_bounded_vars,Itcons_sorted),
@@ -492,11 +513,13 @@ cstr_simplify_multiple_variables_constrs(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands
 	incrementally_remove_redundant_iconstrs(Itcons_sorted,Empty_setTree,Removed_setTree),
 	exclude(contains_setTree(Removed_setTree),Itcons,Itcons2).
 
+% order according to number of bounded itvars
  constr_more_bounded_vars(bound(_,_,Bounded),bound(_,_,Bounded2)):-
         length(Bounded,N),
         length(Bounded2,N2),
         N<N2.
 
+%! incrementally_remove_redundant_iconstrs(+Constrs:list(iconstr),+Rem_etTree_accum:rbtree(iconstr,0),-Rem_etTree_accum:rbtree(iconstr,0)) is det
 incrementally_remove_redundant_iconstrs([],Rem_setTree,Rem_setTree).
 incrementally_remove_redundant_iconstrs([bound(ub,_Exp,[_])|_Constrs],Rem_setTree,Rem_setTree).
 incrementally_remove_redundant_iconstrs([bound(ub,Exp,Bounded)|Constrs],Rem_setTree_accum,Rem_setTree):-
@@ -505,29 +528,46 @@ incrementally_remove_redundant_iconstrs([bound(ub,Exp,Bounded)|Constrs],Rem_setT
 	insert_list_setTree(Removed_aux,Rem_setTree_accum,Rem_setTree_accum2),
 	incrementally_remove_redundant_iconstrs(Constrs1,Rem_setTree_accum2,Rem_setTree).
 
+
 is_redundant(Exp,Bounded,bound(ub,Exp2,Bounded2)):-
 	ground_copy(Exp,Exp_gr),
 	ground_copy(Exp2,Exp_gr),
 	difference_sl(Bounded2,Bounded,[]).
-	
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%  Join intermediate variables that are subject to the same constraints	
+% this is an incremental process, joining some itvars can make others equivalent
+% we repeat it until we cannot merge anything else
 join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant)):-
 	partition(bconstr_bounds_multiple_itvars,Itcons,Multiple_itconstrs,Single_itconstrs),
 	% join the positive together and the negative together but do not mix them
 	foldl(add_itvar_empty_map,Bsummands,[],Map_0),
 	%Map_0=[],
+	%create a multimap from itvars to hashes of right sides of iconstrs (or terms single(op,itvar) when the right side is a simple variable)
+	% map(itvar,set(hash))
 	foldl(get_itconstr_for_each_itvar,Single_itconstrs,Map_0,Map),
+	% remove any itvar that is define by final constraints or constraints with several itvars
 	foldl(remove_itvars_from_map,Ub_fcons,Map,Map1),
 	foldl(remove_itvars_from_map,Lb_fcons,Map1,Map2),
 	foldl(remove_itvars_from_map,Multiple_itconstrs,Map2,Map3),
+	%reverse the multimap
 	maplist(tuple,Itvar,Itconstr_set,Map3),
 	maplist(tuple,Itconstr_set,Itvar,Map_inv),
+	% list(set(hash),itvar)
 	from_pair_list_mm(Map_inv,Multimap),
+	% map(set(hash),set(itvar))
+	% if some itvars are is only defined by itvar1 =< itvarN, itvar2 =< itvarN ... we can join itvar1,itvar2 and also itvarN
 	get_unitary_pairs(Multimap,Itvar_multiple_sets1,Multimap2),
 	maplist(tuple,_,Itvar_sets,Multimap2),
+	% if some itvars are defined by the same right sides we can join them
 	include(is_multiple_set,Itvar_sets,Itvar_multiple_sets2),	
 	append(Itvar_multiple_sets1,Itvar_multiple_sets2,Itvar_multiple_sets),
+	%Itvar_multiple_sets is a list(list_set(itvar))
 	(Itvar_multiple_sets\=[]->
 		join_itvar_sets(Itvar_multiple_sets,Itcons,Bsummands,Itcons2,Bsummands2),
+		%try to simplify further
 		join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands2,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant))
 		;
 		Itcons3=Itcons,
@@ -571,18 +611,23 @@ delete_lm_aux(Key,Map,Map1):-
 	
 is_multiple_set([_,_|_]).	
 
+%join_itvar_sets(+Sets:list(set_list(itvar)),+Itconstrs:list(iconstr),+Bsummands:list((itvar,fraction)),-Itconstrs_final:list(iconstr),-Bsummands_final:list((itvar,fraction))) is det
 % if we have [a,|b,c] and [b|d] we want to substitute b by a in the second set
 join_itvar_sets([],Itconstrs,Bsummands,Itconstrs,Bsummands).
 
 join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_final,Bsummands_final):-
 	%get_first_appearance
 	single_list_to_setTree(Equivalent_itvars,Equivalent_itvars_setTree),
+	%keep the first appearance of each defining contraint, discard the rest
 	keep_first_appearances(Itconstrs,Itvar,Equivalent_itvars_setTree,[],Itconstrs2),
 	empty_setTree(Empty_setTree),
+	% substitute the uses of the Equivalent itvars by Itvar
 	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_setTree),Itconstrs2,(Empty_setTree,[]),(_,Itconstrs3)),
 	reverse(Itconstrs3,Itconstrs4),
+	% substitute the uses in the main expression
 	compress_basic_summands(Bsummands,Itvar,Equivalent_itvars_setTree,Bsummands2),
 	maplist(substitute_itvars_in_list(Itvar,Equivalent_itvars_setTree),Sets,Sets1),!,
+	% next set of equivalent itvars
 	join_itvar_sets(Sets1,Itconstrs4,Bsummands2,Itconstrs_final,Bsummands_final).
 
 keep_first_appearances([],_,_,_,[]).
@@ -642,7 +687,9 @@ substitute_itvar_in_list(Itvar,SetTree,Itvar2,Itvar):-
 	contains_setTree(SetTree,Itvar2),!.	
 substitute_itvar_in_list(_Itvar,_Set,Itvar2,Itvar2).
 
+
 itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_setTree,bound(Op,Exp,Bounded),(Bconstrs_hash_setTree,Bconstrs),Pair1):-
+	%substitute occurrences of the equivalent itvars
 	Exp=exp(Index_pos,Index_neg,Pos,Neg),
 	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_setTree),Index_pos,Index_pos2),
 	maplist(substitute_itvars_in_index(Itvar,Equiv_itvar_setTree),Index_neg,Index_neg2),
@@ -652,6 +699,7 @@ itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_setTree,bound(Op,Exp,Bounded
 	
 	maplist(ground_index,Index_pos_ground),
 	maplist(ground_index,Index_neg_ground),
+	% only keep the iconstr if it is not repeated
 	term_hash(bound(Op,Exp_ground,Bounded),Hash_new_bconstr),
 	(contains_setTree(Bconstrs_hash_setTree,Hash_new_bconstr)->
 		Pair1=(Bconstrs_hash_setTree,Bconstrs)
@@ -688,6 +736,10 @@ accum_equivalent_summands([(Itvar2,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars
 
 ground_index((X,X)):-!.
 ground_index(_).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
  %! fconstr_join_equal_expressions(Fcons:list(fconstr),Fcons2:list(fconstr),New_Iconstrs:list(iconstr)) is det
  % group all final constraints that have the same expression and generate a single final constraint for each group
  % the original final constraints become intermediate constraints that reference the new final constraint
@@ -718,6 +770,7 @@ ground_index(_).
 	astrexp_new_simple_itvar(Name,Astrexp),
 	maplist(iconstr_new(Astrexp,Op),Bounded_list,New_iconstrs).
 	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
 %! cstr_propagate_zeroes(+Cstr:cstr,-Cstr_simplified:cstr) is det
 % simplify cost structure by eliminating final constraints with expressions that are guaranteed to be
@@ -788,29 +841,29 @@ zero_summand(mult(Factors)):-
 %
 % even with that, it is possible that the cycle is not resolve, in which case we discard the remaining constraints
 % FIXME: improve this
-cstr_sort_iconstrs(Ub_fconstrs,Lb_fconstrs,Iconstrs,Iconstrs3):-
+cstr_sort_iconstrs(Ub_fconstrs,Lb_fconstrs,Iconstrs,Iconstrs2):-
 	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Ub_Bounded_set),
 	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
-	cstr_topological_sort((Ub_Bounded_set,Lb_Bounded_set),Iconstrs,Iconstrs3).
+	%create pairs int:iconstr
+	iconstrList_assign_ids(1,Iconstrs,Iconstrs_num),
+	% create dependency graph between iconstr pairs (using predecessors)
+	compute_iconstr_predecessor_graph(Iconstrs_num,Iconstrs_num,[],Pred_graph),
+	%sort the iconstrs according to their dependencies
+	get_topological_sorting(Pred_graph,(Ub_Bounded_set,Lb_Bounded_set),Iconstrs2).
 
-cstr_topological_sort(Bounded_itvars,Iconstrs,Iconstrs2):-
-	assign_numbers(1,Iconstrs,Iconstrs_num),
-	compute_predecessors(Iconstrs_num,Iconstrs_num,[],Map_pred),
-	get_sorting(Map_pred,Bounded_itvars,Iconstrs2).
-
-assign_numbers(_N,[],[]).
-assign_numbers(N,[Iconstr|Iconstrs],[N:Iconstr|Iconstrs_num]):-
+iconstrList_assign_ids(_N,[],[]).
+iconstrList_assign_ids(N,[Iconstr|Iconstrs],[N:Iconstr|Iconstrs_num]):-
 	N1 is N+1,
-	assign_numbers(N1,Iconstrs,Iconstrs_num).
+	iconstrList_assign_ids(N1,Iconstrs,Iconstrs_num).
 	
-compute_predecessors([],_All_Iconstrs,Map,Map).
+compute_iconstr_predecessor_graph([],_All_Iconstrs,Map,Map).
 
-compute_predecessors([N:Iconstr|Iconstrs],All_Iconstrs,Map_accum,Map):-
+compute_iconstr_predecessor_graph([N:Iconstr|Iconstrs],All_Iconstrs,Map_accum,Map):-
 	include(is_pred_iconstr(Iconstr),All_Iconstrs,Pred),
 	maplist(get_iconstr_id,Pred,Pred_ids),
 	from_list_sl(Pred_ids,Pred_set),
 	insert_lm(Map_accum,N:Iconstr,Pred_set,Map_accum2),
-	compute_predecessors(Iconstrs,All_Iconstrs,Map_accum2,Map).
+	compute_iconstr_predecessor_graph(Iconstrs,All_Iconstrs,Map_accum2,Map).
 
 get_iconstr_id(N:_,N).
 
@@ -828,57 +881,69 @@ is_pred_iconstr(bound(lb,exp(Index,_Index_neg,_Exp,_Exp_neg),_),_N:bound(lb,_,De
 	maplist(tuple,Names,_Vars,Index),
 	from_list_sl(Names,Used_set),
 	intersection_sl(Def_set,Used_set,[_|_]).		
-	
-get_sorting([],_,[]):-!.
 
-get_sorting(Map_pred,Bounded_itvars,Iconstrs_final):-
-	get_no_pred(Map_pred,Iconstrs,Iconstrs_ids,Map_pred2),
+
+%! get_topological_sorting(+Pred_graph:list(((int:iconstr),list(int))),+Bounded_itvars:list_set(itvar),-Iconstrs_final:list(iconstr)) is det
+get_topological_sorting([],_,[]):-!.
+
+get_topological_sorting(Pred_graph,Bounded_itvars,Iconstrs_final):-
+	get_no_pred(Pred_graph,Iconstrs,Iconstrs_ids,Pred_graph2),
 	(Iconstrs\=[]->
 		from_list_sl(Iconstrs_ids,Iconstrs_ids_set),
-		maplist(remove_preds(Iconstrs_ids_set),Map_pred2,Map_pred3),
-		foldl(get_newly_defined_itvars,Iconstrs,Bounded_itvars,Bounded_itvars2),
-		get_sorting(Map_pred3,Bounded_itvars2,Iconstrs2),
+		maplist(remove_preds(Iconstrs_ids_set),Pred_graph2,Pred_graph3),
+		foldl(accum_bounded_itvars,Iconstrs,Bounded_itvars,Bounded_itvars2),
+		get_topological_sorting(Pred_graph3,Bounded_itvars2,Iconstrs2),
 		append(Iconstrs,Iconstrs2,Iconstrs_final)
 		;
-		remove_redundant_constraints(Map_pred2,Bounded_itvars,Map_pred3,[],Redundant_ids_set),
-
+		%there is a cycle in the graph
+		% we try to get rid of it by removing constraints that bound itvars that are already bound
+		%FIXME: this could be improved
+		print_cycle_in_cstr_warning,
+		remove_redundant_constraints(Pred_graph2,Bounded_itvars,Pred_graph3,[],Redundant_ids_set,[],Removed_iconstrs),
 		(Redundant_ids_set\=[]->
-			maplist(remove_preds(Redundant_ids_set),Map_pred3,Map_pred4),
-			get_sorting(Map_pred4,Bounded_itvars,Iconstrs_final)
+			print_removed_possibly_redundant_cstrs(Removed_iconstrs),
+			%if we have removed something, we try to continue
+			maplist(remove_preds(Redundant_ids_set),Pred_graph3,Pred_graph4),
+			get_topological_sorting(Pred_graph4,Bounded_itvars,Iconstrs_final)
 			;
-			format(user_error,'this should never happen',[]),Iconstrs_final=[]
+			%we fail to get rid of the cycle, we discard the remaining iconstrs
+			print_removed_unresolved_cstrs_cycle(Pred_graph2),
+			Iconstrs_final=[]
 			)
 	).
 	
-remove_redundant_constraints([],_Bounded_itvars,[],Removed_accum,Removed_accum).
+remove_redundant_constraints([],_Bounded_itvars,[],Removed_accum,Removed_accum,Removed_iconstrs,Removed_iconstrs).
 
-remove_redundant_constraints([(Id:bound(ub,_Exp,Bounded_set),_Preds)|Map],(Ub_set,Lb_set),Map_final,Removed_accum,Removed):-
+remove_redundant_constraints([(Id:bound(ub,Exp,Bounded_set),_Preds)|Map],(Ub_set,Lb_set),Map_final,Removed_accum,Removed,Removed_iconstrs_accum,Removed_iconstrs):-
 	difference_sl(Bounded_set,Ub_set,[]),!,
 	insert_sl(Removed_accum,Id,Removed_accum2),
-	remove_redundant_constraints(Map,(Ub_set,Lb_set),Map_final,Removed_accum2,Removed).
+	remove_redundant_constraints(Map,(Ub_set,Lb_set),Map_final,Removed_accum2,Removed,[bound(ub,Exp,Bounded_set)|Removed_iconstrs_accum],Removed_iconstrs).
 	
-remove_redundant_constraints([(Id:bound(lb,_Exp,Bounded_set),_Preds)|Map],(Ub_set,Lb_set),Map_final,Removed_accum,Removed):-
+remove_redundant_constraints([(Id:bound(lb,Exp,Bounded_set),_Preds)|Map],(Ub_set,Lb_set),Map_final,Removed_accum,Removed,Removed_iconstrs_accum,Removed_iconstrs):-
 	difference_sl(Bounded_set,Lb_set,[]),!,
 	insert_sl(Removed_accum,Id,Removed_accum2),
-	remove_redundant_constraints(Map,(Ub_set,Lb_set),Map_final,Removed_accum2,Removed).	
+	remove_redundant_constraints(Map,(Ub_set,Lb_set),Map_final,Removed_accum2,Removed,[bound(lb,Exp,Bounded_set)|Removed_iconstrs_accum],Removed_iconstrs).	
 	
-remove_redundant_constraints([Pair|Map],Bounded_itvars,[Pair|Map_final],Removed_accum,Removed):-
-	remove_redundant_constraints(Map,Bounded_itvars,Map_final,Removed_accum,Removed).	
+remove_redundant_constraints([Pair|Map],Bounded_itvars,[Pair|Map_final],Removed_accum,Removed,Removed_iconstrs_accum,Removed_iconstrs):-
+	remove_redundant_constraints(Map,Bounded_itvars,Map_final,Removed_accum,Removed,Removed_iconstrs_accum,Removed_iconstrs).	
 	
+
+% get iconstrs with no predecessors
 get_no_pred([],[],[],[]).
 get_no_pred([(Iconstr_id:Iconstr,[])|Map],[Iconstr|Iconstrs],[Iconstr_id|Iconstrs_ids],Map_out):-!,
 	get_no_pred(Map,Iconstrs,Iconstrs_ids,Map_out).
 get_no_pred([Other|Map],Iconstrs,Iconstr_ids,[Other|Map_out]):-
 	get_no_pred(Map,Iconstrs,Iconstr_ids,Map_out).	
-	
+
+%remove predecessors 	
 remove_preds(Pred_set,(Iconstr,Set),(Iconstr,Set2)):-
 	difference_sl(Set,Pred_set,Set2).
 	
 		
-get_newly_defined_itvars(bound(ub,_,Bounded_set),(Ub_accum,Lb_Bounded_set),(Ub_Bounded_set,Lb_Bounded_set)):-
+accum_bounded_itvars(bound(ub,_,Bounded_set),(Ub_accum,Lb_Bounded_set),(Ub_Bounded_set,Lb_Bounded_set)):-
 	union_sl(Bounded_set,Ub_accum,Ub_Bounded_set).
 	
-get_newly_defined_itvars(bound(lb,_,Bounded_set),(Ub_Bounded_set,Lb_accum),(Ub_Bounded_set,Lb_Bounded_set)):-
+accum_bounded_itvars(bound(lb,_,Bounded_set),(Ub_Bounded_set,Lb_accum),(Ub_Bounded_set,Lb_Bounded_set)):-
 	union_sl(Bounded_set,Lb_accum,Lb_Bounded_set).	
 	
 %! cstr_remove_undefined(+Cost:cstr,-Short:cstr) is det
@@ -894,18 +959,18 @@ split_bounded([bound(ub,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Iconstrs],
 	% the positive summands have to be well defined
 	maplist(tuple,Names,_Vars,Index),
 	maplist(contains_sl(Ub_Set),Names),!,
-	%include Bounded into the Ub_set
+	%include Bounded_set into the Ub_set
 	union_sl(Bounded_set,Ub_Set,Ub_Set_aux),
 	split_bounded(Iconstrs,Ub_Set_aux,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).
 
-% FIXME: the positive summands do not need to be well defined in theory but it might help...make some experiments
+
 split_bounded([bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,[bound(lb,exp(Index,Index_neg,Exp,Exp_neg),Bounded_set)|Exp_Bounded],Exp_Not_bounded):-
 	% the negative summands have to be well defined
 	maplist(tuple,Names,_,Index),
 	maplist(contains_sl(Lb_Set),Names),
 	maplist(tuple,Names_neg,_,Index_neg),
 	maplist(contains_sl(Ub_Set),Names_neg),!,
-	%include Bounded into the Lb_set
+	%include Bounded_set into the Lb_set
 	union_sl(Bounded_set,Lb_Set,Lb_Set_aux),
 	split_bounded(Iconstrs,Ub_Set,Lb_Set_aux,Ub_Set_out,Lb_Set_out,Exp_Bounded,Exp_Not_bounded).	
 	
@@ -915,7 +980,7 @@ split_bounded([Iconstr|Iconstrs],Ub_Set,Lb_Set,Ub_Set_out,Lb_Set_out,Exp_Bounded
 
 
 
-%! cstr_remove_useless_constrs(+Cost:cstr,-Cost_simple:cstr) is det
+%! cstr_remove_useless_constrs(+Cost:cstr,Max_min_both:flag,-Cost_simple:cstr) is det
 % Remove bound constraints that bound itvars that are not needed for the cost
 % Max_min_both can be 'max','min' or 'both' and indicates whether we want to obtain a maximum cost, minimum or both
 cstr_remove_useless_constrs(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Max_min_both,cost(Ub_fconstrs2,Lb_fconstrs2,Iconstrs2,Bsummands2,BConstant)):-

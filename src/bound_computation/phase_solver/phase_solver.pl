@@ -267,8 +267,14 @@ compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Base_cost,Bas
 	%collect stored results
 	collect_phase_results(Result_vars,Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs),
 	reverse(New_iconstrs,New_iconstrs2),
+	(get_param(debug,[])->
+	 		print_header('Sorting generated constraints of phase ~p ~n',[Phase],4)
+	 		;true),
 	cstr_sort_iconstrs(Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs2,New_iconstrs_sorted),
 	append(New_iconstrs_sorted,Iconstrs,Iconstrs_final),
+	(get_param(debug,[])->
+	 		print_header('Simplifying cost structure of phase ~p ~n',[Phase],4)
+	 		;true),
 	cstr_simplify(cost(Final_ub_fconstrs,Final_lb_fconstrs,Iconstrs_final,Bases,Base),Cost_final).
 
 

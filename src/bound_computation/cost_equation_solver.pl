@@ -29,7 +29,8 @@ the input variables and the variables of the recursive call (if there is one)
 			max_min_fconstrs_in_cost_equation/6,
 			max_min_linear_expression_all/5]).
 :- use_module('../IO/params',[get_param/2]).
-:- use_module('../IO/output',[print_warning_in_error_stream/2]).
+:- use_module('../IO/output',[print_warning_in_error_stream/2,
+	print_header/3]).
 :- use_module('../db',[eq_ph/8,
 			     loop_ph/6,
 			     upper_bound/4,
@@ -95,6 +96,7 @@ get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
 		get_lost_fconstrs_expressable_as_outputs(Eq_id,Ub_fconstrs_list,New_Ub_fconstrs,Base_calls,Phi),
 		max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Phi1,TVars,New_Lb_fconstrs,New_iconstrs2),
 		ut_flat_list([New_iconstrs1,New_iconstrs2,Iconstrs],New_iconstrs),
+		(get_param(debug,[])->print_header('Simplifying cost structure of CE ~p ~n',[Eq_id],4);true),
 		cstr_simplify(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost)
 	;
 		cstr_empty(Cost)
