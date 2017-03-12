@@ -83,6 +83,7 @@ This module prints the results of the analysis
 :- use_module('../ranking_functions',[
 	ranking_function/4,
 	partial_ranking_function/7]).
+:- use_module('../bound_computation/phase_solver/phase_solver',[type_of_loop/2]).
 :- use_module('../utils/cost_expressions',[get_asymptotic_class_name/2]).
 :- use_module('../utils/cofloco_utils',[
 			constraint_to_coeffs_rep/2,
@@ -196,7 +197,7 @@ print_warning(Text,Args):-
 interesting_example_warning(no_candidate,([]+_C,loop_vars(Head,[_|_]),Loop,[])):-
     get_param(debug,[]),!,
 	ground_copy(Head,Headp),
-	print_warning_in_error_stream('No candidate for multiple recursion ~p in loop ~p~n',[Headp,Loop]).
+	print_warning_in_error_stream('No candidate for multiple recursion ~p in ~p~n',[Headp,Loop]).
 	
 interesting_example_warning(failed_maximization,([],Lin_exp,Loop,Head,Calls)):-
 	get_param(debug,[]),!,
@@ -523,7 +524,8 @@ print_pending_sum((Loop,loop_vars(Head,Calls),Sums)):-
 	ground_rec_calls(Calls,1),
 	maplist(tuple,_,Sums_cs,Sums),
 	maplist(write_top_exp,Sums_cs,Sums_p),
-	print_or_log('* Psum in loop ~p: ~p~n',[Loop,Sums_p]).
+	type_of_loop(Loop,Loop_type),
+	print_or_log('* Psum in ~p ~p: ~p~n',[Loop_type,Loop,Sums_p]).
 
 print_selected_pending_constraint(Loop_vars,sum(Loop),Constr):-
 	get_param(debug,[]),!,
@@ -531,7 +533,8 @@ print_selected_pending_constraint(Loop_vars,sum(Loop),Constr):-
 	ground_header(Head_gr),
 	ground_rec_calls(Calls_gr,1),
 	write_top_exp(Constr_gr,Constr_print),
-	print_header('Computing sum for ~p  in loop ~p ~n',[Constr_print,Loop],6).
+	type_of_loop(Loop,Loop_type),
+	print_header('Computing sum for ~p  in ~p ~p ~n',[Constr_print,Loop_type,Loop],6).
 
 print_selected_pending_constraint(Head,Type,Constr):-
 	get_param(debug,[]),!,
