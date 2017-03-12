@@ -194,6 +194,7 @@ compute_phase_cost(Head,[Call],Phase,Chain_prefix,Chain_rest,Cost_final):-
 	 	init_solving_phase(Chain_prefix,Phase)
 	),
 	assert(phase_type(single)),
+	%invariant applicable on the calls
 	nad_glb(Forward_invariant,Backward_invariant,Total_inv),
 	save_enriched_loops(Head,Total_inv,Phase,Phase_feasible),
 	
@@ -413,6 +414,7 @@ is_wrapped_no_pair((no(_),_)).
 
 save_enriched_loop(Head,Inv,Loop,Loop_feasible):-
 	loop_ph(Head,(Loop,_),Calls,Cs,_,_),
+	%we apply the invariants on the recursive calls
 	foldl(get_call_inv,Calls,(Head,Inv,Inv),(Head,_,Total_inv)),
 	append(Total_inv,Cs,Total_cs),
 	nad_normalize_polyhedron(Total_cs,Cs_normalized),
@@ -423,7 +425,7 @@ save_enriched_loop(Head,Inv,Loop,Loop_feasible):-
 		Loop_feasible=Loop
 	).
 save_enriched_tail(Head,Inv,Chain,Chain_feasible):-
-	(partial_backward_invariant(Chain,Head,_,_,Cs)
+	(partial_backward_invariant(Chain,Head,_,Cs,_)
 	 ;
 	  Chain=[Loop],
 	  loop_ph(Head,(Loop,_),[],Cs,_,_)

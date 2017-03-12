@@ -120,22 +120,6 @@ inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pen
 	empty_pending(Empty_pending),
 	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out).
 
-
-/*
-
-inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	(get_param(debug,[])->print_or_log('   - Applying inductive level-sum strategy ~n',[]);true),
-	Constr=bound(Op,Lin_exp,Bounded),
-	Op=ub,
-	generate_leaf_candidates(Head,Lin_exp,Op,Candidates),
-	maplist(check_loops_maxsum(loop_vars(Head,[]),Phase,0,Bounded,Pending),Candidates,New_fconstrs_list,New_iconstrs_list,Pending_out_list),	
-	ut_flat_list(New_fconstrs_list,New_fconstrs),
-	New_fconstrs\=[],
-	ut_flat_list(New_iconstrs_list,New_iconstrs),
-	empty_pending(Empty_pending),
-	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out).
-*/
-
 generate_rf_candidates(ub,Head,Loop,Candidates):-
 	current_chain_prefix(Chain_prefix),
     %obtain the ranking functions for the loop and their difference version
@@ -196,13 +180,13 @@ generate_lecandidates(loop_vars(Head,Calls),Lin_exp,ub,Loop,Candidates):-!,
 		true
 	),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
-	maplist(tuple(tail),Diff_list_selected,Head_candidates),
+	maplist(tuple(head),Diff_list_selected,Head_candidates),
 	
 	% the strategy without resets is not applicable in non-terminating chains
 	(phase_type(non_terminating)->
 		Tail_candidates=[]
 		;
-		maplist(tuple(head),Diff_list_selected,Tail_candidates)
+		maplist(tuple(tail),Diff_list_selected,Tail_candidates)
 	),
 	%% For finding interesting examples
 	interesting_example_warning(no_candidate,(Lin_exp,loop_vars(Head,Calls),Loop,Head_candidates)),

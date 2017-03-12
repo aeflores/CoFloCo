@@ -68,7 +68,6 @@ For the constraints, this is done at the same time of the compression.
 %   * compress the costs of different phases
 compute_chain_cost(Head,Chain,Cost_total):-
 	compress_chain_costs(Chain,[],Head,Head,Cost_total,_),
-	%cstr_extend_variables_names(Cost_total,ch(Chain),Cost_total1),
 	!.
 
 compress_chain_costs([],_Chain_rev,_Head_total,_Head,Cost_base,[]):-

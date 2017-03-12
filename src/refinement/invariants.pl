@@ -303,11 +303,12 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	nad_project_group(EVars,Cs_2,Entry_pattern),
 	%even if the invariant is unfeasible, we store to save time when computing invariants with the same suffix
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
+	copy_term((Call,Initial_inv),(Head,Initial_inv_head)),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv)),
+	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv_head)),
 	  fail
 	;
-	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv))
+	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv_head))
 	  ).
 
 % We have an iterative phase.
