@@ -48,20 +48,29 @@ For the constraints, this is done at the same time of the compression.
 		 cstr_simplify/2,
 		 cstr_or_compress/2,
 		 cstr_join/3,
-		 new_itvar/1]).
+		 new_itvar/1,
+		 bconstr_accum_bounded_set/3]).
+
+:-use_module('../IO/params',[get_param/2]).
+:-use_module('../IO/output',[print_phase_cost/4,
+	print_changed_to_chain_method_warning/1,
+	print_header/3]).
+	
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(numeric_abstract_domains),[
 				nad_list_glb/2,
 				nad_list_lub/2]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_stop_timer_acum/2]).
-	
+
+
+
+:- use_module(stdlib(set_list),[
+		difference_sl/3]).
+		
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
-:-use_module('../utils/cost_structures',[new_itvar/1]).	
-:-use_module('../IO/params',[get_param/2]).
-:-use_module('../IO/output',[print_phase_cost/4,
-	print_header/3]).
+
 %! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cstr) is det
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
@@ -160,7 +169,10 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs_n
  	%prepare  information for next iteration
 	nad_project_group(EVars,Cs_total,Cs_next).	
 	
+
+% compute the phase cost independently
 compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs_next):-
+	\+get_param(linear_phase_strategy,[chain]),
 	copy_term(Head_total,Head),
 	copy_term(Head_total,Call),
 	compress_chain_costs(Chain,[Phase|Chain_rev],Head_total,Call,Cost_prev,Cs_prev),
@@ -180,6 +192,11 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs
 	append(Ub_fconstrs,Ub_fconstrs1,Ub_fconstrs_total),
 	append(Lb_fconstrs,Lb_fconstrs1,Lb_fconstrs_total),
 	max_min_fconstrs_in_chain(Ub_fconstrs_total,[Phase|Chain],Cs_total,Head,Ub_fconstrs_new,Ub_iconstrs_extra),
+	(get_param(linear_phase_strategy,[mixed])->
+		no_lost_constraints(Ub_fconstrs,Ub_fconstrs_new)
+		;
+		true
+	),!,
 	max_min_fconstrs_in_chain(Lb_fconstrs_total,[Phase|Chain],Cs_total,Head,Lb_fconstrs_new,Lb_iconstrs_extra),
 	% put together the original non-final constraints (Aux_exps) and the newly created
 	ut_flat_list([Ub_iconstrs_extra,Lb_iconstrs_extra,Iconstrs,Iconstrs1],Aux_exps_new),
@@ -195,11 +212,41 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs
 	nad_project_group(EVars,Cs_total,Cs_next),
 	profiling_stop_timer_acum(chain_solver,_).
 	
+	
+% use multiple recursion method for linear chains	
+compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost,Cs_next):-
+	get_param(linear_phase_strategy,[Mode]),member(Mode,[chain,mixed]),!,
+	copy_term(Head_total,Head),
+	compress_chain_costs(Chain,[Phase|Chain_rev],Head_total,Call,Cost_prev,_Cs_prev),
+	%nad_list_lub(Css_prev,_Cs_prev),
+	profiling_start_timer(loop_phases),
+	copy_term((Call,Cost_prev),(Head,Cost_prev2)),
+	forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
+	partial_backward_invariant([Phase|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern,_),
+	
+	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],[Phase|Chain],[Cost_prev2],Cost),
+	print_phase_cost(Phase,Head,[],Cost),
+
+	profiling_stop_timer_acum(loop_phases,_),
+	nad_list_glb([Local_inv,Entry_pattern],Cs_next).		
+	
+	
 compress_chain_costs_aux(Chain_rev,Head_total,Head,Chain,Cost,Cs):-
 	compress_chain_costs(Chain,Chain_rev,Head_total,Head,Cost,Cs).
 
 copy_call_costs_and_inv(Call,Cost_prev,Cs_prev,Call2,Cost_prev2,Cs_prev2):-
 	copy_term((Call,Cost_prev,Cs_prev),(Call2,Cost_prev2,Cs_prev2)).
+
+no_lost_constraints(Ub_fconstrs,Ub_fconstrs_new):-
+	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Set_old),
+	foldl(bconstr_accum_bounded_set,Ub_fconstrs_new,[],Set_new),
+	difference_sl(Set_old,Set_new,Lost),
+	(Lost=[]->
+		true
+		;
+		 print_changed_to_chain_method_warning(Lost),
+		 fail
+	 ).
 	
 %! get_all_phase_information(+Head:term,Call:term,+Part_chain:chain,-Phi_list:list(polyhedron)) is det
 % Obtain:

@@ -58,7 +58,7 @@ triangular_strategy(bound(lb,Lin_exp,Bounded_ini),loop_vars(Head,[Call]),Loop,Ph
 	Lin_exp\=[]+_,
 	enriched_loop(Loop,Head,[Call],Cs),
 	%obtain an expressions only in terms of the initial variables of the loop
-	(is_head_expression(Head,Lin_exp)->
+	(is_input_head_expression(Head,Lin_exp)->
 		Exp=Lin_exp
 	;
 	 get_input_output_vars(Head,Input_vars_head,_),

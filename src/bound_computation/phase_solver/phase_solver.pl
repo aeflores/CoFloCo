@@ -214,7 +214,7 @@ compute_phase_cost(Head,[Call],Phase,Chain_prefix,Chain_rest,Cost_final):-
 	print_loops_costs(Phase_feasible,Phase_vars,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
 	add_n_elem_constraints(Head,Call,Phase,Phase_feasible),
-	compute_phase_cost_generic(Head,loop_vars(Head,[Call]),Phase_feasible,Phase_vars,Costs,Cost_final),
+	compute_phase_cost_generic(Head,loop_vars(Head,[Call]),Phase_feasible,Phase_vars,Costs,Cost_final),!,
 	assertz(phase_cost(Phase,Head,[Call],Cost_final)).
 	
 compute_multiple_rec_phase_cost(Head,Phase,_Chain_prefix,Chain_rest,_Costs_prev,Cost):-
@@ -226,21 +226,31 @@ compute_multiple_rec_phase_cost(Head,Phase,_Chain_prefix,Chain_rest,_Costs_prev,
 	counter_increase(compressed_phases1,1,_).
 		
 compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Costs_tails_n,Cost_final):-
+	% the multiple recursion phase case and the linear case
+	(
 	Chain_rest=[multiple(Phase,Tails_n)],
+	Phase_4_inv=multiple(Phase,Tails_n),
+	Linear_multiple='multiple'
+	;
+	Chain_rest=[Phase|Tail],
+	Tails_n=[Tail],
+	Phase_4_inv=Phase,
+	Linear_multiple='linear'
+	),
 	get_param(context_sensitive,[Sensitivity]),
 	(Sensitivity =< 1 ->
-		context_insensitive_backward_invariant(Head,multiple(Phase,Tails_n),Backward_invariant),
+		context_insensitive_backward_invariant(Head,Phase_4_inv,Backward_invariant),
 		context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
 		Forward_hash=0,
 		(get_param(debug,[])->
-			print_header('Computing cost of phase ~p with multiple recursion~n',[Phase],4)
+			print_header('Computing cost of chain ~p with ~p recursion~n',[Chain_rest,Linear_multiple],4)
 	    	;true),
 	    init_solving_phase([Phase,no_chain],Phase)		
 	  ;  
 	    forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_invariant),
 	    partial_backward_invariant(Chain_rest,Head,(Forward_hash,Forward_invariant),_,Backward_invariant),
 	    (get_param(debug,[])->
-			print_header('Computing cost of phase ~p with multiple recursion with suffix ~p and prefix ~p ~n',[Phase,Tails_n,Chain_prefix],4)
+			print_header('Computing cost of chain ~p with ~p recursion with prefix ~p ~n',[Chain_rest,Linear_multiple,Chain_prefix],4)
 	    	;true),
 	    init_solving_phase(Chain_prefix,Phase)
 	),
@@ -272,7 +282,7 @@ compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Costs_tails_n
 	append(Phase_feasible,Tails_feasible,Loops_tails_feasible),
 	append(Phase_vars_loops,Phase_vars_tails,Phase_vars),
 	append(Costs_loops,Cost_tails_feasible,Costs),
-	compute_phase_cost_generic(Head,loop_vars(Head,[]),Loops_tails_feasible,Phase_vars,Costs,Cost_final),
+	compute_phase_cost_generic(Head,loop_vars(Head,[]),Loops_tails_feasible,Phase_vars,Costs,Cost_final),!,
 	assertz(phase_cost(Chain_rest,Head,[],Cost_final)).
 	
 compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Cost_final):-

@@ -50,6 +50,7 @@ This module prints the results of the analysis
 		  print_removed_redundant_constr_message/2,
 		  print_joined_itvar_sets_message/1,
 		  print_cycle_in_cstr_warning/0,
+		  print_changed_to_chain_method_warning/1,
 		  print_removed_possibly_redundant_cstrs/1,
 		  print_removed_unresolved_cstrs_cycle/1, 
 		  print_results/2,
@@ -628,6 +629,18 @@ print_phase_cost(Phase,Head,Calls,Cost):-
 	print_cost_structure(Costp).
 
 print_phase_cost(_,_,_,_).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+print_changed_to_chain_method_warning(Lost):-
+	get_param(debug,[]),!,
+	maplist(itvar_shorten_name(no_list),Lost,Lost_print),
+	print_warning('Some Itvars are unbounded ~p ~nChanging solving method to compute the cost of the chain directly ~n',[Lost_print]).
+	
+print_changed_to_chain_method_warning(_).	
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

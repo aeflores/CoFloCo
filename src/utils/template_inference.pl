@@ -177,7 +177,7 @@ difference_constraint_farkas_ub_with_extra_cone(Head,Calls,Phi,Lin_exp,(Eparams,
 	%once we have the point, we can set all the coefficients variables to 0 and obtain the point in terms of Unknowns
 	maplist(=(0),Extra_params),
 	maplist(=(0),Cparams),
-	Cnt_param= -1,
+	Cnt_param= 1,
 	%extract the linear expressions from the points
 	%copy_term((Head_params,Generators),(Head,Generators_copy)),	
 	copy_term((IEparams,Generators),(Ivars,Generators_copy)),	

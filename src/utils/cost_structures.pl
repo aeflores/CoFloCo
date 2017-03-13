@@ -154,7 +154,15 @@
 
 :- use_module(stdlib(fraction)).
 :- use_module(stdlib(fraction_list)).
-:- use_module(stdlib(set_list),[difference_sl/3,remove_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
+:- use_module(stdlib(set_list),[
+		difference_sl/3,
+		remove_sl/3,
+		contains_sl/2,
+		from_list_sl/2,
+		unions_sl/2,
+		union_sl/3,
+		insert_sl/3,
+		intersection_sl/3]).
 
 
 

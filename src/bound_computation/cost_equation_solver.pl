@@ -86,15 +86,14 @@ get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
     eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,Calls,_,Phi,_),
 	nad_glb(Forward_inv,Phi,Phi1),
 	(nad_consistent_constraints(Phi1)->
-		term_variables((Head,Calls),TVars),
 		foldl(accumulate_calls(Eq_id),Base_calls,(Basic_cost,1),(cost(Ub_fconstrs_list,Lb_fconstrs_list,Iconstrs,Bases,Base),_)),
 		% we reverse the calls in case we want to combine cost structures incrementally
 		% this is not done now but it would allow us to detect which calls make us lose precision
 		%reverse(Base_calls,Base_calls_inv),
-		max_min_fconstrs_in_cost_equation(Ub_fconstrs_list,Base_calls,Phi1,TVars,New_Ub_fconstrs,New_iconstrs1),
+		max_min_fconstrs_in_cost_equation(Ub_fconstrs_list,Base_calls,Phi1,(Head,Calls),New_Ub_fconstrs,New_iconstrs1),
 		%for finding interesting examples
 		get_lost_fconstrs_expressable_as_outputs(Eq_id,Ub_fconstrs_list,New_Ub_fconstrs,Base_calls,Phi),
-		max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Phi1,TVars,New_Lb_fconstrs,New_iconstrs2),
+		max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Phi1,(Head,Calls),New_Lb_fconstrs,New_iconstrs2),
 		ut_flat_list([New_iconstrs1,New_iconstrs2,Iconstrs],New_iconstrs),
 		(get_param(debug,[])->print_header('Simplifying cost structure of CE ~p ~n',[Eq_id],4);true),
 		cstr_simplify(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost)

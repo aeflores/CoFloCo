@@ -69,7 +69,7 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 	new_itvar(Aux_itvar),
 	get_loop_itvar(Loop,Loop_itvar),
 	astrexp_new(add([mult([Loop_itvar,Aux_itvar])])-add([]),Astrexp),
-	(is_head_expression(Head,Lin_exp)->
+	(is_input_head_expression(Head,Lin_exp)->
 		fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
 		Max_fconstrs=[Fconstr]
 	;
