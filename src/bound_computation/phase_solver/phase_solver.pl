@@ -105,8 +105,8 @@ These constraints are useful in most cases and that allows us to simplify the re
 				  partial_backward_invariant/5,
 			      phase_transitive_star_closure/5,
 			      forward_invariant/4,		      
-			      context_insensitive_backward_invariant/3,
-		      	  context_insensitive_forward_invariant/3]).			
+			      get_context_insensitive_backward_invariant/3,
+		      	  get_context_insensitive_forward_invariant/3]).			
 
 	
 :- use_module('../../utils/cofloco_utils',[
@@ -188,8 +188,8 @@ compute_phase_cost(Head,[Call],Phase,Chain_prefix,Chain_rest,Cost_final):-
 	% 2) valid only for the current chain	
 	get_param(context_sensitive,[Sensitivity]),
 	(Sensitivity =< 1 ->
-		context_insensitive_backward_invariant(Head,Phase,Backward_invariant),
-		context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
+		get_context_insensitive_backward_invariant(Head,Phase,Backward_invariant),
+		get_context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
 	    Forward_hash=0,
 	    (get_param(debug,[])->
 	 		print_header('Computing cost of phase ~p ~n',[Phase],4)
@@ -239,8 +239,8 @@ compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Costs_tails_n
 	),
 	get_param(context_sensitive,[Sensitivity]),
 	(Sensitivity =< 1 ->
-		context_insensitive_backward_invariant(Head,Phase_4_inv,Backward_invariant),
-		context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
+		get_context_insensitive_backward_invariant(Head,Phase_4_inv,Backward_invariant),
+		get_context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
 		Forward_hash=0,
 		(get_param(debug,[])->
 			print_header('Computing cost of chain ~p with ~p recursion~n',[Chain_rest,Linear_multiple],4)

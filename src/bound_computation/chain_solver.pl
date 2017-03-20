@@ -40,7 +40,8 @@ For the constraints, this is done at the same time of the compression.
 				  backward_invariant/4,
 				  partial_backward_invariant/5,
 			      phase_transitive_closure/5,
-			      forward_invariant/4]).
+			      forward_invariant/4,
+			      get_forward_invariant/4]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3]).			      
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[
@@ -84,7 +85,7 @@ compress_chain_costs([],_Chain_rev,_Head_total,_Head,Cost_base,[]):-
 compress_chain_costs([Base_case],Chain_rev,Head_total,Head,Cost,Cs_base):-
 	number(Base_case),!,
 	copy_term(Head_total,Head),
-	forward_invariant(Head,([Base_case|Chain_rev],_),Forward_hash,Forward_inv),
+	get_forward_invariant(Head,([Base_case|Chain_rev],_),Forward_hash,Forward_inv),
 	profiling_start_timer(equation_cost),
 	get_loop_cost(Head,[],(Forward_hash,Forward_inv),Base_case,Cost),
 	profiling_stop_timer_acum(equation_cost,_),
@@ -99,7 +100,7 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_next
 	nad_list_lub(Css_prev,Cs_prev),
 	cstr_or_compress(Costs_prev,Cost_prev),
 	
-	forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
 	get_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Phase,Cost_simple),
  	
  	loop_ph(Head,(Phase,_),Calls,Cs,_,_),
@@ -129,7 +130,7 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs_n
 	%nad_list_lub(Css_prev,_Cs_prev),
 	profiling_start_timer(loop_phases),
 	copy_term((Call,Costs_prev),(Head,Costs_prev2)),
-	forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
 	partial_backward_invariant([multiple(Phase,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,_),
 	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],[multiple(Phase,Tails)],Costs_prev2,Cost),
 	print_phase_cost(Phase,Head,[],Cost),
@@ -142,7 +143,7 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs_n
 	number(Phase),
  	copy_term(Head_total,Head),
  	compress_chain_costs(Chain,[Phase|Chain_rev],Head_total,Call,Cost_prev,Cs_prev),	
-	forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
 	get_loop_cost(Head,[Call],(Forward_hash,Forward_inv),Phase,Cost_simple),
  	
 	%FIXME: this should be substituted by the backward invariant!!
@@ -221,7 +222,7 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost,Cs_next):-
 	%nad_list_lub(Css_prev,_Cs_prev),
 	profiling_start_timer(loop_phases),
 	copy_term((Call,Cost_prev),(Head,Cost_prev2)),
-	forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Hash_local_inv,Local_inv),	
 	partial_backward_invariant([Phase|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern,_),
 	
 	compute_multiple_rec_phase_cost(Head,Phase,[Phase|Chain_rev],[Phase|Chain],[Cost_prev2],Cost),

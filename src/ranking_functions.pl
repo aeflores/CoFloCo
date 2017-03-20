@@ -36,7 +36,7 @@ These ranking functions are used to prove termination.
 :- use_module('refinement/chains',[chain/3,get_reversed_chains/3]).	  
 :- use_module('refinement/invariants',[
 				forward_invariant/4,
-		      context_insensitive_forward_invariant/3]).	
+		      get_context_insensitive_forward_invariant/3]).	
 :- use_module('IO/params',[get_param/2]).
 :- use_module('utils/cofloco_utils',[
 						tuple/3,
@@ -124,7 +124,7 @@ find_chain_ranking_functions([Non_loop|Rec_elems],Head):-
 		find_chain_ranking_functions(Rec_elems,Head).
 
 find_chain_ranking_functions([Phase|Rec_elems],Head):-
-		context_insensitive_forward_invariant(Head,Phase,Inv),
+		get_context_insensitive_forward_invariant(Head,Phase,Inv),
 	    forward_invariant(Head,([Phase|Rec_elems],_),_,Inv_sensitive),
 		compute_phase_rfs(Head,[Phase|Rec_elems],Phase,Inv,Inv_sensitive),
 		compute_phase_partial_rfs(Head,[Phase|Rec_elems],Phase,Inv,Inv_sensitive),
@@ -311,7 +311,7 @@ compute_iterations_ubs( Head,Call,Phi, Rfs2) :-
 	 get_input_output_vars(Call,ExitVars,_),
 	 append(EntryVars,ExitVars,Vars),
 	 nad_project(Vars,Phi,Phi_reduced),
-	 nad_all_ranking_functions_MS(Phi_reduced,EntryVars,ExitVars,Rfs),
+	 nad_all_ranking_functions_PR(Phi_reduced,EntryVars,ExitVars,Rfs),
 	 compute_offsets(Rfs,Phi,Rfs1),
      maplist(adapt_fraction,Rfs1,Rfs2).
 
