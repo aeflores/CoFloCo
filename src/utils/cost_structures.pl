@@ -808,19 +808,21 @@ cstr_propagate_zeroes(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant)
 %! propagate_zeroes_through_iconstrs(Iconstrs:list(iconstr),Set:list_set(itvar),Iconstrs_out:list(iconstr),Set_out:list_set(itvar)) is det	
 % propagate the intermediate variables that are zero (Set) and update any new itvars that are set to zero
 propagate_zeroes_through_iconstrs([],Set,[],Set).
-propagate_zeroes_through_iconstrs([bound(Op,Exp,Bounded)|Iconstrs],Set,Iconstrs_out,Set_out):-
+propagate_zeroes_through_iconstrs([bound(Op,Exp,Bounded_set)|Iconstrs],Set,Iconstrs_out,Set_out):-
 	Exp=exp(Index_pos,Index_neg,Pos,Neg),
 	partition(pair_contains_first(Set),Index_pos,Index_zero,Index_pos1),
-	Index_zero\=[],!,
-	maplist(set_second_to(0),Index_zero),
+	partition(pair_contains_first(Set),Index_neg,Index_zero_neg,Index_neg1),
+	append(Index_zero,Index_zero_neg,Index_zero_total),
+	Index_zero_total\=[],!,
+	maplist(set_second_to(0),Index_zero_total),
 	simplify_add(Pos,Pos1),
+	simplify_add(Neg,Neg1),
 	(Pos1=add([])->
 	   Iconstrs_out=Iconstrs_out1,
-	   from_list_sl(Bounded,Bounded_set),
 	   union_sl(Bounded_set,Set,Set1)
 	   ;
-	   Exp1=exp(Index_pos1,Index_neg,Pos1,Neg),
-	   bconstr_remove_bounded(Set,bound(Op,Exp1,Bounded),Iconstr),
+	   Exp1=exp(Index_pos1,Index_neg1,Pos1,Neg1),
+	   bconstr_remove_bounded(Set,bound(Op,Exp1,Bounded_set),Iconstr),
 	   Iconstrs_out=[Iconstr|Iconstrs_out1],
 	   Set1=Set
 	),
@@ -857,7 +859,7 @@ cstr_sort_iconstrs(Ub_fconstrs,Lb_fconstrs,Iconstrs,Iconstrs2):-
 	% create dependency graph between iconstr pairs (using predecessors)
 	compute_iconstr_predecessor_graph(Iconstrs_num,Iconstrs_num,[],Pred_graph),
 	%sort the iconstrs according to their dependencies
-	get_topological_sorting(Pred_graph,(Ub_Bounded_set,Lb_Bounded_set),Iconstrs2).
+	get_topological_sorting(Pred_graph,(Ub_Bounded_set,Lb_Bounded_set),(Ub_Bounded_set,Lb_Bounded_set),Iconstrs2).
 
 iconstrList_assign_ids(_N,[],[]).
 iconstrList_assign_ids(N,[Iconstr|Iconstrs],[N:Iconstr|Iconstrs_num]):-
@@ -892,27 +894,34 @@ is_pred_iconstr(bound(lb,exp(Index,_Index_neg,_Exp,_Exp_neg),_),_N:bound(lb,_,De
 
 
 %! get_topological_sorting(+Pred_graph:list(((int:iconstr),list(int))),+Bounded_itvars:list_set(itvar),-Iconstrs_final:list(iconstr)) is det
-get_topological_sorting([],_,[]):-!.
+get_topological_sorting([],_,_,[]):-!.
 
-get_topological_sorting(Pred_graph,Bounded_itvars,Iconstrs_final):-
+get_topological_sorting(Pred_graph,Initially_bounded_itvars,Bounded_itvars,Iconstrs_final):-
 	get_no_pred(Pred_graph,Iconstrs,Iconstrs_ids,Pred_graph2),
 	(Iconstrs\=[]->
 		from_list_sl(Iconstrs_ids,Iconstrs_ids_set),
 		maplist(remove_preds(Iconstrs_ids_set),Pred_graph2,Pred_graph3),
 		foldl(accum_bounded_itvars,Iconstrs,Bounded_itvars,Bounded_itvars2),
-		get_topological_sorting(Pred_graph3,Bounded_itvars2,Iconstrs2),
+		get_topological_sorting(Pred_graph3,Initially_bounded_itvars,Bounded_itvars2,Iconstrs2),
 		append(Iconstrs,Iconstrs2,Iconstrs_final)
 		;
 		%there is a cycle in the graph
 		% we try to get rid of it by removing constraints that bound itvars that are already bound
 		%FIXME: this could be improved
 		print_cycle_in_cstr_warning,
-		remove_redundant_constraints(Pred_graph2,Bounded_itvars,Pred_graph3,[],Redundant_ids_set,[],Removed_iconstrs),
-		(Redundant_ids_set\=[]->
-			print_removed_possibly_redundant_cstrs(Removed_iconstrs),
+		remove_redundant_constraints(Pred_graph2,Initially_bounded_itvars,Pred_graph3,[],Redundant_ids_set,[],Removed_iconstrs),
+		(Redundant_ids_set=[] ->
+				remove_redundant_constraints(Pred_graph2,Bounded_itvars,Pred_graph4,[],Redundant_ids_set2,[],Removed_iconstrs2)
+				;
+				Redundant_ids_set2=Redundant_ids_set,
+				Removed_iconstrs2=Removed_iconstrs,
+				Pred_graph4=Pred_graph3
+		),	
+		(Redundant_ids_set2\=[]->
+			print_removed_possibly_redundant_cstrs(Removed_iconstrs2),
 			%if we have removed something, we try to continue
-			maplist(remove_preds(Redundant_ids_set),Pred_graph3,Pred_graph4),
-			get_topological_sorting(Pred_graph4,Bounded_itvars,Iconstrs_final)
+			maplist(remove_preds(Redundant_ids_set2),Pred_graph4,Pred_graph5),
+			get_topological_sorting(Pred_graph5,Initially_bounded_itvars,Bounded_itvars,Iconstrs_final)
 			;
 			%we fail to get rid of the cycle, we discard the remaining iconstrs
 			print_removed_unresolved_cstrs_cycle(Pred_graph2),
