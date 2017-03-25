@@ -471,18 +471,42 @@ cstr_simplify(Cstr,Cstr_final):-
 
 cstr_simplify_1(Cstr,Max_min_both,Cstr_final):-
 	cstr_shorten_variables_names(Cstr,list,cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant)),
-	fconstr_join_equal_expressions(Ub_fcons,Ub_fcons2,Extra_itcons1),
+	(get_param(solve_fast,[])->
+		maplist(ignore_negative_constants,Ub_fcons,Ub_fcons_aux),
+		aggresively_simplify_ubconstrs(Ub_fcons_aux,Ub_fcons_aux2),
+		aggresively_simplify_ubconstrs(Itcons,Itcons_aux)
+	;
+		Ub_fcons=Ub_fcons_aux2,
+		Itcons=Itcons_aux
+	),
+	fconstr_join_equal_expressions(Ub_fcons_aux2,Ub_fcons2,Extra_itcons1),
 	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
-	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons],Itcons2),!,
-	cstr_simplify_multiple_variables_constrs(cost(Ub_fcons2,Lb_fcons2,Itcons2,Bsummands,BConstant),Cstr_aux),
-	join_equivalent_itvars(Cstr_aux,Cstr_aux2),
+	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons_aux],Itcons2),!,
+	cstr_simplify_multiple_variables_constrs(Itcons2,Itcons3),
+	join_equivalent_itvars(cost(Ub_fcons2,Lb_fcons2,Itcons3,Bsummands,BConstant),Cstr_aux2),
 	cstr_remove_undefined(Cstr_aux2,Cstr_aux3),
 	cstr_propagate_zeroes(Cstr_aux3,Cstr_aux4),
 	cstr_remove_useless_constrs(Cstr_aux4,Max_min_both,Cstr_final),!.
 	%cstr_count_appearances(Cstr_final).
-	
 
-	
+
+
+aggresively_simplify_ubconstrs(Bconstrs,Bconstrs_split):-
+		maplist(split_bounds,Bconstrs,Bconstrs_aux),
+		ut_flat_list(Bconstrs_aux,Bconstrs_split).
+		
+split_bounds(bound(ub,Exp,[Bounded]),bound(ub,Exp,[Bounded])):-!.
+
+split_bounds(bound(ub,Exp,Bounded),Fconstrs):-!,
+	maplist(put_in_list,Bounded,Bounded_list),
+	maplist(fconstr_new_inv(Exp,ub),Bounded_list,Fconstrs).
+split_bounds(Bconstr,Bconstr).
+
+ignore_negative_constants(bound(ub,Coeff+Cnt,Bounded),	bound(ub,Coeff+0,Bounded)):-
+		leq_fr(Cnt,0),!.
+ignore_negative_constants(bound(ub,Coeff+Cnt,Bounded),	bound(ub,Coeff+Cnt,Bounded)).
+
+
 	
 /*	
 cstr_count_appearances(cost(Ub_fcons,Lb_fcons,Itcons,_Bsummands,_BConstant)):-
@@ -510,37 +534,6 @@ count_appearance(Itvar,Appear_tree,Appear_tree1):-
 increment(X,X1):-
 	X1 is X+1.
 */	
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%  Discard redundant constraints i.e. if we have  it1+it2 =< A and it1 =< A, the second constraint is redundant
-cstr_simplify_multiple_variables_constrs(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands,BConstant)):-
-	include(is_ub_bconstr,Itcons,Itcons_ub),
-	sort_with(Itcons_ub,constr_more_bounded_vars,Itcons_sorted),
-	empty_setTree(Empty_setTree),
-	incrementally_remove_redundant_iconstrs(Itcons_sorted,Empty_setTree,Removed_setTree),
-	exclude(contains_setTree(Removed_setTree),Itcons,Itcons2).
-
-% order according to number of bounded itvars
- constr_more_bounded_vars(bound(_,_,Bounded),bound(_,_,Bounded2)):-
-        length(Bounded,N),
-        length(Bounded2,N2),
-        N<N2.
-
-%! incrementally_remove_redundant_iconstrs(+Constrs:list(iconstr),+Rem_etTree_accum:rbtree(iconstr,0),-Rem_etTree_accum:rbtree(iconstr,0)) is det
-incrementally_remove_redundant_iconstrs([],Rem_setTree,Rem_setTree).
-incrementally_remove_redundant_iconstrs([bound(ub,_Exp,[_])|_Constrs],Rem_setTree,Rem_setTree).
-incrementally_remove_redundant_iconstrs([bound(ub,Exp,Bounded)|Constrs],Rem_setTree_accum,Rem_setTree):-
-	partition(is_redundant(Exp,Bounded),Constrs,Removed_aux,Constrs1),
-	print_removed_redundant_constr_message(bound(ub,Exp,Bounded),Removed_aux),
-	insert_list_setTree(Removed_aux,Rem_setTree_accum,Rem_setTree_accum2),
-	incrementally_remove_redundant_iconstrs(Constrs1,Rem_setTree_accum2,Rem_setTree).
-
-
-is_redundant(Exp,Bounded,bound(ub,Exp2,Bounded2)):-
-	ground_copy(Exp,Exp_gr),
-	ground_copy(Exp2,Exp_gr),
-	difference_sl(Bounded2,Bounded,[]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -775,9 +768,67 @@ ground_index(_).
 	new_itvar(Name),
 	fconstr_new([Name],Op,Exp,New_fconstr),
 	maplist(fconstr_new_inv(_Exp,Op),Bounded_list,Fcons),
+	(Op=ub->
+		remove_redundant_bounded_sets(Bounded_list,Bounded_list2)
+	;
+	 	Bounded_list=Bounded_list2
+	),
 	astrexp_new_simple_itvar(Name,Astrexp),
-	maplist(iconstr_new(Astrexp,Op),Bounded_list,New_iconstrs).
+	maplist(iconstr_new(Astrexp,Op),Bounded_list2,New_iconstrs).
 	
+	
+remove_redundant_bounded_sets(Bounded_list,Bounded_list2):-
+	sort_with(Bounded_list,bounded_size,Bounded_list_sorted),
+	incrementally_remove_redundant_bounded(Bounded_list_sorted,[],Bounded_list2).
+		
+bounded_size(Bounded,Bounded2):-
+        length(Bounded,N),
+        length(Bounded2,N2),
+        N<N2.
+
+
+incrementally_remove_redundant_bounded([],Accum,Accum).
+incrementally_remove_redundant_bounded([[One]|Ones],Accum,Result):-!,
+	from_list_sl([[One]|Ones],Set),
+	append(Accum,Set,Result).
+incrementally_remove_redundant_bounded([Bounded|Bounded_list],Accum,Result):-
+	exclude(is_redundant_bounded(Bounded),Bounded_list,Non_redundant),
+	incrementally_remove_redundant_bounded(Non_redundant,[Bounded|Accum],Result).
+
+
+is_redundant_bounded(Bounded,Bounded2):-
+	difference_sl(Bounded2,Bounded,[]).	
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%  Discard redundant constraints i.e. if we have  it1+it2 =< A and it1 =< A, the second constraint is redundant
+cstr_simplify_multiple_variables_constrs(Itcons,Itcons2):-
+	include(is_ub_bconstr,Itcons,Itcons_ub),
+	sort_with(Itcons_ub,constr_more_bounded_vars,Itcons_sorted),
+	empty_setTree(Empty_setTree),
+	incrementally_remove_redundant_iconstrs(Itcons_sorted,Empty_setTree,Removed_setTree),
+	exclude(contains_setTree(Removed_setTree),Itcons,Itcons2).
+
+% order according to number of bounded itvars
+ constr_more_bounded_vars(bound(_,_,Bounded),bound(_,_,Bounded2)):-
+        length(Bounded,N),
+        length(Bounded2,N2),
+        N<N2.
+
+%! incrementally_remove_redundant_iconstrs(+Constrs:list(iconstr),+Rem_etTree_accum:rbtree(iconstr,0),-Rem_etTree_accum:rbtree(iconstr,0)) is det
+incrementally_remove_redundant_iconstrs([],Rem_setTree,Rem_setTree).
+incrementally_remove_redundant_iconstrs([bound(ub,_Exp,[_])|_Constrs],Rem_setTree,Rem_setTree).
+incrementally_remove_redundant_iconstrs([bound(ub,Exp,Bounded)|Constrs],Rem_setTree_accum,Rem_setTree):-
+	partition(is_redundant(Exp,Bounded),Constrs,Removed_aux,Constrs1),
+	print_removed_redundant_constr_message(bound(ub,Exp,Bounded),Removed_aux),
+	insert_list_setTree(Removed_aux,Rem_setTree_accum,Rem_setTree_accum2),
+	incrementally_remove_redundant_iconstrs(Constrs1,Rem_setTree_accum2,Rem_setTree).
+
+
+is_redundant(Exp,Bounded,bound(ub,Exp2,Bounded2)):-
+	ground_copy(Exp,Exp_gr),
+	ground_copy(Exp2,Exp_gr),
+	difference_sl(Bounded2,Bounded,[]).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
 %! cstr_propagate_zeroes(+Cstr:cstr,-Cstr_simplified:cstr) is det
