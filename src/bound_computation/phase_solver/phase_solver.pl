@@ -210,7 +210,7 @@ compute_phase_cost(Head,[Call],Phase,Chain_prefix,Chain_rest,Cost_final):-
 	
     %get the cost of each iterative component of the phase	
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost((Forward_hash,Forward_invariant)),Phase_vars,Phase_feasible,Costs),
+	maplist(get_equation_loop_cost(Head,(Forward_hash,Forward_invariant,Backward_invariant)),Phase_vars,Phase_feasible,Costs),
 	print_loops_costs(Phase_feasible,Phase_vars,Costs),
 	profiling_stop_timer_acum(equation_cost,_),
 	add_n_elem_constraints(Head,Call,Phase,Phase_feasible),
@@ -269,7 +269,7 @@ compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Costs_tails_n
 	
 	%get the cost of each iterative component of the phase
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost((Forward_hash,Forward_invariant)),Phase_vars_loops,Phase_feasible,Costs_loops),
+	maplist(get_equation_loop_cost(Head,(Forward_hash,Forward_invariant,Backward_invariant)),Phase_vars_loops,Phase_feasible,Costs_loops),
 	print_loops_costs(Phase_feasible,Phase_vars_loops,Costs_loops),
 	profiling_stop_timer_acum(equation_cost,_),
 	
@@ -353,8 +353,10 @@ init_solving_phase(Chain_prefix,Phase):-
 	assertz(current_phase(Phase)).
 
 	
-get_equation_loop_cost((Forward_hash,Forward_inv),loop_vars(Head,Calls),Eq_id,Cost2):-
-	get_loop_cost(Head,Calls,(Forward_hash,Forward_inv),Eq_id,Cost),
+get_equation_loop_cost(Head,(Forward_hash,Forward_inv,Back_inv),loop_vars(Head,Calls),Eq_id,Cost2):-
+	loop_ph(Head,(Eq_id,_),Calls,_,_,_),
+	foldl(get_call_inv,Calls,(Head,Back_inv,Forward_inv),(Head,_,Total_inv)),
+	get_loop_cost(Head,Calls,(Forward_hash,Total_inv),Eq_id,Cost),
 	cstr_extend_variables_names(Cost,it(Eq_id),Cost2).
 	
 

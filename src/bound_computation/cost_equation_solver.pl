@@ -69,22 +69,22 @@ init_cost_equation_solver:-
 %! get_loop_cost(+Head:term,+Calls:list(term),+Forward_inv_hash:(int,polyhedron),+Loop_id:loop_id,-Cost:cstr) is det
 %  Given a loop id (Eq_id) , it accesses the definition and computes the cost of an individual loop application
 % a loop corresponds to one or more cost equations that behave the same way with respect to the recursive call
-get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Cost):-
-	loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv2),Loop_id,Cost),
-	Forward_inv==Forward_inv2,!.
+get_loop_cost(Head,Calls,(Forward_inv_hash,Total_inv),Loop_id,Cost):-
+	loop_cost(Head,Calls,(Forward_inv_hash,Total_inv2),Loop_id,Cost),
+	Total_inv==Total_inv2,!.
 
-get_loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost):-
+get_loop_cost(Head,Calls,(Forward_inv_hash,Total_inv),Loop_id,Final_cost):-
     loop_ph(Head,(Loop_id,_),Calls,_Inv,Eqs,_),
-    maplist(get_equation_cost(Head,Calls,Forward_inv),Eqs,Costs),
+    maplist(get_equation_cost(Head,Calls,Total_inv),Eqs,Costs),
     cstr_or_compress(Costs,Final_cost),
-    assert(loop_cost(Head,Calls,(Forward_inv_hash,Forward_inv),Loop_id,Final_cost)).
+    assert(loop_cost(Head,Calls,(Forward_inv_hash,Total_inv),Loop_id,Final_cost)).
     
 %! get_equation_cost(+Head:term,+Calls:list(term),+Forward_inv:polyhedron,+Eq_id:eq_id,-Cost:cstr) is det
 %  * each call in the equation is substituted by its cost structure
 %  * the final constraints of the cost expressions are combined and the costs added 
- get_equation_cost(Head,Calls,Forward_inv,Eq_id,Cost):-
+ get_equation_cost(Head,Calls,Total_inv,Eq_id,Cost):-
     eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,Calls,_,Phi,_),
-	nad_glb(Forward_inv,Phi,Phi1),
+	nad_glb(Total_inv,Phi,Phi1),
 	(nad_consistent_constraints(Phi1)->
 		foldl(accumulate_calls(Eq_id),Base_calls,(Basic_cost,1),(cost(Ub_fconstrs_list,Lb_fconstrs_list,Iconstrs,Bases,Base),_)),
 		% we reverse the calls in case we want to combine cost structures incrementally
