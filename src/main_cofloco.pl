@@ -200,7 +200,11 @@ cofloco_query(Eqs,Params):-
 cofloco_query(Params):-
 	cofloco_query_part1(Params),
 	(get_param(input,[File])->
-		read_cost_equations(File),
+		(read_cost_equations(File)->
+			true
+			;
+			throw(error('Failed to parse input file'))
+		),	
 		cofloco_query_part2
 	;
 		(get_param(help,[])->
