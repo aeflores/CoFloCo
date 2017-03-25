@@ -134,7 +134,7 @@ compute_cover_point_for_scc(SCC_N) :-
 	crs_scc(SCC_N,non_recursive,[Node],_SCC_Graph,_Entries),!,
 	((has_entry_node([Node])
 	 ; 
-	 \+has_one_eq(Node) )->
+	 \+is_simple_path(Node) )->
 		add_to_btc([Node]),
 		declare_residual_scc(SCC_N,Node)
 		;
@@ -158,13 +158,18 @@ compute_cover_point_for_scc(SCC_N) :-
 	    
 	).
 
+
+
 has_entry_node(Nodes):-
 	entry_eq(Head,_),
 	functor(Head,F,A),
 	member(F/A,Nodes),!.
-has_one_eq(F/A):-
+	
+%has_one_eq(_Nodes):-!,fail.	
+is_simple_path(F/A):-
 	functor(Head,F,A),
-	findall(Id,input_eq(Head,Id,_,_,_),[_]).
+	findall((Id,Calls),input_eq(Head,Id,_,Calls,_),[(_,Calls)]),
+	length(Calls,N),N < 3.
 	
 % Substitute all the calls and cost relations of Cover_points by calls and cost relations of a merged predicate
 % the merged predicate has the maximum number of input and output variables
