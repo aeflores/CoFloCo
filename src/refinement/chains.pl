@@ -237,7 +237,11 @@ compute_rec_chains_from(Available_phases,Phase,Chains_accum,Chains):-
 	(is_linear_phase(Phase)->
 		maplist(append([Phase]),Chain_fragments_non_term,New_chains)
 		;
+		(Chain_fragments_non_term\=[]->
 		New_chains=[[multiple(Phase,Chain_fragments_non_term)]]
+		;
+		New_chains=[]
+		)
 	),
 	append(New_chains,Chains_accum,Chains).
 	
