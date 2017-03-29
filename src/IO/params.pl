@@ -234,8 +234,8 @@ param_description('conditional_lbs',
 'Generate a set of conditional lower bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
 
 param_description('solve_fast',
-'Solve cost structures into closed form bounds with a greedy strategy instead of an exhaustive search
-It still produces sound bounds but (possibly) less precise').
+'Splits upper bound constraints that bound more than one itvar e.g. s1+s2=< X becomes s1=<X and s2=< X
+It still produces sound bounds but (possibly) less precise at the multiplicative level').
 param_description('compress_chains',
 '0-2 : (default 0) Join chains that have the same precondition. It can increase performance greatly but also affect precission').
 param_description('linear_phase_strategy',
