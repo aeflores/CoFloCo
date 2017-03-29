@@ -29,7 +29,7 @@ For the constraints, this is done at the same time of the compression.
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(chain_solver,[compute_chain_cost/3]).
+:- module(chain_solver,[compute_chain_cost/3,init_chain_solver/0]).
 
 :- use_module(cost_equation_solver,[get_loop_cost/5]).
 :- use_module('phase_solver/phase_solver',[compute_phase_cost/6,compute_multiple_rec_phase_cost/6]).
@@ -72,6 +72,16 @@ For the constraints, this is done at the same time of the compression.
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
+
+% chain_cost(Head:term,Chain:chain,(Forward_hash:int,Forward_inv:polyhedron),Cost:cstr,Cs:polyhedron)
+:-dynamic chain_cost/5.
+
+%! init_chain_solver is det
+init_chain_solver:-
+	retractall(chain_cost(_,_,_,_,_)).
+
+
+
 %! compute_chain_cost(+Head:term,+Chain:chain,-Cost:cstr) is det
 % compute the cost structure of a chain.
 %   * Compute the cost of each phase
@@ -80,8 +90,26 @@ compute_chain_cost(Head,Chain,Cost_total):-
 	compress_chain_costs(Chain,[],Head,Head,Cost_total,_),
 	!.
 
+
+
+
 compress_chain_costs([],_Chain_rev,_Head_total,_Head,Cost_base,[]):-
 	Cost_base=cost([],[],[],[],0).
+
+%cacheing	
+compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost,Cs):-
+	copy_term(Head_total,Head),
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
+	chain_cost(Head,[Phase|Chain],(Forward_hash,Forward_inv2),Cost,Cs),
+	Forward_inv==Forward_inv2,!.
+%cacheing multiple chains
+compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs):-
+	copy_term(Head_total,Head),
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
+	chain_cost(Head,[multiple(Phase,Tails)],(Forward_hash,Forward_inv2),Cost,Cs),
+	Forward_inv==Forward_inv2,!.
+
+	
 compress_chain_costs([Base_case],Chain_rev,Head_total,Head,Cost,Cs_base):-
 	number(Base_case),!,
 	copy_term(Head_total,Head),
@@ -90,7 +118,8 @@ compress_chain_costs([Base_case],Chain_rev,Head_total,Head,Cost,Cs_base):-
 	get_loop_cost(Head,[],(Forward_hash,Forward_inv),Base_case,Cost),
 	profiling_stop_timer_acum(equation_cost,_),
 	loop_ph(Head,(Base_case,_),[],Cs,_,_),
-	ut_flat_list([Forward_inv,Cs],Cs_base).
+	ut_flat_list([Forward_inv,Cs],Cs_base),
+	assert(chain_cost(Head,[Base_case],(Forward_hash,Forward_inv),Cost,Cs_base)).
 
 
 compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_next_simple,Cs_next):-
@@ -120,7 +149,8 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost_next
  	cstr_simplify(Cost_next,Cost_next_simple),
  	Head=..[_|EVars],
  	%prepare  information for next iteration
-	nad_project_group(EVars,Cs_total,Cs_next).	
+	nad_project_group(EVars,Cs_total,Cs_next),
+	assert(chain_cost(Head,[multiple(Phase,Tails)],(Forward_hash,Forward_inv),Cost_next_simple,Cs_next)).
 
 
 %multiple recursion case
@@ -136,7 +166,10 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs_n
 	print_phase_cost(Phase,Head,[],Cost),
 
 	profiling_stop_timer_acum(loop_phases,_),
-	nad_list_glb([Local_inv,Entry_pattern],Cs_next).	
+	nad_list_glb([Local_inv,Entry_pattern],Cs_next),
+	
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
+	assert(chain_cost(Head,[multiple(Phase,Tails)],(Forward_hash,Forward_inv),Cost,Cs_next)).	
 
 
  compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs_next):-
@@ -168,7 +201,8 @@ compress_chain_costs([multiple(Phase,Tails)],Chain_rev,Head_total,Head,Cost,Cs_n
  	cstr_simplify(Cost_next,Cost_next_simple),
  	Head=..[_|EVars],
  	%prepare  information for next iteration
-	nad_project_group(EVars,Cs_total,Cs_next).	
+	nad_project_group(EVars,Cs_total,Cs_next),
+	assert(chain_cost(Head,[Phase|Chain],(Forward_hash,Forward_inv),Cost_next_simple,Cs_next)).
 	
 
 % compute the phase cost independently
@@ -211,6 +245,9 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost_next_simple,Cs
 	Head=..[_|EVars],
 	%prepare  information for next iteration
 	nad_project_group(EVars,Cs_total,Cs_next),
+	
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
+	assert(chain_cost(Head,[Phase|Chain],(Forward_hash,Forward_inv),Cost_next_simple,Cs_next)),
 	profiling_stop_timer_acum(chain_solver,_).
 	
 	
@@ -229,7 +266,10 @@ compress_chain_costs([Phase|Chain],Chain_rev,Head_total,Head,Cost,Cs_next):-
 	print_phase_cost(Phase,Head,[],Cost),
 
 	profiling_stop_timer_acum(loop_phases,_),
-	nad_list_glb([Local_inv,Entry_pattern],Cs_next).		
+	nad_list_glb([Local_inv,Entry_pattern],Cs_next),
+	
+	get_forward_invariant(Head,([Phase|Chain_rev],_),Forward_hash,Forward_inv),
+	assert(chain_cost(Head,[Phase|Chain],(Forward_hash,Forward_inv),Cost,Cs_next)).
 	
 	
 compress_chain_costs_aux(Chain_rev,Head_total,Head,Chain,Cost,Cs):-
@@ -258,22 +298,16 @@ no_lost_constraints(Ub_fconstrs,Ub_fconstrs_new):-
 %  * The phase information at the end of the next phase
 % and put it all together in a list
 get_all_phase_information(Head,Call,[Lg|More],Phi_list):-
-	forward_invariant(Head,([Lg|More],_),_,Local_inv),	
+	get_forward_invariant(Head,([Lg|More],_),_,Local_inv),
 	(
 	phase_transitive_closure(Lg,_,Head,Call,Cs_transitive)
 	 ;
 	loop_ph(Head,(Lg,_),[Call],Cs_transitive,_,_)
 	),
 	(phase_loop(Lg,_,Head,_,Cs_extra) ; Cs_extra=[]),!,
-	get_next_phase_predicate(More,Head,Cs_carried),
-	Phi_list=[Local_inv,Cs_transitive,Cs_extra,Cs_carried].
+	Phi_list=[Local_inv,Cs_transitive,Cs_extra].
 
 
-get_next_phase_predicate([],_,[]).
-get_next_phase_predicate([Lg_next|_],Head,Cs_carried):-
-	number(Lg_next),!,
-	loop_ph(_,(Lg_next,_),[Head],Cs_carried,_,_).
-get_next_phase_predicate([Lg_next|_],Head,Cs_carried):-
-	phase_loop(Lg_next,_,_,Head,Cs_carried).
+
 
 

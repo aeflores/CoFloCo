@@ -122,6 +122,7 @@ The main "data types" used in CoFloCo are the following:
 				  compute_conditional_bounds/1]).			  
 :- use_module('bound_computation/phase_solver/phase_solver',[init_phase_solver/0]).
 :- use_module('bound_computation/cost_equation_solver',[init_cost_equation_solver/0]).    
+:- use_module('bound_computation/chain_solver',[init_chain_solver/0]).    
 
 :- use_module('IO/output',[
 			  init_output/0,
@@ -256,7 +257,8 @@ init_database:-
 	init_chains,
 	clean_invariants,
 	init_phase_solver,
-	init_cost_equation_solver.	
+	init_cost_equation_solver,
+	init_chain_solver.
 	
 %! preprocess_cost_equations is det
 % Computes the SCC (strongly connected components)
