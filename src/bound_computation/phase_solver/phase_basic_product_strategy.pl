@@ -44,7 +44,6 @@ This is only valid for the last level, the leafs of the evaluation tree
 :- use_module('../../utils/cost_structures',[
 			new_itvar/1,
 			get_loop_itvar/2,
-			get_loop_depth_itvar/2,
 			astrexp_new/2,
 			fconstr_new/4,
 			iconstr_new/4]).	

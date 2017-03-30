@@ -94,12 +94,8 @@ This module prints the results of the analysis
 
 :- use_module('../utils/cost_structures',[
 	cstr_get_itvars/2,
-	cstr_shorten_variables_names/3,
 	cstr_get_unbounded_itvars/2,
 	itvar_recover_long_name/2,
-	itvar_shorten_name/3,
-	fconstr_shorten_name/3,
-	iconstr_shorten_name/3,
 	astrexp_to_cexpr/2]).
 
 
@@ -635,8 +631,7 @@ print_phase_cost(_,_,_,_).
 
 print_changed_to_chain_method_warning(Lost):-
 	get_param(debug,[]),!,
-	maplist(itvar_shorten_name(no_list),Lost,Lost_print),
-	print_warning('Some Itvars are unbounded ~p ~nChanging solving method to compute the cost of the chain directly ~n',[Lost_print]).
+	print_warning('Some Itvars are unbounded ~p ~nChanging solving method to compute the cost of the chain directly ~n',[Lost]).
 	
 print_changed_to_chain_method_warning(_).	
 
@@ -686,8 +681,7 @@ print_joined_itvar_sets_message(Sets):-
 	maplist(print_joined_itvar_set,Sets).
 print_joined_itvar_sets_message(_).
 
-print_joined_itvar_set(Set):-
-	maplist(itvar_shorten_name(no_list),Set,[First|Rest]),
+print_joined_itvar_set([First|Rest]):-
 	print_or_log(' * Joined equivalent variables ~p into ~p~n',[[First|Rest],First]).
 
 
@@ -715,8 +709,7 @@ print_results_1(_Entry,_).
 
 gen_mult_bases((A,B),A*B).
 
-print_cost_structure(Cost):-
-	cstr_shorten_variables_names(Cost,no_list,cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)),
+print_cost_structure(cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)):-
 	cstr_get_unbounded_itvars(cost(Top_exps,LTop_exps,Aux_exps,Bases,Base),Unbounded),
 	partition(is_ub_aux_exp,Aux_exps,Ub_Aux_exps,Lb_Aux_exps),
 	print_base(Bases,Base,Unbounded),
@@ -754,15 +747,13 @@ print_base([(Itvar,Coeff)|Bases],C,Unbounded):-
 		
 is_ub_aux_exp(bound(ub,_,_)).
 
-write_top_exp(Constr_ini,Constr):-
-	fconstr_shorten_name(no_list,Constr_ini,bound(Op,Exp,Bounded)),
+write_top_exp(bound(Op,Exp,Bounded),Constr):-
 	print_op(Op,Op_p),
 	write_sum(Bounded,Sum),
 	write_le(Exp,Exp_print),
 	Constr=..[Op_p,Sum,Exp_print].
 
-write_aux_exp(Constr_ini,Constr):-
-	iconstr_shorten_name(no_list,Constr_ini,bound(Op,Exp,Bounded)),
+write_aux_exp(bound(Op,Exp,Bounded),Constr):-
 	print_op(Op,Op_p),
 	astrexp_to_cexpr(Exp,Exp2),
 	write_sum(Bounded,Sum),
@@ -796,9 +787,8 @@ print_itvars_renaming(Cost):-
 	).
 print_itvars_renaming(_Cost).
 	
-get_itvar_renaming([Prefix|Rest],Old >> New ):-
-		itvar_shorten_name(no_list,Rest,Old),
-		itvar_shorten_name(no_list,[Prefix|Rest],New).
+get_itvar_renaming(New, Old >> New ):-
+		itvar_recover_long_name(New,Old).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

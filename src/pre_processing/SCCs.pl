@@ -47,6 +47,7 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 		get_input_output_vars/3,
 		save_input_output_vars/3]).
 :- use_module('../IO/output',[print_merging_cover_points/3]).		
+:- use_module('../utils/cofloco_utils',[sort_with/3,tuple/3]).	
 %:- use_module(recursion_loop_extraction,[try_loop_extraction/1]).
 
 :- use_module(stdlib(scc),[compute_sccs/2]).
@@ -144,7 +145,8 @@ compute_cover_point_for_scc(SCC_N) :-
 
 compute_cover_point_for_scc(SCC_N) :-
 	crs_scc(SCC_N,recursive,Nodes,SCC_Graph,Entries),
-	compute_cover_point_for_scc_aux(Nodes,SCC_Graph,Entries,Cover_Points),
+	sort_entries(Entries,Nodes,Entries_sorted),
+	compute_cover_point_for_scc_aux(Nodes,SCC_Graph,Entries_sorted,Cover_Points),
 	( Cover_Points=[Cover_Point] ->
 	%we can partially evaluate the SCC to Cover_point
 		add_to_btc([Cover_Point]),
@@ -158,7 +160,26 @@ compute_cover_point_for_scc(SCC_N) :-
 	    
 	).
 
-
+% prioritize entries that are called more times and have less variables
+sort_entries(Entries,Nodes,Entries_sorted):-
+	maplist(annotate_entries_with_n_calls(Nodes),Entries,Entries_annotated),
+	sort_with(Entries_annotated,worse_entry,Entries_annotated_sorted),
+	maplist(tuple,Entries_sorted,_,Entries_annotated_sorted).
+	
+annotate_entries_with_n_calls(Nodes_scc,F/A,(F/A,N)):-
+	findall(Caller/Caller_a,
+		(
+	    	crs_rev_edge(F,A,Caller,Caller_a),
+	    	\+member(Caller/Caller_a,Nodes_scc)
+	    ),Callers),
+	    length(Callers,N).
+	    	
+	    	
+worse_entry((_F/_A,N),(_F2/_A2,N2)):-
+	N<N2,!.
+worse_entry((_F/A,N),(_F2/A2,N2)):-
+	N=N2,	
+	A>A2.
 
 has_entry_node(Nodes):-
 	entry_eq(Head,_),
@@ -317,7 +338,7 @@ substitute_node(New_name,Old_names,Node,New_node):-
 
 	
 compute_cover_point_for_scc_aux(_,SCC_Graph,Entries,MFBS) :- % try shamir's algorithm
-	Entries=[E|_],
+	member(E,Entries),
 	compute_mfbs_shamir(SCC_Graph,E,MFBS),!.
 
 compute_cover_point_for_scc_aux(Nodes,SCC_Graph,Entries,Cover_Point) :- % try the naive (quadratic) algorithm

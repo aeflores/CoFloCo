@@ -120,7 +120,6 @@ These constraints are useful in most cases and that allows us to simplify the re
 			cstr_sort_iconstrs/4,
 			new_itvar/1,
 			get_loop_itvar/2,
-			get_loop_depth_itvar/2,
 			is_ub_bconstr/1,
 			astrexp_new/2,
 			pstrexp_pair_empty/1,
@@ -379,10 +378,12 @@ get_it_sum_constraint(lb,Loop,[bound(lb,[]+1,[Loop_name])]):-
 :-dynamic new_phase_iconstr/2.
 
 
-save_new_phase_fconstr(Loop_vars,FConstr):-
-	assertz(new_phase_fconstr(Loop_vars,FConstr)).
-save_new_phase_iconstr(Loop_vars,IConstr):-
-	assertz(new_phase_iconstr(Loop_vars,IConstr)).
+save_new_phase_fconstr(Loop_vars,bound(Op,Exp,Bounded)):-
+	from_list_sl(Bounded,Bounded_set),
+	assertz(new_phase_fconstr(Loop_vars,bound(Op,Exp,Bounded_set))).
+save_new_phase_iconstr(Loop_vars,bound(Op,Exp,Bounded)):-
+	from_list_sl(Bounded,Bounded_set),
+	assertz(new_phase_iconstr(Loop_vars,bound(Op,Exp,Bounded_set))).
 	
 collect_phase_results(Loop_vars,Ub_fconstrs,Lb_fconstrs,Iconstrs_total):-
 	Loop_vars=loop_vars(Head,Calls),

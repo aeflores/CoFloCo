@@ -53,7 +53,7 @@ For sums of constants in the linear case, we use the already computed ranking fu
 				write_lin_exp_in_phase/3,
 				print_or_log/2,
 				interesting_example_warning/2]).		
-:- use_module('../../ranking_functions',[partial_ranking_function/7]).	
+:- use_module('../../ranking_functions',[partial_ranking_function/7,ranking_function/4]).	
 :- use_module('../../utils/cofloco_utils',[
 			tuple/3,
 			ground_copy/2,
@@ -64,7 +64,6 @@ For sums of constants in the linear case, we use the already computed ranking fu
 			astrexp_new/2,
 			pstrexp_pair_empty/1,
 			pstrexp_pair_add/3,
-			itvar_shorten_name/3,
 			fconstr_new/4,
 			iconstr_new/4]).			
 :-use_module('../../utils/template_inference',[
@@ -124,8 +123,12 @@ generate_rf_candidates(ub,Head,Loop,Candidates):-
 	bagof_no_fail(Rf,
 	Deps^Deps_type^Loops^Phase^
 	(
+		ranking_function(Head,Chain_prefix,Phase,Rf),
+		member(Loop,Phase)	
+		;	
 		partial_ranking_function(Head,Chain_prefix,Phase,Loops,Rf,Deps,Deps_type),
-		contains_sl(Loops,Loop:1)		
+		contains_sl(Loops,Loop:1)	
+			
 	),Rfs),
 	maplist(tuple(head),Rfs,Head_candidates),
 	maplist(tuple(tail),Rfs,Tail_candidates),
@@ -406,8 +409,7 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 	    (find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Type,Bounded,Pending,Pending1)->			
 		   Class=class(cnt,Loop,Bounded),
 		   (get_param(debug,[])->
-		   	maplist(itvar_shorten_name(no_list),Bounded,Bounded_short),
-		   	print_or_log('       - ~p ~p is collaborative and bounds ~p ~n',[Loop_type,Loop,Bounded_short]);true)
+		   	print_or_log('       - ~p ~p is collaborative and bounds ~p ~n',[Loop_type,Loop,Bounded]);true)
 		   ;
 		   
 			Pending1=Pending,
@@ -515,8 +517,7 @@ check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-
 		find_minsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Bounded,Pending,Pending1),!,
 		Class=class(cnt,Loop,Bounded),
 		(get_param(debug,[])->
-			maplist(itvar_shorten_name(no_list),Bounded,Bounded_short),
-			print_or_log('       - ~p ~p is collaborative and bounds ~p~n',[Loop_type,Loop,Bounded_short]);true).
+			print_or_log('       - ~p ~p is collaborative and bounds ~p~n',[Loop_type,Loop,Bounded]);true).
 % we don't substract loops that can decrease the bound
 % in theory this could happen, in practice it doesn't seem to happen so we skip it and fail in those cases		
 	

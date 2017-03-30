@@ -27,7 +27,7 @@ that can be passed on to the callers.
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(bounds_main,[compute_bound_for_scc/2,
+:- module(bounds_main,[compute_bound_for_scc/3,
 			compute_closed_bound/1,
 			compute_single_closed_bound/3]).
 
@@ -53,6 +53,7 @@ that can be passed on to the callers.
 										  cstr_extend_variables_names/3]).
 
 :- use_module('../IO/params',[get_param/2]).
+
 :- use_module(stdlib(numeric_abstract_domains),[nad_list_lub/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
@@ -60,17 +61,19 @@ that can be passed on to the callers.
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
-%! compute_bound_for_scc(+Head:term,+RefCnt:int) is det
+%! compute_bound_for_scc(+Head:term,+RefCnt:int,Last:bool) is det
 % compute a bound for each chain
 % then, compress the bounds for the chains that have been grouped into
-% external call patterns
-compute_bound_for_scc(Head,RefCnt):-
+% external call patterns only if we are not at the last scc
+compute_bound_for_scc(Head,RefCnt,_Last):-
 	chain(Head,RefCnt,Chain),
 	compute_chain_bound(Head,Chain),
 	fail.
-
-compute_bound_for_scc(Head,RefCnt):-
+	
+compute_bound_for_scc(Head,RefCnt,false):-	
 	compress_bounds_for_external_calls(Head,RefCnt).
+compute_bound_for_scc(_Head,_RefCnt,true).
+
 
 %! compute_chain_bound(+Head:term,+Chain:chain) is det
 % compute a bound for a chain,
@@ -100,7 +103,7 @@ compress_bounds_for_external_calls(Head,RefCnt):-
 	        	;
 	        	Cost_structure_1=Cost_structure
 	        )
-	        ),Cost_structures),       
+	        ),Cost_structures),    
 	cstr_or_compress(Cost_structures,Final_cost_structure),
 	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),
 	fail.

@@ -82,7 +82,6 @@
 		max_min_ub_lb/2,
 		new_itvar/1,
 		get_loop_itvar/2,
-		get_loop_depth_itvar/2,
 		is_ub_bconstr/1,
 		fconstr_new/4,
 		fconstr_new_inv/4,
@@ -100,17 +99,13 @@
 		cstr_get_itvars/2,
 		cstr_get_unbounded_itvars/2,
 		cstr_extend_variables_names/3,
-		itvar_shorten_name/3,
-		fconstr_shorten_name/3,
-		iconstr_shorten_name/3,
 		itvar_recover_long_name/2,
 		cstr_propagate_sums/4,
 		cstr_join/3,
 		cstr_or_compress/2,
 		cstr_simplify/2,
 		cstr_sort_iconstrs/4,
-		cstr_simplify_for_solving/5,
-		cstr_shorten_variables_names/3]).
+		cstr_simplify_for_solving/5]).
 		
 		
 :- use_module(cofloco_utils,[
@@ -147,7 +142,7 @@
 	integrate_le/3,
 	elements_le/2,
 	constant_le/2]).	
-:- use_module(stdlib(counters),[counter_increase/3]).	
+:- use_module(stdlib(counters),[counter_initialize/2,counter_increase/3]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).	
 :- use_module(stdlib(multimap),[put_mm/4,from_pair_list_mm/2,values_of_mm/3]).	
 :- use_module(stdlib(list_map),[lookup_lm/3,delete_lm/3,insert_lm/4]).
@@ -188,16 +183,13 @@ max_min_ub_lb(min,lb).
 
 %! new_itvar(Itvar:itvar) is det
 % generate a fresh intermediate variable name
-new_itvar([aux(Num)]):-
+new_itvar(aux(Num)):-
 	counter_increase(aux_vars,1,Num).
 	
 %! get_loop_itvar(Loop:loop_id,Itvar:itvar) is det
 % get the itvar corresponding to a loop identifier
-get_loop_itvar(Loop,[it(Loop)]).
+get_loop_itvar(Loop,it(Loop)).
 
-%! get_loop_depth_itvar(Loop:loop_id,Itvar:itvar) is det
-% get the itvar corresponding to the depth of a loop identifier
-get_loop_depth_itvar(Loop,[it_depth(Loop)]).
 
 %! annotate_itvar(Op:atom,Itvar:itvar,Var:op(itvar))
 % wrap an intermediate variable inside Op
@@ -469,8 +461,7 @@ simplify_fconstr_nats(_,_,Fconstr,Fconstr).
 cstr_simplify(Cstr,Cstr_final):-
 	cstr_simplify_1(Cstr,both,Cstr_final).
 
-cstr_simplify_1(Cstr,Max_min_both,Cstr_final):-
-	cstr_shorten_variables_names(Cstr,list,cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant)),
+cstr_simplify_1(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Max_min_both,Cstr_final):-
 	(get_param(solve_fast,[])->
 		maplist(ignore_negative_constants,Ub_fcons,Ub_fcons_aux),
 		aggresively_simplify_ubconstrs(Ub_fcons_aux,Ub_fcons_aux2),
@@ -482,18 +473,41 @@ cstr_simplify_1(Cstr,Max_min_both,Cstr_final):-
 	fconstr_join_equal_expressions(Ub_fcons_aux2,Ub_fcons2,Extra_itcons1),
 	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
 	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons_aux],Itcons2),!,
-	cstr_simplify_multiple_variables_constrs(Itcons2,Itcons3),
-	join_equivalent_itvars(cost(Ub_fcons2,Lb_fcons2,Itcons3,Bsummands,BConstant),Cstr_aux2),
+	(get_param(solve_fast,[])->
+		Itcons2=Itcons3
+		;
+		cstr_simplify_multiple_variables_constrs(Itcons2,Itcons3)
+	),
+	from_list_sl(Bsummands,Bsummands2),
+	join_equivalent_itvars(cost(Ub_fcons2,Lb_fcons2,Itcons3,Bsummands2,BConstant),Cstr_aux2),
 	cstr_remove_undefined(Cstr_aux2,Cstr_aux3),
 	cstr_propagate_zeroes(Cstr_aux3,Cstr_aux4),
 	cstr_remove_useless_constrs(Cstr_aux4,Max_min_both,Cstr_final),!.
 	%cstr_count_appearances(Cstr_final).
 
 
-
-aggresively_simplify_ubconstrs(Bconstrs,Bconstrs_split):-
+aggresively_simplify_ubconstrs(Bconstrs,Bconstrs_split3):-
 		maplist(split_bounds,Bconstrs,Bconstrs_aux),
-		ut_flat_list(Bconstrs_aux,Bconstrs_split).
+		ut_flat_list(Bconstrs_aux,Bconstrs_split),
+
+		length(Bconstrs,N1),
+		length(Bconstrs_split,N2),
+		(N2>N1->
+		empty_setTree(Empty),
+		foldl(remove_bconstr_duplicate,Bconstrs_split,(Empty,[]),(_,Bconstrs_split2)),
+		reverse(Bconstrs_split2,Bconstrs_split3)
+		;
+		Bconstrs_split=Bconstrs_split3).
+
+remove_bconstr_duplicate(Bconstr,(TreeSet,Accum),Res):-
+	ground_copy(Bconstr,Bconstr_gr),
+	term_hash(Bconstr_gr,Hash),
+	(contains_setTree(TreeSet,(Hash,Bconstr_gr))->
+		Res=(TreeSet,Accum)
+		;
+		insert_setTree(TreeSet,Hash,TreeSet1),
+		Res=(TreeSet1,[Bconstr|Accum])
+	).
 		
 split_bounds(bound(ub,Exp,[Bounded]),bound(ub,Exp,[Bounded])):-!.
 
@@ -538,16 +552,24 @@ increment(X,X1):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
 %  Join intermediate variables that are subject to the same constraints	
 % this is an incremental process, joining some itvars can make others equivalent
 % we repeat it until we cannot merge anything else
-join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant)):-
+join_equivalent_itvars(Cost,Cost2):-
+	clean_right_sides,
+	join_equivalent_itvars_1(Cost,Cost2).
+
+join_equivalent_itvars_1(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant)):-
 	partition(bconstr_bounds_multiple_itvars,Itcons,Multiple_itconstrs,Single_itconstrs),
 	% join the positive together and the negative together but do not mix them
 	foldl(add_itvar_empty_map,Bsummands,[],Map_0),
 	%Map_0=[],
 	%create a multimap from itvars to hashes of right sides of iconstrs (or terms single(op,itvar) when the right side is a simple variable)
 	% map(itvar,set(hash))
+
 	foldl(get_itconstr_for_each_itvar,Single_itconstrs,Map_0,Map),
 	% remove any itvar that is define by final constraints or constraints with several itvars
 	foldl(remove_itvars_from_map,Ub_fcons,Map,Map1),
@@ -567,9 +589,10 @@ join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),cost(U
 	append(Itvar_multiple_sets1,Itvar_multiple_sets2,Itvar_multiple_sets),
 	%Itvar_multiple_sets is a list(list_set(itvar))
 	(Itvar_multiple_sets\=[]->
+		print_joined_itvar_sets_message(Itvar_multiple_sets),
 		join_itvar_sets(Itvar_multiple_sets,Itcons,Bsummands,Itcons2,Bsummands2),
 		%try to simplify further
-		join_equivalent_itvars(cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands2,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant))
+		join_equivalent_itvars_1(cost(Ub_fcons,Lb_fcons,Itcons2,Bsummands2,BConstant),cost(Ub_fcons,Lb_fcons,Itcons3,Bsummands3,BConstant))
 		;
 		Itcons3=Itcons,
 		Bsummands3=Bsummands
@@ -599,8 +622,8 @@ get_itconstr_for_each_itvar(bound(Op,Exp,[Itvar]),Map,Map1):-!,
 	Exp2=exp(Index_pos,Index_neg,_,_),
 	maplist(ground_index,Index_pos),
 	maplist(ground_index,Index_neg),
-	term_hash((Op,Exp2),Hash),
-	put_mm(Map,Itvar,Hash,Map1).
+	get_right_side_code((Op,Exp2),Code),
+	put_mm(Map,Itvar,Code,Map1).
 
 
 	
@@ -619,8 +642,9 @@ join_itvar_sets([],Itconstrs,Bsummands,Itconstrs,Bsummands).
 join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_final,Bsummands_final):-
 	%get_first_appearance
 	single_list_to_setTree(Equivalent_itvars,Equivalent_itvars_setTree),
+	empty_setTree(Empty_Appeared),
 	%keep the first appearance of each defining contraint, discard the rest
-	keep_first_appearances(Itconstrs,Itvar,Equivalent_itvars_setTree,[],Itconstrs2),
+	keep_first_appearances(Itconstrs,Itvar,Equivalent_itvars_setTree,Empty_Appeared,Itconstrs2),
 	empty_setTree(Empty_setTree),
 	% substitute the uses of the Equivalent itvars by Itvar
 	foldl(itconstr_substitute_itvars_in_exp(Itvar,Equivalent_itvars_setTree),Itconstrs2,(Empty_setTree,[]),(_,Itconstrs3)),
@@ -633,28 +657,29 @@ join_itvar_sets([[Itvar|Equivalent_itvars]|Sets],Itconstrs,Bsummands,Itconstrs_f
 
 keep_first_appearances([],_,_,_,[]).
 
-keep_first_appearances([bound(ub,exp([(Itvar2,_)],_Index_neg,_Pos,_Neg),[Itvar3])|Itconstrs],Itvar,SetTree,Appeared,Itconstrs_final):-
+keep_first_appearances([bound(ub,exp([(Itvar2,Var)],[],add([mult([Var2])]),add([])),[Itvar3])|Itconstrs],Itvar,SetTree,Appeared,Itconstrs_final):-
+	Var==Var2,
 	(Itvar=Itvar2;contains_setTree(SetTree,Itvar2)),
 	(Itvar=Itvar3;contains_setTree(SetTree,Itvar3)),!,
 	keep_first_appearances(Itconstrs,Itvar,SetTree,Appeared,Itconstrs_final).
 
 keep_first_appearances([bound(Op,Exp,[Itvar])|Itconstrs],Itvar,SetTree,Appeared,Itconstrs_final):-!,
-	(contains_sl(Appeared,bound(Op,Exp,[Itvar]))->
+	(contains_setTree(Appeared,bound(Op,Exp,[Itvar]))->
 	    Itconstrs_final=Itconstrs2,
 	    Appeared2=Appeared
 	    ;
-	    insert_sl(Appeared,bound(Op,Exp,[Itvar]),Appeared2),
+	    insert_setTree(Appeared,bound(Op,Exp,[Itvar]),Appeared2),
 	    Itconstrs_final=[bound(Op,Exp,[Itvar])|Itconstrs2]
 	),
 	keep_first_appearances(Itconstrs,Itvar,SetTree,Appeared2,Itconstrs2).
 	
 keep_first_appearances([bound(Op,Exp,[Itvar2])|Itconstrs],Itvar,SetTree,Appeared,Itconstrs_final):-
 	contains_setTree(SetTree,Itvar2),!,
-	(contains_sl(Appeared,bound(Op,Exp,[Itvar]))->
+	(contains_setTree(Appeared,bound(Op,Exp,[Itvar]))->
 	    Itconstrs_final=Itconstrs2,
 	    Appeared2=Appeared
 	    ;
-	    insert_sl(Appeared,bound(Op,Exp,[Itvar]),Appeared2),
+	    insert_setTree(Appeared,bound(Op,Exp,[Itvar]),Appeared2),
 	    Itconstrs_final=[bound(Op,Exp,[Itvar])|Itconstrs2]
 	),
 	keep_first_appearances(Itconstrs,Itvar,SetTree,Appeared2,Itconstrs2).
@@ -669,7 +694,7 @@ make_trivial_pair(E,E-0).
 
 empty_setTree(Empty):-
 	rb_empty(Empty).
-	
+
 contains_setTree(Set,Elem):-
 	rb_lookup(Elem,0,Set),!.
 	
@@ -682,8 +707,10 @@ insert_setTree(Set,Elem,Set1):-
 	rb_insert(Set, Elem, 0, Set1),!.
 
 	
-substitute_itvars_in_list(Itvar,Equivalent_itvars_setTree,List,List1):-
-	maplist(substitute_itvar_in_list(Itvar,Equivalent_itvars_setTree),List,List1).
+substitute_itvars_in_list(Itvar,Equivalent_itvars_setTree,List,[F|Set]):-
+	maplist(substitute_itvar_in_list(Itvar,Equivalent_itvars_setTree),List,[F|List1]),
+	from_list_sl(List1,Set).
+	
 substitute_itvar_in_list(Itvar,SetTree,Itvar2,Itvar):-
 	contains_setTree(SetTree,Itvar2),!.	
 substitute_itvar_in_list(_Itvar,_Set,Itvar2,Itvar2).
@@ -702,11 +729,11 @@ itconstr_substitute_itvars_in_exp(Itvar,Equiv_itvar_setTree,bound(Op,Exp,Bounded
 	maplist(ground_index,Index_neg_ground),
 	% only keep the iconstr if it is not repeated
 	term_hash(bound(Op,Exp_ground,Bounded),Hash_new_bconstr),
-	(contains_setTree(Bconstrs_hash_setTree,Hash_new_bconstr)->
+	(contains_setTree(Bconstrs_hash_setTree,(Hash_new_bconstr,bound(Op,Exp_ground,Bounded)))->
 		Pair1=(Bconstrs_hash_setTree,Bconstrs)
 		;
 		Bconstrs1=[bound(Op,Exp2,Bounded)|Bconstrs],
-		insert_setTree(Bconstrs_hash_setTree,Hash_new_bconstr,Bconstrs_hash_setTree1),
+		insert_setTree(Bconstrs_hash_setTree,(Hash_new_bconstr,bound(Op,Exp_ground,Bounded)),Bconstrs_hash_setTree1),
 		Pair1=(Bconstrs_hash_setTree1,Bconstrs1)
 	).
 
@@ -737,6 +764,24 @@ accum_equivalent_summands([(Itvar2,Coeff)|Bsummands_rev],Itvar,Equivalent_itvars
 
 ground_index((X,X)):-!.
 ground_index(_).
+
+
+% some predicates to assign codes to each right side of the iconstrs
+:-dynamic right_side_code/3.
+
+clean_right_sides:-
+	retractall(right_side_code(_,_,_)),
+	counter_initialize(right_side,0).
+
+get_right_side_code(Rside,Code):-
+	term_hash(Rside,Hash),
+	right_side_code(Hash,Rside,Code),!.
+	
+get_right_side_code(Rside,Code):-
+	term_hash(Rside,Hash),
+	counter_increase(right_side,1,Code),
+	assert(right_side_code(Hash,Rside,Code)).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1133,21 +1178,31 @@ cstr_extend_variables_names(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BCon
 
 iconstr_extend_name(Prefix,bound(Op,Exp,Bounded),bound(Op,Exp1,Bounded_set)):-
 	astrexp_extend_name(Prefix,Exp,Exp1),
-	maplist(append([Prefix]),Bounded,Bounded2),
+	maplist(itvar_extend_name(Prefix),Bounded,Bounded2),
 	from_list_sl(Bounded2,Bounded_set).
 	
 fconstr_extend_name(Prefix,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded_set)):-
-	maplist(append([Prefix]),Bounded,Bounded2),
+	maplist(itvar_extend_name(Prefix),Bounded,Bounded2),
 	from_list_sl(Bounded2,Bounded_set).
 	
 astrexp_extend_name(Prefix,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
 	maplist(bfactor_extend_name(Prefix),Index,Index2),
 	maplist(bfactor_extend_name(Prefix),Index_neg,Index_neg2).	
 	
-bfactor_extend_name(Prefix,(Name,Value),([Prefix|Name],Value)).	
+bfactor_extend_name(Prefix,(Name,Value),(Name2,Value)):-
+	itvar_extend_name(Prefix,Name,Name2).
 
-itvar_extend_name(Prefix,Name,[Prefix|Name]).
+itvar_extend_name(Prefix,Name,Name2):-
+	short_db(Name,Prefix,Name2),!.
+itvar_extend_name(Prefix,Name,s(Name2)):-
+	counter_increase(short_terms,1,Name2),
+	assertz(short_db(Name,Prefix,s(Name2))).
 
+
+
+itvar_recover_long_name(Name,(Prefix,Old)):-
+	short_db(Old,Prefix,Name),!.
+itvar_recover_long_name(Name,Name).
 
 cstr_get_itvars(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,_),Set5):-
 	maplist(tuple,Itvars,_,Bsummands),
@@ -1156,101 +1211,6 @@ cstr_get_itvars(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,_),Set5):-
 	foldl(get_bounded_itvars(lb),Lb_fconstrs,Set2,Set3),
 	foldl(get_bounded_itvars(ub),Iconstrs,Set3,Set4),
 	foldl(get_bounded_itvars(lb),Iconstrs,Set4,Set5).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%! cstr_shorten_variables_names(+Cost:cstr,+Flag:atom,-Cost_extended:cstr) is det
-% Reduce the length of the itvar names by substituting them by their hash summary
-% the flag indicates whether the resulting names are lists or terms
-cstr_shorten_variables_names(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Bsummands,BConstant),Flag,cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs1,Bsummands1,BConstant)):-
-		maplist(fconstr_shorten_name(Flag),Ub_fconstrs,Ub_fconstrs1),
-		maplist(fconstr_shorten_name(Flag),Lb_fconstrs,Lb_fconstrs1),
-		maplist(iconstr_shorten_name(Flag),Iconstrs,Iconstrs1),
-		maplist(bfactor_shorten_name(Flag),Bsummands,Bsummands1).
-		
-
-iconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression2,Bounded_set)):-
-	astrexp_shorten_name(Flag,Expression,Expression2),
-	maplist(itvar_shorten_name(Flag),Bounded,Bounded2),
-	from_list_sl(Bounded2,Bounded_set).
-	
-fconstr_shorten_name(Flag,bound(Op,Expression,Bounded),bound(Op,Expression,Bounded_set)):-
-	maplist(itvar_shorten_name(Flag),Bounded,Bounded2),
-	from_list_sl(Bounded2,Bounded_set).	
-
-astrexp_shorten_name(Flag,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
-	maplist(bfactor_shorten_name(Flag),Index,Index2),
-	maplist(bfactor_shorten_name(Flag),Index_neg,Index_neg2).
-	
-bfactor_shorten_name(Flag,(Name,Value),(Short_name,Value)):-
-	itvar_shorten_name(Flag,Name,Short_name).	
-	
-%! itvar_shorten_name(+Flag:flag,+Itvar:itvar,-Itvar_short:itvar) is det
-% create an abbreviation of the intermediate variable name
-% the flag determines is the new name is a list or not. 
-% The name must always be a list except when we want to use it for the output
-
-%do not shorten terms that are already short
-itvar_shorten_name(list,[Name],[Name]):-!.
-
-itvar_shorten_name(list,Name,Short_name):-
-	term_hash(Name,Hash),
-	(short_db(Hash,Name,Short_name_exist)->
-		Short_name=[Short_name_exist]
-		;
-	 	counter_increase(short_terms,1,Id),
-	 	assert(short_db(Hash,Name,s(Id))),
-	 	Short_name=[s(Id)]
-	 	).
-itvar_shorten_name(no_list,Name,Short_name):-
-	(Name=[One]->
-		(short_db(_,Name_long,One);Name_long=Name)
-		;
-		Name_long=Name
-		),!,
-	itvar_shorten_name_cont(Name_long,Short_name).
-
-itvar_shorten_name_cont([it(Loop)],'#'(Loop)):-!,
-	save_short_name([it(Loop)],'#'(Loop)).
-
-itvar_shorten_name_cont([sum(Loop)|Name_long],Short_name):-!,
-	term_hash(Name_long,Hash),
-	(short_db_no_list(Hash,Name_long,s(Id))->
-		Short_name=sm(Loop,Id)
-		;
-	 	counter_increase(short_terms,1,Id),
-	 	assert(short_db_no_list(Hash,Name_long,s(Id))),
-	 	Short_name=sm(Loop,Id)
-	 ),
-	 save_short_name([sum(Loop)|Name_long],Short_name).		
-	 	
-itvar_shorten_name_cont(Name_long,Short_name):-!,
-	term_hash(Name_long,Hash),
-	(short_db_no_list(Hash,Name_long,Short_name)->
-		true
-		;
-	 	counter_increase(short_terms,1,Id),
-	 	assert(short_db_no_list(Hash,Name_long,s(Id))),
-	 	Short_name=s(Id)
-	 	).	
-
-save_short_name(Long,Short):-
-	 term_hash(Long,Hash),
-	 (short_db_no_list(Hash,Long,Short)->
-	 	true;
-	 	assert(short_db_no_list(Hash,Long,Short))
-	 ).
-itvar_recover_long_name(Name,Long_name2):-
-	Name\=[_|_],
-	short_db_no_list(_,Long_name1,Name),!,
-	itvar_recover_long_name(Long_name1,Long_name2).
-
-itvar_recover_long_name([Name],Long_name2):-
-	short_db(_,Long_name1,Name),!,
-	itvar_recover_long_name(Long_name1,Long_name2).		
-itvar_recover_long_name([Name],[Name]):-!.
-
-itvar_recover_long_name([Name1|Names],[Name1|Long_name]):-
-	itvar_recover_long_name(Names,Long_name).
 
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	

@@ -115,7 +115,7 @@ The main "data types" used in CoFloCo are the following:
 :- use_module(ranking_functions,[init_ranking_functions/0,find_ranking_functions/2]).
 :- use_module(termination_checker,[init_termination/0,prove_termination/2]).
 
-:- use_module('bound_computation/bounds_main',[compute_bound_for_scc/2,
+:- use_module('bound_computation/bounds_main',[compute_bound_for_scc/3,
 				  compute_closed_bound/1,
 				  compute_single_closed_bound/3]).
 :- use_module('bound_computation/conditional_bounds',[
@@ -413,7 +413,8 @@ bottom_up_upper_bounds(SCC_N, Max_SCC_N) :-
 	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
 	functor(Head,F,A),
 	Next_SCC_N is SCC_N+1,
-	compute_bound_for_scc(Head,2),
+	(SCC_N = Max_SCC_N-> Last=true;Last=false),
+	compute_bound_for_scc(Head,2,Last),
 	copy_term(Head,Head_aux),
 	conditional_call((get_param(v,[N]),N>1),
 		  print_results(Head_aux,2)
@@ -469,7 +470,8 @@ bottom_up_refinement_bounds(SCC_N, Max_SCC_N) :-
 	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
 	functor(Head,F,A),
 	bottom_up_refinement_scc(Head),
-	compute_bound_for_scc(Head,2),
+	(SCC_N = Max_SCC_N-> Last=true;Last=false),
+	compute_bound_for_scc(Head,2,Last),
 	copy_term(Head,Head_aux),
 	conditional_call((get_param(v,[N]),N>1),
 		  print_results(Head_aux,2)

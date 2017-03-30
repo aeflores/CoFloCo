@@ -36,7 +36,7 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[cstr_join/3,cstr_or_compress/2]).
 :- use_module('../utils/polyhedra_optimizations',[nad_normalize_polyhedron/2,nad_consistent_constraints_group/2,nad_project_group/3]).
-:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_consistent_constraints/1]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1]).
 :- use_module(stdlib(utils),[ut_varset/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(counters),[counter_increase/3]).

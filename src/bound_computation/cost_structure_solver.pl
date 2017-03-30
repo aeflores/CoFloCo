@@ -54,9 +54,7 @@ This module uses the following auxiliary cost structures:
 		bconstr_get_bounded/2,
 		bconstr_annotate_bounded/2,
 		basic_cost_to_astrexp/4,
-		cstr_extend_variables_names/3,
 		cstr_join/3,
-		cstr_shorten_variables_names/3,
 		cstr_simplify_for_solving/5]).
 :- use_module('../utils/structured_cost_expression',[
 		partial_strexp_estimate_complexity/3,
@@ -99,8 +97,7 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 	max_min_ub_lb(Max_min,Op),
 	get_input_output_vars(Head,IVars,_OVars),
 	express_in_terms_of_vars(IVars,Inv,Cost_long,Cost_input_vars),
-	cstr_shorten_variables_names(Cost_input_vars,list,Cost_short),	
-	cstr_simplify_for_solving(Cost_short,IVars,Inv,Max_min,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,BSummands,BConstant)),
+	cstr_simplify_for_solving(Cost_input_vars,IVars,Inv,Max_min,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,BSummands,BConstant)),
 	basic_cost_to_astrexp(BSummands,BConstant,Max_min,Exp_cost),
 	%join all constraints
 	ut_flat_list([Ub_fconstrs,Lb_fconstrs,Iconstrs],All_bconstrs),
