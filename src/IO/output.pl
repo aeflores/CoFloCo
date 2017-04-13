@@ -848,7 +848,8 @@ print_conditional_upper_bounds(Head):-
 	copy_term(Head,Head2),
 	ground_header(Head2),
 	print_header('Partitioned upper bound of ~p: ~n',[Head2],3),
-	print_conditional_upper_bound(Head).
+	print_conditional_upper_bound(Head),
+	print_maximum_upper_bound(Head).
 
 print_conditional_upper_bound(Head):-
 	conditional_upper_bound(Head,Cost,[Cond1|Conditions]),
@@ -876,6 +877,16 @@ print_conditional_lower_bound(Head):-
 	maplist(print_partition_condition,Conditions_pretty),
 	fail.
 print_conditional_lower_bound(_).
+
+
+print_maximum_upper_bound(Head):-
+	bagof(Cost,
+		Conds^conditional_upper_bound(Head,Cost,Conds),
+		Costs),
+	get_asymptotic_class_name(max(Costs),Asym_class),
+	ground_header(Head),
+	print_or_log('Possible upper bounds : ~p~n',[Costs]),
+	print_or_log('Maximum upper bound complexity: ~p~n',[Asym_class]).
 
 print_maximum_lower_bound(Head):-
 	bagof(Cost,
