@@ -209,7 +209,6 @@ init_db:-
 	            asserta(non_terminating_chain(Head,RefCnt,Chain))
 	            ) ),
 	counter_initialize(input_eqs,0),
-	
 	counter_initialize(aux_vars,0),
 	counter_initialize(short_terms,0),
 	counter_initialize(ubs,0),

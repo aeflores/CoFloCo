@@ -1,16 +1,12 @@
 /** <module> phase_inductive_sum_strategy
 
-This module implements 2 strategies: inductive_sum_strategy and inductive_level_sum_strategy
+This module implements the inductive_sum_strategy
 -inductive_sum_strategy computes the sum of lin_exp over all the CE evaluations of a phase
+and optionally over tails in multiple recursion
 
--inductive_level_sum_strategy computes the sum of lin_exp over all the CE evaluations of a phase at a depth (a level of the execution tree)
-
-Both strategies generate a candidate using a linear template and Farkas' Lemma 
-and then check whether the candidate is increased, decreased, reset and add the corresponding terms to the constraints
-For sums of constants we use the already computed ranking functions.
-
-If we have linear recursion, we can generate 'tail' candidates that depend on the final values of the variables of the phase
-For multiple recursion, we only generate (for now) 'head' candidates that depend on the input values.
+The strategy generate a candidate using a linear template and Farkas' Lemma 
+and then checks whether the candidate is increased, decreased, reset and add the corresponding terms to the constraints
+For sums of constants in the linear case, we use the already computed ranking functions.
 
 @author Antonio Flores Montoya
 
@@ -35,15 +31,16 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 :- module(phase_inductive_sum_strategy,[
 		init_inductive_sum_strategy/0,
 		inductive_sum_strategy/8,
-		inductive_level_sum_strategy/7,
 		find_minsum_constraint/8
 	]).
 :- use_module(phase_common).	
 :- use_module(phase_solver,[
+				phase_type/1,
 				used_pending_constraint/3,
 				save_used_pending_constraint/3,
 				enriched_loop/4,
 				current_chain_prefix/1,
+				type_of_loop/2,
 		        empty_pending/1,
 		        save_pending_list/6,
 		        extract_pending/6,
@@ -56,7 +53,7 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 				write_lin_exp_in_phase/3,
 				print_or_log/2,
 				interesting_example_warning/2]).		
-:- use_module('../../ranking_functions',[partial_ranking_function/7]).	
+:- use_module('../../ranking_functions',[partial_ranking_function/7,ranking_function/4]).	
 :- use_module('../../utils/cofloco_utils',[
 			tuple/3,
 			ground_copy/2,
@@ -67,14 +64,12 @@ For multiple recursion, we only generate (for now) 'head' candidates that depend
 			astrexp_new/2,
 			pstrexp_pair_empty/1,
 			pstrexp_pair_add/3,
-			itvar_shorten_name/3,
 			fconstr_new/4,
 			iconstr_new/4]).			
 :-use_module('../../utils/template_inference',[
-			difference_constraint_farkas_ub/6,
-			difference_constraint_farkas_multiple_ub/5,
-			difference_constraint_farkas_lb/5,
-			farkas_leaf_ub_candidate/4
+			difference_constraint_farkas_ub/5,
+			difference_constraint_farkas_ub_leaf/6,
+			difference_constraint_farkas_lb/5
 	]).		
 					
 :- use_module(stdlib(numeric_abstract_domains),[
@@ -121,21 +116,6 @@ inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pen
 	empty_pending(Empty_pending),
 	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out).
 
-
-
-
-inductive_level_sum_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	(get_param(debug,[])->print_or_log('   - Applying inductive level-sum strategy ~n',[]);true),
-	Constr=bound(Op,Lin_exp,Bounded),
-	Op=ub,
-	generate_leaf_candidates(Head,Lin_exp,Op,Candidates),
-	maplist(check_loops_maxsum(loop_vars(Head,[]),Phase,0,Bounded,Pending),Candidates,New_fconstrs_list,New_iconstrs_list,Pending_out_list),	
-	ut_flat_list(New_fconstrs_list,New_fconstrs),
-	New_fconstrs\=[],
-	ut_flat_list(New_iconstrs_list,New_iconstrs),
-	empty_pending(Empty_pending),
-	foldl(union_pending,Pending_out_list,Empty_pending,Pending_out).
-
 generate_rf_candidates(ub,Head,Loop,Candidates):-
 	current_chain_prefix(Chain_prefix),
     %obtain the ranking functions for the loop and their difference version
@@ -143,8 +123,12 @@ generate_rf_candidates(ub,Head,Loop,Candidates):-
 	bagof_no_fail(Rf,
 	Deps^Deps_type^Loops^Phase^
 	(
+		ranking_function(Head,Chain_prefix,Phase,Rf),
+		member(Loop,Phase)	
+		;	
 		partial_ranking_function(Head,Chain_prefix,Phase,Loops,Rf,Deps,Deps_type),
-		contains_sl(Loops,Loop:1)		
+		contains_sl(Loops,Loop:1)	
+			
 	),Rfs),
 	maplist(tuple(head),Rfs,Head_candidates),
 	maplist(tuple(tail),Rfs,Tail_candidates),
@@ -178,82 +162,50 @@ get_partial_lower_bound(Head,Chain,Loop,Lb):-
 % sum of all the instances of Lin_exp in Loop 
 %
 % use Farkas lemma
-generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,ub,Loop,Candidates):-!,
-	enriched_loop(Loop,Head,[Call],Cs),	
-	get_param(n_candidates,[Max_candidates]),
-	difference_constraint_farkas_ub(Head,Call,Cs,Lin_exp,Diff_list,Diff_list2),
-	%check that the candidates are correct
-			(get_param(debug,[])->
-		maplist(check_candidate(Head,[Call],Loop,Lin_exp,'>='),Diff_list),
-		maplist(check_candidate(Head,[Call],Loop,Lin_exp,'>='),Diff_list2)
-		;true),
-	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
-	ut_split_at_pos(Diff_list2,Max_candidates,Diff_list_selected2,_),
-	maplist(tuple(tail),Diff_list_selected,Head_candidates),
-	maplist(tuple(head),Diff_list_selected2,Tail_candidates),
-	append(Head_candidates,Tail_candidates,Candidates).
-
-generate_lecandidates(loop_vars(Head,Calls),Lin_exp,ub,Loop,Head_candidates):-
-	Calls=[_,_|_],
+generate_lecandidates(loop_vars(Head,Calls),Lin_exp,ub,Loop,Candidates):-!,
 	enriched_loop(Loop,Head,Calls,Cs),	
-	nad_consistent_constraints(Cs),
 	get_param(n_candidates,[Max_candidates]),
-	difference_constraint_farkas_multiple_ub(Head,Calls,Cs,Lin_exp,Diff_list),
+	%add extra for leafs
+	(Calls=[]->
+	   enriched_loop(_Loop2,Head,Calls2,Cs2),
+	   Calls2=[_|_],
+	   difference_constraint_farkas_ub_leaf(Head,Calls,Cs,Lin_exp,(Calls2,Cs2),Diff_list)
+	   ;
+	   difference_constraint_farkas_ub(Head,Calls,Cs,Lin_exp,Diff_list)
+	),
 	%check that the candidates are correct
-	(get_param(debug,[])->maplist(check_candidate(Head,Calls,Loop,Lin_exp,'>='),Diff_list);true),
+	(get_param(debug,[])->
+		maplist(check_candidate(Head,Calls,Loop,Lin_exp,'>='),Diff_list)
+		;
+		true
+	),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
-	from_list_sl(Diff_list_selected,Diff_list_selected_set),
-	maplist(tuple(head),Diff_list_selected_set,Head_candidates),
+	maplist(tuple(head),Diff_list_selected,Head_candidates),
+	
+	% the strategy without resets is not applicable in non-terminating chains
+	(phase_type(non_terminating)->
+		Tail_candidates=[]
+		;
+		maplist(tuple(tail),Diff_list_selected,Tail_candidates)
+	),
 	%% For finding interesting examples
 	interesting_example_warning(no_candidate,(Lin_exp,loop_vars(Head,Calls),Loop,Head_candidates)),
-	Diff_list_selected_set\=[].
+	append(Head_candidates,Tail_candidates,Candidates).
 
 
-%FIXME lower bounds: standarize the format of the function	
-generate_lecandidates(loop_vars(Head,[Call]),Lin_exp,lb,Loop,Tail_candidates):-
-	enriched_loop(Loop,Head,[Call],Cs),	
+generate_lecandidates(loop_vars(Head,Calls),Lin_exp,lb,Loop,Tail_candidates):-
+	\+phase_type(non_terminating),
+	enriched_loop(Loop,Head,Calls,Cs),	
 	get_param(n_candidates,[Max_candidates]),
-	difference_constraint_farkas_lb(Head,Call,Cs,Lin_exp,Diff_list),
+	difference_constraint_farkas_lb(Head,Calls,Cs,Lin_exp,Diff_list),
 	%check that the candidates are correct
-	(get_param(debug,[])-> maplist(check_candidate(Head,[Call],Loop,Lin_exp,'=<'),Diff_list);true),
+	(get_param(debug,[])-> maplist(check_candidate(Head,Calls,Loop,Lin_exp,'=<'),Diff_list);true),
 	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
 	maplist(tuple(tail),Diff_list_selected,Tail_candidates).	
 
 
-generate_leaf_candidates(Head,Lin_exp,ub,Head_candidates):-
-	%take all consistent loops
-	findall(loop(Head,Calls,Cs),
-		(enriched_loop(_Loop,Head,Calls,Cs),
-	     nad_consistent_constraints(Cs)),Loops),
-	
-	get_param(n_candidates,[Max_candidates]),
-	farkas_leaf_ub_candidate(Head,Loops,Lin_exp,Diff_list),!,
-	(get_param(debug,[])-> 
-	  maplist(check_leaf_candidate(Loops,Lin_exp,'>='),Diff_list)
-	  ;true),
-	ut_split_at_pos(Diff_list,Max_candidates,Diff_list_selected,_),
-	from_list_sl(Diff_list_selected,Diff_list_selected_set),
-	maplist(tuple(head),Diff_list_selected_set,Head_candidates),
-	Diff_list_selected_set\=[].
-
-
-check_leaf_candidate(Loops,Linexp,Op,Exp):-
-	maplist(check_leaf_candidate_loop(Linexp,Op,Exp),Loops).
-
-check_leaf_candidate_loop(Linexp,Op,Exp,loop(Head,Calls,Cs)):-
-	foldl(get_sum_call(Head,Linexp),Calls,[]+0,Sum_calls),
-	term_variables((Head,Calls),Vars),	
-	subtract_le(Exp,Sum_calls,Exp_diff),
-	le_print_int(Exp_diff,Exp_diff_print_int,_),
-	Constr=..[Op,Exp_diff_print_int,0],
-	nad_entails(Vars,Cs,[Constr]),!.
-	
-check_leaf_candidate_loop(Linexp,_Op,Exp,loop(Head,Calls,_Cs)):-
-	write_lin_exp_in_phase(loop_vars(Head,Calls),Linexp,Linexp_print),
-	write_lin_exp_in_phase(loop_vars(Head,Calls),Exp,Exp_print),
-	throw(incorrect_leaf_candidate(Linexp_print,Exp_print)).
-
-
+% this is only executed in debug mode, to detect problems with
+% the candidate generation
 check_candidate(Head,Calls,Loop,Linexp,Op,Exp):-
 	enriched_loop(Loop,Head,Calls,Cs),
 	foldl(get_sum_call(Head,Exp),Calls,[]+0,Sum_calls),
@@ -276,8 +228,8 @@ check_candidate(Head,Calls,Loop,Linexp,_Op,Exp):-
 	throw(incorrect_candidate(Loop,Linexp_print,Exp_print)).
 
 	
-% check_loops_maxsum(Head:term,Call:term,Phase:phase,Loop:loop_id,Bounded_ini:list(itvar),Pending:pending_constrs,Exp:nlinexp,Fconstrs:list(fconstr),Iconstrs:list(iconstr),Pending_out:pending_constrs) is semidet
-% check the effect of the loops of Phase on the candidate Exp and generate the corresponding constraints Fconstrs and Iconstrs
+% check_loops_maxsum(+Loop_vars:loop_vars,+Phase:phase,+Loop:loop_id,+Bounded_ini:list(itvar),+Pending:pending_constrs,+Candidate:nlinexp,-Fconstrs:list(fconstr),-Iconstrs:list(iconstr),-Pending_out:pending_constrs) is semidet
+% check the effect of the loops (and tails) of Phase on the candidate Exp and generate the corresponding constraints Fconstrs and Iconstrs
 
 %if the candidate has been classified before
 check_loops_maxsum(Loop_vars,_,Loop,Bounded_ini,Pending,Candidate,Fconstrs,Iconstrs,Pending):-
@@ -347,7 +299,7 @@ generate_constrs_from_classification(Classification,ub,(Type,Lin_exp),Loop_vars,
 	partition(is_class(cnt),Classification,Cnt_class,Other_classes),
 	foldl(join_class_elements,Cnt_class,[],Bounded_vars),
 	from_list_sl(Bounded_vars,Bounded_set),
-	(Type=head->
+	((Type=head;phase_solver:phase_type(multiple))->
 		Sum=Lin_exp
 		;
 		Loop_vars=loop_vars(Head,[Call]),
@@ -372,8 +324,12 @@ generate_constrs_from_classification(Classification,lb,(tail,Lin_exp),Loop_vars,
 	partition(is_class(cnt),Classification,Cnt_class,Other_classes),
 	foldl(join_class_elements,Cnt_class,[],Bounded_vars),
 	from_list_sl(Bounded_vars,Bounded_set),
-	Loop_vars=loop_vars(Head,[Call]),
-	get_difference_version(Head,Call,Lin_exp,Sum),
+	(phase_solver:phase_type(multiple)->
+		Sum=Lin_exp
+		;
+		Loop_vars=loop_vars(Head,[Call]),
+		get_difference_version(Head,Call,Lin_exp,Sum)
+	),
 	(Other_classes=[] ->
 		fconstr_new(Bounded_set,lb,Sum,Ub_fconstr),
 		Fconstrs=[Ub_fconstr],
@@ -433,14 +389,13 @@ check_loops_minsum_1([Loop2|Loops],Loop,Head,Candidate,[Class|Classification],Pe
 		check_loops_minsum_1(Loops,Loop,Head,Candidate,Classification,Pending1,Pending_out).
 
 
-
-
-%! check_loop_maxsum(Head:term,Call:term,Exp_diff:nlinexp,Flag:term,Loop:loop_id,Pstrexp_pair:pstrexp_pair,Bounded:list(itvar),Pending:pending_constrs,Pending1:pending_constrs)
-% check the effect of Loop on Exp_diff, Flag indicates if the original candidate was head or head-tail
+%! check_loop_maxsum(+Head:term,+Candidate:(type,nlinexp),+Loop:loop_id,-Class:class_term,+Pending:pending_constrs,-Pending1:pending_constrs) is semidet
+% check the effect of Loop on the Candidate
+% try to classify the candidate in the different classes in order
 % * this can modify the pending constraints Pending->Pending1
-% * generates a Pstrexp_pair with the elements that have to be added to the constraint
-% * sometimes we can bound some itvar from Loop, those are in Bounded
+% * generates a class_term that is used later to generate the corresponding constraints
 check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
+	type_of_loop(Loop,Loop_type),
 	enriched_loop(Loop,Head,Calls,Cs),
 	foldl(get_sum_call(Head,Exp),Calls,[]+0,Sum_calls),
 	subtract_le(Exp,Sum_calls,Exp_diff),
@@ -451,24 +406,30 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 %if Exp does not increase
 	(nad_entails(Vars,Cs,[Exp_diff_print_int>=0])->
 	 %find a collaborative loop
-	    (find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Type,Bounded,Pending,Pending1)->			
+	    (find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Exp,Type,Bounded,Pending,Pending1)->			
 		   Class=class(cnt,Loop,Bounded),
 		   (get_param(debug,[])->
-		   	maplist(itvar_shorten_name(no_list),Bounded,Bounded_short),
-		   	print_or_log('       - Loop ~p is collaborative and bounds ~p ~n',[Loop,Bounded_short]);true)
+		   	print_or_log('       - ~p ~p is collaborative and bounds ~p ~n',[Loop_type,Loop,Bounded]);true)
 		   ;
 		   
 			Pending1=Pending,
 			Class=class(cnt,Loop,[]),
-			(get_param(debug,[])->print_or_log('       - Loop ~p is collaborative~n',[Loop]);true)
+			(get_param(debug,[])->print_or_log('       - ~p ~p is collaborative~n',[Loop_type,Loop]);true)
 		)
 	;
+	% If we have Inductive strategy with resets, we can ignore the leafs
+	((Calls=[],Type=head)->
+			Pending1=Pending,
+			Class=class(cnt,Loop,[]),
+			(get_param(debug,[])->print_or_log('       - Chain ~p is ignored~n',[Loop]);true)
+	;
+	
 %if add a constant	
 	(nad_maximize([Exp_diff_neg_int=Exp_diff_denominator*D|Cs],[D],[Delta])->
 		get_loop_itvar(Loop,Loop_name),
 		Class=class(add,Loop,[mult([Loop_name,Delta])]),
 		Pending1=Pending,
-		(get_param(debug,[])->print_or_log('       - Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
+		(get_param(debug,[])->print_or_log('       - ~p ~p adds a constant ~p ~n',[Loop_type,Loop,Delta]);true)
 		;
 		get_input_output_vars(Head,Input_vars_head,_),
 		%select_important_variables(Vars_head,Exp_diff_neg,Vars_of_Interest),
@@ -482,7 +443,7 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 				save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending1),
 				(get_param(debug,[])->
 					maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_increments,Max_increments_print),
-					print_or_log('       - Loop ~p adds an expression ~p~n',[Loop,Max_increments_print]);true)
+					print_or_log('       - ~p ~p adds an expression ~p~n',[Loop_type,Loop,Max_increments_print]);true)
 			    ;
 %reset			    
 			    Type=head,
@@ -495,21 +456,24 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 				save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending1),
 				(get_param(debug,[])->
 					maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_resets,Max_resets_print),
-					print_or_log('       - Loop ~p has a reset to  ~p~n',[Loop,Max_resets_print]);true)
+					print_or_log('       - ~p ~p has a reset to  ~p~n',[Loop_type,Loop,Max_resets_print]);true)
 		)
+	)
 	)
 	).
 
 check_loop_maxsum(_Head,_Candidate,Loop,_,_Pending,_Pending1):-	
-	    (get_param(debug,[])->print_or_log('       - Loop ~p has undefined behavior ~n',[Loop]);true),
+	    type_of_loop(Loop,Loop_type),
+	    (get_param(debug,[])->print_or_log('       - ~p ~p has undefined behavior ~n',[Loop_type,Loop]);true),
 		fail.	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! check_loop_minsum(Head:term,Call:term,Exp_diff:nlinexp,Loop:loop_id,Pstrexp_pair:pstrexp_pair,Bounded:list(itvar),Pending:pending_constrs,Pending1:pending_constrs)
+%! check_loop_minsum(+Head:term,+Candidate:(type,nlinexp),+Loop:loop_id,-Class:class_term,+Pending:pending_constrs,-Pending1:pending_constrs) is semidet
 % similar to check_loop_maxsum but checking the different possibilities in opposite order
 % for minsum there are only head-tail candidatesq
 check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-	
+	type_of_loop(Loop,Loop_type),
 	enriched_loop(Loop,Head,Calls,Cs),
 	foldl(get_sum_call(Head,Exp),Calls,[]+0,Sum_calls),
 	subtract_le(Exp,Sum_calls,Exp_diff),
@@ -528,7 +492,7 @@ check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-
 			Class=class(add,Loop,[mult([Loop_name,Delta])])
 		),
 		Pending1=Pending,
-		(get_param(debug,[])->print_or_log('       - Loop ~p adds a constant ~p ~n',[Loop,Delta]);true)
+		(get_param(debug,[])->print_or_log('       - ~p ~p adds a constant ~p ~n',[Loop_type,Loop,Delta]);true)
 		;
 		%term_variables(Head,Vars_head),
 		select_important_variables(Vars,Exp_diff_neg,Vars_of_Interest),
@@ -541,34 +505,35 @@ check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-
 		save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending1),
 		(get_param(debug,[])->
 			maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_increments,Max_increments_print),
-			print_or_log('       - Loop ~p adds an expression ~p~n',[Loop,Max_increments_print]);true)
+			print_or_log('       - ~p ~p adds an expression ~p~n',[Loop_type,Loop,Max_increments_print]);true)
 	).
 
 %collaborative loop	with constraint
 check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-
+		type_of_loop(Loop,Loop_type),
 		enriched_loop(Loop,Head,Calls,Cs),
 		foldl(get_sum_call(Head,Exp),Calls,[]+0,Sum_calls),
 		subtract_le(Exp,Sum_calls,Exp_diff),
 		find_minsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Bounded,Pending,Pending1),!,
 		Class=class(cnt,Loop,Bounded),
 		(get_param(debug,[])->
-			maplist(itvar_shorten_name(no_list),Bounded,Bounded_short),
-			print_or_log('       - Loop ~p is collaborative and bounds ~p~n',[Loop,Bounded_short]);true).
+			print_or_log('       - ~p ~p is collaborative and bounds ~p~n',[Loop_type,Loop,Bounded]);true).
 % we don't substract loops that can decrease the bound
 % in theory this could happen, in practice it doesn't seem to happen so we skip it and fail in those cases		
 	
 check_loop_minsum(_Head,_Candidate,Loop,_,_Pending,_):-	
-	    (get_param(debug,[])->print_or_log('       - Loop ~p has undefined behavior ~n',[Loop]);true),
+	    type_of_loop(Loop,Loop_type),
+	    (get_param(debug,[])->print_or_log('       - ~p ~p has undefined behavior ~n',[Loop_type,Loop]);true),
 		fail.	
 		
 		
 		
 		
-%! find_maxsum_constraint(Loop:loop_id,Head:term,Call:term,Cs:polyhedron,Exp_diff:nlinexp,Flag:flag,Bounded:list(itvar),Pending:pending_constrs,Pending_out:pending_constrs)
+%! find_maxsum_constraint(Loop:loop_id,Head:term,Call:term,Cs:polyhedron,Exp_diff:nlinexp,Exp_original:nlinexp,Flag:flag,Bounded:list(itvar),Pending:pending_constrs,Pending_out:pending_constrs)
 % try to find a pending maxsum that can be bounded by Exp_diff
 % we check that Exp_diff>= Exp2 and in case we are dealing with a head candidate
 % we also check Exp_original>=Exp2
-find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Type,Bounded,Pending,Pending_out):-
+find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Exp_original,Type,Bounded,Pending,Pending_out):-
 		extract_pending(Loop,sum,Pending,loop_vars(Head,Calls),(_Depth,bound(ub,Exp2,Bounded)),Pending1),
 		term_variables((Head,Calls),Vars),
 		subtract_le(Exp_diff,Exp2,Exp_diff2),
@@ -576,9 +541,6 @@ find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Type,Bounded,Pending,Pending_
 		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),
 		(Type=head->
 			%make a copy with all the variables in Calls set to 0
-		   copy_term((Exp_diff,Head,Calls),(Exp_original,Head,Calls2)),
-		   term_variables(Calls2,Vars_calls2),
-		   maplist(=(0),Vars_calls2),
 		   subtract_le(Exp_original,Exp2,Exp_diff_base_case),
 		   le_print_int(Exp_diff_base_case,Exp_diff_base_case_print,_),
 		   nad_entails(Vars,Cs,[Exp_diff_base_case_print>=0]),
@@ -628,5 +590,5 @@ get_sum_call(Head,Exp,Call,Lin_exp,Lin_exp1):-
 	copy_term((Head,Exp),(Call,Exp1)),
 	sum_le(Exp1,Lin_exp,Lin_exp1).		
 		
-		
+
 		

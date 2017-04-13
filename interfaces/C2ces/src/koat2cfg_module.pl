@@ -116,7 +116,7 @@ start_term(no_entry) -->
 start_term(Entry) -->
 	"(STARTTERM (FUNCTIONSYMBOLS",spaces,entry_name(Entry),"))".
 
-vars -->"(VAR ",var_names(_Names),")".
+vars -->"(VAR",spaces,var_names(_Names),")".
 var_names([Name|Names]) --> 
          var_name(Name),!,
          spaces,

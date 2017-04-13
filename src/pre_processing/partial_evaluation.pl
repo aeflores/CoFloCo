@@ -30,13 +30,13 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 */
 :- module(partial_evaluation,[partial_evaluation/0]).
 
-:- use_module('SCCs',[crs_scc/5,crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
+:- use_module('SCCs',[crs_scc/6,crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
 :- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
 :- use_module('../IO/output',[print_warning/2]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
 :- use_module('../utils/cost_structures',[cstr_join/3,cstr_or_compress/2]).
 :- use_module('../utils/polyhedra_optimizations',[nad_normalize_polyhedron/2,nad_consistent_constraints_group/2,nad_project_group/3]).
-:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_consistent_constraints/1]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1]).
 :- use_module(stdlib(utils),[ut_varset/2]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(counters),[counter_increase/3]).
@@ -77,7 +77,7 @@ partial_evaluation :-
 	 maplist(add_ignored_scc,Ignored_set).
 
 compress_segments:-
-	crs_scc(SCC_N,recursive,Nodes,_Sub_Graph,_),
+	crs_scc(SCC_N,recursive,Nodes,_Sub_Graph,_,_),
 	from_list_sl(Nodes,Nodes_set),
 	crs_residual_scc(SCC_N,BTC/BTC_a),
 	difference_sl(Nodes_set,[BTC/BTC_a],Unfoldable_nodes),

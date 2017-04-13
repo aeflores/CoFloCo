@@ -255,16 +255,14 @@ nat_constrs([_|Args],Constrs,N):-
 
 
 related_call_constrs([],[]).
-related_call_constrs(['car'(_,Al,As,_,_,Bs1)|Calls],Constrs):-
-	member('cdr'(_,Al2,As2,_,_,Bs2),Calls),
+related_call_constrs([Call|Calls],Constrs):-
+	Call=..[Fn|[_,Al,As,_,_,Bs1]],
+	(Fn='car',RelFn='cdr' ; Fn='cdr',RelFn='car'),
+	RelCall=..[RelFn|[_,Al2,As2,_,_,Bs2]],
+	member(RelCall,Calls),
 	Al==Al2,As==As2,
 	related_call_constrs(Calls,Constrs_next),
-	Constrs = [Bs1+Bs2+1=As|Constrs_next].
-related_call_constrs(['cdr'(_,Al,As,_,_,Bs1)|Calls],Constrs):-
-	member('car'(_,Al2,As2,_,_,Bs2),Calls),
-	Al==Al2,As==As2,
-	related_call_constrs(Calls,Constrs_next),
-	Constrs = [Bs1+Bs2+1=As|Constrs_next].
+	Constrs=[Bs1+Bs2=<As|Constrs_next].
 related_call_constrs([_|Calls],Constrs):-
 	related_call_constrs(Calls,Constrs).
 

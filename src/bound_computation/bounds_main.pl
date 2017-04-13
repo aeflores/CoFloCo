@@ -27,7 +27,7 @@ that can be passed on to the callers.
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(bounds_main,[compute_bound_for_scc/2,
+:- module(bounds_main,[compute_bound_for_scc/3,
 			compute_closed_bound/1,
 			compute_single_closed_bound/3]).
 
@@ -49,9 +49,11 @@ that can be passed on to the callers.
 :- use_module('../utils/cofloco_utils',[bagof_no_fail/3,zip_with_op/3]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
 :- use_module('../utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
-:- use_module('../utils/cost_structures',[cstr_join_equal_fconstr/2,cstr_or_compress/2]).
+:- use_module('../utils/cost_structures',[cstr_or_compress/2,
+										  cstr_extend_variables_names/3]).
 
 :- use_module('../IO/params',[get_param/2]).
+
 :- use_module(stdlib(numeric_abstract_domains),[nad_list_lub/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
@@ -59,17 +61,19 @@ that can be passed on to the callers.
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
-%! compute_bound_for_scc(+Head:term,+RefCnt:int) is det
+%! compute_bound_for_scc(+Head:term,+RefCnt:int,Last:bool) is det
 % compute a bound for each chain
 % then, compress the bounds for the chains that have been grouped into
-% external call patterns
-compute_bound_for_scc(Head,RefCnt):-
+% external call patterns only if we are not at the last scc
+compute_bound_for_scc(Head,RefCnt,_Last):-
 	chain(Head,RefCnt,Chain),
 	compute_chain_bound(Head,Chain),
 	fail.
-
-compute_bound_for_scc(Head,RefCnt):-
+	
+compute_bound_for_scc(Head,RefCnt,false):-	
 	compress_bounds_for_external_calls(Head,RefCnt).
+compute_bound_for_scc(_Head,_RefCnt,true).
+
 
 %! compute_chain_bound(+Head:term,+Chain:chain) is det
 % compute a bound for a chain,
@@ -90,10 +94,16 @@ compute_chain_bound(Head,Chain):-
 % is obtained by compressing the upper bound of these chains into one.
 compress_bounds_for_external_calls(Head,RefCnt):-
 	external_call_pattern(Head,(Precondition_id,RefCnt),_Terminating,Components,_Inv),
-	bagof_no_fail(Cost_structure,Chain^E1^(
+	bagof_no_fail(Cost_structure,Chain^E1^Cost_structure_1^(
 		    member(Chain,Components),
-	        upper_bound(Head,Chain,E1,Cost_structure)
-	        ),Cost_structures),       
+	        upper_bound(Head,Chain,E1,Cost_structure_1),
+	        %only extend if there are several
+	        (Components\=[_]->
+	        	cstr_extend_variables_names(Cost_structure_1,ch(Chain),Cost_structure)
+	        	;
+	        	Cost_structure_1=Cost_structure
+	        )
+	        ),Cost_structures),    
 	cstr_or_compress(Cost_structures,Final_cost_structure),
 	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),
 	fail.

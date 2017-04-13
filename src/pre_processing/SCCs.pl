@@ -32,7 +32,7 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 
 :- module('SCCs',[
     compute_sccs_and_btcs/0,
-    crs_scc/5,
+    crs_scc/6,
     crs_max_scc_id/1,
     crs_btc/2,
     crs_residual_scc/2,
@@ -47,6 +47,7 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 		get_input_output_vars/3,
 		save_input_output_vars/3]).
 :- use_module('../IO/output',[print_merging_cover_points/3]).		
+:- use_module('../utils/cofloco_utils',[sort_with/3,tuple/3]).	
 %:- use_module(recursion_loop_extraction,[try_loop_extraction/1]).
 
 :- use_module(stdlib(scc),[compute_sccs/2]).
@@ -69,10 +70,11 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 %! crs_rev_edge(Functor2:atom,Arity2:int,Functor:atom,Arity:int)
 % stores the reverse of an edge of the graph
 :- dynamic crs_rev_edge/4.
-%! crs_scc(SCC_N:int,Type:atom,Nodes:list(functor/arity),SCC_Graph:list(functor/arity-functor/arity),Entries:list(functor/arity))
+%! crs_scc(SCC_N:int,Type:atom,Nodes:list(functor/arity),SCC_Graph:list(functor/arity-functor/arity),Entries:list(functor/arity),Info:list(atom))
 % stores a strongly connected component.
 % Type can be recursive and non_recursive
-:- dynamic crs_scc/5.
+% The info is whether it is tail recursive or not, and multiple recursive or not
+:- dynamic crs_scc/6.
 
 %! crs_node_scc(Functor:functor,Arity:arity,SCC_N:int)
 % Functor/Arity belongs to the SCC SCC_N
@@ -106,7 +108,7 @@ init_sccs:-
 	retractall(crs_graph(_)),
 	retractall(crs_edge(_,_,_,_)),
 	retractall(crs_rev_edge(_,_,_,_)),
-	retractall(crs_scc(_,_,_,_,_)),
+	retractall(crs_scc(_,_,_,_,_,_)),
 	retractall(crs_node_scc(_,_,_)),
 	retractall(crs_max_scc_id(_)),
 	retractall(crs_residual_scc(_,_)),
@@ -131,10 +133,10 @@ compute_btc_aux(_).
 
 
 compute_cover_point_for_scc(SCC_N) :-
-	crs_scc(SCC_N,non_recursive,[Node],_SCC_Graph,_Entries),!,
+	crs_scc(SCC_N,non_recursive,[Node],_SCC_Graph,_Entries,_),!,
 	((has_entry_node([Node])
 	 ; 
-	 \+has_one_eq(Node) )->
+	 \+is_simple_path(Node) )->
 		add_to_btc([Node]),
 		declare_residual_scc(SCC_N,Node)
 		;
@@ -143,8 +145,9 @@ compute_cover_point_for_scc(SCC_N) :-
 	
 
 compute_cover_point_for_scc(SCC_N) :-
-	crs_scc(SCC_N,recursive,Nodes,SCC_Graph,Entries),
-	compute_cover_point_for_scc_aux(Nodes,SCC_Graph,Entries,Cover_Points),
+	crs_scc(SCC_N,recursive,Nodes,SCC_Graph,Entries,_),
+	sort_entries(Entries,Nodes,Entries_sorted),
+	compute_cover_point_for_scc_aux(Nodes,SCC_Graph,Entries_sorted,Cover_Points),
 	( Cover_Points=[Cover_Point] ->
 	%we can partially evaluate the SCC to Cover_point
 		add_to_btc([Cover_Point]),
@@ -158,13 +161,37 @@ compute_cover_point_for_scc(SCC_N) :-
 	    
 	).
 
+% prioritize entries that are called more times and have less variables
+sort_entries(Entries,Nodes,Entries_sorted):-
+	maplist(annotate_entries_with_n_calls(Nodes),Entries,Entries_annotated),
+	sort_with(Entries_annotated,worse_entry,Entries_annotated_sorted),
+	maplist(tuple,Entries_sorted,_,Entries_annotated_sorted).
+	
+annotate_entries_with_n_calls(Nodes_scc,F/A,(F/A,N)):-
+	findall(Caller/Caller_a,
+		(
+	    	crs_rev_edge(F,A,Caller,Caller_a),
+	    	\+member(Caller/Caller_a,Nodes_scc)
+	    ),Callers),
+	    length(Callers,N).
+	    	
+	    	
+worse_entry((_F/_A,N),(_F2/_A2,N2)):-
+	N<N2,!.
+worse_entry((_F/A,N),(_F2/A2,N2)):-
+	N=N2,	
+	A>A2.
+
 has_entry_node(Nodes):-
 	entry_eq(Head,_),
 	functor(Head,F,A),
 	member(F/A,Nodes),!.
-has_one_eq(F/A):-
+	
+%has_one_eq(_Nodes):-!,fail.	
+is_simple_path(F/A):-
 	functor(Head,F,A),
-	findall(Id,input_eq(Head,Id,_,_,_),[_]).
+	findall((Id,Calls),input_eq(Head,Id,_,Calls,_),[(_,Calls)]),
+	length(Calls,N),N < 2.
 	
 % Substitute all the calls and cost relations of Cover_points by calls and cost relations of a merged predicate
 % the merged predicate has the maximum number of input and output variables
@@ -278,14 +305,14 @@ update_edges_1(_,_).
 update_scc(New_name/New_arity,Old_names):-		
 	Old_names=[Old_name/Old_arity|_],
 	crs_node_scc(Old_name,Old_arity,SCC_N),
-	retract(crs_scc(SCC_N,recursive,Nodes,SCC_Graph,Entries)),
+	retract(crs_scc(SCC_N,recursive,Nodes,SCC_Graph,Entries,Info)),
 	maplist(substitute_node(New_name/New_arity,Old_names),Nodes,Nodes2),
 	from_list_sl(Nodes2,Nodes_set),
 	maplist(substitute_node(New_name/New_arity,Old_names),Entries,Entries2),
 	from_list_sl(Entries2,Entries_set),
 	maplist(substitute_edge(New_name/New_arity,Old_names),SCC_Graph,SCC_Graph2),
 	from_list_sl(SCC_Graph2,SCC_Graph_set),
-	assertz(crs_scc(SCC_N,recursive,Nodes_set,SCC_Graph_set,Entries_set)),
+	assertz(crs_scc(SCC_N,recursive,Nodes_set,SCC_Graph_set,Entries_set,Info)),
 	maplist(remove_node_scc_reference,Old_names),
 	assertz(crs_node_scc(New_name,New_arity,SCC_N)).
 	
@@ -312,7 +339,7 @@ substitute_node(New_name,Old_names,Node,New_node):-
 
 	
 compute_cover_point_for_scc_aux(_,SCC_Graph,Entries,MFBS) :- % try shamir's algorithm
-	Entries=[E|_],
+	member(E,Entries),
 	compute_mfbs_shamir(SCC_Graph,E,MFBS),!.
 
 compute_cover_point_for_scc_aux(Nodes,SCC_Graph,Entries,Cover_Point) :- % try the naive (quadratic) algorithm
@@ -379,7 +406,8 @@ store_sccs_aux([(Type,Nodes)|SCCs],N,Last_N) :-
 store_scc(Type,Nodes,N) :-
 	maplist(store_scc_node(N),Nodes),
 	compute_scc_subgraph(Nodes,N,Sub_Graph,Entries),
-	assertz(crs_scc(N,Type,Nodes,Sub_Graph,Entries)).
+	compute_extra_scc_info(Type,Nodes,Info),
+	assertz(crs_scc(N,Type,Nodes,Sub_Graph,Entries,Info)).
 
 compute_scc_subgraph(Nodes,SCC_N,Sub_Graph,Entries) :-
 	findall(F2/A2-F1/A1,
@@ -400,6 +428,41 @@ remove_entry_edges([_-F2/A2|Es],SCC_N,Sub_Es,[F2/A2|Entries]) :-
 store_scc_node(N,F/A) :-
 	assertz(crs_node_scc(F,A,N)).
 
+compute_extra_scc_info(non_recursive,_,[]).
+compute_extra_scc_info(recursive,Nodes,Info):-
+	(is_non_tail_recursive(Nodes)->
+		Info=[non_tail|Info2]
+		;
+		Info=Info2
+	),
+	(is_multiple_recursive(Nodes)->
+		Info2=[multiple]
+		;
+		Info2=[]
+	).
 
+is_non_tail_recursive(Nodes):-
+	member(Node/Arity,Nodes),
+	functor(Head,Node,Arity),
+	input_eq(Head,_,_,Calls,_),
+	discard_until_first_recursive(Calls,Nodes,Rest),
+	member(Non_rec,Rest),
+	functor(Non_rec,Node_non,Arity_non),
+	\+member(Node_non/Arity_non,Nodes),!.
+	
+is_multiple_recursive(Nodes):-
+	member(Node/Arity,Nodes),
+	functor(Head,Node,Arity),
+	input_eq(Head,_,_,Calls,_),
+	discard_until_first_recursive(Calls,Nodes,Rest),
+	discard_until_first_recursive(Rest,Nodes,_),!.
+	
 
+discard_until_first_recursive([Call|Rest],Nodes,Rest):-
+	functor(Call,Node,Arity),
+	member(Node/Arity,Nodes),!.
+discard_until_first_recursive([_|Rest1],Nodes,Rest):-
+	discard_until_first_recursive(Rest1,Nodes,Rest).
+
+	
 

@@ -42,8 +42,7 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 			merge_implied_summaries/3]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).		
 :- use_module(stdlib(set_list),[is_subset_sl/2,union_sl/3]).	
-:- use_module(stdlib(numeric_abstract_domains),[
-			nad_entails/3]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_entails/3]).
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 %! compute_loops(Head:term,RefCnt:int) is det

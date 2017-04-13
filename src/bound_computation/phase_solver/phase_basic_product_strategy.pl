@@ -32,9 +32,7 @@ This is only valid for the last level, the leafs of the evaluation tree
 */
 
 :- module(phase_basic_product_strategy,[
-		basic_product_strategy/6,
-		level_product_strategy/6,
-		leaf_product_strategy/5
+		basic_product_strategy/6
 	]).
 
 :- use_module(phase_common).
@@ -46,7 +44,6 @@ This is only valid for the last level, the leafs of the evaluation tree
 :- use_module('../../utils/cost_structures',[
 			new_itvar/1,
 			get_loop_itvar/2,
-			get_loop_depth_itvar/2,
 			astrexp_new/2,
 			fconstr_new/4,
 			iconstr_new/4]).	
@@ -71,7 +68,7 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 	new_itvar(Aux_itvar),
 	get_loop_itvar(Loop,Loop_itvar),
 	astrexp_new(add([mult([Loop_itvar,Aux_itvar])])-add([]),Astrexp),
-	(is_head_expression(Head,Lin_exp)->
+	(is_input_head_expression(Head,Lin_exp)->
 		fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
 		Max_fconstrs=[Fconstr]
 	;
@@ -83,45 +80,4 @@ basic_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Aux_
 	 ),
 	save_pending_list(max_min,Head,Loop,Max_fconstrs,Pending,Pending_out),
     Aux_exp=bound(Op,Astrexp,Bounded),
-    print_product_strategy_message(Head,max_min,Max_fconstrs).
-
-    
- level_product_strategy(bound(Op,Lin_exp,Bounded),loop_vars(Head,Calls),Loop,Iconstr,Pending,Pending_out):-
-	%FIXME needs flag for the multiple recursion
-	Calls=[_,_|_],
-	(get_param(debug,[])->print_or_log('   - Applying level product strategy ~n',[]);true),
-	get_constr_op(Max_min,Op),
-	enriched_loop(Loop,Head,Calls,Cs),
-	new_itvar(Aux_itvar),
-
-	get_loop_depth_itvar(Loop,Loop_itvar),
-	astrexp_new(add([mult([Loop_itvar,Aux_itvar])])-add([]),Astrexp),
-	(is_head_expression(Head,Lin_exp)->
-		fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
-		Max_fconstrs=[Fconstr]
-	;
-	 get_input_output_vars(Head,Vars_head,_),
-	 max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_exps),
-	 maplist(fconstr_new([Aux_itvar],Op),Maxs_exps,Max_fconstrs)
-	 ),
-	save_pending_list(level,Head,0,Max_fconstrs,Pending,Pending_out),
-    Iconstr=bound(Op,Astrexp,Bounded),
-    print_product_strategy_message(Head,level,Max_fconstrs).
- 
-
- leaf_product_strategy(bound(Op,Lin_exp,Bounded),Head,Iconstr,Pending,Pending_out):-
-	%check that it is the leaf level or we are computing ubs 
-	%(so any level is smaller than the leaf level) 
-	(member([sum(0)|_],Bounded); Op=ub),
-	%not for constants
-	Lin_exp\=[]+_,
-	(get_param(debug,[])->print_or_log('   - Applying leaf product strategy ~n',[]);true),!,
-	new_itvar(Aux_itvar),
-	%the leaf level
-	get_loop_itvar(0,Loop_itvar),
-	astrexp_new(add([mult([Loop_itvar,Aux_itvar])])-add([]),Astrexp),
-	fconstr_new([Aux_itvar],Op,Lin_exp,Fconstr),
-	Max_fconstrs=[Fconstr],
-	save_pending_list(max_min,Head,0,Max_fconstrs,Pending,Pending_out),
-    Iconstr=bound(Op,Astrexp,Bounded),
     print_product_strategy_message(Head,max_min,Max_fconstrs).

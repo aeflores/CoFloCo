@@ -71,32 +71,35 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 :-use_module(library(lists)).		
 	
 
-%! max_min_fconstrs_in_cost_equation(+Fconstrs_list:list(list(final_constr)),+Base_calls:list(term),Phi:polyhedron,TVars:list(Var),Fconstrs_out:list(final_cons),ICons_out:list(inter_cons)) is det
+%! max_min_fconstrs_in_cost_equation(+Fconstrs_list:list(list(final_constr)),+Base_calls:list(term),+Phi:polyhedron,+Head_calls:(term),list(term)),-Fconstrs_out:list(final_cons),-ICons_out:list(inter_cons)) is det
 % transform a list of lists of final constraints from a cost equation
-% into a simple list of final constraints expressed in terms of TVars using max_min_constrs/4
-%
+% into a simple list of final constraints expressed in terms of the input variables of Head_calls using max_min_fconstrs
 % It is prepared to originate intermediate constraints as well but not used yet
-max_min_fconstrs_in_cost_equation(Fconstrs_list,_Base_calls,Phi,TVars,Final_fconstrs,[]):-
+max_min_fconstrs_in_cost_equation(Fconstrs_list,_Base_calls,Phi,(Head,Calls),Final_fconstrs,[]):-
 	ut_flat_list(Fconstrs_list,Fconstrs),
-	max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs).
+	maplist(get_input_output_vars,[Head|Calls],Input_vars,_),
+	Input_vars=[Input_vars_head|_],
+	ut_flat_list(Input_vars,Input_vars_flat),
+	max_min_fconstrs(Fconstrs,Phi,Input_vars_head,Input_vars_flat,Final_fconstrs).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
 
-%! max_min_fconstrs_in_chain(+Fconstrs:list(final_constr),+Chain:chain,Phi:polyhedron,TVars:list(Var),Fconstrs_out:list(final_cons),ICons_out:list(inter_cons)) is det
+%! max_min_fconstrs_in_chain(+Fconstrs:list(final_constr),+Chain:chain,+Phi:polyhedron,+Head:term,-Fconstrs_out:list(final_cons),-ICons_out:list(inter_cons)) is det
 % transform a list of final constraints from two phases
-% into a simple list of final constraints expressed in terms of TVars using max_min_constrs/4	
-%
+% into a simple list of final constraints expressed in terms of the variables of Head using max_min_fconstrs
 % It is prepared to originate intermediate constraints as well but not used yet
 max_min_fconstrs_in_chain(Fconstrs,_Chain,Phi,Head,Final_fconstrs,[]):-
 	term_variables(Head,TVars),
-	max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs).
+	get_input_output_vars(Head,InputVars,_),
+	max_min_fconstrs(Fconstrs,Phi,InputVars,TVars,Final_fconstrs).
 	
-%! max_min_constrs(+Fconstrs_list:list(final_constr),Phi:polyhedron,TVars:list(Var),Fconstrs_out:list(final_cons)) is det
+%! max_min_constrs(+Fconstrs_list:list(final_constr),+Phi:polyhedron,+InputVars:list(Var),+TVars:list(Var),-Fconstrs_out:list(final_cons)) is det
 % transform a list of final constraints into a simple list of final constraints expressed in terms of TVars using the information in Phi
 % * The final_cons that are guaranteed to be positive are transformed together
 % * The rest (the insecure constraints) are transformed one by one			
-max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs):-
+% InputVars is used to prioritize the constraint selection
+max_min_fconstrs(Fconstrs,Phi,InputVars,TVars,Final_fconstrs):-
 	(Fconstrs=[bound(ub,_,_)|_]-> Max_min=max;Max_min=min),	
 	% separate positive constraints and insecure constraints
 	generate_constraints(Fconstrs,Phi,[],Constraints,Insecure_constraints,Dicc),
@@ -108,11 +111,11 @@ max_min_fconstrs(Fconstrs,Phi,TVars,Final_fconstrs):-
 	append(Constraints,Phi,Phi1),
 	append(Extra_vars,TVars,Total_vars),
 	nad_project(Total_vars,Phi1,Projected),
-	generate_fconstrs_from_poly(Projected,Max_min,Dicc_inv,Extra_vars_set,New_top_exps),
+	generate_fconstrs_from_poly(Projected,Max_min,Dicc_inv,Extra_vars_set,InputVars,New_top_exps),
 	% transform insecure constraints
 	maplist(maximize_insecure_constraints(Total_vars,Phi,Max_min),Insecure_constraints,Extra_tops),
 	% put the result together
-	ut_flat_list([Extra_tops,New_top_exps],Final_fconstrs).
+	ut_flat_list([Extra_tops,New_top_exps],Final_fconstrs),!.
 	
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -178,13 +181,14 @@ insert_in_dicc(Elem,(Dicc,Var_list),(Dicc,[Var|Var_list])):-
 insert_in_dicc(Elem,(Dicc,Var_list),(Dicc1,[Var|Var_list])):-
 	insert_lm(Dicc,Elem,Var,Dicc1).
 
-%! generate_fconstrs_from_poly(Projected:polyhedron,Max_min:flag,Dicc:list_map(var,itvar),Extra_vars:set(Var),Fconstrs_out:list(fconstr))
+%! generate_fconstrs_from_poly(Projected:polyhedron,Max_min:flag,Dicc:list_map(var,itvar),Extra_vars:set(Var),InputVars:list(Var),Fconstrs_out:list(fconstr))
 % given a polyedron, generate a set of linear constraints taking into account that the variables
 % Extra_vars correspond to intermediate variables (itvars) and Dicc maps these variables to the corresponding
 % itvars
-generate_fconstrs_from_poly(Projected,Max_min,Dicc,Extra_vars,Fconstrs_out):-
+% InputVars is used to sort the generated constraints giving priority to the ones expressed in terms of input vars
+generate_fconstrs_from_poly(Projected,Max_min,Dicc,Extra_vars,InputVars,Fconstrs_out):-
 	get_fconstrs_from_poly_1(Projected,Max_min,Extra_vars,Dicc,Fconstrs),
-	limit_fconstrs_selection(Fconstrs,Max_min,Dicc,Fconstrs_out).
+	limit_fconstrs_selection(Fconstrs,Max_min,Dicc,InputVars,Fconstrs_out).
 		
 get_fconstrs_from_poly_1([],_Max_min,_,_Dicc,[]).
 get_fconstrs_from_poly_1([C|Cs],max,Its_total,Dicc,Norms):-
@@ -216,42 +220,64 @@ get_fconstrs_from_poly_1([_C|Cs],Max_min,Its_total,Dicc,Norms):-
 substitute_its_by_bounded(Dicc,It_var,Accum,[Elem|Accum]):-
 	lookup_lm(Dicc,It_var,Elem).
 
-limit_fconstrs_selection(Fconstrs,Max_min,Dicc,Fconstrs2):-
-	sort_with(Fconstrs,worse_top_exp,Sorted_fconstrs),
-	(Max_min=max->
-		Sorted_fconstrs1=Sorted_fconstrs
-	;
-		reverse(Sorted_fconstrs,Sorted_fconstrs1)
-	),
-	(get_param(n_candidates,[N]);N=1),
+limit_fconstrs_selection(Fconstrs,Max_min,Dicc,InputVars,Fconstrs2):-
+	from_list_sl(InputVars,InputVars_set),
+	sort_with(Fconstrs,worse_top_exp(InputVars_set,Max_min),Sorted_fconstrs),
+	(get_param(n_candidates,[N]);N=1),!,
 	length(Dicc,N_vars),
 	repeat_n_times(N_vars,N,Counters),
 	maplist(tuple,_,Itvars,Dicc),
 	from_list_sl(Itvars,Itvars_set),
 	maplist(tuple,Itvars_set,Counters,Counters_dicc),
-	get_filtered_fconstrs(Sorted_fconstrs1,Counters_dicc,Fconstrs2).
+	get_filtered_fconstrs(Sorted_fconstrs,Counters_dicc,Fconstrs2).
 
 %constant comparison
-worse_top_exp(bound(_,Exp1,_),bound(_,Exp2,_)):-
+worse_top_exp(_InputVars,Max_min,bound(_,Exp1,_),bound(_,Exp2,_)):-
 	is_constant_le(Exp1),is_constant_le(Exp2),
 	constant_le(Exp1,C1),constant_le(Exp2,C2),!,
-	greater_fr(C1,C2),!.	
-worse_top_exp(bound(_,Exp1,Bounded),bound(_,Exp2,Bounded2)):-
+	(Max_min=max->
+	greater_fr(C1,C2)
+	;
+	greater_fr(C2,C1)
+	),!.	
+worse_top_exp(_InputVars,Max_min,bound(_,Exp1,Bounded),bound(_,Exp2,Bounded2)):-
 	is_constant_le(Exp1),is_constant_le(Exp2),
 	constant_le(Exp1,C1),constant_le(Exp2,C2),!,
 	C1=C2,!,
 	length(Bounded,N1),
 	length(Bounded2,N2),
-	N2 > N1.	
+	(Max_min=max->
+		N2 > N1
+	;
+		N1 > N2
+	).
 %constant to non-constant	  
-worse_top_exp(bound(_,Exp1,_),bound(_,Exp2,_)):-
+worse_top_exp(_InputVars,max,bound(_,Exp1,_),bound(_,Exp2,_)):-
 	\+is_constant_le(Exp1),is_constant_le(Exp2),!.	
+worse_top_exp(_InputVars,min,bound(_,Exp1,_),bound(_,Exp2,_)):-
+	\+is_constant_le(Exp2),is_constant_le(Exp1),!.	
+	
 %non-costant comparison
-worse_top_exp(bound(_,Exp1,Bounded),bound(_,Exp2,Bounded2)):-
+worse_top_exp(_InputVars,Max_min,bound(_,Exp1,Bounded),bound(_,Exp2,Bounded2)):-
 	\+is_constant_le(Exp1),\+is_constant_le(Exp2),
 	length(Bounded,N1),
 	length(Bounded2,N2),
-	N2 > N1.
+	(Max_min=max->
+		N2 > N1
+		;
+		N1 > N2
+	).
+% sort according to the input vars (only if the bounded vars are the same)
+worse_top_exp(InputVars_set,_Max_min,bound(_,Exp1,Bounded),bound(_,Exp2,Bounded)):-
+	term_variables(Exp1,Vars1),from_list_sl(Vars1,Vars1_set),
+	term_variables(Exp2,Vars2),from_list_sl(Vars2,Vars2_set),
+	(intersection_sl(Vars1_set,InputVars_set,[])->
+	 	intersection_sl(Vars2_set,InputVars_set,[_|_])
+	 ;
+		difference_sl(Vars1_set,InputVars_set,[_|_]),
+		difference_sl(Vars2_set,InputVars_set,[])
+	).
+	
 
 %! get_filtered_fconstrs(Fconstrs:list(fconstr),Counters:listmap(itvar,int),Selected:list(fconstr))
 % given the sorted list of final constraints Fconstrs, select constraints

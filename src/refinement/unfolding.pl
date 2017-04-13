@@ -259,6 +259,7 @@ remove_terminating_non_terminating_chains_1(Head,RefCnt):-
 	fail.
 remove_terminating_non_terminating_chains_1(_,_).
 
+remove_terminating_non_terminating_2(_Prev_chain,_Head,[],[]).
 remove_terminating_non_terminating_2(_Prev_chain,_Head,Chain,Chain):-
 	reverse(Chain,[Last_phase|_Chain_rev]),
 	number(Last_phase),!.

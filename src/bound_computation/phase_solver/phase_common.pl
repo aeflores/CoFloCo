@@ -30,9 +30,11 @@ Some predicates used by multiple strategies
 	get_constr_op/2,
 	select_important_variables/3,
 	put_inside_mult/2,
-	is_head_expression/2
+	is_input_head_expression/2
 	]).
-	
+
+:- use_module('../../db',[get_input_output_vars/3]).	
+
 :- use_module(stdlib(linear_expression),[
 			integrate_le/3,
 			write_le/2,
@@ -74,9 +76,10 @@ select_important_variables(Vars_head,Lin_exp,Vars_of_Interest):-
 put_inside_mult(Factor,mult([Factor])).
 
 				
-is_head_expression(Head,Exp):-
-	copy_term((Head,Exp),(Head2,Exp2)),
-	numbervars(Head2,0,_),
+is_input_head_expression(Head,Exp):-
+	get_input_output_vars(Head,Vars_head,_),
+	copy_term((Vars_head,Exp),(Vars_head2,Exp2)),
+	numbervars(Vars_head2,0,_),
 	ground(Exp2).
 	
 

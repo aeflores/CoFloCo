@@ -40,9 +40,10 @@ This module computes different kinds of invariants for the chains:
 		      add_backward_invariant/3,
 		      backward_invariant/4,
 		      partial_backward_invariant/5,
-		      context_insensitive_backward_invariant/3,
+		      get_context_insensitive_backward_invariant/3,
 		      forward_invariant/4,
-		      context_insensitive_forward_invariant/3,
+		      get_forward_invariant/4,
+		      get_context_insensitive_forward_invariant/3,
 		      scc_forward_invariant/3,
 		      phase_transitive_closure/5,
 		      phase_transitive_star_closure/5,
@@ -52,6 +53,7 @@ This module computes different kinds of invariants for the chains:
 :- use_module(chains,[chain/3,get_reversed_chains/3]).
 :- use_module(loops,[split_multiple_loops/2]).
 
+:- use_module('../IO/params',[get_param/2]).
 :- use_module('../utils/cofloco_utils',[assign_right_vars/3,zip_with_op2/4,zip_with_op2/4,ground_copy/2]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,
 					nad_consistent_constraints_group_aux/1,
@@ -82,7 +84,10 @@ This module computes different kinds of invariants for the chains:
 %
 % Inv is expressed in terms of the variables of Head
 :- dynamic backward_invariant/4.
-  
+%! contex_insensitive_backward_invariant(Head:term,Phase,Inv:polyhedron)
+:- dynamic context_insensitive_backward_invariant/3.
+
+
 %! forward_invariant(Head:term,Chain_RefCnt:(chain,int),Hash:int,Inv:polyhedron)
 % An invariant that relates the variables of the head of a cost equation and is computed
 % forwards, form the first phase up  to the base case. This invariant propagates any precodition we might have
@@ -91,6 +96,9 @@ This module computes different kinds of invariants for the chains:
 %
 % Inv is expressed in terms of the variables of Head
 :- dynamic forward_invariant/4.
+
+%! contex_insensitive_forward_invariant(Head:term,Phase,Inv:polyhedron)
+:- dynamic context_insensitive_forward_invariant/3.
   
 %! scc_forward_invariant(Head:term,RefCnt:int,Inv:polyhedron)
 % This invariant reflects the preconditions of a SCC.
@@ -109,18 +117,34 @@ This module computes different kinds of invariants for the chains:
 % Inv is expressed in terms of the variables of Head and Call
 :- dynamic  phase_transitive_star_closure/5.
 
-
-context_insensitive_backward_invariant(Head,Phase,Backward_invariant):-
+get_context_insensitive_backward_invariant(Head,Phase,Backward_invariant):-
+	context_insensitive_backward_invariant(Head,Phase,Backward_invariant),!.
+	
+get_context_insensitive_backward_invariant(Head,Phase,Backward_invariant):-
 	bagof(Back_inv_star,	
 	   Back_inv^Chain2^Fwd_inv^partial_backward_invariant([Phase|Chain2],Head,Fwd_inv,Back_inv,Back_inv_star),
 	       Back_invs),
-	nad_list_lub(Back_invs,Backward_invariant).
+	nad_list_lub(Back_invs,Backward_invariant),
+	assertz(context_insensitive_backward_invariant(Head,Phase,Backward_invariant)).
 
-context_insensitive_forward_invariant(Head,Phase,Forward_invariant):-
+
+get_forward_invariant(Head,([Phase|_Chain],_RefCnt),0,Forward_invariant):-
+	get_param(context_sensitive,[Sensitivity]),Sensitivity =< 1,!,
+	get_context_insensitive_forward_invariant(Head,Phase,Forward_invariant).
+	
+get_forward_invariant(Head,Chain_refCnt,Hash,Forward_invariant):-
+	forward_invariant(Head,Chain_refCnt,Hash,Forward_invariant).
+
+get_context_insensitive_forward_invariant(Head,Phase,Forward_invariant):-
+	context_insensitive_forward_invariant(Head,Phase,Forward_invariant),!.
+	
+get_context_insensitive_forward_invariant(Head,Phase,Forward_invariant):-
 	bagof(Fwd_inv,	
 	   Hash_fwd_inv^Chain_rev2^RefCnt^forward_invariant(Head,([Phase|Chain_rev2],RefCnt),Hash_fwd_inv,Fwd_inv),
 	       Fwd_invs),	
-	nad_list_lub(Fwd_invs,Forward_invariant).
+	nad_list_lub(Fwd_invs,Forward_invariant),
+	assertz(context_insensitive_forward_invariant(Head,Phase,Forward_invariant)).
+
 
 %! widening_frequency(-N:int) is det
 % how often widening is performed
@@ -133,6 +157,8 @@ clean_invariants:-
 	retractall(phase_transitive_star_closure(_,_,_,_,_)),
 	retractall(backward_invariant(_,_,_,_)),
 	retractall(forward_invariant(_,_,_,_)),
+	retractall(context_insensitive_backward_invariant(_,_,_)),
+	retractall(context_insensitive_forward_invariant(_,_,_)),
 	retractall(scc_forward_invariant(_,_,_)).
 
 
@@ -249,9 +275,9 @@ compute_backward_invariants(_,_).
 % the case where the invariant is already computed
 compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-%
     (Ph=multiple(Intern_ph,_)->
-    forward_invariant(Head,([Intern_ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv)
+    get_forward_invariant(Head,([Intern_ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv)
     ;
-	forward_invariant(Head,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv)
+	get_forward_invariant(Head,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv)
 	),
     partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv2),Entry_pattern,_),
     Local_inv==Local_inv2,!,
@@ -263,7 +289,7 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern):-%
 compute_backward_invariant([Base_case],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-
 	number(Base_case),!,
     loop_ph(Head,(Base_case,RefCnt),[],Cs_1,_,_),
-    forward_invariant(Head,([Base_case|Prev_chain],RefCnt),_Hash,Inv),
+    get_forward_invariant(Head,([Base_case|Prev_chain],RefCnt),_Hash,Inv),
    % append(Cs_1,Inv,Cs),
     nad_glb(Cs_1,Inv,Entry_pattern),
 	\+nad_is_bottom(Entry_pattern),
@@ -275,7 +301,7 @@ compute_backward_invariant([Non_terminating],Prev_chain,Head,RefCnt,Entry_patter
 	phase_loop(Non_terminating,RefCnt,Head,_,Cs),
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern),
- 	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+ 	get_forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
  	assertz(partial_backward_invariant([Non_terminating],Head,(Hash_local_inv,Local_inv),Entry_pattern,[])).
 
 compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,RefCnt,Entry_pattern):-
@@ -283,7 +309,7 @@ compute_backward_invariant([multiple(Non_terminating,Tails)],Prev_chain,Head,Ref
 	phase_loop(Non_terminating,RefCnt,Head,_,Cs),
 	Head=..[_|EVars],
  	nad_project_group(EVars,Cs,Entry_pattern),
- 	forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+ 	get_forward_invariant(Head,([Non_terminating|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
  	assertz(partial_backward_invariant([multiple(Non_terminating,Tails)],Head,(Hash_local_inv,Local_inv),Entry_pattern,[])).
 
 
@@ -296,18 +322,19 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 	copy_term(Head,Call),
 	compute_backward_invariant(Chain,[Ph|Prev_chain],Call,RefCnt,Initial_inv),
 	loop_ph(Head,(Ph,RefCnt),[Call],Cs,_,_),
-	forward_invariant(Head,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+	get_forward_invariant(Head,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
 	Head=..[_|EVars],
 	%ut_flat_list([Local_inv,Cs,Initial_inv],Cs_2),
 	nad_list_glb([Local_inv,Cs,Initial_inv],Cs_2),
 	nad_project_group(EVars,Cs_2,Entry_pattern),
 	%even if the invariant is unfeasible, we store to save time when computing invariants with the same suffix
 	nad_normalize_polyhedron(Entry_pattern,Entry_pattern_normalized),
+	copy_term((Call,Initial_inv),(Head,Initial_inv_head)),
 	(nad_is_bottom(Entry_pattern_normalized)->
-	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv)),
+	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),[0=1],Initial_inv_head)),
 	  fail
 	;
-	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv))
+	  assertz(partial_backward_invariant([Ph|Chain],Head,(Hash_local_inv,Local_inv),Entry_pattern_normalized,Initial_inv_head))
 	  ).
 
 % We have an iterative phase.
@@ -316,7 +343,7 @@ compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_norma
 compute_backward_invariant([Ph|Chain],Prev_chain,Head,RefCnt,Entry_pattern_normalized):-
 	compute_backward_invariant(Chain,[Ph|Prev_chain],Head,RefCnt,Initial_inv),
 	phase_loop(Ph,RefCnt,Head,_,Cs),
-	forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+	get_forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
 	findall((Head_loop,Call_loop,Cs_1),
 	    (
 	    member(Loop,Ph),
@@ -343,7 +370,7 @@ compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pat
 	number(Ph),!,
 	maplist(compute_backward_invariant_aux([Ph|Prev_chain],Head,RefCnt),Tails,Call_patterns),
 	nad_list_lub(Call_patterns,Initial_inv),
-    forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+    get_forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
 	findall((Head_loop,Calls_loop,Cs_1),
 	    (
 	    loop_ph(Head_loop,(Ph,RefCnt),Calls_loop,Cs_loop,_,_),
@@ -366,7 +393,7 @@ compute_backward_invariant([multiple(Ph,Tails)],Prev_chain,Head,RefCnt,Entry_pat
 	phase_loop(Ph,RefCnt,Head,_,Cs),
 	maplist(compute_backward_invariant_aux([Ph|Prev_chain],Head,RefCnt),Tails,Call_patterns),
 	nad_list_lub(Call_patterns,Initial_inv),
-    forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
+    get_forward_invariant(Head_loop,([Ph|Prev_chain],RefCnt),Hash_local_inv,Local_inv),
 	findall((Head_loop,Calls_loop,Cs_loop),
 	    (
 	    member(Loop,Ph),
@@ -458,7 +485,14 @@ compute_forward_invariant([Non_loop|Chain],RefCnt,Entry_Call,Inv_out):-
 	split_multiple_loops(Loops,Loops_splitted),  
 	(Loops_splitted=[]->
 	    Inv_out=none,
-	    add_forward_invariant(Entry_Call,([Non_loop|Chain],RefCnt), Inv_aux)
+	    Loops=[(Entry_Call,[],Cs_base_case)],
+	    append(Cs_base_case,Inv_aux,Cs_combined),
+	    (nad_is_bottom(Cs_combined)->
+        	assertz(unfeasible_chain_prefix(Entry_Call,RefCnt,[Non_loop|Chain])),
+        	fail
+        	;
+        	add_forward_invariant(Entry_Call,([Non_loop|Chain],RefCnt), Inv_aux)
+      	)
 	    ;
 		forward_invariant_once(inv(Entry_Call,Inv_aux),Loops_splitted,inv(Entry_call2,Inv_out)),
    		Entry_call2=Entry_Call,

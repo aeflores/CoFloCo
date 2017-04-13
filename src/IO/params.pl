@@ -83,6 +83,8 @@ parameter_dictionary('-conditional_lbs','conditional_lbs',[bool]).
 parameter_dictionary('-incremental','incremental',[bool]).
 parameter_dictionary('-context_sensitive','context_sensitive',[number]).
 
+parameter_dictionary('-linear_phase_strategy','linear_phase_strategy',[atom]).
+
 :-dynamic incompatible_parameters/2.
 
 %% clean_params is det
@@ -99,6 +101,8 @@ set_default_params:-
 	parse_params(['-v','2',
 		      '-n_candidates','1',
 		      '-context_sensitive','1',
+%		      '-linear_phase_strategy', 'phase',
+		      '-linear_phase_strategy', 'mixed',
 		      '-compute_ubs',
 		      '-compute_lbs'
 		      ]).
@@ -230,7 +234,11 @@ param_description('conditional_lbs',
 'Generate a set of conditional lower bounds (whose preconditions are mutually exclusive) instead of a single unconditional one').
 
 param_description('solve_fast',
-'Solve cost structures into closed form bounds with a greedy strategy instead of an exhaustive search
-It still produces sound bounds but (possibly) less precise').
+'Splits upper bound constraints that bound more than one itvar e.g. s1+s2=< X becomes s1=<X and s2=< X
+It still produces sound bounds but (possibly) less precise at the multiplicative level').
 param_description('compress_chains',
 '0-2 : (default 0) Join chains that have the same precondition. It can increase performance greatly but also affect precission').
+param_description('linear_phase_strategy',
+'chain : Solve the chain incrementally without computing the cost of the phase independently
+ phase : Compute the cost of the phase and the rest and combine them with transitive invariant
+ mixed : Try the phase approach and if it fails try the chain approach').

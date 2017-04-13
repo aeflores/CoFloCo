@@ -49,6 +49,10 @@ This module prints the results of the analysis
 		  write_lin_exp_in_phase/3,
 		  print_removed_redundant_constr_message/2,
 		  print_joined_itvar_sets_message/1,
+		  print_cycle_in_cstr_warning/0,
+		  print_changed_to_chain_method_warning/1,
+		  print_removed_possibly_redundant_cstrs/1,
+		  print_removed_unresolved_cstrs_cycle/1, 
 		  print_results/2,
 		  print_phase_cost/4,
 		  print_loops_costs/3,
@@ -74,12 +78,13 @@ This module prints the results of the analysis
 						conditional_upper_bound/3,
 						conditional_lower_bound/3,
 						non_terminating_chain/3]).
-:- use_module('../pre_processing/SCCs',[crs_scc/5,crs_residual_scc/2]).
+:- use_module('../pre_processing/SCCs',[crs_scc/6,crs_residual_scc/2]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../ranking_functions',[
 	ranking_function/4,
 	partial_ranking_function/7]).
+:- use_module('../bound_computation/phase_solver/phase_solver',[type_of_loop/2]).
 :- use_module('../utils/cost_expressions',[get_asymptotic_class_name/2]).
 :- use_module('../utils/cofloco_utils',[
 			constraint_to_coeffs_rep/2,
@@ -89,12 +94,8 @@ This module prints the results of the analysis
 
 :- use_module('../utils/cost_structures',[
 	cstr_get_itvars/2,
-	cstr_shorten_variables_names/3,
 	cstr_get_unbounded_itvars/2,
 	itvar_recover_long_name/2,
-	itvar_shorten_name/3,
-	fconstr_shorten_name/3,
-	iconstr_shorten_name/3,
 	astrexp_to_cexpr/2]).
 
 
@@ -118,6 +119,11 @@ init_output:-
 	retractall(log_entry(_,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 % predicates to print or log information depending on wether with are in the competition or not
+
+print_or_log_list([]).
+print_or_log_list([Elem|List]):-
+	print_or_log('~p~n',[Elem]),
+	print_or_log_list(List).
 
 print_or_log(String,Args):-
 	get_param(competition,[]),!,
@@ -188,7 +194,7 @@ print_warning(Text,Args):-
 interesting_example_warning(no_candidate,([]+_C,loop_vars(Head,[_|_]),Loop,[])):-
     get_param(debug,[]),!,
 	ground_copy(Head,Headp),
-	print_warning_in_error_stream('No candidate for multiple recursion ~p in loop ~p~n',[Headp,Loop]).
+	print_warning_in_error_stream('No candidate for multiple recursion ~p in ~p~n',[Headp,Loop]).
 	
 interesting_example_warning(failed_maximization,([],Lin_exp,Loop,Head,Calls)):-
 	get_param(debug,[]),!,
@@ -207,15 +213,16 @@ print_warning_in_error_stream(Text,Args):-
 print_sccs:-
 	get_param(v,[X]),X > 1,!,
 	print_header('Computed strongly connected components ~n',[],4),
-	findall(scc(SCC_N,Type,Nodes,Entries),
-		(crs_scc(SCC_N,Type,Nodes,_SCC_Graph,Entries),
+	findall(scc(SCC_N,Type,Nodes,Entries,Info),
+		(crs_scc(SCC_N,Type,Nodes,_SCC_Graph,Entries,Info),
 		Nodes\=['$cofloco_aux_entry$'/0])
 		,Sccs),
 	maplist(print_scc,Sccs).
 print_sccs.
 
-print_scc(scc(SCC_N,Type,Nodes,_Entries)):-
-	print_or_log('~p. ~p : ~p~n',[SCC_N,Type,Nodes]).
+print_scc(scc(SCC_N,Type,Nodes,_Entries,Info)):-
+	(Info\=[] ->Info_print=Info;Info_print=''),
+	print_or_log('~p. ~p ~p : ~p~n',[SCC_N,Type,Info_print,Nodes]).
 
 print_merging_cover_points(SCC_N,Cover_points,Merged):-
 	get_param(v,[X]),X > 1,!,
@@ -226,7 +233,7 @@ print_partially_evaluated_sccs:-
 	get_param(v,[X]),X > 1,!,
 	print_header('Obtained direct recursion through partial evaluation ~n',[],4),
 	findall(SCC_N,
-		(crs_scc(SCC_N,_,Nodes,_,_),
+		(crs_scc(SCC_N,_,Nodes,_,_,_),
 		Nodes\=['$cofloco_aux_entry$'/0]
 		)
 		,Sccs),
@@ -515,7 +522,8 @@ print_pending_sum((Loop,loop_vars(Head,Calls),Sums)):-
 	ground_rec_calls(Calls,1),
 	maplist(tuple,_,Sums_cs,Sums),
 	maplist(write_top_exp,Sums_cs,Sums_p),
-	print_or_log('* Psum in loop ~p: ~p~n',[Loop,Sums_p]).
+	type_of_loop(Loop,Loop_type),
+	print_or_log('* Psum in ~p ~p: ~p~n',[Loop_type,Loop,Sums_p]).
 
 print_selected_pending_constraint(Loop_vars,sum(Loop),Constr):-
 	get_param(debug,[]),!,
@@ -523,7 +531,8 @@ print_selected_pending_constraint(Loop_vars,sum(Loop),Constr):-
 	ground_header(Head_gr),
 	ground_rec_calls(Calls_gr,1),
 	write_top_exp(Constr_gr,Constr_print),
-	print_header('Computing sum for ~p  in loop ~p ~n',[Constr_print,Loop],6).
+	type_of_loop(Loop,Loop_type),
+	print_header('Computing sum for ~p  in ~p ~p ~n',[Constr_print,Loop_type,Loop],6).
 
 print_selected_pending_constraint(Head,Type,Constr):-
 	get_param(debug,[]),!,
@@ -621,7 +630,45 @@ print_phase_cost(_,_,_,_).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+print_changed_to_chain_method_warning(Lost):-
+	get_param(debug,[]),!,
+	print_warning('Some Itvars are unbounded ~p ~nChanging solving method to compute the cost of the chain directly ~n',[Lost]).
+	
+print_changed_to_chain_method_warning(_).	
 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+print_cycle_in_cstr_warning:-
+	(get_param(debug,[])->
+		print_warning('Found a cycle in the non-final constraints~n',[])
+	; 
+		true
+	).
+print_removed_possibly_redundant_cstrs(Removed_iconstrs):-
+	get_param(debug,[]),!,
+	copy_term(Removed_iconstrs,Removed_iconstrs_copy),
+	maplist(write_aux_exp,Removed_iconstrs_copy,Removed_iconstrs_print),
+	print_or_log(' Removed possibly redundant constraints to solve a cycle in the cost structure ~n',[]),
+	print_or_log_list(Removed_iconstrs_print).
+	
+print_removed_possibly_redundant_cstrs(_).	
+
+print_removed_unresolved_cstrs_cycle(Pred_graph):-
+	get_param(debug,[]),!,
+	maplist(get_iconstr_from_graph,Pred_graph,Iconstrs),
+	copy_term(Iconstrs,Iconstrs_copy),
+	maplist(write_aux_exp,Iconstrs_copy,Iconstrs_print),
+	print_or_log('Could not solve cycle in cost structure.~n Discarded constraints:  ~n',[]),
+	print_or_log_list(Iconstrs_print).
+	
+print_removed_unresolved_cstrs_cycle(_).
+
+get_iconstr_from_graph((_Id:Iconstr,_Preds),Iconstr).
+	
+	
 print_removed_redundant_constr_message(Constr,Removed_set):-
 	get_param(debug,[]),Removed_set\=[],!,
 	copy_term((Constr,Removed_set),(Constr_copy,Removed_set_copy)),
@@ -635,8 +682,7 @@ print_joined_itvar_sets_message(Sets):-
 	maplist(print_joined_itvar_set,Sets).
 print_joined_itvar_sets_message(_).
 
-print_joined_itvar_set(Set):-
-	maplist(itvar_shorten_name(no_list),Set,[First|Rest]),
+print_joined_itvar_set([First|Rest]):-
 	print_or_log(' * Joined equivalent variables ~p into ~p~n',[[First|Rest],First]).
 
 
@@ -664,8 +710,7 @@ print_results_1(_Entry,_).
 
 gen_mult_bases((A,B),A*B).
 
-print_cost_structure(Cost):-
-	cstr_shorten_variables_names(Cost,no_list,cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)),
+print_cost_structure(cost(Top_exps,LTop_exps,Aux_exps,Bases,Base)):-
 	cstr_get_unbounded_itvars(cost(Top_exps,LTop_exps,Aux_exps,Bases,Base),Unbounded),
 	partition(is_ub_aux_exp,Aux_exps,Ub_Aux_exps,Lb_Aux_exps),
 	print_base(Bases,Base,Unbounded),
@@ -703,15 +748,13 @@ print_base([(Itvar,Coeff)|Bases],C,Unbounded):-
 		
 is_ub_aux_exp(bound(ub,_,_)).
 
-write_top_exp(Constr_ini,Constr):-
-	fconstr_shorten_name(no_list,Constr_ini,bound(Op,Exp,Bounded)),
+write_top_exp(bound(Op,Exp,Bounded),Constr):-
 	print_op(Op,Op_p),
 	write_sum(Bounded,Sum),
 	write_le(Exp,Exp_print),
 	Constr=..[Op_p,Sum,Exp_print].
 
-write_aux_exp(Constr_ini,Constr):-
-	iconstr_shorten_name(no_list,Constr_ini,bound(Op,Exp,Bounded)),
+write_aux_exp(bound(Op,Exp,Bounded),Constr):-
 	print_op(Op,Op_p),
 	astrexp_to_cexpr(Exp,Exp2),
 	write_sum(Bounded,Sum),
@@ -745,9 +788,8 @@ print_itvars_renaming(Cost):-
 	).
 print_itvars_renaming(_Cost).
 	
-get_itvar_renaming([Prefix|Rest],Old >> New ):-
-		itvar_shorten_name(no_list,Rest,Old),
-		itvar_shorten_name(no_list,[Prefix|Rest],New).
+get_itvar_renaming(New, Old >> New ):-
+		itvar_recover_long_name(New,Old).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
