@@ -16,11 +16,10 @@ CoFloCo is intended to be used as a backend. Here are some systems that use CoFl
 
  * [SRA](http://sra.cs.unibo.it/index.html): A resource analysis tool for a concurrent language with explicit acquire and release operations for virtual machines.
 
-Note: only the first system uses the techniques implemented in this branch at the moment.
 
 The main techniques used in CoFloCo are described in the papers:
  * [Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295](https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf)
- * [Antonio Flores-Montoya: Upper and Lower Amortized Cost Bounds of Programs Expressed as Cost Relations. FM 2016] (https://www.informatik.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Publications/FM2016_extended.pdf) 
+ * [Antonio Flores-Montoya: Upper and Lower Amortized Cost Bounds of Programs Expressed as Cost Relations. FM 2016](https://www.informatik.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Publications/FM2016_extended.pdf) 
 
 Using Vagrant
 -------------
@@ -118,12 +117,11 @@ Contact:
 Contributors:
 ------------------
    * Antonio Flores-Montoya
+   * Clemens Danninger (Lisp interface) 
    
 Credits:
 ------------------
 CoFloCo uses the stdlib created by the costa team (http://costa.ls.fi.upm.es/)
 and was in part inspired by PUBS http://costa.ls.fi.upm.es/pubs/pubs.php.
 
-CoFloCo is funded by the EU project FP7-ICT-610582 ENVISAGE: Engineering Virtualized Services 
-   http://www.envisage-project.eu
    
