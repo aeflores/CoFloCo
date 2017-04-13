@@ -406,7 +406,7 @@ check_loop_maxsum(Head,(Type,Exp),Loop,Class,Pending,Pending1):-
 %if Exp does not increase
 	(nad_entails(Vars,Cs,[Exp_diff_print_int>=0])->
 	 %find a collaborative loop
-	    (find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Type,Bounded,Pending,Pending1)->			
+	    (find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Exp,Type,Bounded,Pending,Pending1)->			
 		   Class=class(cnt,Loop,Bounded),
 		   (get_param(debug,[])->
 		   	print_or_log('       - ~p ~p is collaborative and bounds ~p ~n',[Loop_type,Loop,Bounded]);true)
@@ -529,11 +529,11 @@ check_loop_minsum(_Head,_Candidate,Loop,_,_Pending,_):-
 		
 		
 		
-%! find_maxsum_constraint(Loop:loop_id,Head:term,Call:term,Cs:polyhedron,Exp_diff:nlinexp,Flag:flag,Bounded:list(itvar),Pending:pending_constrs,Pending_out:pending_constrs)
+%! find_maxsum_constraint(Loop:loop_id,Head:term,Call:term,Cs:polyhedron,Exp_diff:nlinexp,Exp_original:nlinexp,Flag:flag,Bounded:list(itvar),Pending:pending_constrs,Pending_out:pending_constrs)
 % try to find a pending maxsum that can be bounded by Exp_diff
 % we check that Exp_diff>= Exp2 and in case we are dealing with a head candidate
 % we also check Exp_original>=Exp2
-find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Type,Bounded,Pending,Pending_out):-
+find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Exp_original,Type,Bounded,Pending,Pending_out):-
 		extract_pending(Loop,sum,Pending,loop_vars(Head,Calls),(_Depth,bound(ub,Exp2,Bounded)),Pending1),
 		term_variables((Head,Calls),Vars),
 		subtract_le(Exp_diff,Exp2,Exp_diff2),
@@ -541,9 +541,6 @@ find_maxsum_constraint(Loop,Head,Calls,Cs,Exp_diff,Type,Bounded,Pending,Pending_
 		nad_entails(Vars,Cs,[Exp_diff2_print_int>=0]),
 		(Type=head->
 			%make a copy with all the variables in Calls set to 0
-		   copy_term((Exp_diff,Head,Calls),(Exp_original,Head,Calls2)),
-		   term_variables(Calls2,Vars_calls2),
-		   maplist(=(0),Vars_calls2),
 		   subtract_le(Exp_original,Exp2,Exp_diff_base_case),
 		   le_print_int(Exp_diff_base_case,Exp_diff_base_case_print,_),
 		   nad_entails(Vars,Cs,[Exp_diff_base_case_print>=0]),
