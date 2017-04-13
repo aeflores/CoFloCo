@@ -880,20 +880,22 @@ print_conditional_lower_bound(_).
 
 
 print_maximum_upper_bound(Head):-
+	copy_term(Head,Head2),
 	bagof(Cost,
-		Conds^conditional_upper_bound(Head,Cost,Conds),
+		Conds^conditional_upper_bound(Head2,Cost,Conds),
 		Costs),
 	get_asymptotic_class_name(max(Costs),Asym_class),
-	ground_header(Head),
+	ground_header(Head2),
 	print_or_log('Possible upper bounds : ~p~n',[Costs]),
 	print_or_log('Maximum upper bound complexity: ~p~n',[Asym_class]).
 
 print_maximum_lower_bound(Head):-
+	copy_term(Head,Head2),
 	bagof(Cost,
-		Conds^conditional_lower_bound(Head,Cost,Conds),
+		Conds^conditional_lower_bound(Head2,Cost,Conds),
 		Costs),
 	get_asymptotic_class_name(max(Costs),Asym_class),
-	ground_header(Head),
+	ground_header(Head2),
 	print_or_log('Possible lower bounds : ~p~n',[Costs]),
 	print_or_log('Maximum lower bound complexity: ~p~n',[Asym_class]).
 
