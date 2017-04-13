@@ -195,8 +195,9 @@ get_fconstrs_from_poly_1([C|Cs],max,Its_total,Dicc,Norms):-
 	normalize_constraint_wrt_vars(C,Its_total,C1),!,
 	(C1= (Its =< Exp)->
 		parse_le_fast(Exp,Lin_exp),
-	        foldl(substitute_its_by_bounded(Dicc),Its,[],Bounded),
-		Norms=[bound(ub,Lin_exp,Bounded)|Norms_aux]
+	    foldl(substitute_its_by_bounded(Dicc),Its,[],Bounded),
+	    from_list_sl(Bounded,Bounded_set),
+		Norms=[bound(ub,Lin_exp,Bounded_set)|Norms_aux]
 		;
 		Norms=Norms_aux
 	),
@@ -206,8 +207,9 @@ get_fconstrs_from_poly_1([C|Cs],min,Its_total,Dicc,Norms):-
 	normalize_constraint_wrt_vars(C,Its_total,C1),!,
 	(C1= (Its >= Exp)->
 		parse_le_fast(Exp,Lin_exp),
-	        foldl(substitute_its_by_bounded(Dicc),Its,[],Bounded),
-		Norms=[bound(lb,Lin_exp,Bounded)|Norms_aux]
+	    foldl(substitute_its_by_bounded(Dicc),Its,[],Bounded),
+	    from_list_sl(Bounded,Bounded_set),
+		Norms=[bound(lb,Lin_exp,Bounded_set)|Norms_aux]
 		;
 		Norms=Norms_aux
 	),
