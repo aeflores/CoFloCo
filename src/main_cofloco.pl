@@ -94,8 +94,7 @@ The main "data types" used in CoFloCo are the following:
 				ignored_scc/1,
 				crs_residual_scc/2,
 				crs_max_scc_id/1,  
-				crs_node_scc/3,    
-		       crs_scc/5]).
+				crs_node_scc/3]).
 :- use_module('pre_processing/partial_evaluation',[partial_evaluation/0]).
 
 :- use_module('refinement/invariants',[compute_invariants_for_scc/2,

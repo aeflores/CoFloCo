@@ -78,7 +78,7 @@ This module prints the results of the analysis
 						conditional_upper_bound/3,
 						conditional_lower_bound/3,
 						non_terminating_chain/3]).
-:- use_module('../pre_processing/SCCs',[crs_scc/5,crs_residual_scc/2]).
+:- use_module('../pre_processing/SCCs',[crs_scc/6,crs_residual_scc/2]).
 :- use_module('../refinement/invariants',[backward_invariant/4]).
 :- use_module('../refinement/chains',[chain/3]).
 :- use_module('../ranking_functions',[
@@ -213,15 +213,16 @@ print_warning_in_error_stream(Text,Args):-
 print_sccs:-
 	get_param(v,[X]),X > 1,!,
 	print_header('Computed strongly connected components ~n',[],4),
-	findall(scc(SCC_N,Type,Nodes,Entries),
-		(crs_scc(SCC_N,Type,Nodes,_SCC_Graph,Entries),
+	findall(scc(SCC_N,Type,Nodes,Entries,Info),
+		(crs_scc(SCC_N,Type,Nodes,_SCC_Graph,Entries,Info),
 		Nodes\=['$cofloco_aux_entry$'/0])
 		,Sccs),
 	maplist(print_scc,Sccs).
 print_sccs.
 
-print_scc(scc(SCC_N,Type,Nodes,_Entries)):-
-	print_or_log('~p. ~p : ~p~n',[SCC_N,Type,Nodes]).
+print_scc(scc(SCC_N,Type,Nodes,_Entries,Info)):-
+	(Info\=[] ->Info_print=Info;Info_print=''),
+	print_or_log('~p. ~p ~p : ~p~n',[SCC_N,Type,Info_print,Nodes]).
 
 print_merging_cover_points(SCC_N,Cover_points,Merged):-
 	get_param(v,[X]),X > 1,!,
@@ -232,7 +233,7 @@ print_partially_evaluated_sccs:-
 	get_param(v,[X]),X > 1,!,
 	print_header('Obtained direct recursion through partial evaluation ~n',[],4),
 	findall(SCC_N,
-		(crs_scc(SCC_N,_,Nodes,_,_),
+		(crs_scc(SCC_N,_,Nodes,_,_,_),
 		Nodes\=['$cofloco_aux_entry$'/0]
 		)
 		,Sccs),
