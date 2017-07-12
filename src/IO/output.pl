@@ -117,6 +117,7 @@ This module prints the results of the analysis
 :-dynamic log_entry/3.
 
 init_output:-
+	set_prolog_flag(print_write_options,[quoted(false),numbervars(true)]),
 	retractall(log_entry(_,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 % predicates to print or log information depending on wether with are in the competition or not
