@@ -501,7 +501,7 @@ check_loop_minsum(Head,(_Type,Exp),Loop,Class,Pending,Pending1):-
 	    Max_increments\=[],
 		new_itvar(Aux_itvar),
 		Class=class(add,Loop,[mult([Aux_itvar])]),
-		maplist(fconstr_new([Aux_itvar],ub),Max_increments,Maxsums),
+		maplist(fconstr_new([Aux_itvar],lb),Max_increments,Maxsums),
 		save_pending_list(sum,loop_vars(Head,Calls),Loop,Maxsums,Pending,Pending1),
 		(get_param(debug,[])->
 			maplist(write_lin_exp_in_phase(loop_vars(Head,Calls)),Max_increments,Max_increments_print),
