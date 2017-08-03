@@ -5,8 +5,8 @@ It is not easy to create a statically linked binary in Prolog and things don't g
 
 This Makefile works in my system:
  * Ubuntu 64 bits
- * ppl 1.1
- * swi-prolog 6.6.6
+ * ppl 1.1-1.2
+ * Swi-prolog 6.6.6 and Swi-prolog 7.4.2
  
 But there is no guarantee that it will work elsewhere.
 Are you feeling lucky? then type:
@@ -17,7 +17,7 @@ You might get many errors regarding the predicates of the ppl library. In princi
 
 The make should generate a binary `cofloco_static` that should work if everything went as planned.
 
-### Problems:
+### Problems (with Swi-prolog 6.6.6):
 
 
 An error that I encountered is that I could obtain a working binary that would print the following error message at the beginning nonetheless:
