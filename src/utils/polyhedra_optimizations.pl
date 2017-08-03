@@ -71,7 +71,7 @@ nad_entails_aux(Vars,Cs,Cons):-
 nad_normalize_polyhedron(Cs,Cs4):-
 	nad_normalize(Cs,Cs2),
 	maplist(normalize_constraint,Cs2,Cs3),
-	from_list_sl(Cs3,Cs4).
+	from_list_sl(Cs3,Cs4),!.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
