@@ -6,6 +6,7 @@
 :-dynamic option/1.
 
 main_koat2cfg:-
+	set_prolog_flag(print_write_options,[quoted(false),numbervars(true)]),
     current_prolog_flag(argv, Args),
 	Args=[File|Rest],
 	process_args(Rest),
@@ -203,8 +204,9 @@ maybe_more_side(Exp,Exp)-->[].
 
 
 factors(Prev_fac,Factor)-->factor(F1),{combine_factor(Prev_fac,F1,Next_fact)},
+	spaces,
 	maybe_more_factors(Next_fact,Factor).
-maybe_more_factors(Next_fact,Factor)-->"*",!,
+maybe_more_factors(Next_fact,Factor)-->"*",!,spaces,
 	                   factors(Next_fact,Factor).
 maybe_more_factors(Factor,Factor)-->[].
 
