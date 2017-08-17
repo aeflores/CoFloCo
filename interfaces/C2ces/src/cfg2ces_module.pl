@@ -1,6 +1,6 @@
 #!/usr/bin/prolog
 
-:-module(cfg2ces_module,[main_cfg2ces/0]).
+:-module(cfg2ces_module,[main_cfg2ces/0,main_bin_cfg2ces/0]).
 
 :-include('../../../src/search_paths.pl').
 
@@ -71,7 +71,11 @@ main_cfg2ces:-
     current_prolog_flag(argv, Args),
     cfg2ces(Args),
 	halt.
-        
+main_bin_cfg2ces:-
+    current_prolog_flag(argv, [_|Args]),
+    cfg2ces(Args),
+	halt.
+	       
 cfg2ces([]):-format(user_error,'No file parameter received~n',[]).
 
 cfg2ces([F|Other_args]) :-
