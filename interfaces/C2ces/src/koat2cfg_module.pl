@@ -14,6 +14,7 @@ main_koat2cfg:-
 	halt.
 
 main_bin_koat2cfg:-
+    set_prolog_flag(print_write_options,[quoted(false),numbervars(true)]),
     current_prolog_flag(argv, [_|Args]),
     Args=[File|Rest],
 	process_args(Rest),
