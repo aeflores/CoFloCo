@@ -706,7 +706,7 @@ slice(Loop_header):-
 	throw(failed_slicing(Loop_header)).
 
 %remove out variables that are not modified during the loop
-slice_unmodified_ovars(Loop_header,Unused_later_ipositions):-
+slice_unmodified_ovars(Loop_header,Unused_later_ipositions_set):-
 	get_eqs_in_loop_split(Loop_header,Non_rec_eqs,Rec_eqs),
 	get_unmodified_ivars(Rec_eqs,Unmodified_ipositions),
 	format('% unmodified input variables in loop ~p: ~p ~n',[Loop_header,Unmodified_ipositions]),
@@ -717,10 +717,11 @@ slice_unmodified_ovars(Loop_header,Unused_later_ipositions):-
 		format('% removed  all output variables in loop ~p ~n',[Loop_header]),
 		Unused_later_ipositions=Unmodified_ipositions
 	;
-		maplist(tuple,Unused_later_ipositions,Removed_outs,Common_out_positions),
+		maplist(tuple,Removed_outs,Unused_later_ipositions,Common_out_positions),
 		format('% removed  output variables ~p in loop ~p ~n',[Removed_outs,Loop_header]),
 		Common_out_positions1=Common_out_positions
 	),
+	from_list_sl(Unused_later_ipositions,Unused_later_ipositions_set),
 	remove_ovars(Loop_header,Common_out_positions1).
 
 	
@@ -760,7 +761,7 @@ get_unmodified_positions([V|In],[V2|In2],N,Set):-
 
 get_matching_ovars(Non_rec_eqs,Positions,Common_out_positions):-
 	maplist(check_matching_base_case(Positions),Non_rec_eqs,Out_matches),
-	format('% matching input-output vars: ~p ~n',[Out_matches]),
+	format('% matching output-input vars: ~p ~n',[Out_matches]),
 	foldl(intersection_with_top,Out_matches,top,Common_out_positions).
 
 
@@ -777,14 +778,14 @@ check_matching_base_case(Positions,Id,Matches_set):-
 	).
 
 check_matching_base_case_aux([],_In,_Out,[]).
-check_matching_base_case_aux([P|Ps],In,Out,[(P_out,P)|Rest]):-
+check_matching_base_case_aux([P|Ps],In,Out,Result):-
 	nth1(P,In,Var),
-	nth1(P_out,Out,Var),!,
-	check_matching_base_case_aux(Ps,In,Out,Rest).
-	
-check_matching_base_case_aux([_P|Ps],In,Out,Rest):-
-	check_matching_base_case_aux(Ps,In,Out,Rest).
-	
+	findall(P_out,nth1(P_out,Out,Var),P_outs),
+	maplist(make_pair_inverse(P),P_outs,Matches),
+	check_matching_base_case_aux(Ps,In,Out,Rest),
+	append(Matches,Rest,Result).
+
+make_pair_inverse(Second,First,(First,Second)).	
 
 intersection_with_top(top,Set,Set):-!.
 intersection_with_top(Set,top,Set):-!.
