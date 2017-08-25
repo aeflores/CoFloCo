@@ -1,0 +1,88 @@
+YES(?, 270)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_wblong_start(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb0_in(v_fd, v_i.0, v_x))
+		(?, 1)    eval_wblong_bb0_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, 24, v_x))
+		(?, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_5(v_fd, v_i.0, v_x)) [ v_i.0 >= 0 ]
+		(?, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_stop(v_fd, v_i.0, v_x)) [ v_i.0 < 0 ]
+		(?, 1)    eval_wblong_5(v_fd, v_i.0, v_x) -> Com_2(eval_write_start(v_fd, v_i.0, v_x), eval_wblong_6(v_fd, v_i.0, v_x))
+		(?, 1)    eval_wblong_6(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, v_i.0 - 8, v_x))
+	start location:	eval_wblong_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_wblong_start(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb0_in(v_fd, v_i.0, v_x))
+		(1, 1)    eval_wblong_bb0_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, 24, v_x))
+		(?, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_5(v_fd, v_i.0, v_x)) [ v_i.0 >= 0 ]
+		(?, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_stop(v_fd, v_i.0, v_x)) [ v_i.0 < 0 ]
+		(?, 1)    eval_wblong_5(v_fd, v_i.0, v_x) -> Com_2(eval_write_start(v_fd, v_i.0, v_x), eval_wblong_6(v_fd, v_i.0, v_x))
+		(?, 1)    eval_wblong_6(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, v_i.0 - 8, v_x))
+	start location:	eval_wblong_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_wblong_start) = 1
+	Pol(eval_wblong_bb0_in) = 1
+	Pol(eval_wblong_bb1_in) = 1
+	Pol(eval_wblong_5) = 1
+	Pol(eval_wblong_stop) = 0
+	Pol(eval_write_start) = 0
+	Pol(eval_wblong_6) = 1
+orients all transitions weakly and the transition
+	eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_stop(v_fd, v_i.0, v_x)) [ v_i.0 < 0 ]
+strictly and produces the following problem:
+3:	T:
+		(1, 1)    eval_wblong_start(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb0_in(v_fd, v_i.0, v_x))
+		(1, 1)    eval_wblong_bb0_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, 24, v_x))
+		(?, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_5(v_fd, v_i.0, v_x)) [ v_i.0 >= 0 ]
+		(1, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_stop(v_fd, v_i.0, v_x)) [ v_i.0 < 0 ]
+		(?, 1)    eval_wblong_5(v_fd, v_i.0, v_x) -> Com_2(eval_write_start(v_fd, v_i.0, v_x), eval_wblong_6(v_fd, v_i.0, v_x))
+		(?, 1)    eval_wblong_6(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, v_i.0 - 8, v_x))
+	start location:	eval_wblong_start
+	leaf cost:	0
+
+Applied AI with 'oct' on problem 3 to obtain the following invariants:
+  For symbol eval_wblong_5: -X_2 + 24 >= 0 /\ X_2 >= 0
+  For symbol eval_wblong_6: -X_2 + 24 >= 0 /\ X_2 >= 0
+  For symbol eval_wblong_bb1_in: -X_2 + 24 >= 0
+
+
+This yielded the following problem:
+4:	T:
+		(?, 1)    eval_wblong_6(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, v_i.0 - 8, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+		(?, 1)    eval_wblong_5(v_fd, v_i.0, v_x) -> Com_2(eval_write_start(v_fd, v_i.0, v_x), eval_wblong_6(v_fd, v_i.0, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+		(1, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_stop(v_fd, v_i.0, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 < 0 ]
+		(?, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_5(v_fd, v_i.0, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+		(1, 1)    eval_wblong_bb0_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, 24, v_x))
+		(1, 1)    eval_wblong_start(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb0_in(v_fd, v_i.0, v_x))
+	start location:	eval_wblong_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_wblong_6) = 3*V_2 + 1
+	Pol(eval_wblong_bb1_in) = 3*V_2 + 17
+	Pol(eval_wblong_5) = 3*V_2 + 9
+	Pol(eval_write_start) = 0
+	Pol(eval_wblong_stop) = 3*V_2
+	Pol(eval_wblong_bb0_in) = 89
+	Pol(eval_wblong_start) = 89
+orients all transitions weakly and the transitions
+	eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_5(v_fd, v_i.0, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+	eval_wblong_6(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, v_i.0 - 8, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+	eval_wblong_5(v_fd, v_i.0, v_x) -> Com_2(eval_write_start(v_fd, v_i.0, v_x), eval_wblong_6(v_fd, v_i.0, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+strictly and produces the following problem:
+5:	T:
+		(89, 1)    eval_wblong_6(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, v_i.0 - 8, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+		(89, 1)    eval_wblong_5(v_fd, v_i.0, v_x) -> Com_2(eval_write_start(v_fd, v_i.0, v_x), eval_wblong_6(v_fd, v_i.0, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+		(1, 1)     eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_stop(v_fd, v_i.0, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 < 0 ]
+		(89, 1)    eval_wblong_bb1_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_5(v_fd, v_i.0, v_x)) [ -v_i.0 + 24 >= 0 /\ v_i.0 >= 0 ]
+		(1, 1)     eval_wblong_bb0_in(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb1_in(v_fd, 24, v_x))
+		(1, 1)     eval_wblong_start(v_fd, v_i.0, v_x) -> Com_1(eval_wblong_bb0_in(v_fd, v_i.0, v_x))
+	start location:	eval_wblong_start
+	leaf cost:	0
+
+Complexity upper bound 270
+
+Time: 0.085 sec (SMT: 0.076 sec)

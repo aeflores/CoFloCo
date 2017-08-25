@@ -1,0 +1,214 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_usage_start() -> Com_1(eval_usage_bb0_in())
+		(?, 1)    eval_usage_bb0_in() -> Com_1(eval_usage_bb1_in())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_3())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_6())
+		(?, 1)    eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(?, 1)    eval_usage_6() -> Com_2(eval_exit_start(), eval_usage_7())
+		(?, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_usage_start() -> Com_1(eval_usage_bb0_in())
+		(1, 1)    eval_usage_bb0_in() -> Com_1(eval_usage_bb1_in())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_3())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_6())
+		(?, 1)    eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(?, 1)    eval_usage_6() -> Com_2(eval_exit_start(), eval_usage_7())
+		(?, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_usage_start) = 3
+	Pol(eval_usage_bb0_in) = 3
+	Pol(eval_usage_bb1_in) = 3
+	Pol(eval_usage_3) = 3
+	Pol(eval_usage_6) = 2
+	Pol(eval_fprintf_start) = 0
+	Pol(eval_usage_4) = 3
+	Pol(eval_exit_start) = 0
+	Pol(eval_usage_7) = 1
+	Pol(eval_usage_stop) = 0
+orients all transitions weakly and the transitions
+	eval_usage_bb1_in() -> Com_1(eval_usage_6())
+	eval_usage_7() -> Com_1(eval_usage_stop())
+	eval_usage_6() -> Com_2(eval_exit_start(), eval_usage_7())
+strictly and produces the following problem:
+3:	T:
+		(1, 1)    eval_usage_start() -> Com_1(eval_usage_bb0_in())
+		(1, 1)    eval_usage_bb0_in() -> Com_1(eval_usage_bb1_in())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_3())
+		(3, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_6())
+		(?, 1)    eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(3, 1)    eval_usage_6() -> Com_2(eval_exit_start(), eval_usage_7())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+By chaining the transition eval_usage_start() -> Com_1(eval_usage_bb0_in()) with all transitions in problem 3, the following new transition is obtained:
+	eval_usage_start() -> Com_1(eval_usage_bb1_in())
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+		(1, 1)    eval_usage_bb0_in() -> Com_1(eval_usage_bb1_in())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_3())
+		(3, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_6())
+		(?, 1)    eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(3, 1)    eval_usage_6() -> Com_2(eval_exit_start(), eval_usage_7())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_usage_bb0_in() -> Com_1(eval_usage_bb1_in())
+We thus obtain the following problem:
+5:	T:
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(3, 1)    eval_usage_6() -> Com_2(eval_exit_start(), eval_usage_7())
+		(?, 1)    eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(3, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_6())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_3())
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+By chaining the transition eval_usage_bb1_in() -> Com_1(eval_usage_6()) with all transitions in problem 5, the following new transition is obtained:
+	eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+We thus obtain the following problem:
+6:	T:
+		(3, 2)    eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(3, 1)    eval_usage_6() -> Com_2(eval_exit_start(), eval_usage_7())
+		(?, 1)    eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_3())
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 6:
+	eval_usage_6() -> Com_2(eval_exit_start(), eval_usage_7())
+We thus obtain the following problem:
+7:	T:
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(?, 1)    eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(3, 2)    eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+		(?, 1)    eval_usage_bb1_in() -> Com_1(eval_usage_3())
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+By chaining the transition eval_usage_bb1_in() -> Com_1(eval_usage_3()) with all transitions in problem 7, the following new transition is obtained:
+	eval_usage_bb1_in() -> Com_2(eval_fprintf_start(), eval_usage_4())
+We thus obtain the following problem:
+8:	T:
+		(?, 2)    eval_usage_bb1_in() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(?, 1)    eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(3, 2)    eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 8:
+	eval_usage_3() -> Com_2(eval_fprintf_start(), eval_usage_4())
+We thus obtain the following problem:
+9:	T:
+		(?, 1)    eval_usage_4() -> Com_1(eval_usage_bb1_in())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(?, 2)    eval_usage_bb1_in() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(3, 2)    eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+By chaining the transition eval_usage_4() -> Com_1(eval_usage_bb1_in()) with all transitions in problem 9, the following new transitions are obtained:
+	eval_usage_4() -> Com_2(eval_fprintf_start(), eval_usage_4())
+	eval_usage_4() -> Com_2(eval_exit_start(), eval_usage_7())
+We thus obtain the following problem:
+10:	T:
+		(?, 3)    eval_usage_4() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(?, 3)    eval_usage_4() -> Com_2(eval_exit_start(), eval_usage_7())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(?, 2)    eval_usage_bb1_in() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(3, 2)    eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 10 produces the following problem:
+11:	T:
+		(?, 3)    eval_usage_4() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(?, 3)    eval_usage_4() -> Com_2(eval_exit_start(), eval_usage_7())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(1, 2)    eval_usage_bb1_in() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(3, 2)    eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_usage_4) = 1
+	Pol(eval_fprintf_start) = 0
+	Pol(eval_exit_start) = 0
+	Pol(eval_usage_7) = 0
+	Pol(eval_usage_stop) = 0
+	Pol(eval_usage_bb1_in) = 1
+	Pol(eval_usage_start) = 1
+orients all transitions weakly and the transition
+	eval_usage_4() -> Com_2(eval_exit_start(), eval_usage_7())
+strictly and produces the following problem:
+12:	T:
+		(?, 3)    eval_usage_4() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(1, 3)    eval_usage_4() -> Com_2(eval_exit_start(), eval_usage_7())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(1, 2)    eval_usage_bb1_in() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(3, 2)    eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+		(1, 2)    eval_usage_start() -> Com_1(eval_usage_bb1_in())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+By chaining the transition eval_usage_start() -> Com_1(eval_usage_bb1_in()) with all transitions in problem 12, the following new transitions are obtained:
+	eval_usage_start() -> Com_2(eval_fprintf_start(), eval_usage_4())
+	eval_usage_start() -> Com_2(eval_exit_start(), eval_usage_7())
+We thus obtain the following problem:
+13:	T:
+		(1, 4)    eval_usage_start() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(1, 4)    eval_usage_start() -> Com_2(eval_exit_start(), eval_usage_7())
+		(?, 3)    eval_usage_4() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(1, 3)    eval_usage_4() -> Com_2(eval_exit_start(), eval_usage_7())
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(1, 2)    eval_usage_bb1_in() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(3, 2)    eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transitions from problem 13:
+	eval_usage_bb1_in() -> Com_2(eval_fprintf_start(), eval_usage_4())
+	eval_usage_bb1_in() -> Com_2(eval_exit_start(), eval_usage_7())
+We thus obtain the following problem:
+14:	T:
+		(3, 1)    eval_usage_7() -> Com_1(eval_usage_stop())
+		(1, 3)    eval_usage_4() -> Com_2(eval_exit_start(), eval_usage_7())
+		(?, 3)    eval_usage_4() -> Com_2(eval_fprintf_start(), eval_usage_4())
+		(1, 4)    eval_usage_start() -> Com_2(eval_exit_start(), eval_usage_7())
+		(1, 4)    eval_usage_start() -> Com_2(eval_fprintf_start(), eval_usage_4())
+	start location:	eval_usage_start
+	leaf cost:	0
+
+Complexity upper bound ?
+
+Time: 0.061 sec (SMT: 0.055 sec)

@@ -1,0 +1,51 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_bit_count_start(v_x) -> eval_bit_count_bb0_in(v_x)
+		(?, 1)    eval_bit_count_bb0_in(v_x) -> eval_bit_count_bb1_in(v_x)
+		(?, 1)    eval_bit_count_bb0_in(v_x) -> eval_bit_count_bb2_in(v_x)
+		(?, 1)    eval_bit_count_bb1_in(v_x) -> eval_bit_count_bb1_in(v_x)
+		(?, 1)    eval_bit_count_bb1_in(v_x) -> eval_bit_count_bb2_in(v_x)
+		(?, 1)    eval_bit_count_bb2_in(v_x) -> eval_bit_count_stop(v_x)
+	start location:	eval_bit_count_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_bit_count_start(v_x) -> eval_bit_count_bb0_in(v_x)
+		(?, 1)    eval_bit_count_bb0_in(v_x) -> eval_bit_count_bb1_in(v_x)
+		(?, 1)    eval_bit_count_bb1_in(v_x) -> eval_bit_count_bb1_in(v_x)
+	start location:	eval_bit_count_start
+	leaf cost:	3
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_bit_count_start(v_x) -> eval_bit_count_bb0_in(v_x)
+		(1, 1)    eval_bit_count_bb0_in(v_x) -> eval_bit_count_bb1_in(v_x)
+		(?, 1)    eval_bit_count_bb1_in(v_x) -> eval_bit_count_bb1_in(v_x)
+	start location:	eval_bit_count_start
+	leaf cost:	3
+
+By chaining the transition eval_bit_count_start(v_x) -> eval_bit_count_bb0_in(v_x) with all transitions in problem 3, the following new transition is obtained:
+	eval_bit_count_start(v_x) -> eval_bit_count_bb1_in(v_x)
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_bit_count_start(v_x) -> eval_bit_count_bb1_in(v_x)
+		(1, 1)    eval_bit_count_bb0_in(v_x) -> eval_bit_count_bb1_in(v_x)
+		(?, 1)    eval_bit_count_bb1_in(v_x) -> eval_bit_count_bb1_in(v_x)
+	start location:	eval_bit_count_start
+	leaf cost:	3
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_bit_count_bb0_in(v_x) -> eval_bit_count_bb1_in(v_x)
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_bit_count_bb1_in(v_x) -> eval_bit_count_bb1_in(v_x)
+		(1, 2)    eval_bit_count_start(v_x) -> eval_bit_count_bb1_in(v_x)
+	start location:	eval_bit_count_start
+	leaf cost:	3
+
+Complexity upper bound ?
+
+Time: 0.055 sec (SMT: 0.049 sec)

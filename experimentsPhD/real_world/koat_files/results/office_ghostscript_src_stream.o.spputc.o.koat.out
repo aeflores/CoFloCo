@@ -1,0 +1,195 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb0_in(v_b))
+		(?, 1)    eval_spputc_bb0_in(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(?, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b))
+		(?, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_5(v_b))
+		(?, 1)    eval_spputc_5(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(?, 1)    eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb0_in(v_b))
+		(1, 1)    eval_spputc_bb0_in(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(?, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b))
+		(?, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_5(v_b))
+		(?, 1)    eval_spputc_5(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(?, 1)    eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_spputc_start) = 2
+	Pol(eval_spputc_bb0_in) = 2
+	Pol(eval_spputc_bb1_in) = 2
+	Pol(eval_spputc_bb6_in) = 1
+	Pol(eval_spputc_5) = 2
+	Pol(eval_s_process_write_buf_start) = 0
+	Pol(eval_spputc_6) = 2
+	Pol(eval_spputc_stop) = 0
+orients all transitions weakly and the transitions
+	eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+	eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b))
+strictly and produces the following problem:
+3:	T:
+		(1, 1)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb0_in(v_b))
+		(1, 1)    eval_spputc_bb0_in(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(2, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b))
+		(?, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_5(v_b))
+		(?, 1)    eval_spputc_5(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(2, 1)    eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+By chaining the transition eval_spputc_start(v_b) -> Com_1(eval_spputc_bb0_in(v_b)) with all transitions in problem 3, the following new transition is obtained:
+	eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(1, 1)    eval_spputc_bb0_in(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(2, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b))
+		(?, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_5(v_b))
+		(?, 1)    eval_spputc_5(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(2, 1)    eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_spputc_bb0_in(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(?, 1)    eval_spputc_5(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(2, 1)    eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_5(v_b))
+		(2, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b))
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+By chaining the transition eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_5(v_b)) with all transitions in problem 5, the following new transition is obtained:
+	eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+We thus obtain the following problem:
+6:	T:
+		(?, 2)    eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(?, 1)    eval_spputc_5(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(2, 1)    eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(2, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b))
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 6:
+	eval_spputc_5(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+We thus obtain the following problem:
+7:	T:
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(2, 1)    eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 2)    eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(2, 1)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b))
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+By chaining the transition eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_bb6_in(v_b)) with all transitions in problem 7, the following new transition is obtained:
+	eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+We thus obtain the following problem:
+8:	T:
+		(2, 2)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(2, 1)    eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 2)    eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 8:
+	eval_spputc_bb6_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+We thus obtain the following problem:
+9:	T:
+		(?, 1)    eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+		(2, 2)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 2)    eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+By chaining the transition eval_spputc_6(v_b) -> Com_1(eval_spputc_bb1_in(v_b)) with all transitions in problem 9, the following new transitions are obtained:
+	eval_spputc_6(v_b) -> Com_1(eval_spputc_stop(v_b))
+	eval_spputc_6(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+We thus obtain the following problem:
+10:	T:
+		(?, 3)    eval_spputc_6(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 3)    eval_spputc_6(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(2, 2)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 2)    eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 10 produces the following problem:
+11:	T:
+		(?, 3)    eval_spputc_6(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 3)    eval_spputc_6(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(2, 2)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(1, 2)    eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_spputc_6) = 1
+	Pol(eval_spputc_stop) = 0
+	Pol(eval_s_process_write_buf_start) = 0
+	Pol(eval_spputc_bb1_in) = 1
+	Pol(eval_spputc_start) = 1
+orients all transitions weakly and the transition
+	eval_spputc_6(v_b) -> Com_1(eval_spputc_stop(v_b))
+strictly and produces the following problem:
+12:	T:
+		(1, 3)    eval_spputc_6(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 3)    eval_spputc_6(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(2, 2)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(1, 2)    eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(1, 2)    eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+By chaining the transition eval_spputc_start(v_b) -> Com_1(eval_spputc_bb1_in(v_b)) with all transitions in problem 12, the following new transitions are obtained:
+	eval_spputc_start(v_b) -> Com_1(eval_spputc_stop(v_b))
+	eval_spputc_start(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+We thus obtain the following problem:
+13:	T:
+		(1, 4)    eval_spputc_start(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(1, 4)    eval_spputc_start(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(1, 3)    eval_spputc_6(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(?, 3)    eval_spputc_6(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(2, 2)    eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(1, 2)    eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transitions from problem 13:
+	eval_spputc_bb1_in(v_b) -> Com_1(eval_spputc_stop(v_b))
+	eval_spputc_bb1_in(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+We thus obtain the following problem:
+14:	T:
+		(?, 3)    eval_spputc_6(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(1, 3)    eval_spputc_6(v_b) -> Com_1(eval_spputc_stop(v_b))
+		(1, 4)    eval_spputc_start(v_b) -> Com_2(eval_s_process_write_buf_start(v_b), eval_spputc_6(v_b))
+		(1, 4)    eval_spputc_start(v_b) -> Com_1(eval_spputc_stop(v_b))
+	start location:	eval_spputc_start
+	leaf cost:	0
+
+Complexity upper bound ?
+
+Time: 0.098 sec (SMT: 0.084 sec)

@@ -1,0 +1,53 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_gs_reloc_ref_ptr_start() -> eval_gs_reloc_ref_ptr_bb0_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb0_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb0_in() -> eval_gs_reloc_ref_ptr_bb14_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb3_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb3_in() -> eval_gs_reloc_ref_ptr_bb14_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb3_in() -> eval_gs_reloc_ref_ptr_bb13_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb13_in() -> eval_gs_reloc_ref_ptr_bb14_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb14_in() -> eval_gs_reloc_ref_ptr_stop()
+	start location:	eval_gs_reloc_ref_ptr_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_gs_reloc_ref_ptr_start() -> eval_gs_reloc_ref_ptr_bb0_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb0_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb3_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+	start location:	eval_gs_reloc_ref_ptr_start
+	leaf cost:	5
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_gs_reloc_ref_ptr_start() -> eval_gs_reloc_ref_ptr_bb0_in()
+		(1, 1)    eval_gs_reloc_ref_ptr_bb0_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb3_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+	start location:	eval_gs_reloc_ref_ptr_start
+	leaf cost:	5
+
+By chaining the transition eval_gs_reloc_ref_ptr_start() -> eval_gs_reloc_ref_ptr_bb0_in() with all transitions in problem 3, the following new transition is obtained:
+	eval_gs_reloc_ref_ptr_start() -> eval_gs_reloc_ref_ptr_bb3_in()
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_gs_reloc_ref_ptr_start() -> eval_gs_reloc_ref_ptr_bb3_in()
+		(1, 1)    eval_gs_reloc_ref_ptr_bb0_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+		(?, 1)    eval_gs_reloc_ref_ptr_bb3_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+	start location:	eval_gs_reloc_ref_ptr_start
+	leaf cost:	5
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_gs_reloc_ref_ptr_bb0_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_gs_reloc_ref_ptr_bb3_in() -> eval_gs_reloc_ref_ptr_bb3_in()
+		(1, 2)    eval_gs_reloc_ref_ptr_start() -> eval_gs_reloc_ref_ptr_bb3_in()
+	start location:	eval_gs_reloc_ref_ptr_start
+	leaf cost:	5
+
+Complexity upper bound ?
+
+Time: 0.022 sec (SMT: 0.021 sec)

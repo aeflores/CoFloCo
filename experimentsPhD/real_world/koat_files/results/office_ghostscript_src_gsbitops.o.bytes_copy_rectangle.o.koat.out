@@ -1,0 +1,100 @@
+YES(?, 18*v_height + 3)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_bytes_copy_rectangle_start(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes) -> Com_1(eval_bytes_copy_rectangle_bb0_in(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes))
+		(?, 1)    eval_bytes_copy_rectangle_bb0_in(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_height, v_width_bytes, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes))
+		(?, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes) -> Com_1(eval_bytes_copy_rectangle_6(v_.02, v_0, v_.02 - 1, v_dest_raster, v_height, v_src_raster, v_width_bytes)) [ v_.02 > 0 ]
+		(?, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes) -> Com_1(eval_bytes_copy_rectangle_stop(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes)) [ v_.02 <= 0 ]
+		(?, 1)    eval_bytes_copy_rectangle_6(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes), eval_bytes_copy_rectangle_7(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes))
+		(?, 1)    eval_bytes_copy_rectangle_7(v_.02, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_3, v_0, v_3, v_dest_raster, v_height, v_src_raster, v_width_bytes))
+	start location:	eval_bytes_copy_rectangle_start
+	leaf cost:	0
+
+Slicing away variables that do not contribute to conditions from problem 1 leaves variables [v_.02, v_3, v_height].
+We thus obtain the following problem:
+2:	T:
+		(?, 1)    eval_bytes_copy_rectangle_7(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_3, v_3, v_height))
+		(?, 1)    eval_bytes_copy_rectangle_6(v_.02, v_3, v_height) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_3, v_height), eval_bytes_copy_rectangle_7(v_.02, v_3, v_height))
+		(?, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_stop(v_.02, v_3, v_height)) [ v_.02 <= 0 ]
+		(?, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_6(v_.02, v_.02 - 1, v_height)) [ v_.02 > 0 ]
+		(?, 1)    eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_height, v_3, v_height))
+		(1, 1)    eval_bytes_copy_rectangle_start(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height))
+	start location:	eval_bytes_copy_rectangle_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(?, 1)    eval_bytes_copy_rectangle_7(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_3, v_3, v_height))
+		(?, 1)    eval_bytes_copy_rectangle_6(v_.02, v_3, v_height) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_3, v_height), eval_bytes_copy_rectangle_7(v_.02, v_3, v_height))
+		(?, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_stop(v_.02, v_3, v_height)) [ v_.02 <= 0 ]
+		(?, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_6(v_.02, v_.02 - 1, v_height)) [ v_.02 > 0 ]
+		(1, 1)    eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_height, v_3, v_height))
+		(1, 1)    eval_bytes_copy_rectangle_start(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height))
+	start location:	eval_bytes_copy_rectangle_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_bytes_copy_rectangle_7) = 1
+	Pol(eval_bytes_copy_rectangle_bb1_in) = 1
+	Pol(eval_bytes_copy_rectangle_6) = 1
+	Pol(eval_llvm.memcpy.p0i8.p0i8.i64_start) = 0
+	Pol(eval_bytes_copy_rectangle_stop) = 0
+	Pol(eval_bytes_copy_rectangle_bb0_in) = 1
+	Pol(eval_bytes_copy_rectangle_start) = 1
+orients all transitions weakly and the transition
+	eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_stop(v_.02, v_3, v_height)) [ v_.02 <= 0 ]
+strictly and produces the following problem:
+4:	T:
+		(?, 1)    eval_bytes_copy_rectangle_7(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_3, v_3, v_height))
+		(?, 1)    eval_bytes_copy_rectangle_6(v_.02, v_3, v_height) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_3, v_height), eval_bytes_copy_rectangle_7(v_.02, v_3, v_height))
+		(1, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_stop(v_.02, v_3, v_height)) [ v_.02 <= 0 ]
+		(?, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_6(v_.02, v_.02 - 1, v_height)) [ v_.02 > 0 ]
+		(1, 1)    eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_height, v_3, v_height))
+		(1, 1)    eval_bytes_copy_rectangle_start(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height))
+	start location:	eval_bytes_copy_rectangle_start
+	leaf cost:	0
+
+Applied AI with 'oct' on problem 4 to obtain the following invariants:
+  For symbol eval_bytes_copy_rectangle_6: X_3 - 1 >= 0 /\ X_2 + X_3 - 1 >= 0 /\ -X_2 + X_3 - 1 >= 0 /\ X_1 + X_3 - 2 >= 0 /\ -X_1 + X_3 >= 0 /\ X_1 - X_2 - 1 >= 0 /\ X_2 >= 0 /\ X_1 + X_2 - 1 >= 0 /\ -X_1 + X_2 + 1 >= 0 /\ X_1 - 1 >= 0
+  For symbol eval_bytes_copy_rectangle_7: X_3 - 1 >= 0 /\ X_2 + X_3 - 1 >= 0 /\ -X_2 + X_3 - 1 >= 0 /\ X_1 + X_3 - 2 >= 0 /\ -X_1 + X_3 >= 0 /\ X_1 - X_2 - 1 >= 0 /\ X_2 >= 0 /\ X_1 + X_2 - 1 >= 0 /\ -X_1 + X_2 + 1 >= 0 /\ X_1 - 1 >= 0
+  For symbol eval_bytes_copy_rectangle_bb1_in: -X_1 + X_3 >= 0
+
+
+This yielded the following problem:
+5:	T:
+		(1, 1)    eval_bytes_copy_rectangle_start(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height))
+		(1, 1)    eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_height, v_3, v_height))
+		(?, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_6(v_.02, v_.02 - 1, v_height)) [ -v_.02 + v_height >= 0 /\ v_.02 > 0 ]
+		(1, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_stop(v_.02, v_3, v_height)) [ -v_.02 + v_height >= 0 /\ v_.02 <= 0 ]
+		(?, 1)    eval_bytes_copy_rectangle_6(v_.02, v_3, v_height) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_3, v_height), eval_bytes_copy_rectangle_7(v_.02, v_3, v_height)) [ v_height - 1 >= 0 /\ v_3 + v_height - 1 >= 0 /\ -v_3 + v_height - 1 >= 0 /\ v_.02 + v_height - 2 >= 0 /\ -v_.02 + v_height >= 0 /\ v_.02 - v_3 - 1 >= 0 /\ v_3 >= 0 /\ v_.02 + v_3 - 1 >= 0 /\ -v_.02 + v_3 + 1 >= 0 /\ v_.02 - 1 >= 0 ]
+		(?, 1)    eval_bytes_copy_rectangle_7(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_3, v_3, v_height)) [ v_height - 1 >= 0 /\ v_3 + v_height - 1 >= 0 /\ -v_3 + v_height - 1 >= 0 /\ v_.02 + v_height - 2 >= 0 /\ -v_.02 + v_height >= 0 /\ v_.02 - v_3 - 1 >= 0 /\ v_3 >= 0 /\ v_.02 + v_3 - 1 >= 0 /\ -v_.02 + v_3 + 1 >= 0 /\ v_.02 - 1 >= 0 ]
+	start location:	eval_bytes_copy_rectangle_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_bytes_copy_rectangle_start) = 6*V_3
+	Pol(eval_bytes_copy_rectangle_bb0_in) = 6*V_3
+	Pol(eval_bytes_copy_rectangle_bb1_in) = 3*V_1 + 3*V_3 - 2
+	Pol(eval_bytes_copy_rectangle_6) = 3*V_2 + 3*V_3
+	Pol(eval_bytes_copy_rectangle_stop) = 3*V_1 + 3*V_3 - 2
+	Pol(eval_llvm.memcpy.p0i8.p0i8.i64_start) = V_1 - V_2 - 1
+	Pol(eval_bytes_copy_rectangle_7) = -V_1 + 4*V_2 + 3*V_3
+orients all transitions weakly and the transitions
+	eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_6(v_.02, v_.02 - 1, v_height)) [ -v_.02 + v_height >= 0 /\ v_.02 > 0 ]
+	eval_bytes_copy_rectangle_7(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_3, v_3, v_height)) [ v_height - 1 >= 0 /\ v_3 + v_height - 1 >= 0 /\ -v_3 + v_height - 1 >= 0 /\ v_.02 + v_height - 2 >= 0 /\ -v_.02 + v_height >= 0 /\ v_.02 - v_3 - 1 >= 0 /\ v_3 >= 0 /\ v_.02 + v_3 - 1 >= 0 /\ -v_.02 + v_3 + 1 >= 0 /\ v_.02 - 1 >= 0 ]
+	eval_bytes_copy_rectangle_6(v_.02, v_3, v_height) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_3, v_height), eval_bytes_copy_rectangle_7(v_.02, v_3, v_height)) [ v_height - 1 >= 0 /\ v_3 + v_height - 1 >= 0 /\ -v_3 + v_height - 1 >= 0 /\ v_.02 + v_height - 2 >= 0 /\ -v_.02 + v_height >= 0 /\ v_.02 - v_3 - 1 >= 0 /\ v_3 >= 0 /\ v_.02 + v_3 - 1 >= 0 /\ -v_.02 + v_3 + 1 >= 0 /\ v_.02 - 1 >= 0 ]
+strictly and produces the following problem:
+6:	T:
+		(1, 1)             eval_bytes_copy_rectangle_start(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height))
+		(1, 1)             eval_bytes_copy_rectangle_bb0_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_height, v_3, v_height))
+		(6*v_height, 1)    eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_6(v_.02, v_.02 - 1, v_height)) [ -v_.02 + v_height >= 0 /\ v_.02 > 0 ]
+		(1, 1)             eval_bytes_copy_rectangle_bb1_in(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_stop(v_.02, v_3, v_height)) [ -v_.02 + v_height >= 0 /\ v_.02 <= 0 ]
+		(6*v_height, 1)    eval_bytes_copy_rectangle_6(v_.02, v_3, v_height) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_3, v_height), eval_bytes_copy_rectangle_7(v_.02, v_3, v_height)) [ v_height - 1 >= 0 /\ v_3 + v_height - 1 >= 0 /\ -v_3 + v_height - 1 >= 0 /\ v_.02 + v_height - 2 >= 0 /\ -v_.02 + v_height >= 0 /\ v_.02 - v_3 - 1 >= 0 /\ v_3 >= 0 /\ v_.02 + v_3 - 1 >= 0 /\ -v_.02 + v_3 + 1 >= 0 /\ v_.02 - 1 >= 0 ]
+		(6*v_height, 1)    eval_bytes_copy_rectangle_7(v_.02, v_3, v_height) -> Com_1(eval_bytes_copy_rectangle_bb1_in(v_3, v_3, v_height)) [ v_height - 1 >= 0 /\ v_3 + v_height - 1 >= 0 /\ -v_3 + v_height - 1 >= 0 /\ v_.02 + v_height - 2 >= 0 /\ -v_.02 + v_height >= 0 /\ v_.02 - v_3 - 1 >= 0 /\ v_3 >= 0 /\ v_.02 + v_3 - 1 >= 0 /\ -v_.02 + v_3 + 1 >= 0 /\ v_.02 - 1 >= 0 ]
+	start location:	eval_bytes_copy_rectangle_start
+	leaf cost:	0
+
+Complexity upper bound 18*v_height + 3
+
+Time: 0.254 sec (SMT: 0.223 sec)

@@ -1,0 +1,180 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_gs_alloc_memset_start(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0))
+		(?, 1)    eval_gs_alloc_memset_bb0_in(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_fill, v_3, v_4, v_fill, v_lsize, v_lsize))
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_0, v_msize.0, v_msize.0, v_fill, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_0, v_msize.0, v_msize.0, v_fill, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_0, 2147483647, 2147483647, v_fill, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_0, 2147483647, 2147483647, v_fill, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(?, 1)    eval_gs_alloc_memset_5(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0))
+		(?, 1)    eval_gs_alloc_memset_6(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_0, v_3, v_4, v_fill, v_lsize, v_msize.0 - v_3))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+Slicing away variables that do not contribute to conditions from problem 1 leaves variables [v_3, v_lsize, v_msize.0].
+We thus obtain the following problem:
+2:	T:
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 1)    eval_gs_alloc_memset_5(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_3, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0))
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(1, 1)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 1)    eval_gs_alloc_memset_5(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_3, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0))
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(1, 1)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_gs_alloc_memset_6) = 1
+	Pol(eval_gs_alloc_memset_bb1_in) = 1
+	Pol(eval_gs_alloc_memset_5) = 1
+	Pol(eval_llvm.memset.p0i8.i64_start) = 0
+	Pol(eval_gs_alloc_memset_stop) = 0
+	Pol(eval_gs_alloc_memset_bb0_in) = 1
+	Pol(eval_gs_alloc_memset_start) = 1
+orients all transitions weakly and the transition
+	eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+strictly and produces the following problem:
+4:	T:
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 1)    eval_gs_alloc_memset_5(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_3, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0))
+		(1, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(1, 1)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+By chaining the transition eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ] with all transitions in problem 4, the following new transition is obtained:
+	eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+We thus obtain the following problem:
+5:	T:
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 1)    eval_gs_alloc_memset_5(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_3, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0))
+		(1, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(1, 1)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+By chaining the transition eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ] with all transitions in problem 5, the following new transition is obtained:
+	eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+We thus obtain the following problem:
+6:	T:
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 1)    eval_gs_alloc_memset_5(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_3, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0))
+		(1, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(1, 1)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+By chaining the transition eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ] with all transitions in problem 6, the following new transition is obtained:
+	eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+We thus obtain the following problem:
+7:	T:
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 1)    eval_gs_alloc_memset_5(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_3, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0))
+		(1, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(?, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(1, 1)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+By chaining the transition eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_5(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ] with all transitions in problem 7, the following new transition is obtained:
+	eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+We thus obtain the following problem:
+8:	T:
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 1)    eval_gs_alloc_memset_5(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_3, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0))
+		(1, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(1, 1)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 8:
+	eval_gs_alloc_memset_5(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_3, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0))
+We thus obtain the following problem:
+9:	T:
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(1, 1)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+By chaining the transition eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0)) with all transitions in problem 9, the following new transition is obtained:
+	eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+We thus obtain the following problem:
+10:	T:
+		(1, 2)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 10:
+	eval_gs_alloc_memset_bb0_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+We thus obtain the following problem:
+11:	T:
+		(?, 1)    eval_gs_alloc_memset_6(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0 - v_3))
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(v_msize.0, v_lsize, v_msize.0), eval_gs_alloc_memset_6(v_msize.0, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 < 0 ]
+		(?, 2)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_2(eval_llvm.memset.p0i8.i64_start(2147483647, v_lsize, v_msize.0), eval_gs_alloc_memset_6(2147483647, v_lsize, v_msize.0)) [ v_msize.0 > 0 ]
+		(1, 1)    eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_stop(v_3, v_lsize, v_msize.0)) [ v_msize.0 = 0 ]
+		(1, 2)    eval_gs_alloc_memset_start(v_3, v_lsize, v_msize.0) -> Com_1(eval_gs_alloc_memset_bb1_in(v_3, v_lsize, v_lsize))
+	start location:	eval_gs_alloc_memset_start
+	leaf cost:	0
+
+Complexity upper bound ?
+
+Time: 0.270 sec (SMT: 0.213 sec)

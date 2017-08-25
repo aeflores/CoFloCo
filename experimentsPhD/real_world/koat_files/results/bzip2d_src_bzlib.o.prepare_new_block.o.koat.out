@@ -1,0 +1,44 @@
+YES(?, 259)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_prepare_new_block_start(v_i.0) -> eval_prepare_new_block_bb0_in(v_i.0)
+		(?, 1)    eval_prepare_new_block_bb0_in(v_i.0) -> eval_prepare_new_block_bb1_in(0)
+		(?, 1)    eval_prepare_new_block_bb1_in(v_i.0) -> eval_prepare_new_block_bb1_in(v_i.0 + 1) [ v_i.0 < 256 ]
+		(?, 1)    eval_prepare_new_block_bb1_in(v_i.0) -> eval_prepare_new_block_stop(v_i.0) [ v_i.0 >= 256 ]
+	start location:	eval_prepare_new_block_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_prepare_new_block_start(v_i.0) -> eval_prepare_new_block_bb0_in(v_i.0)
+		(?, 1)    eval_prepare_new_block_bb0_in(v_i.0) -> eval_prepare_new_block_bb1_in(0)
+		(?, 1)    eval_prepare_new_block_bb1_in(v_i.0) -> eval_prepare_new_block_bb1_in(v_i.0 + 1) [ v_i.0 < 256 ]
+	start location:	eval_prepare_new_block_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_prepare_new_block_start(v_i.0) -> eval_prepare_new_block_bb0_in(v_i.0)
+		(1, 1)    eval_prepare_new_block_bb0_in(v_i.0) -> eval_prepare_new_block_bb1_in(0)
+		(?, 1)    eval_prepare_new_block_bb1_in(v_i.0) -> eval_prepare_new_block_bb1_in(v_i.0 + 1) [ v_i.0 < 256 ]
+	start location:	eval_prepare_new_block_start
+	leaf cost:	1
+
+A polynomial rank function with
+	Pol(eval_prepare_new_block_start) = 256
+	Pol(eval_prepare_new_block_bb0_in) = 256
+	Pol(eval_prepare_new_block_bb1_in) = -V_1 + 256
+orients all transitions weakly and the transition
+	eval_prepare_new_block_bb1_in(v_i.0) -> eval_prepare_new_block_bb1_in(v_i.0 + 1) [ v_i.0 < 256 ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)      eval_prepare_new_block_start(v_i.0) -> eval_prepare_new_block_bb0_in(v_i.0)
+		(1, 1)      eval_prepare_new_block_bb0_in(v_i.0) -> eval_prepare_new_block_bb1_in(0)
+		(256, 1)    eval_prepare_new_block_bb1_in(v_i.0) -> eval_prepare_new_block_bb1_in(v_i.0 + 1) [ v_i.0 < 256 ]
+	start location:	eval_prepare_new_block_start
+	leaf cost:	1
+
+Complexity upper bound 259
+
+Time: 0.019 sec (SMT: 0.018 sec)

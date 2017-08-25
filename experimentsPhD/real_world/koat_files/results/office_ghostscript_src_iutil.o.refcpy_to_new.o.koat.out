@@ -1,0 +1,153 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size))
+		(?, 1)    eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ v_.02 < 0 ]
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ v_.02 > 0 ]
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ v_.02 = 0 ]
+		(?, 1)    eval_refcpy_to_new_2(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_0, v_size), eval_refcpy_to_new_3(v_.02, v_0, v_size))
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size))
+		(1, 1)    eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ v_.02 < 0 ]
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ v_.02 > 0 ]
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ v_.02 = 0 ]
+		(?, 1)    eval_refcpy_to_new_2(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_0, v_size), eval_refcpy_to_new_3(v_.02, v_0, v_size))
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_refcpy_to_new_start) = 1
+	Pol(eval_refcpy_to_new_bb0_in) = 1
+	Pol(eval_refcpy_to_new_bb1_in) = 1
+	Pol(eval_refcpy_to_new_2) = 1
+	Pol(eval_refcpy_to_new_stop) = 0
+	Pol(eval_llvm.memcpy.p0i8.p0i8.i64_start) = 0
+	Pol(eval_refcpy_to_new_3) = 1
+orients all transitions weakly and the transition
+	eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ v_.02 = 0 ]
+strictly and produces the following problem:
+3:	T:
+		(1, 1)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size))
+		(1, 1)    eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ v_.02 < 0 ]
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ v_.02 > 0 ]
+		(1, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ v_.02 = 0 ]
+		(?, 1)    eval_refcpy_to_new_2(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_0, v_size), eval_refcpy_to_new_3(v_.02, v_0, v_size))
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+Applied AI with 'oct' on problem 3 to obtain the following invariants:
+  For symbol eval_refcpy_to_new_2: -X_2 + X_3 - 1 >= 0 /\ -X_1 + X_3 >= 0 /\ X_1 - X_2 - 1 >= 0 /\ -X_1 + X_2 + 1 >= 0
+  For symbol eval_refcpy_to_new_3: -X_2 + X_3 - 1 >= 0 /\ -X_1 + X_3 >= 0 /\ X_1 - X_2 - 1 >= 0 /\ -X_1 + X_2 + 1 >= 0
+  For symbol eval_refcpy_to_new_bb1_in: -X_1 + X_3 >= 0
+
+
+This yielded the following problem:
+4:	T:
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(?, 1)    eval_refcpy_to_new_2(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_0, v_size), eval_refcpy_to_new_3(v_.02, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(1, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 = 0 ]
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 ]
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 ]
+		(1, 1)    eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+		(1, 1)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+By chaining the transition eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 ] with all transitions in problem 4, the following new transition is obtained:
+	eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 /\ 0 >= 0 ]
+We thus obtain the following problem:
+5:	T:
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 /\ 0 >= 0 ]
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(?, 1)    eval_refcpy_to_new_2(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_0, v_size), eval_refcpy_to_new_3(v_.02, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(1, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 = 0 ]
+		(?, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 ]
+		(1, 1)    eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+		(1, 1)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+By chaining the transition eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_2(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 ] with all transitions in problem 5, the following new transition is obtained:
+	eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 /\ 0 >= 0 ]
+We thus obtain the following problem:
+6:	T:
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 /\ 0 >= 0 ]
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 /\ 0 >= 0 ]
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(?, 1)    eval_refcpy_to_new_2(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_0, v_size), eval_refcpy_to_new_3(v_.02, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(1, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 = 0 ]
+		(1, 1)    eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+		(1, 1)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 6:
+	eval_refcpy_to_new_2(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_0, v_size), eval_refcpy_to_new_3(v_.02, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+We thus obtain the following problem:
+7:	T:
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 /\ 0 >= 0 ]
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 /\ 0 >= 0 ]
+		(1, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 = 0 ]
+		(1, 1)    eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+		(1, 1)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+By chaining the transition eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size)) with all transitions in problem 7, the following new transition is obtained:
+	eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+We thus obtain the following problem:
+8:	T:
+		(1, 2)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 /\ 0 >= 0 ]
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 /\ 0 >= 0 ]
+		(1, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 = 0 ]
+		(1, 1)    eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 8:
+	eval_refcpy_to_new_bb0_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+We thus obtain the following problem:
+9:	T:
+		(?, 1)    eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 /\ 0 >= 0 ]
+		(?, 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 /\ 0 >= 0 ]
+		(1, 1)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 = 0 ]
+		(1, 2)    eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+A separated polynomial rank function for exponential bounds with
+	Pol(eval_refcpy_to_new_3) = V_2
+	Pol(eval_refcpy_to_new_bb1_in) = V_1
+	Pol(eval_llvm.memcpy.p0i8.p0i8.i64_start) = V_1 - 1
+	Pol(eval_refcpy_to_new_stop) = V_1
+	Pol(eval_refcpy_to_new_start) = V_3
+orients all transitions weakly and the transition
+	eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 /\ 0 >= 0 ]
+strictly and produces the following problem:
+10:	T:
+		(?, 1)                     eval_refcpy_to_new_3(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_0, v_0, v_size)) [ -v_0 + v_size - 1 >= 0 /\ -v_.02 + v_size >= 0 /\ v_.02 - v_0 - 1 >= 0 /\ -v_.02 + v_0 + 1 >= 0 ]
+		(?, 2)                     eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 < 0 /\ 0 >= 0 ]
+		(pow(2, v_size + 1), 2)    eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_.02, v_.02 - 1, v_size), eval_refcpy_to_new_3(v_.02, v_.02 - 1, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 > 0 /\ 0 >= 0 ]
+		(1, 1)                     eval_refcpy_to_new_bb1_in(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_stop(v_.02, v_0, v_size)) [ -v_.02 + v_size >= 0 /\ v_.02 = 0 ]
+		(1, 2)                     eval_refcpy_to_new_start(v_.02, v_0, v_size) -> Com_1(eval_refcpy_to_new_bb1_in(v_size, v_0, v_size))
+	start location:	eval_refcpy_to_new_start
+	leaf cost:	0
+
+Complexity upper bound ?
+
+Time: 0.654 sec (SMT: 0.561 sec)

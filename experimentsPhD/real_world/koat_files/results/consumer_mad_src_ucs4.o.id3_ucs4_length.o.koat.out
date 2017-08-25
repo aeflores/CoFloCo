@@ -1,0 +1,51 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_id3_ucs4_length_start() -> eval_id3_ucs4_length_bb0_in()
+		(?, 1)    eval_id3_ucs4_length_bb0_in() -> eval_id3_ucs4_length_bb1_in()
+		(?, 1)    eval_id3_ucs4_length_bb1_in() -> eval_id3_ucs4_length_bb1_in()
+		(?, 1)    eval_id3_ucs4_length_bb1_in() -> eval_id3_ucs4_length_stop() [ nondef.1 - nondef.2 = 0 ]
+		(?, 1)    eval_id3_ucs4_length_bb1_in() -> eval_id3_ucs4_length_stop() [ nondef.1 - nondef.2 > 0 /\ nondef.3 >= 0 /\ nondef.1 - nondef.2 - 8*nondef.3 >= 0 /\ nondef.1 - nondef.2 - 8*nondef.3 < 8 ]
+		(?, 1)    eval_id3_ucs4_length_bb1_in() -> eval_id3_ucs4_length_stop() [ nondef.1 - nondef.2 < 0 /\ nondef.3 <= 0 /\ -nondef.1 + nondef.2 + 8*nondef.3 >= 0 /\ -nondef.1 + nondef.2 + 8*nondef.3 < 8 ]
+	start location:	eval_id3_ucs4_length_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_id3_ucs4_length_start() -> eval_id3_ucs4_length_bb0_in()
+		(?, 1)    eval_id3_ucs4_length_bb0_in() -> eval_id3_ucs4_length_bb1_in()
+		(?, 1)    eval_id3_ucs4_length_bb1_in() -> eval_id3_ucs4_length_bb1_in()
+	start location:	eval_id3_ucs4_length_start
+	leaf cost:	3
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_id3_ucs4_length_start() -> eval_id3_ucs4_length_bb0_in()
+		(1, 1)    eval_id3_ucs4_length_bb0_in() -> eval_id3_ucs4_length_bb1_in()
+		(?, 1)    eval_id3_ucs4_length_bb1_in() -> eval_id3_ucs4_length_bb1_in()
+	start location:	eval_id3_ucs4_length_start
+	leaf cost:	3
+
+By chaining the transition eval_id3_ucs4_length_start() -> eval_id3_ucs4_length_bb0_in() with all transitions in problem 3, the following new transition is obtained:
+	eval_id3_ucs4_length_start() -> eval_id3_ucs4_length_bb1_in()
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_id3_ucs4_length_start() -> eval_id3_ucs4_length_bb1_in()
+		(1, 1)    eval_id3_ucs4_length_bb0_in() -> eval_id3_ucs4_length_bb1_in()
+		(?, 1)    eval_id3_ucs4_length_bb1_in() -> eval_id3_ucs4_length_bb1_in()
+	start location:	eval_id3_ucs4_length_start
+	leaf cost:	3
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_id3_ucs4_length_bb0_in() -> eval_id3_ucs4_length_bb1_in()
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_id3_ucs4_length_bb1_in() -> eval_id3_ucs4_length_bb1_in()
+		(1, 2)    eval_id3_ucs4_length_start() -> eval_id3_ucs4_length_bb1_in()
+	start location:	eval_id3_ucs4_length_start
+	leaf cost:	3
+
+Complexity upper bound ?
+
+Time: 0.026 sec (SMT: 0.024 sec)

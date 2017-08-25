@@ -1,0 +1,46 @@
+YES(?, v_count + 5)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_byte_reverse_start(v_2, v_count, v_i.0) -> eval_byte_reverse_bb0_in(v_2, v_count, v_i.0)
+		(?, 1)    eval_byte_reverse_bb0_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(0, v_count, 0) [ v_count = 0 ]
+		(?, 1)    eval_byte_reverse_bb0_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(nondef.0, v_count, 0) [ v_count > 0 /\ nondef.0 >= 0 /\ v_count - 8*nondef.0 >= 0 /\ v_count - 8*nondef.0 < 8 ]
+		(?, 1)    eval_byte_reverse_bb0_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(nondef.0, v_count, 0) [ v_count < 0 /\ nondef.0 <= 0 /\ -v_count + 8*nondef.0 >= 0 /\ -v_count + 8*nondef.0 < 8 ]
+		(?, 1)    eval_byte_reverse_bb1_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(v_2, v_count, v_i.0 + 1) [ v_i.0 < v_2 ]
+		(?, 1)    eval_byte_reverse_bb1_in(v_2, v_count, v_i.0) -> eval_byte_reverse_stop(v_2, v_count, v_i.0) [ v_i.0 >= v_2 ]
+	start location:	eval_byte_reverse_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_byte_reverse_start(v_2, v_count, v_i.0) -> eval_byte_reverse_bb0_in(v_2, v_count, v_i.0)
+		(?, 1)    eval_byte_reverse_bb0_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(nondef.0, v_count, 0) [ v_count > 0 /\ nondef.0 >= 0 /\ v_count - 8*nondef.0 >= 0 /\ v_count - 8*nondef.0 < 8 ]
+		(?, 1)    eval_byte_reverse_bb1_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(v_2, v_count, v_i.0 + 1) [ v_i.0 < v_2 ]
+	start location:	eval_byte_reverse_start
+	leaf cost:	3
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_byte_reverse_start(v_2, v_count, v_i.0) -> eval_byte_reverse_bb0_in(v_2, v_count, v_i.0)
+		(1, 1)    eval_byte_reverse_bb0_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(nondef.0, v_count, 0) [ v_count > 0 /\ nondef.0 >= 0 /\ v_count - 8*nondef.0 >= 0 /\ v_count - 8*nondef.0 < 8 ]
+		(?, 1)    eval_byte_reverse_bb1_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(v_2, v_count, v_i.0 + 1) [ v_i.0 < v_2 ]
+	start location:	eval_byte_reverse_start
+	leaf cost:	3
+
+A polynomial rank function with
+	Pol(eval_byte_reverse_start) = V_2
+	Pol(eval_byte_reverse_bb0_in) = V_2
+	Pol(eval_byte_reverse_bb1_in) = 8*V_1 - 8*V_3
+orients all transitions weakly and the transition
+	eval_byte_reverse_bb1_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(v_2, v_count, v_i.0 + 1) [ v_i.0 < v_2 ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)          eval_byte_reverse_start(v_2, v_count, v_i.0) -> eval_byte_reverse_bb0_in(v_2, v_count, v_i.0)
+		(1, 1)          eval_byte_reverse_bb0_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(nondef.0, v_count, 0) [ v_count > 0 /\ nondef.0 >= 0 /\ v_count - 8*nondef.0 >= 0 /\ v_count - 8*nondef.0 < 8 ]
+		(v_count, 1)    eval_byte_reverse_bb1_in(v_2, v_count, v_i.0) -> eval_byte_reverse_bb1_in(v_2, v_count, v_i.0 + 1) [ v_i.0 < v_2 ]
+	start location:	eval_byte_reverse_start
+	leaf cost:	3
+
+Complexity upper bound v_count + 5
+
+Time: 0.025 sec (SMT: 0.022 sec)

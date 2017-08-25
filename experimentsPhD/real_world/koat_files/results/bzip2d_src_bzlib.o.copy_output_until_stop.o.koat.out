@@ -1,0 +1,50 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_copy_output_until_stop_start() -> eval_copy_output_until_stop_bb0_in()
+		(?, 1)    eval_copy_output_until_stop_bb0_in() -> eval_copy_output_until_stop_bb1_in()
+		(?, 1)    eval_copy_output_until_stop_bb1_in() -> eval_copy_output_until_stop_bb3_in()
+		(?, 1)    eval_copy_output_until_stop_bb1_in() -> eval_copy_output_until_stop_bb1_in()
+		(?, 1)    eval_copy_output_until_stop_bb3_in() -> eval_copy_output_until_stop_stop()
+	start location:	eval_copy_output_until_stop_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_copy_output_until_stop_start() -> eval_copy_output_until_stop_bb0_in()
+		(?, 1)    eval_copy_output_until_stop_bb0_in() -> eval_copy_output_until_stop_bb1_in()
+		(?, 1)    eval_copy_output_until_stop_bb1_in() -> eval_copy_output_until_stop_bb1_in()
+	start location:	eval_copy_output_until_stop_start
+	leaf cost:	2
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_copy_output_until_stop_start() -> eval_copy_output_until_stop_bb0_in()
+		(1, 1)    eval_copy_output_until_stop_bb0_in() -> eval_copy_output_until_stop_bb1_in()
+		(?, 1)    eval_copy_output_until_stop_bb1_in() -> eval_copy_output_until_stop_bb1_in()
+	start location:	eval_copy_output_until_stop_start
+	leaf cost:	2
+
+By chaining the transition eval_copy_output_until_stop_start() -> eval_copy_output_until_stop_bb0_in() with all transitions in problem 3, the following new transition is obtained:
+	eval_copy_output_until_stop_start() -> eval_copy_output_until_stop_bb1_in()
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_copy_output_until_stop_start() -> eval_copy_output_until_stop_bb1_in()
+		(1, 1)    eval_copy_output_until_stop_bb0_in() -> eval_copy_output_until_stop_bb1_in()
+		(?, 1)    eval_copy_output_until_stop_bb1_in() -> eval_copy_output_until_stop_bb1_in()
+	start location:	eval_copy_output_until_stop_start
+	leaf cost:	2
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_copy_output_until_stop_bb0_in() -> eval_copy_output_until_stop_bb1_in()
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_copy_output_until_stop_bb1_in() -> eval_copy_output_until_stop_bb1_in()
+		(1, 2)    eval_copy_output_until_stop_start() -> eval_copy_output_until_stop_bb1_in()
+	start location:	eval_copy_output_until_stop_start
+	leaf cost:	2
+
+Complexity upper bound ?
+
+Time: 0.018 sec (SMT: 0.017 sec)

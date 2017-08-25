@@ -1,0 +1,53 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_rchr_start(v_2, v_ch, v_len) -> eval_rchr_bb0_in(v_2, v_ch, v_len)
+		(?, 1)    eval_rchr_bb0_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_ch, v_ch, v_len)
+		(?, 1)    eval_rchr_bb1_in(v_2, v_ch, v_len) -> eval_rchr_bb3_in(v_2, v_ch, v_len)
+		(?, 1)    eval_rchr_bb1_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_2, v_ch, v_len)
+		(?, 1)    eval_rchr_bb3_in(v_2, v_ch, v_len) -> eval_rchr_stop(v_2, v_ch, v_len)
+	start location:	eval_rchr_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_rchr_start(v_2, v_ch, v_len) -> eval_rchr_bb0_in(v_2, v_ch, v_len)
+		(?, 1)    eval_rchr_bb0_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_ch, v_ch, v_len)
+		(?, 1)    eval_rchr_bb1_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_2, v_ch, v_len)
+	start location:	eval_rchr_start
+	leaf cost:	2
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_rchr_start(v_2, v_ch, v_len) -> eval_rchr_bb0_in(v_2, v_ch, v_len)
+		(1, 1)    eval_rchr_bb0_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_ch, v_ch, v_len)
+		(?, 1)    eval_rchr_bb1_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_2, v_ch, v_len)
+	start location:	eval_rchr_start
+	leaf cost:	2
+
+Applied AI with 'oct' on problem 3 to obtain the following invariants:
+  For symbol eval_rchr_bb1_in: X_1 - X_2 >= 0 /\ -X_1 + X_2 >= 0
+
+
+This yielded the following problem:
+4:	T:
+		(?, 1)    eval_rchr_bb1_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_2, v_ch, v_len) [ v_2 - v_ch >= 0 /\ -v_2 + v_ch >= 0 ]
+		(1, 1)    eval_rchr_bb0_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_ch, v_ch, v_len)
+		(1, 1)    eval_rchr_start(v_2, v_ch, v_len) -> eval_rchr_bb0_in(v_2, v_ch, v_len)
+	start location:	eval_rchr_start
+	leaf cost:	2
+
+By chaining the transition eval_rchr_bb0_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_ch, v_ch, v_len) with all transitions in problem 4, the following new transition is obtained:
+	eval_rchr_bb0_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_ch, v_ch, v_len) [ 0 >= 0 ]
+We thus obtain the following problem:
+5:	T:
+		(1, 2)    eval_rchr_bb0_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_ch, v_ch, v_len) [ 0 >= 0 ]
+		(?, 1)    eval_rchr_bb1_in(v_2, v_ch, v_len) -> eval_rchr_bb1_in(v_2, v_ch, v_len) [ v_2 - v_ch >= 0 /\ -v_2 + v_ch >= 0 ]
+		(1, 1)    eval_rchr_start(v_2, v_ch, v_len) -> eval_rchr_bb0_in(v_2, v_ch, v_len)
+	start location:	eval_rchr_start
+	leaf cost:	2
+
+Complexity upper bound ?
+
+Time: 0.045 sec (SMT: 0.041 sec)

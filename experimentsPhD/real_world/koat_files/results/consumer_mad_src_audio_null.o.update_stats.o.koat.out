@@ -1,0 +1,257 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples)
+		(?, 1)    eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(?, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 < 0 ]
+		(?, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 > 0 ]
+		(?, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_stop(v_.0, v_8, v_nsamples) [ v_.0 = 0 ]
+		(?, 1)    eval_update_stats_bb10_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_8, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples)
+		(?, 1)    eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(?, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 < 0 ]
+		(?, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 > 0 ]
+		(?, 1)    eval_update_stats_bb10_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_8, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples)
+		(1, 1)    eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(?, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 < 0 ]
+		(?, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 > 0 ]
+		(?, 1)    eval_update_stats_bb10_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_8, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+A polynomial rank function with
+	Pol(eval_update_stats_start) = V_3
+	Pol(eval_update_stats_bb0_in) = V_3
+	Pol(eval_update_stats_bb1_in) = V_1
+	Pol(eval_update_stats_bb10_in) = V_2
+orients all transitions weakly and the transition
+	eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 > 0 ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples)
+		(1, 1)             eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(?, 1)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 < 0 ]
+		(v_nsamples, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ v_.0 > 0 ]
+		(?, 1)             eval_update_stats_bb10_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_8, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+Applied AI with 'oct' on problem 4 to obtain the following invariants:
+  For symbol eval_update_stats_bb10_in: -X_2 + X_3 - 1 >= 0 /\ -X_1 + X_3 >= 0 /\ X_1 - X_2 - 1 >= 0 /\ -X_1 + X_2 + 1 >= 0
+  For symbol eval_update_stats_bb1_in: -X_1 + X_3 >= 0
+
+
+This yielded the following problem:
+5:	T:
+		(?, 1)             eval_update_stats_bb10_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_8, v_8, v_nsamples) [ -v_8 + v_nsamples - 1 >= 0 /\ -v_.0 + v_nsamples >= 0 /\ v_.0 - v_8 - 1 >= 0 /\ -v_.0 + v_8 + 1 >= 0 ]
+		(v_nsamples, 1)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 ]
+		(?, 1)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 ]
+		(1, 1)             eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(1, 1)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 ] with all transitions in problem 5, the following new transition is obtained:
+	eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+We thus obtain the following problem:
+6:	T:
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+		(?, 1)             eval_update_stats_bb10_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_8, v_8, v_nsamples) [ -v_8 + v_nsamples - 1 >= 0 /\ -v_.0 + v_nsamples >= 0 /\ v_.0 - v_8 - 1 >= 0 /\ -v_.0 + v_8 + 1 >= 0 ]
+		(?, 1)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 ]
+		(1, 1)             eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(1, 1)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb10_in(v_.0, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 ] with all transitions in problem 6, the following new transition is obtained:
+	eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+We thus obtain the following problem:
+7:	T:
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+		(?, 1)             eval_update_stats_bb10_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_8, v_8, v_nsamples) [ -v_8 + v_nsamples - 1 >= 0 /\ -v_.0 + v_nsamples >= 0 /\ v_.0 - v_8 - 1 >= 0 /\ -v_.0 + v_8 + 1 >= 0 ]
+		(1, 1)             eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(1, 1)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+Testing for reachability in the complexity graph removes the following transition from problem 7:
+	eval_update_stats_bb10_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_8, v_8, v_nsamples) [ -v_8 + v_nsamples - 1 >= 0 /\ -v_.0 + v_nsamples >= 0 /\ v_.0 - v_8 - 1 >= 0 /\ -v_.0 + v_8 + 1 >= 0 ]
+We thus obtain the following problem:
+8:	T:
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+		(1, 1)             eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(1, 1)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) with all transitions in problem 8, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+We thus obtain the following problem:
+9:	T:
+		(1, 2)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+		(1, 1)             eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+Testing for reachability in the complexity graph removes the following transition from problem 9:
+	eval_update_stats_bb0_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+We thus obtain the following problem:
+10:	T:
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+		(1, 2)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples)
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples, v_8, v_nsamples) with all transitions in problem 10, the following new transitions are obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 ]
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+We thus obtain the following problem:
+11:	T:
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 ] with all transitions in problem 11, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 2, v_nsamples - 2, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 ]
+We thus obtain the following problem:
+12:	T:
+		(1, 6)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 2, v_nsamples - 2, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 2, v_nsamples - 2, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 ] with all transitions in problem 12, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 3, v_nsamples - 3, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 ]
+We thus obtain the following problem:
+13:	T:
+		(1, 8)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 3, v_nsamples - 3, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 3, v_nsamples - 3, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 ] with all transitions in problem 13, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 4, v_nsamples - 4, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 ]
+We thus obtain the following problem:
+14:	T:
+		(1, 10)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 4, v_nsamples - 4, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 4, v_nsamples - 4, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 ] with all transitions in problem 14, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 5, v_nsamples - 5, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 ]
+We thus obtain the following problem:
+15:	T:
+		(1, 12)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 5, v_nsamples - 5, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 5, v_nsamples - 5, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 ] with all transitions in problem 15, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 6, v_nsamples - 6, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 ]
+We thus obtain the following problem:
+16:	T:
+		(1, 14)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 6, v_nsamples - 6, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 6, v_nsamples - 6, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 ] with all transitions in problem 16, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 7, v_nsamples - 7, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 ]
+We thus obtain the following problem:
+17:	T:
+		(1, 16)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 7, v_nsamples - 7, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 7, v_nsamples - 7, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 ] with all transitions in problem 17, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 8, v_nsamples - 8, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 ]
+We thus obtain the following problem:
+18:	T:
+		(1, 18)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 8, v_nsamples - 8, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 8, v_nsamples - 8, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 ] with all transitions in problem 18, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 9, v_nsamples - 9, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 ]
+We thus obtain the following problem:
+19:	T:
+		(1, 20)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 9, v_nsamples - 9, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 9, v_nsamples - 9, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 ] with all transitions in problem 19, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 10, v_nsamples - 10, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 /\ 9 >= 0 /\ v_nsamples - 9 < 0 ]
+We thus obtain the following problem:
+20:	T:
+		(1, 22)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 10, v_nsamples - 10, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 /\ 9 >= 0 /\ v_nsamples - 9 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 10, v_nsamples - 10, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 /\ 9 >= 0 /\ v_nsamples - 9 < 0 ] with all transitions in problem 20, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 11, v_nsamples - 11, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 /\ 9 >= 0 /\ v_nsamples - 9 < 0 /\ 10 >= 0 /\ v_nsamples - 10 < 0 ]
+We thus obtain the following problem:
+21:	T:
+		(1, 24)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 11, v_nsamples - 11, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 /\ 9 >= 0 /\ v_nsamples - 9 < 0 /\ 10 >= 0 /\ v_nsamples - 10 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+By chaining the transition eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 11, v_nsamples - 11, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 /\ 9 >= 0 /\ v_nsamples - 9 < 0 /\ 10 >= 0 /\ v_nsamples - 10 < 0 ] with all transitions in problem 21, the following new transition is obtained:
+	eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 12, v_nsamples - 12, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 /\ 9 >= 0 /\ v_nsamples - 9 < 0 /\ 10 >= 0 /\ v_nsamples - 10 < 0 /\ 11 >= 0 /\ v_nsamples - 11 < 0 ]
+We thus obtain the following problem:
+22:	T:
+		(1, 26)            eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 12, v_nsamples - 12, v_nsamples) [ 0 >= 0 /\ v_nsamples < 0 /\ 1 >= 0 /\ v_nsamples - 1 < 0 /\ 2 >= 0 /\ v_nsamples - 2 < 0 /\ 3 >= 0 /\ v_nsamples - 3 < 0 /\ 4 >= 0 /\ v_nsamples - 4 < 0 /\ 5 >= 0 /\ v_nsamples - 5 < 0 /\ 6 >= 0 /\ v_nsamples - 6 < 0 /\ 7 >= 0 /\ v_nsamples - 7 < 0 /\ 8 >= 0 /\ v_nsamples - 8 < 0 /\ 9 >= 0 /\ v_nsamples - 9 < 0 /\ 10 >= 0 /\ v_nsamples - 10 < 0 /\ 11 >= 0 /\ v_nsamples - 11 < 0 ]
+		(1, 4)             eval_update_stats_start(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_nsamples - 1, v_nsamples - 1, v_nsamples) [ 0 >= 0 /\ v_nsamples > 0 ]
+		(?, 2)             eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 < 0 /\ 0 >= 0 ]
+		(v_nsamples, 2)    eval_update_stats_bb1_in(v_.0, v_8, v_nsamples) -> eval_update_stats_bb1_in(v_.0 - 1, v_.0 - 1, v_nsamples) [ -v_.0 + v_nsamples >= 0 /\ v_.0 > 0 /\ 0 >= 0 ]
+	start location:	eval_update_stats_start
+	leaf cost:	1
+
+Complexity upper bound ?
+
+Time: 1.274 sec (SMT: 1.093 sec)

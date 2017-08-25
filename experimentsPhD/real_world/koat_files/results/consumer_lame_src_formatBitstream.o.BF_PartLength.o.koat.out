@@ -1,0 +1,192 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+		(?, 1)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 0)
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 < v_3 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_stop(v_3, v_i.0) [ v_i.0 >= v_3 ]
+	start location:	eval_BF_PartLength_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+		(?, 1)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 0)
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 < v_3 ]
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+		(1, 1)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 0)
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 < v_3 ]
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+Applied AI with 'oct' on problem 3 to obtain the following invariants:
+  For symbol eval_BF_PartLength_bb1_in: X_2 >= 0
+
+
+This yielded the following problem:
+4:	T:
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 0)
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 0) with all transitions in problem 4, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 1) [ 0 >= 0 /\ 0 < nondef.0 ]
+We thus obtain the following problem:
+5:	T:
+		(1, 2)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 1) [ 0 >= 0 /\ 0 < nondef.0 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 1) [ 0 >= 0 /\ 0 < nondef.0 ] with all transitions in problem 5, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 2) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 ]
+We thus obtain the following problem:
+6:	T:
+		(1, 3)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 2) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 2) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 ] with all transitions in problem 6, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 3) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 ]
+We thus obtain the following problem:
+7:	T:
+		(1, 4)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 3) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 3) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 ] with all transitions in problem 7, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 4) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 ]
+We thus obtain the following problem:
+8:	T:
+		(1, 5)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 4) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 4) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 ] with all transitions in problem 8, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 5) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 ]
+We thus obtain the following problem:
+9:	T:
+		(1, 6)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 5) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 5) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 ] with all transitions in problem 9, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 6) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 ]
+We thus obtain the following problem:
+10:	T:
+		(1, 7)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 6) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 6) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 ] with all transitions in problem 10, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 7) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 ]
+We thus obtain the following problem:
+11:	T:
+		(1, 8)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 7) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 7) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 ] with all transitions in problem 11, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 8) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 ]
+We thus obtain the following problem:
+12:	T:
+		(1, 9)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 8) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 ]
+		(?, 1)    eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)    eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 8) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 ] with all transitions in problem 12, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 9) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 ]
+We thus obtain the following problem:
+13:	T:
+		(1, 10)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 9) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 ]
+		(?, 1)     eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)     eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 9) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 ] with all transitions in problem 13, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 10) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 ]
+We thus obtain the following problem:
+14:	T:
+		(1, 11)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 10) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 ]
+		(?, 1)     eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)     eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 10) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 ] with all transitions in problem 14, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 11) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 ]
+We thus obtain the following problem:
+15:	T:
+		(1, 12)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 11) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 ]
+		(?, 1)     eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)     eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 11) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 ] with all transitions in problem 15, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 12) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 ]
+We thus obtain the following problem:
+16:	T:
+		(1, 13)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 12) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 ]
+		(?, 1)     eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)     eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 12) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 ] with all transitions in problem 16, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 13) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 /\ 12 >= 0 /\ 12 < nondef.0 ]
+We thus obtain the following problem:
+17:	T:
+		(1, 14)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 13) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 /\ 12 >= 0 /\ 12 < nondef.0 ]
+		(?, 1)     eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)     eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 13) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 /\ 12 >= 0 /\ 12 < nondef.0 ] with all transitions in problem 17, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 14) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 /\ 12 >= 0 /\ 12 < nondef.0 /\ 13 >= 0 /\ 13 < nondef.0 ]
+We thus obtain the following problem:
+18:	T:
+		(1, 15)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 14) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 /\ 12 >= 0 /\ 12 < nondef.0 /\ 13 >= 0 /\ 13 < nondef.0 ]
+		(?, 1)     eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)     eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+By chaining the transition eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 14) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 /\ 12 >= 0 /\ 12 < nondef.0 /\ 13 >= 0 /\ 13 < nondef.0 ] with all transitions in problem 18, the following new transition is obtained:
+	eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 15) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 /\ 12 >= 0 /\ 12 < nondef.0 /\ 13 >= 0 /\ 13 < nondef.0 /\ 14 >= 0 /\ 14 < nondef.0 ]
+We thus obtain the following problem:
+19:	T:
+		(1, 16)    eval_BF_PartLength_bb0_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(nondef.0, 15) [ 0 >= 0 /\ 0 < nondef.0 /\ 1 >= 0 /\ 1 < nondef.0 /\ 2 >= 0 /\ 2 < nondef.0 /\ 3 >= 0 /\ 3 < nondef.0 /\ 4 >= 0 /\ 4 < nondef.0 /\ 5 >= 0 /\ 5 < nondef.0 /\ 6 >= 0 /\ 6 < nondef.0 /\ 7 >= 0 /\ 7 < nondef.0 /\ 8 >= 0 /\ 8 < nondef.0 /\ 9 >= 0 /\ 9 < nondef.0 /\ 10 >= 0 /\ 10 < nondef.0 /\ 11 >= 0 /\ 11 < nondef.0 /\ 12 >= 0 /\ 12 < nondef.0 /\ 13 >= 0 /\ 13 < nondef.0 /\ 14 >= 0 /\ 14 < nondef.0 ]
+		(?, 1)     eval_BF_PartLength_bb1_in(v_3, v_i.0) -> eval_BF_PartLength_bb1_in(v_3, v_i.0 + 1) [ v_i.0 >= 0 /\ v_i.0 < v_3 ]
+		(1, 1)     eval_BF_PartLength_start(v_3, v_i.0) -> eval_BF_PartLength_bb0_in(v_3, v_i.0)
+	start location:	eval_BF_PartLength_start
+	leaf cost:	1
+
+Complexity upper bound ?
+
+Time: 0.590 sec (SMT: 0.501 sec)

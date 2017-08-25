@@ -1,0 +1,196 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb0_in(v_.01, v_len)
+		(?, 1)    eval_mad_bit_read_bb0_in(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+		(?, 1)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb9_in(v_.01, v_len)
+		(?, 1)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10, v_len)
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb9_in(v_.01, v_len) [ v_.01 < 8 ]
+		(?, 1)    eval_mad_bit_read_bb9_in(v_.01, v_len) -> eval_mad_bit_read_stop(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb0_in(v_.01, v_len)
+		(?, 1)    eval_mad_bit_read_bb0_in(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+		(?, 1)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10, v_len)
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb0_in(v_.01, v_len)
+		(1, 1)    eval_mad_bit_read_bb0_in(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+		(1, 1)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10, v_len)
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb0_in(v_.01, v_len) with all transitions in problem 3, the following new transition is obtained:
+	eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+		(1, 1)    eval_mad_bit_read_bb0_in(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+		(1, 1)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10, v_len)
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_mad_bit_read_bb0_in(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 1)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10, v_len)
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10, v_len) with all transitions in problem 5, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 8, v_len) [ v_len - nondef.10 >= 8 ]
+We thus obtain the following problem:
+6:	T:
+		(1, 2)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 8, v_len) [ v_len - nondef.10 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 8, v_len) [ v_len - nondef.10 >= 8 ] with all transitions in problem 6, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 16, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 ]
+We thus obtain the following problem:
+7:	T:
+		(1, 3)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 16, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 16, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 ] with all transitions in problem 7, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 24, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 ]
+We thus obtain the following problem:
+8:	T:
+		(1, 4)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 24, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 24, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 ] with all transitions in problem 8, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 32, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 ]
+We thus obtain the following problem:
+9:	T:
+		(1, 5)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 32, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 32, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 ] with all transitions in problem 9, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 40, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 ]
+We thus obtain the following problem:
+10:	T:
+		(1, 6)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 40, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 40, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 ] with all transitions in problem 10, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 48, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 ]
+We thus obtain the following problem:
+11:	T:
+		(1, 7)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 48, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 48, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 ] with all transitions in problem 11, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 56, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 ]
+We thus obtain the following problem:
+12:	T:
+		(1, 8)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 56, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 56, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 ] with all transitions in problem 12, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 64, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 ]
+We thus obtain the following problem:
+13:	T:
+		(1, 9)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 64, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 ]
+		(?, 1)    eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)    eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 64, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 ] with all transitions in problem 13, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 72, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 ]
+We thus obtain the following problem:
+14:	T:
+		(1, 10)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 72, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 ]
+		(?, 1)     eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)     eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 72, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 ] with all transitions in problem 14, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 80, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 ]
+We thus obtain the following problem:
+15:	T:
+		(1, 11)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 80, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 ]
+		(?, 1)     eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)     eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 80, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 ] with all transitions in problem 15, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 88, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 ]
+We thus obtain the following problem:
+16:	T:
+		(1, 12)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 88, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 ]
+		(?, 1)     eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)     eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 88, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 ] with all transitions in problem 16, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 96, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 /\ v_len - nondef.10 - 88 >= 8 ]
+We thus obtain the following problem:
+17:	T:
+		(1, 13)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 96, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 /\ v_len - nondef.10 - 88 >= 8 ]
+		(?, 1)     eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)     eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 96, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 /\ v_len - nondef.10 - 88 >= 8 ] with all transitions in problem 17, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 104, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 /\ v_len - nondef.10 - 88 >= 8 /\ v_len - nondef.10 - 96 >= 8 ]
+We thus obtain the following problem:
+18:	T:
+		(1, 14)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 104, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 /\ v_len - nondef.10 - 88 >= 8 /\ v_len - nondef.10 - 96 >= 8 ]
+		(?, 1)     eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)     eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+By chaining the transition eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 104, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 /\ v_len - nondef.10 - 88 >= 8 /\ v_len - nondef.10 - 96 >= 8 ] with all transitions in problem 18, the following new transition is obtained:
+	eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 112, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 /\ v_len - nondef.10 - 88 >= 8 /\ v_len - nondef.10 - 96 >= 8 /\ v_len - nondef.10 - 104 >= 8 ]
+We thus obtain the following problem:
+19:	T:
+		(1, 15)    eval_mad_bit_read_bb2_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_len - nondef.10 - 112, v_len) [ v_len - nondef.10 >= 8 /\ v_len - nondef.10 - 8 >= 8 /\ v_len - nondef.10 - 16 >= 8 /\ v_len - nondef.10 - 24 >= 8 /\ v_len - nondef.10 - 32 >= 8 /\ v_len - nondef.10 - 40 >= 8 /\ v_len - nondef.10 - 48 >= 8 /\ v_len - nondef.10 - 56 >= 8 /\ v_len - nondef.10 - 64 >= 8 /\ v_len - nondef.10 - 72 >= 8 /\ v_len - nondef.10 - 80 >= 8 /\ v_len - nondef.10 - 88 >= 8 /\ v_len - nondef.10 - 96 >= 8 /\ v_len - nondef.10 - 104 >= 8 ]
+		(?, 1)     eval_mad_bit_read_bb5_in(v_.01, v_len) -> eval_mad_bit_read_bb5_in(v_.01 - 8, v_len) [ v_.01 >= 8 ]
+		(1, 2)     eval_mad_bit_read_start(v_.01, v_len) -> eval_mad_bit_read_bb2_in(v_.01, v_len)
+	start location:	eval_mad_bit_read_start
+	leaf cost:	3
+
+Complexity upper bound ?
+
+Time: 0.851 sec (SMT: 0.748 sec)

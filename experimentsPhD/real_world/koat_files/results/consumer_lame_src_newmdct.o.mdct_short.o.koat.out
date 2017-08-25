@@ -1,0 +1,124 @@
+YES(?, 248)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_mdct_short_start(v_l.0, v_m.0) -> eval_mdct_short_bb0_in(v_l.0, v_m.0)
+		(?, 1)    eval_mdct_short_bb0_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, 5)
+		(?, 1)    eval_mdct_short_bb1_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(2, v_m.0) [ v_m.0 >= 0 ]
+		(?, 1)    eval_mdct_short_bb1_in(v_l.0, v_m.0) -> eval_mdct_short_stop(v_l.0, v_m.0) [ v_m.0 < 0 ]
+		(?, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(v_l.0 - 1, v_m.0) [ v_l.0 >= 0 ]
+		(?, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, v_m.0 - 1) [ v_l.0 < 0 ]
+	start location:	eval_mdct_short_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_mdct_short_start(v_l.0, v_m.0) -> eval_mdct_short_bb0_in(v_l.0, v_m.0)
+		(?, 1)    eval_mdct_short_bb0_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, 5)
+		(?, 1)    eval_mdct_short_bb1_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(2, v_m.0) [ v_m.0 >= 0 ]
+		(?, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(v_l.0 - 1, v_m.0) [ v_l.0 >= 0 ]
+		(?, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, v_m.0 - 1) [ v_l.0 < 0 ]
+	start location:	eval_mdct_short_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_mdct_short_start(v_l.0, v_m.0) -> eval_mdct_short_bb0_in(v_l.0, v_m.0)
+		(1, 1)    eval_mdct_short_bb0_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, 5)
+		(?, 1)    eval_mdct_short_bb1_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(2, v_m.0) [ v_m.0 >= 0 ]
+		(?, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(v_l.0 - 1, v_m.0) [ v_l.0 >= 0 ]
+		(?, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, v_m.0 - 1) [ v_l.0 < 0 ]
+	start location:	eval_mdct_short_start
+	leaf cost:	1
+
+Separating problem 3 produces the isolated subproblem
+10001:	T:
+		(1, 0)    inner_10000_start_sep(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(2, v_m.0)
+		(?, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(v_l.0 - 1, v_m.0) [ v_l.0 >= 0 ]
+	start location:	inner_10000_start_sep
+	leaf cost:	0
+
+=== begin of proof for isolated subproblem 10001 ===
+	Initial complexity problem:
+	10001:	T:
+			(1, 0)    inner_10000_start_sep(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(2, v_m.0)
+			(?, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(v_l.0 - 1, v_m.0) [ v_l.0 >= 0 ]
+		start location:	inner_10000_start_sep
+		leaf cost:	0
+	
+	A polynomial rank function with
+		Pol(inner_10000_start_sep) = 3
+		Pol(eval_mdct_short_bb3_in) = V_1 + 1
+	orients all transitions weakly and the transition
+		eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(v_l.0 - 1, v_m.0) [ v_l.0 >= 0 ]
+	strictly and produces the following problem:
+	10002:	T:
+			(1, 0)    inner_10000_start_sep(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(2, v_m.0)
+			(3, 1)    eval_mdct_short_bb3_in(v_l.0, v_m.0) -> eval_mdct_short_bb3_in(v_l.0 - 1, v_m.0) [ v_l.0 >= 0 ]
+		start location:	inner_10000_start_sep
+		leaf cost:	0
+=== end of proof for isolated subproblem 10001 ===
+
+Applying the information from the isolated subproblem 10001 to problem 3 produces the following problem:
+4:	T:
+		(?, 0)    inner_10000_in_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0, v_m.0)
+		(?, 3)    inner_10000_in_sep(v_l.0, v_m.0) -> inner_10000_compl_sep(v_l.0, v_m.0)
+		(?, 0)    inner_10000_compl_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0_sep, v_m.0) [ v_l.0_sep >= 0 /\ v_l.0_sep <= 2 ]
+		(?, 0)    inner_10000_compl_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0_sep, v_m.0) [ v_l.0_sep < 0 /\ -v_l.0_sep <= 2 ]
+		(?, 1)    inner_10000_out_sep(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, v_m.0 - 1) [ v_l.0 < 0 ]
+		(?, 1)    eval_mdct_short_bb1_in(v_l.0, v_m.0) -> inner_10000_in_sep(2, v_m.0) [ v_m.0 >= 0 ]
+		(1, 1)    eval_mdct_short_bb0_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, 5)
+		(1, 1)    eval_mdct_short_start(v_l.0, v_m.0) -> eval_mdct_short_bb0_in(v_l.0, v_m.0)
+	start location:	eval_mdct_short_start
+	leaf cost:	1
+
+Applied AI with 'oct' on problem 4 to obtain the following invariants:
+  For symbol eval_mdct_short_bb1_in: -X_2 + 5 >= 0
+  For symbol inner_10000_compl_sep: -X_2 + 5 >= 0 /\ X_1 - X_2 + 3 >= 0 /\ -X_1 - X_2 + 7 >= 0 /\ X_2 >= 0 /\ X_1 + X_2 - 2 >= 0 /\ -X_1 + X_2 + 2 >= 0 /\ -X_1 + 2 >= 0 /\ X_1 - 2 >= 0
+  For symbol inner_10000_in_sep: -X_2 + 5 >= 0 /\ X_1 - X_2 + 3 >= 0 /\ -X_1 - X_2 + 7 >= 0 /\ X_2 >= 0 /\ X_1 + X_2 - 2 >= 0 /\ -X_1 + X_2 + 2 >= 0 /\ -X_1 + 2 >= 0 /\ X_1 - 2 >= 0
+  For symbol inner_10000_out_sep: -X_2 + 5 >= 0 /\ X_1 - X_2 + 7 >= 0 /\ -X_1 - X_2 + 7 >= 0 /\ X_2 >= 0 /\ X_1 + X_2 + 2 >= 0 /\ -X_1 + X_2 + 2 >= 0 /\ -X_1 + 2 >= 0 /\ X_1 + 2 >= 0
+
+
+This yielded the following problem:
+5:	T:
+		(1, 1)    eval_mdct_short_start(v_l.0, v_m.0) -> eval_mdct_short_bb0_in(v_l.0, v_m.0)
+		(1, 1)    eval_mdct_short_bb0_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, 5)
+		(?, 1)    eval_mdct_short_bb1_in(v_l.0, v_m.0) -> inner_10000_in_sep(2, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_m.0 >= 0 ]
+		(?, 1)    inner_10000_out_sep(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, v_m.0 - 1) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 7 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 + 2 >= 0 /\ v_l.0 < 0 ]
+		(?, 0)    inner_10000_compl_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0_sep, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= 2 ]
+		(?, 0)    inner_10000_compl_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0_sep, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= 2 ]
+		(?, 3)    inner_10000_in_sep(v_l.0, v_m.0) -> inner_10000_compl_sep(v_l.0, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 ]
+		(?, 0)    inner_10000_in_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 ]
+	start location:	eval_mdct_short_start
+	leaf cost:	1
+
+A polynomial rank function with
+	Pol(eval_mdct_short_start) = 49
+	Pol(eval_mdct_short_bb0_in) = 49
+	Pol(eval_mdct_short_bb1_in) = 8*V_2 + 9
+	Pol(inner_10000_in_sep) = 4*V_1 + 8*V_2
+	Pol(inner_10000_out_sep) = 8*V_2 + 2
+	Pol(inner_10000_compl_sep) = 3*V_1 + 8*V_2
+orients all transitions weakly and the transitions
+	inner_10000_out_sep(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, v_m.0 - 1) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 7 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 + 2 >= 0 /\ v_l.0 < 0 ]
+	inner_10000_in_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 ]
+	inner_10000_in_sep(v_l.0, v_m.0) -> inner_10000_compl_sep(v_l.0, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 ]
+	inner_10000_compl_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0_sep, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= 2 ]
+	inner_10000_compl_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0_sep, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= 2 ]
+	eval_mdct_short_bb1_in(v_l.0, v_m.0) -> inner_10000_in_sep(2, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_m.0 >= 0 ]
+strictly and produces the following problem:
+6:	T:
+		(1, 1)     eval_mdct_short_start(v_l.0, v_m.0) -> eval_mdct_short_bb0_in(v_l.0, v_m.0)
+		(1, 1)     eval_mdct_short_bb0_in(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, 5)
+		(49, 1)    eval_mdct_short_bb1_in(v_l.0, v_m.0) -> inner_10000_in_sep(2, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_m.0 >= 0 ]
+		(49, 1)    inner_10000_out_sep(v_l.0, v_m.0) -> eval_mdct_short_bb1_in(v_l.0, v_m.0 - 1) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 7 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 + 2 >= 0 /\ v_l.0 < 0 ]
+		(49, 0)    inner_10000_compl_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0_sep, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= 2 ]
+		(49, 0)    inner_10000_compl_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0_sep, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= 2 ]
+		(49, 3)    inner_10000_in_sep(v_l.0, v_m.0) -> inner_10000_compl_sep(v_l.0, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 ]
+		(49, 0)    inner_10000_in_sep(v_l.0, v_m.0) -> inner_10000_out_sep(v_l.0, v_m.0) [ -v_m.0 + 5 >= 0 /\ v_l.0 - v_m.0 + 3 >= 0 /\ -v_l.0 - v_m.0 + 7 >= 0 /\ v_m.0 >= 0 /\ v_l.0 + v_m.0 - 2 >= 0 /\ -v_l.0 + v_m.0 + 2 >= 0 /\ -v_l.0 + 2 >= 0 /\ v_l.0 - 2 >= 0 ]
+	start location:	eval_mdct_short_start
+	leaf cost:	1
+
+Complexity upper bound 248
+
+Time: 0.462 sec (SMT: 0.431 sec)

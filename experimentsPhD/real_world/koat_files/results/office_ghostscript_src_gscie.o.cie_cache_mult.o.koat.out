@@ -1,0 +1,75 @@
+YES(?, 523)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_cie_cache_mult_start(v_i.0) -> Com_1(eval_cie_cache_mult_bb0_in(v_i.0))
+		(?, 1)    eval_cie_cache_mult_bb0_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(512))
+		(?, 1)    eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(v_i.0 - 1)) [ v_i.0 - 1 >= 0 ]
+		(?, 1)    eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_16(v_i.0)) [ v_i.0 - 1 < 0 ]
+		(?, 1)    eval_cie_cache_mult_16(v_i.0) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_i.0), eval_cie_cache_mult_17(v_i.0))
+		(?, 1)    eval_cie_cache_mult_17(v_i.0) -> Com_1(eval_cie_cache_mult_stop(v_i.0))
+	start location:	eval_cie_cache_mult_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_cie_cache_mult_start(v_i.0) -> Com_1(eval_cie_cache_mult_bb0_in(v_i.0))
+		(1, 1)    eval_cie_cache_mult_bb0_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(512))
+		(?, 1)    eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(v_i.0 - 1)) [ v_i.0 - 1 >= 0 ]
+		(?, 1)    eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_16(v_i.0)) [ v_i.0 - 1 < 0 ]
+		(?, 1)    eval_cie_cache_mult_16(v_i.0) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_i.0), eval_cie_cache_mult_17(v_i.0))
+		(?, 1)    eval_cie_cache_mult_17(v_i.0) -> Com_1(eval_cie_cache_mult_stop(v_i.0))
+	start location:	eval_cie_cache_mult_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_cie_cache_mult_start) = 3
+	Pol(eval_cie_cache_mult_bb0_in) = 3
+	Pol(eval_cie_cache_mult_bb1_in) = 3
+	Pol(eval_cie_cache_mult_16) = 2
+	Pol(eval_llvm.memcpy.p0i8.p0i8.i64_start) = 0
+	Pol(eval_cie_cache_mult_17) = 1
+	Pol(eval_cie_cache_mult_stop) = 0
+orients all transitions weakly and the transitions
+	eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_16(v_i.0)) [ v_i.0 - 1 < 0 ]
+	eval_cie_cache_mult_17(v_i.0) -> Com_1(eval_cie_cache_mult_stop(v_i.0))
+	eval_cie_cache_mult_16(v_i.0) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_i.0), eval_cie_cache_mult_17(v_i.0))
+strictly and produces the following problem:
+3:	T:
+		(1, 1)    eval_cie_cache_mult_start(v_i.0) -> Com_1(eval_cie_cache_mult_bb0_in(v_i.0))
+		(1, 1)    eval_cie_cache_mult_bb0_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(512))
+		(?, 1)    eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(v_i.0 - 1)) [ v_i.0 - 1 >= 0 ]
+		(3, 1)    eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_16(v_i.0)) [ v_i.0 - 1 < 0 ]
+		(3, 1)    eval_cie_cache_mult_16(v_i.0) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_i.0), eval_cie_cache_mult_17(v_i.0))
+		(3, 1)    eval_cie_cache_mult_17(v_i.0) -> Com_1(eval_cie_cache_mult_stop(v_i.0))
+	start location:	eval_cie_cache_mult_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_cie_cache_mult_bb1_in) = V_1
+and size complexities
+	S("eval_cie_cache_mult_17(v_i.0) -> Com_1(eval_cie_cache_mult_stop(v_i.0))", 0-0) = 512
+	S("eval_cie_cache_mult_16(v_i.0) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_i.0), eval_cie_cache_mult_17(v_i.0))", 0-0) = 512
+	S("eval_cie_cache_mult_16(v_i.0) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_i.0), eval_cie_cache_mult_17(v_i.0))", 1-0) = 512
+	S("eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_16(v_i.0)) [ v_i.0 - 1 < 0 ]", 0-0) = 512
+	S("eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(v_i.0 - 1)) [ v_i.0 - 1 >= 0 ]", 0-0) = 512
+	S("eval_cie_cache_mult_bb0_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(512))", 0-0) = 512
+	S("eval_cie_cache_mult_start(v_i.0) -> Com_1(eval_cie_cache_mult_bb0_in(v_i.0))", 0-0) = v_i.0
+orients the transitions
+	eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(v_i.0 - 1)) [ v_i.0 - 1 >= 0 ]
+weakly and the transition
+	eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(v_i.0 - 1)) [ v_i.0 - 1 >= 0 ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)      eval_cie_cache_mult_start(v_i.0) -> Com_1(eval_cie_cache_mult_bb0_in(v_i.0))
+		(1, 1)      eval_cie_cache_mult_bb0_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(512))
+		(512, 1)    eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_bb1_in(v_i.0 - 1)) [ v_i.0 - 1 >= 0 ]
+		(3, 1)      eval_cie_cache_mult_bb1_in(v_i.0) -> Com_1(eval_cie_cache_mult_16(v_i.0)) [ v_i.0 - 1 < 0 ]
+		(3, 1)      eval_cie_cache_mult_16(v_i.0) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_i.0), eval_cie_cache_mult_17(v_i.0))
+		(3, 1)      eval_cie_cache_mult_17(v_i.0) -> Com_1(eval_cie_cache_mult_stop(v_i.0))
+	start location:	eval_cie_cache_mult_start
+	leaf cost:	0
+
+Complexity upper bound 523
+
+Time: 0.021 sec (SMT: 0.020 sec)

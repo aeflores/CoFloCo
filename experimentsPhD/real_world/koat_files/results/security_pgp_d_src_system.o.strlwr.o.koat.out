@@ -1,0 +1,116 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb0_in(v_1))
+		(?, 1)    eval_strlwr_bb0_in(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 < 0 ]
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 > 0 ]
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+		(?, 1)    eval_strlwr_3(v_1) -> Com_2(eval_to_lower_start(v_1), eval_strlwr_4(v_1))
+		(?, 1)    eval_strlwr_4(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+	start location:	eval_strlwr_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb0_in(v_1))
+		(1, 1)    eval_strlwr_bb0_in(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 < 0 ]
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 > 0 ]
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+		(?, 1)    eval_strlwr_3(v_1) -> Com_2(eval_to_lower_start(v_1), eval_strlwr_4(v_1))
+		(?, 1)    eval_strlwr_4(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+	start location:	eval_strlwr_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_strlwr_start) = 1
+	Pol(eval_strlwr_bb0_in) = 1
+	Pol(eval_strlwr_bb1_in) = 1
+	Pol(eval_strlwr_3) = 1
+	Pol(eval_strlwr_stop) = 0
+	Pol(eval_to_lower_start) = 0
+	Pol(eval_strlwr_4) = 1
+orients all transitions weakly and the transition
+	eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+strictly and produces the following problem:
+3:	T:
+		(1, 1)    eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb0_in(v_1))
+		(1, 1)    eval_strlwr_bb0_in(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 < 0 ]
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 > 0 ]
+		(1, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+		(?, 1)    eval_strlwr_3(v_1) -> Com_2(eval_to_lower_start(v_1), eval_strlwr_4(v_1))
+		(?, 1)    eval_strlwr_4(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+	start location:	eval_strlwr_start
+	leaf cost:	0
+
+By chaining the transition eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb0_in(v_1)) with all transitions in problem 3, the following new transition is obtained:
+	eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(1, 1)    eval_strlwr_bb0_in(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 < 0 ]
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 > 0 ]
+		(1, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+		(?, 1)    eval_strlwr_3(v_1) -> Com_2(eval_to_lower_start(v_1), eval_strlwr_4(v_1))
+		(?, 1)    eval_strlwr_4(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+	start location:	eval_strlwr_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_strlwr_bb0_in(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_strlwr_4(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(?, 1)    eval_strlwr_3(v_1) -> Com_2(eval_to_lower_start(v_1), eval_strlwr_4(v_1))
+		(1, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 > 0 ]
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 < 0 ]
+		(1, 2)    eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+	start location:	eval_strlwr_start
+	leaf cost:	0
+
+By chaining the transition eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 > 0 ] with all transitions in problem 5, the following new transition is obtained:
+	eval_strlwr_bb1_in(v_1) -> Com_2(eval_to_lower_start(nondef.0), eval_strlwr_4(nondef.0)) [ nondef.0 > 0 ]
+We thus obtain the following problem:
+6:	T:
+		(?, 2)    eval_strlwr_bb1_in(v_1) -> Com_2(eval_to_lower_start(nondef.0), eval_strlwr_4(nondef.0)) [ nondef.0 > 0 ]
+		(?, 1)    eval_strlwr_4(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(?, 1)    eval_strlwr_3(v_1) -> Com_2(eval_to_lower_start(v_1), eval_strlwr_4(v_1))
+		(1, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+		(?, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 < 0 ]
+		(1, 2)    eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+	start location:	eval_strlwr_start
+	leaf cost:	0
+
+By chaining the transition eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_3(nondef.0)) [ nondef.0 < 0 ] with all transitions in problem 6, the following new transition is obtained:
+	eval_strlwr_bb1_in(v_1) -> Com_2(eval_to_lower_start(nondef.0), eval_strlwr_4(nondef.0)) [ nondef.0 < 0 ]
+We thus obtain the following problem:
+7:	T:
+		(?, 2)    eval_strlwr_bb1_in(v_1) -> Com_2(eval_to_lower_start(nondef.0), eval_strlwr_4(nondef.0)) [ nondef.0 < 0 ]
+		(?, 2)    eval_strlwr_bb1_in(v_1) -> Com_2(eval_to_lower_start(nondef.0), eval_strlwr_4(nondef.0)) [ nondef.0 > 0 ]
+		(?, 1)    eval_strlwr_4(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(?, 1)    eval_strlwr_3(v_1) -> Com_2(eval_to_lower_start(v_1), eval_strlwr_4(v_1))
+		(1, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+		(1, 2)    eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+	start location:	eval_strlwr_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 7:
+	eval_strlwr_3(v_1) -> Com_2(eval_to_lower_start(v_1), eval_strlwr_4(v_1))
+We thus obtain the following problem:
+8:	T:
+		(?, 1)    eval_strlwr_4(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+		(?, 2)    eval_strlwr_bb1_in(v_1) -> Com_2(eval_to_lower_start(nondef.0), eval_strlwr_4(nondef.0)) [ nondef.0 < 0 ]
+		(?, 2)    eval_strlwr_bb1_in(v_1) -> Com_2(eval_to_lower_start(nondef.0), eval_strlwr_4(nondef.0)) [ nondef.0 > 0 ]
+		(1, 1)    eval_strlwr_bb1_in(v_1) -> Com_1(eval_strlwr_stop(v_1))
+		(1, 2)    eval_strlwr_start(v_1) -> Com_1(eval_strlwr_bb1_in(v_1))
+	start location:	eval_strlwr_start
+	leaf cost:	0
+
+Complexity upper bound ?
+
+Time: 0.081 sec (SMT: 0.071 sec)

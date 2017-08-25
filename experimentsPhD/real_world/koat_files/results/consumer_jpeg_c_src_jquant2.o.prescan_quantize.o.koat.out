@@ -1,0 +1,307 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)
+		(?, 1)    eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+		(?, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(?, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_stop(v_6, v_col.0, v_num_rows, v_row.0) [ v_row.0 >= v_num_rows ]
+		(?, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(?, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+		(?, 1)    eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)
+		(?, 1)    eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+		(?, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(?, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(?, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+		(?, 1)    eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)
+		(1, 1)    eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+		(?, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(?, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(?, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+		(?, 1)    eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+A polynomial rank function with
+	Pol(eval_prescan_quantize_start) = V_3
+	Pol(eval_prescan_quantize_bb0_in) = V_3
+	Pol(eval_prescan_quantize_bb1_in) = V_3 - V_4
+	Pol(eval_prescan_quantize_bb3_in) = V_3 - V_4 - 1
+	Pol(eval_prescan_quantize_bb6_in) = V_3 - V_4 - 1
+orients all transitions weakly and the transition
+	eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)
+		(1, 1)             eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+		(v_num_rows, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(?, 1)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(?, 1)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+		(?, 1)             eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+A polynomial rank function with
+	Pol(eval_prescan_quantize_bb6_in) = 1
+	Pol(eval_prescan_quantize_bb3_in) = 1
+	Pol(eval_prescan_quantize_bb1_in) = 0
+and size complexities
+	S("eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)", 0-0) = ?
+	S("eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)", 0-1) = ?
+	S("eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)", 0-2) = v_num_rows
+	S("eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)", 0-3) = ?
+	S("eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]", 0-0) = ?
+	S("eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]", 0-1) = ?
+	S("eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]", 0-2) = v_num_rows
+	S("eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]", 0-3) = ?
+	S("eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]", 0-0) = ?
+	S("eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]", 0-1) = ?
+	S("eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]", 0-2) = v_num_rows
+	S("eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]", 0-3) = ?
+	S("eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]", 0-0) = ?
+	S("eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]", 0-1) = ?
+	S("eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]", 0-2) = v_num_rows
+	S("eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]", 0-3) = ?
+	S("eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)", 0-0) = ?
+	S("eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)", 0-1) = v_col.0
+	S("eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)", 0-2) = v_num_rows
+	S("eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)", 0-3) = 0
+	S("eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)", 0-0) = v_6
+	S("eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)", 0-1) = v_col.0
+	S("eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)", 0-2) = v_num_rows
+	S("eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)", 0-3) = v_row.0
+orients the transitions
+	eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+	eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+	eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+weakly and the transition
+	eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+strictly and produces the following problem:
+5:	T:
+		(1, 1)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0)
+		(1, 1)             eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+		(v_num_rows, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(?, 1)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+		(?, 1)             eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) with all transitions in problem 5, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+We thus obtain the following problem:
+6:	T:
+		(1, 2)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+		(1, 1)             eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+		(v_num_rows, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(?, 1)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+		(?, 1)             eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+Testing for reachability in the complexity graph removes the following transition from problem 6:
+	eval_prescan_quantize_bb0_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+We thus obtain the following problem:
+7:	T:
+		(?, 1)             eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+		(v_num_rows, 1)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ]
+		(?, 1)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(1, 2)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 ] with all transitions in problem 7, the following new transition is obtained:
+	eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+We thus obtain the following problem:
+8:	T:
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+		(?, 1)             eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+		(?, 1)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(1, 2)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) [ v_col.0 > 0 ] with all transitions in problem 8, the following new transition is obtained:
+	eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+We thus obtain the following problem:
+9:	T:
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+		(?, 1)             eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+		(v_num_rows, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(1, 2)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+Testing for reachability in the complexity graph removes the following transition from problem 9:
+	eval_prescan_quantize_bb6_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0)
+We thus obtain the following problem:
+10:	T:
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+		(v_num_rows, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+		(1, 2)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0)
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb1_in(nondef.0, v_col.0, v_num_rows, 0) with all transitions in problem 10, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 0) [ 0 < v_num_rows ]
+We thus obtain the following problem:
+11:	T:
+		(1, 3)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 0) [ 0 < v_num_rows ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+		(v_num_rows, 1)    eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+Testing for reachability in the complexity graph removes the following transition from problem 11:
+	eval_prescan_quantize_bb1_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0) [ v_row.0 < v_num_rows ]
+We thus obtain the following problem:
+12:	T:
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+		(1, 3)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 0) [ 0 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 0) [ 0 < v_num_rows ] with all transitions in problem 12, the following new transitions are obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 1) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows ]
+We thus obtain the following problem:
+13:	T:
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 1) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 1) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows ] with all transitions in problem 13, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 2) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows ]
+We thus obtain the following problem:
+14:	T:
+		(1, 7)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 2) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 2) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows ] with all transitions in problem 14, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 3) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows ]
+We thus obtain the following problem:
+15:	T:
+		(1, 9)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 3) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 3) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows ] with all transitions in problem 15, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 4) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows ]
+We thus obtain the following problem:
+16:	T:
+		(1, 11)            eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 4) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 4) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows ] with all transitions in problem 16, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 5) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows ]
+We thus obtain the following problem:
+17:	T:
+		(1, 13)            eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 5) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 5) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows ] with all transitions in problem 17, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 6) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows ]
+We thus obtain the following problem:
+18:	T:
+		(1, 15)            eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 6) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 6) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows ] with all transitions in problem 18, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 7) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows ]
+We thus obtain the following problem:
+19:	T:
+		(1, 17)            eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 7) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 7) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows ] with all transitions in problem 19, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 8) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows ]
+We thus obtain the following problem:
+20:	T:
+		(1, 19)            eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 8) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 8) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows ] with all transitions in problem 20, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 9) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows /\ 9 < v_num_rows ]
+We thus obtain the following problem:
+21:	T:
+		(1, 21)            eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 9) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows /\ 9 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 9) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows /\ 9 < v_num_rows ] with all transitions in problem 21, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 10) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows /\ 9 < v_num_rows /\ 10 < v_num_rows ]
+We thus obtain the following problem:
+22:	T:
+		(1, 23)            eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 10) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows /\ 9 < v_num_rows /\ 10 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+By chaining the transition eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 10) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows /\ 9 < v_num_rows /\ 10 < v_num_rows ] with all transitions in problem 22, the following new transition is obtained:
+	eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 11) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows /\ 9 < v_num_rows /\ 10 < v_num_rows /\ 11 < v_num_rows ]
+We thus obtain the following problem:
+23:	T:
+		(1, 25)            eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0, v_num_rows, 11) [ 0 < v_num_rows /\ nondef.0 <= 0 /\ 1 < v_num_rows /\ 2 < v_num_rows /\ 3 < v_num_rows /\ 4 < v_num_rows /\ 5 < v_num_rows /\ 6 < v_num_rows /\ 7 < v_num_rows /\ 8 < v_num_rows /\ 9 < v_num_rows /\ 10 < v_num_rows /\ 11 < v_num_rows ]
+		(1, 5)             eval_prescan_quantize_start(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(nondef.0, nondef.0 - 1, v_num_rows, 0) [ 0 < v_num_rows /\ nondef.0 > 0 ]
+		(?, 2)             eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_col.0 - 1, v_num_rows, v_row.0) [ v_col.0 > 0 ]
+		(v_num_rows, 2)    eval_prescan_quantize_bb3_in(v_6, v_col.0, v_num_rows, v_row.0) -> eval_prescan_quantize_bb3_in(v_6, v_6, v_num_rows, v_row.0 + 1) [ v_col.0 <= 0 /\ v_row.0 + 1 < v_num_rows ]
+	start location:	eval_prescan_quantize_start
+	leaf cost:	1
+
+Complexity upper bound ?
+
+Time: 1.025 sec (SMT: 0.814 sec)

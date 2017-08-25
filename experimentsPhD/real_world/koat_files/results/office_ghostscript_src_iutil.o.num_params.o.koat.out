@@ -1,0 +1,62 @@
+YES(?, 2*v_count + 7)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_num_params_start(v_.02, v_2, v_count) -> eval_num_params_bb0_in(v_.02, v_2, v_count)
+		(?, 1)    eval_num_params_bb0_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_count, v_2, v_count)
+		(?, 1)    eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_bb8_in(v_.02, v_2, v_count) [ v_.02 - 1 >= 0 ]
+		(?, 1)    eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_NewDefault_in(v_.02, v_2, v_count) [ v_.02 - 1 >= 0 ]
+		(?, 1)    eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_bb5_in(v_.02, v_.02 - 1, v_count) [ v_.02 - 1 >= 0 ]
+		(?, 1)    eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_bb8_in(v_.02, v_2, v_count) [ v_.02 - 1 < 0 ]
+		(?, 1)    eval_num_params_bb5_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_2, v_2, v_count)
+		(?, 1)    eval_num_params_NewDefault_in(v_.02, v_2, v_count) -> eval_num_params_bb8_in(v_.02, v_2, v_count)
+		(?, 1)    eval_num_params_bb8_in(v_.02, v_2, v_count) -> eval_num_params_stop(v_.02, v_2, v_count)
+	start location:	eval_num_params_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_num_params_start(v_.02, v_2, v_count) -> eval_num_params_bb0_in(v_.02, v_2, v_count)
+		(?, 1)    eval_num_params_bb0_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_count, v_2, v_count)
+		(?, 1)    eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_bb5_in(v_.02, v_.02 - 1, v_count) [ v_.02 - 1 >= 0 ]
+		(?, 1)    eval_num_params_bb5_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_2, v_2, v_count)
+	start location:	eval_num_params_start
+	leaf cost:	5
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_num_params_start(v_.02, v_2, v_count) -> eval_num_params_bb0_in(v_.02, v_2, v_count)
+		(1, 1)    eval_num_params_bb0_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_count, v_2, v_count)
+		(?, 1)    eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_bb5_in(v_.02, v_.02 - 1, v_count) [ v_.02 - 1 >= 0 ]
+		(?, 1)    eval_num_params_bb5_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_2, v_2, v_count)
+	start location:	eval_num_params_start
+	leaf cost:	5
+
+A polynomial rank function with
+	Pol(eval_num_params_start) = V_3
+	Pol(eval_num_params_bb0_in) = V_3
+	Pol(eval_num_params_bb1_in) = V_1
+	Pol(eval_num_params_bb5_in) = V_2
+orients all transitions weakly and the transition
+	eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_bb5_in(v_.02, v_.02 - 1, v_count) [ v_.02 - 1 >= 0 ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)          eval_num_params_start(v_.02, v_2, v_count) -> eval_num_params_bb0_in(v_.02, v_2, v_count)
+		(1, 1)          eval_num_params_bb0_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_count, v_2, v_count)
+		(v_count, 1)    eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_bb5_in(v_.02, v_.02 - 1, v_count) [ v_.02 - 1 >= 0 ]
+		(?, 1)          eval_num_params_bb5_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_2, v_2, v_count)
+	start location:	eval_num_params_start
+	leaf cost:	5
+
+Repeatedly propagating knowledge in problem 4 produces the following problem:
+5:	T:
+		(1, 1)          eval_num_params_start(v_.02, v_2, v_count) -> eval_num_params_bb0_in(v_.02, v_2, v_count)
+		(1, 1)          eval_num_params_bb0_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_count, v_2, v_count)
+		(v_count, 1)    eval_num_params_bb1_in(v_.02, v_2, v_count) -> eval_num_params_bb5_in(v_.02, v_.02 - 1, v_count) [ v_.02 - 1 >= 0 ]
+		(v_count, 1)    eval_num_params_bb5_in(v_.02, v_2, v_count) -> eval_num_params_bb1_in(v_2, v_2, v_count)
+	start location:	eval_num_params_start
+	leaf cost:	5
+
+Complexity upper bound 2*v_count + 7
+
+Time: 0.098 sec (SMT: 0.092 sec)

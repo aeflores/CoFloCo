@@ -1,0 +1,176 @@
+YES(?, 789)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_median_start(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_bb0_in(v_i, v_j, v_k.0, v_l.0, v_x_size)
+		(?, 1)    eval_median_bb0_in(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_bb1_in(v_i, v_j, 0, v_l.0, v_x_size)
+		(?, 1)    eval_median_bb1_in(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_bb2_in(v_i, v_j, v_k.0, 0, v_x_size) [ v_k.0 < 7 ]
+		(?, 1)    eval_median_bb1_in(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_stop(v_i, v_j, v_k.0, v_l.0, v_x_size) [ v_k.0 >= 7 /\ nondef.12 + nondef.13 = 0 ]
+		(?, 1)    eval_median_bb1_in(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_stop(v_i, v_j, v_k.0, v_l.0, v_x_size) [ v_k.0 >= 7 /\ nondef.12 + nondef.13 > 0 /\ nondef.14 >= 0 /\ nondef.12 + nondef.13 - 2*nondef.14 >= 0 /\ nondef.12 + nondef.13 - 2*nondef.14 < 2 ]
+		(?, 1)    eval_median_bb1_in(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_stop(v_i, v_j, v_k.0, v_l.0, v_x_size) [ v_k.0 >= 7 /\ nondef.12 + nondef.13 < 0 /\ nondef.14 <= 0 /\ -nondef.12 - nondef.13 + 2*nondef.14 >= 0 /\ -nondef.12 - nondef.13 + 2*nondef.14 < 2 ]
+		(?, 1)    eval_median_bb2_in(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_bb5_in(v_i, v_j, v_k.0, v_l.0, v_x_size) [ v_l.0 < -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb2_in(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_bb1_in(v_i, v_j, v_k.0 + 1, v_l.0, v_x_size) [ v_l.0 >= -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb5_in(v_i, v_j, v_k.0, v_l.0, v_x_size) -> eval_median_bb2_in(v_i, v_j, v_k.0, v_l.0 + 1, v_x_size)
+	start location:	eval_median_start
+	leaf cost:	0
+
+Slicing away variables that do not contribute to conditions from problem 1 leaves variables [v_k.0, v_l.0].
+We thus obtain the following problem:
+2:	T:
+		(?, 1)    eval_median_bb5_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, v_l.0 + 1)
+		(?, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb1_in(v_k.0 + 1, v_l.0) [ v_l.0 >= -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb5_in(v_k.0, v_l.0) [ v_l.0 < -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb1_in(v_k.0, v_l.0) -> eval_median_stop(v_k.0, v_l.0) [ v_k.0 >= 7 /\ nondef.12 + nondef.13 < 0 /\ nondef.14 <= 0 /\ -nondef.12 - nondef.13 + 2*nondef.14 >= 0 /\ -nondef.12 - nondef.13 + 2*nondef.14 < 2 ]
+		(?, 1)    eval_median_bb1_in(v_k.0, v_l.0) -> eval_median_stop(v_k.0, v_l.0) [ v_k.0 >= 7 /\ nondef.12 + nondef.13 > 0 /\ nondef.14 >= 0 /\ nondef.12 + nondef.13 - 2*nondef.14 >= 0 /\ nondef.12 + nondef.13 - 2*nondef.14 < 2 ]
+		(?, 1)    eval_median_bb1_in(v_k.0, v_l.0) -> eval_median_stop(v_k.0, v_l.0) [ v_k.0 >= 7 /\ nondef.12 + nondef.13 = 0 ]
+		(?, 1)    eval_median_bb1_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, 0) [ v_k.0 < 7 ]
+		(?, 1)    eval_median_bb0_in(v_k.0, v_l.0) -> eval_median_bb1_in(0, v_l.0)
+		(1, 1)    eval_median_start(v_k.0, v_l.0) -> eval_median_bb0_in(v_k.0, v_l.0)
+	start location:	eval_median_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 2 produces the following problem:
+3:	T:
+		(?, 1)    eval_median_bb5_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, v_l.0 + 1)
+		(?, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb1_in(v_k.0 + 1, v_l.0) [ v_l.0 >= -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb5_in(v_k.0, v_l.0) [ v_l.0 < -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb1_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, 0) [ v_k.0 < 7 ]
+		(?, 1)    eval_median_bb0_in(v_k.0, v_l.0) -> eval_median_bb1_in(0, v_l.0)
+		(1, 1)    eval_median_start(v_k.0, v_l.0) -> eval_median_bb0_in(v_k.0, v_l.0)
+	start location:	eval_median_start
+	leaf cost:	3
+
+Repeatedly propagating knowledge in problem 3 produces the following problem:
+4:	T:
+		(?, 1)    eval_median_bb5_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, v_l.0 + 1)
+		(?, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb1_in(v_k.0 + 1, v_l.0) [ v_l.0 >= -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb5_in(v_k.0, v_l.0) [ v_l.0 < -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb1_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, 0) [ v_k.0 < 7 ]
+		(1, 1)    eval_median_bb0_in(v_k.0, v_l.0) -> eval_median_bb1_in(0, v_l.0)
+		(1, 1)    eval_median_start(v_k.0, v_l.0) -> eval_median_bb0_in(v_k.0, v_l.0)
+	start location:	eval_median_start
+	leaf cost:	3
+
+Separating problem 4 produces the isolated subproblem
+10001:	T:
+		(1, 0)    inner_10000_start_sep(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, 0)
+		(?, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb5_in(v_k.0, v_l.0) [ v_l.0 < -v_k.0 + 7 ]
+		(?, 1)    eval_median_bb5_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, v_l.0 + 1)
+	start location:	inner_10000_start_sep
+	leaf cost:	0
+
+=== begin of proof for isolated subproblem 10001 ===
+	Initial complexity problem:
+	10001:	T:
+			(1, 0)    inner_10000_start_sep(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, 0)
+			(?, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb5_in(v_k.0, v_l.0) [ v_l.0 < -v_k.0 + 7 ]
+			(?, 1)    eval_median_bb5_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, v_l.0 + 1)
+		start location:	inner_10000_start_sep
+		leaf cost:	0
+	
+	A polynomial rank function with
+		Pol(inner_10000_start_sep) = -V_1 + 7
+		Pol(eval_median_bb2_in) = -V_1 - V_2 + 7
+		Pol(eval_median_bb5_in) = -V_1 - V_2 + 6
+	orients all transitions weakly and the transition
+		eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb5_in(v_k.0, v_l.0) [ v_l.0 < -v_k.0 + 7 ]
+	strictly and produces the following problem:
+	10002:	T:
+			(1, 0)            inner_10000_start_sep(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, 0)
+			(v_k.0 + 7, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb5_in(v_k.0, v_l.0) [ v_l.0 < -v_k.0 + 7 ]
+			(?, 1)            eval_median_bb5_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, v_l.0 + 1)
+		start location:	inner_10000_start_sep
+		leaf cost:	0
+	
+	Repeatedly propagating knowledge in problem 10002 produces the following problem:
+	10003:	T:
+			(1, 0)            inner_10000_start_sep(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, 0)
+			(v_k.0 + 7, 1)    eval_median_bb2_in(v_k.0, v_l.0) -> eval_median_bb5_in(v_k.0, v_l.0) [ v_l.0 < -v_k.0 + 7 ]
+			(v_k.0 + 7, 1)    eval_median_bb5_in(v_k.0, v_l.0) -> eval_median_bb2_in(v_k.0, v_l.0 + 1)
+		start location:	inner_10000_start_sep
+		leaf cost:	0
+=== end of proof for isolated subproblem 10001 ===
+
+Applying the information from the isolated subproblem 10001 to problem 4 produces the following problem:
+5:	T:
+		(?, 0)               inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0)
+		(?, 2*v_k.0 + 14)    inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_compl_sep(v_k.0, v_l.0)
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ v_k.0 >= 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ v_k.0 >= 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ v_k.0 < 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= -v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ v_k.0 < 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= -v_k.0 + 7 ]
+		(?, 1)               inner_10000_out_sep(v_k.0, v_l.0) -> eval_median_bb1_in(v_k.0 + 1, v_l.0) [ v_l.0 >= -v_k.0 + 7 ]
+		(?, 1)               eval_median_bb1_in(v_k.0, v_l.0) -> inner_10000_in_sep(v_k.0, 0) [ v_k.0 < 7 ]
+		(1, 1)               eval_median_start(v_k.0, v_l.0) -> eval_median_bb0_in(v_k.0, v_l.0)
+		(1, 1)               eval_median_bb0_in(v_k.0, v_l.0) -> eval_median_bb1_in(0, v_l.0)
+	start location:	eval_median_start
+	leaf cost:	3
+
+Applied AI with 'oct' on problem 5 to obtain the following invariants:
+  For symbol eval_median_bb1_in: X_1 >= 0
+  For symbol inner_10000_compl_sep: -X_2 >= 0 /\ X_1 - X_2 >= 0 /\ -X_1 - X_2 + 6 >= 0 /\ X_2 >= 0 /\ X_1 + X_2 >= 0 /\ -X_1 + X_2 + 6 >= 0 /\ -X_1 + 6 >= 0 /\ X_1 >= 0
+  For symbol inner_10000_in_sep: -X_2 >= 0 /\ X_1 - X_2 >= 0 /\ -X_1 - X_2 + 6 >= 0 /\ X_2 >= 0 /\ X_1 + X_2 >= 0 /\ -X_1 + X_2 + 6 >= 0 /\ -X_1 + 6 >= 0 /\ X_1 >= 0
+  For symbol inner_10000_out_sep: -X_2 + 13 >= 0 /\ X_1 - X_2 + 7 >= 0 /\ -X_1 - X_2 + 19 >= 0 /\ X_2 + 13 >= 0 /\ X_1 + X_2 + 7 >= 0 /\ -X_1 + X_2 + 19 >= 0 /\ -X_1 + 6 >= 0 /\ X_1 >= 0
+
+
+This yielded the following problem:
+6:	T:
+		(1, 1)               eval_median_bb0_in(v_k.0, v_l.0) -> eval_median_bb1_in(0, v_l.0)
+		(1, 1)               eval_median_start(v_k.0, v_l.0) -> eval_median_bb0_in(v_k.0, v_l.0)
+		(?, 1)               eval_median_bb1_in(v_k.0, v_l.0) -> inner_10000_in_sep(v_k.0, 0) [ v_k.0 >= 0 /\ v_k.0 < 7 ]
+		(?, 1)               inner_10000_out_sep(v_k.0, v_l.0) -> eval_median_bb1_in(v_k.0 + 1, v_l.0) [ -v_l.0 + 13 >= 0 /\ v_k.0 - v_l.0 + 7 >= 0 /\ -v_k.0 - v_l.0 + 19 >= 0 /\ v_l.0 + 13 >= 0 /\ v_k.0 + v_l.0 + 7 >= 0 /\ -v_k.0 + v_l.0 + 19 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0 >= -v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_k.0 < 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= -v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_k.0 < 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= -v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= v_k.0 + 7 ]
+		(?, 2*v_k.0 + 14)    inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_compl_sep(v_k.0, v_l.0) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 ]
+		(?, 0)               inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 ]
+	start location:	eval_median_start
+	leaf cost:	3
+
+Testing for unsatisfiable constraints removes the following transitions from problem 6:
+	inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_k.0 < 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= -v_k.0 + 7 ]
+	inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_k.0 < 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= -v_k.0 + 7 ]
+We thus obtain the following problem:
+7:	T:
+		(1, 1)               eval_median_bb0_in(v_k.0, v_l.0) -> eval_median_bb1_in(0, v_l.0)
+		(1, 1)               eval_median_start(v_k.0, v_l.0) -> eval_median_bb0_in(v_k.0, v_l.0)
+		(?, 1)               eval_median_bb1_in(v_k.0, v_l.0) -> inner_10000_in_sep(v_k.0, 0) [ v_k.0 >= 0 /\ v_k.0 < 7 ]
+		(?, 1)               inner_10000_out_sep(v_k.0, v_l.0) -> eval_median_bb1_in(v_k.0 + 1, v_l.0) [ -v_l.0 + 13 >= 0 /\ v_k.0 - v_l.0 + 7 >= 0 /\ -v_k.0 - v_l.0 + 19 >= 0 /\ v_l.0 + 13 >= 0 /\ v_k.0 + v_l.0 + 7 >= 0 /\ -v_k.0 + v_l.0 + 19 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0 >= -v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= v_k.0 + 7 ]
+		(?, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= v_k.0 + 7 ]
+		(?, 2*v_k.0 + 14)    inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_compl_sep(v_k.0, v_l.0) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 ]
+		(?, 0)               inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 ]
+	start location:	eval_median_start
+	leaf cost:	3
+
+A polynomial rank function with
+	Pol(eval_median_bb0_in) = 28
+	Pol(eval_median_bb1_in) = -4*V_1 + 28
+	Pol(eval_median_start) = 28
+	Pol(inner_10000_in_sep) = -4*V_1 + 27
+	Pol(inner_10000_out_sep) = -4*V_1 + 25
+	Pol(inner_10000_compl_sep) = -4*V_1 + 26
+orients all transitions weakly and the transitions
+	inner_10000_out_sep(v_k.0, v_l.0) -> eval_median_bb1_in(v_k.0 + 1, v_l.0) [ -v_l.0 + 13 >= 0 /\ v_k.0 - v_l.0 + 7 >= 0 /\ -v_k.0 - v_l.0 + 19 >= 0 /\ v_l.0 + 13 >= 0 /\ v_k.0 + v_l.0 + 7 >= 0 /\ -v_k.0 + v_l.0 + 19 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0 >= -v_k.0 + 7 ]
+	inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 ]
+	inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_compl_sep(v_k.0, v_l.0) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 ]
+	inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= v_k.0 + 7 ]
+	inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= v_k.0 + 7 ]
+	eval_median_bb1_in(v_k.0, v_l.0) -> inner_10000_in_sep(v_k.0, 0) [ v_k.0 >= 0 /\ v_k.0 < 7 ]
+strictly and produces the following problem:
+8:	T:
+		(1, 1)                eval_median_bb0_in(v_k.0, v_l.0) -> eval_median_bb1_in(0, v_l.0)
+		(1, 1)                eval_median_start(v_k.0, v_l.0) -> eval_median_bb0_in(v_k.0, v_l.0)
+		(28, 1)               eval_median_bb1_in(v_k.0, v_l.0) -> inner_10000_in_sep(v_k.0, 0) [ v_k.0 >= 0 /\ v_k.0 < 7 ]
+		(28, 1)               inner_10000_out_sep(v_k.0, v_l.0) -> eval_median_bb1_in(v_k.0 + 1, v_l.0) [ -v_l.0 + 13 >= 0 /\ v_k.0 - v_l.0 + 7 >= 0 /\ -v_k.0 - v_l.0 + 19 >= 0 /\ v_l.0 + 13 >= 0 /\ v_k.0 + v_l.0 + 7 >= 0 /\ -v_k.0 + v_l.0 + 19 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0 >= -v_k.0 + 7 ]
+		(28, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0_sep < 0 /\ -v_l.0_sep <= v_k.0 + 7 ]
+		(28, 0)               inner_10000_compl_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0_sep) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 /\ v_l.0_sep >= 0 /\ v_l.0_sep <= v_k.0 + 7 ]
+		(28, 2*v_k.0 + 14)    inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_compl_sep(v_k.0, v_l.0) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 ]
+		(28, 0)               inner_10000_in_sep(v_k.0, v_l.0) -> inner_10000_out_sep(v_k.0, v_l.0) [ -v_l.0 >= 0 /\ v_k.0 - v_l.0 >= 0 /\ -v_k.0 - v_l.0 + 6 >= 0 /\ v_l.0 >= 0 /\ v_k.0 + v_l.0 >= 0 /\ -v_k.0 + v_l.0 + 6 >= 0 /\ -v_k.0 + 6 >= 0 /\ v_k.0 >= 0 ]
+	start location:	eval_median_start
+	leaf cost:	3
+
+Complexity upper bound 789
+
+Time: 0.730 sec (SMT: 0.676 sec)

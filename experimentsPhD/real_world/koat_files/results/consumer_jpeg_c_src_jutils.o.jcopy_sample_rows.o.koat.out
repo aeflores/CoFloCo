@@ -1,0 +1,88 @@
+YES(?, 9*v_num_rows + 6)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_jcopy_sample_rows_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row))
+		(?, 1)    eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_num_cols, v_dest_row, v_num_cols, v_num_rows, v_num_rows, v_source_row))
+		(?, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_row.0 > 0 ]
+		(?, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_stop(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_row.0 <= 0 ]
+		(?, 1)    eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row), eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row))
+		(?, 1)    eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0 - 1, v_source_row))
+	start location:	eval_jcopy_sample_rows_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_jcopy_sample_rows_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row))
+		(1, 1)    eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_num_cols, v_dest_row, v_num_cols, v_num_rows, v_num_rows, v_source_row))
+		(?, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_row.0 > 0 ]
+		(?, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_stop(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_row.0 <= 0 ]
+		(?, 1)    eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row), eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row))
+		(?, 1)    eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0 - 1, v_source_row))
+	start location:	eval_jcopy_sample_rows_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_jcopy_sample_rows_start) = 1
+	Pol(eval_jcopy_sample_rows_bb0_in) = 1
+	Pol(eval_jcopy_sample_rows_bb1_in) = 1
+	Pol(eval_jcopy_sample_rows_5) = 1
+	Pol(eval_jcopy_sample_rows_stop) = 0
+	Pol(eval_llvm.memcpy.p0i8.p0i8.i64_start) = 0
+	Pol(eval_jcopy_sample_rows_6) = 1
+orients all transitions weakly and the transition
+	eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_stop(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_row.0 <= 0 ]
+strictly and produces the following problem:
+3:	T:
+		(1, 1)    eval_jcopy_sample_rows_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row))
+		(1, 1)    eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_num_cols, v_dest_row, v_num_cols, v_num_rows, v_num_rows, v_source_row))
+		(?, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_row.0 > 0 ]
+		(1, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_stop(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_row.0 <= 0 ]
+		(?, 1)    eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row), eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row))
+		(?, 1)    eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0 - 1, v_source_row))
+	start location:	eval_jcopy_sample_rows_start
+	leaf cost:	0
+
+Applied AI with 'oct' on problem 3 to obtain the following invariants:
+  For symbol eval_jcopy_sample_rows_5: X_4 - X_5 >= 0 /\ X_5 - 1 >= 0 /\ X_4 + X_5 - 2 >= 0 /\ X_4 - 1 >= 0 /\ X_1 - X_3 >= 0 /\ -X_1 + X_3 >= 0
+  For symbol eval_jcopy_sample_rows_6: X_4 - X_5 >= 0 /\ X_5 - 1 >= 0 /\ X_4 + X_5 - 2 >= 0 /\ X_4 - 1 >= 0 /\ X_1 - X_3 >= 0 /\ -X_1 + X_3 >= 0
+  For symbol eval_jcopy_sample_rows_bb1_in: X_4 - X_5 >= 0 /\ X_1 - X_3 >= 0 /\ -X_1 + X_3 >= 0
+
+
+This yielded the following problem:
+4:	T:
+		(?, 1)    eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0 - 1, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_row.0 - 1 >= 0 /\ v_num_rows + v_row.0 - 2 >= 0 /\ v_num_rows - 1 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 ]
+		(?, 1)    eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row), eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_row.0 - 1 >= 0 /\ v_num_rows + v_row.0 - 2 >= 0 /\ v_num_rows - 1 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 ]
+		(1, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_stop(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 /\ v_row.0 <= 0 ]
+		(?, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 /\ v_row.0 > 0 ]
+		(1, 1)    eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_num_cols, v_dest_row, v_num_cols, v_num_rows, v_num_rows, v_source_row))
+		(1, 1)    eval_jcopy_sample_rows_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row))
+	start location:	eval_jcopy_sample_rows_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_jcopy_sample_rows_6) = 3*V_5 - 1
+	Pol(eval_jcopy_sample_rows_bb1_in) = 3*V_5 + 1
+	Pol(eval_jcopy_sample_rows_5) = 3*V_5
+	Pol(eval_llvm.memcpy.p0i8.p0i8.i64_start) = -3*V_4 + 3*V_5
+	Pol(eval_jcopy_sample_rows_stop) = 3*V_5
+	Pol(eval_jcopy_sample_rows_bb0_in) = 3*V_4 + 1
+	Pol(eval_jcopy_sample_rows_start) = 3*V_4 + 1
+orients all transitions weakly and the transitions
+	eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 /\ v_row.0 > 0 ]
+	eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0 - 1, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_row.0 - 1 >= 0 /\ v_num_rows + v_row.0 - 2 >= 0 /\ v_num_rows - 1 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 ]
+	eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row), eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_row.0 - 1 >= 0 /\ v_num_rows + v_row.0 - 2 >= 0 /\ v_num_rows - 1 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 ]
+strictly and produces the following problem:
+5:	T:
+		(3*v_num_rows + 1, 1)    eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0 - 1, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_row.0 - 1 >= 0 /\ v_num_rows + v_row.0 - 2 >= 0 /\ v_num_rows - 1 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 ]
+		(3*v_num_rows + 1, 1)    eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_2(eval_llvm.memcpy.p0i8.p0i8.i64_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row), eval_jcopy_sample_rows_6(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_row.0 - 1 >= 0 /\ v_num_rows + v_row.0 - 2 >= 0 /\ v_num_rows - 1 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 ]
+		(1, 1)                   eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_stop(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 /\ v_row.0 <= 0 ]
+		(3*v_num_rows + 1, 1)    eval_jcopy_sample_rows_bb1_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_5(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row)) [ v_num_rows - v_row.0 >= 0 /\ v_1 - v_num_cols >= 0 /\ -v_1 + v_num_cols >= 0 /\ v_row.0 > 0 ]
+		(1, 1)                   eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb1_in(v_num_cols, v_dest_row, v_num_cols, v_num_rows, v_num_rows, v_source_row))
+		(1, 1)                   eval_jcopy_sample_rows_start(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row) -> Com_1(eval_jcopy_sample_rows_bb0_in(v_1, v_dest_row, v_num_cols, v_num_rows, v_row.0, v_source_row))
+	start location:	eval_jcopy_sample_rows_start
+	leaf cost:	0
+
+Complexity upper bound 9*v_num_rows + 6
+
+Time: 0.114 sec (SMT: 0.096 sec)

@@ -1,0 +1,53 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_op_find_index_start(v_'op_def_count) -> eval_op_find_index_bb0_in(v_'op_def_count)
+		(?, 1)    eval_op_find_index_bb0_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb4_in(v_'op_def_count) [ nondef.0 - nondef.1 = 0 ]
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb4_in(v_'op_def_count) [ nondef.0 - nondef.1 > 0 /\ nondef.2 >= 0 /\ nondef.0 - nondef.1 - 8*nondef.2 >= 0 /\ nondef.0 - nondef.1 - 8*nondef.2 < 8 ]
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb4_in(v_'op_def_count) [ nondef.0 - nondef.1 < 0 /\ nondef.2 <= 0 /\ -nondef.0 + nondef.1 + 8*nondef.2 >= 0 /\ -nondef.0 + nondef.1 + 8*nondef.2 < 8 ]
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb4_in(v_'op_def_count)
+		(?, 1)    eval_op_find_index_bb4_in(v_'op_def_count) -> eval_op_find_index_stop(v_'op_def_count)
+	start location:	eval_op_find_index_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_op_find_index_start(v_'op_def_count) -> eval_op_find_index_bb0_in(v_'op_def_count)
+		(?, 1)    eval_op_find_index_bb0_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+	start location:	eval_op_find_index_start
+	leaf cost:	5
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_op_find_index_start(v_'op_def_count) -> eval_op_find_index_bb0_in(v_'op_def_count)
+		(1, 1)    eval_op_find_index_bb0_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+	start location:	eval_op_find_index_start
+	leaf cost:	5
+
+By chaining the transition eval_op_find_index_start(v_'op_def_count) -> eval_op_find_index_bb0_in(v_'op_def_count) with all transitions in problem 3, the following new transition is obtained:
+	eval_op_find_index_start(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_op_find_index_start(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+		(1, 1)    eval_op_find_index_bb0_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+	start location:	eval_op_find_index_start
+	leaf cost:	5
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_op_find_index_bb0_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_op_find_index_bb1_in(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+		(1, 2)    eval_op_find_index_start(v_'op_def_count) -> eval_op_find_index_bb1_in(v_'op_def_count)
+	start location:	eval_op_find_index_start
+	leaf cost:	5
+
+Complexity upper bound ?
+
+Time: 0.092 sec (SMT: 0.081 sec)

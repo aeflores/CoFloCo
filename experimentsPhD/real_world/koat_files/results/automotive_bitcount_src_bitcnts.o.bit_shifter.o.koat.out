@@ -1,0 +1,50 @@
+YES(?, 132)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_bit_shifter_start(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb0_in(v_.0, v_i.0, v_x)
+		(?, 1)    eval_bit_shifter_bb0_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(v_x, 0, v_x)
+		(?, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 < 0 /\ v_i.0 < 64 ]
+		(?, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 > 0 /\ v_i.0 < 64 ]
+		(?, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_stop(v_.0, v_i.0, v_x) [ v_.0 = 0 ]
+		(?, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_stop(v_.0, v_i.0, v_x) [ v_i.0 >= 64 ]
+	start location:	eval_bit_shifter_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_bit_shifter_start(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb0_in(v_.0, v_i.0, v_x)
+		(?, 1)    eval_bit_shifter_bb0_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(v_x, 0, v_x)
+		(?, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 < 0 /\ v_i.0 < 64 ]
+		(?, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 > 0 /\ v_i.0 < 64 ]
+	start location:	eval_bit_shifter_start
+	leaf cost:	2
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_bit_shifter_start(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb0_in(v_.0, v_i.0, v_x)
+		(1, 1)    eval_bit_shifter_bb0_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(v_x, 0, v_x)
+		(?, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 < 0 /\ v_i.0 < 64 ]
+		(?, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 > 0 /\ v_i.0 < 64 ]
+	start location:	eval_bit_shifter_start
+	leaf cost:	2
+
+A polynomial rank function with
+	Pol(eval_bit_shifter_start) = 64
+	Pol(eval_bit_shifter_bb0_in) = 64
+	Pol(eval_bit_shifter_bb1_in) = -V_2 + 64
+orients all transitions weakly and the transitions
+	eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 < 0 /\ v_i.0 < 64 ]
+	eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 > 0 /\ v_i.0 < 64 ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)     eval_bit_shifter_start(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb0_in(v_.0, v_i.0, v_x)
+		(1, 1)     eval_bit_shifter_bb0_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(v_x, 0, v_x)
+		(64, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 < 0 /\ v_i.0 < 64 ]
+		(64, 1)    eval_bit_shifter_bb1_in(v_.0, v_i.0, v_x) -> eval_bit_shifter_bb1_in(nondef.1, v_i.0 + 1, v_x) [ v_.0 > 0 /\ v_i.0 < 64 ]
+	start location:	eval_bit_shifter_start
+	leaf cost:	2
+
+Complexity upper bound 132
+
+Time: 0.065 sec (SMT: 0.062 sec)

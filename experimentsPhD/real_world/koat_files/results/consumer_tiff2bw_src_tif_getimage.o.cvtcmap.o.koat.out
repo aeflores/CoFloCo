@@ -1,0 +1,175 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb0_in(v_i.0)
+		(?, 1)    eval_cvtcmap_bb0_in(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1)
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_stop(v_i.0) [ v_i.0 < 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb0_in(v_i.0)
+		(?, 1)    eval_cvtcmap_bb0_in(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1)
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb0_in(v_i.0)
+		(1, 1)    eval_cvtcmap_bb0_in(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1)
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb0_in(v_i.0) with all transitions in problem 3, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1)
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1)
+		(1, 1)    eval_cvtcmap_bb0_in(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1)
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_cvtcmap_bb0_in(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1)
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+		(1, 2)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1)
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 1) with all transitions in problem 5, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 2) [ nondef.1 - 1 >= 0 ]
+We thus obtain the following problem:
+6:	T:
+		(1, 3)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 2) [ nondef.1 - 1 >= 0 ]
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 2) [ nondef.1 - 1 >= 0 ] with all transitions in problem 6, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 3) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 ]
+We thus obtain the following problem:
+7:	T:
+		(1, 4)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 3) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 ]
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 3) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 ] with all transitions in problem 7, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 4) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 ]
+We thus obtain the following problem:
+8:	T:
+		(1, 5)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 4) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 ]
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 4) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 ] with all transitions in problem 8, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 5) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 ]
+We thus obtain the following problem:
+9:	T:
+		(1, 6)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 5) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 ]
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 5) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 ] with all transitions in problem 9, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 6) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 ]
+We thus obtain the following problem:
+10:	T:
+		(1, 7)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 6) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 ]
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 6) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 ] with all transitions in problem 10, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 7) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 ]
+We thus obtain the following problem:
+11:	T:
+		(1, 8)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 7) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 ]
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 7) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 ] with all transitions in problem 11, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 8) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 ]
+We thus obtain the following problem:
+12:	T:
+		(1, 9)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 8) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 ]
+		(?, 1)    eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 8) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 ] with all transitions in problem 12, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 9) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 ]
+We thus obtain the following problem:
+13:	T:
+		(1, 10)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 9) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 ]
+		(?, 1)     eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 9) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 ] with all transitions in problem 13, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 10) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 ]
+We thus obtain the following problem:
+14:	T:
+		(1, 11)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 10) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 ]
+		(?, 1)     eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 10) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 ] with all transitions in problem 14, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 11) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 ]
+We thus obtain the following problem:
+15:	T:
+		(1, 12)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 11) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 ]
+		(?, 1)     eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 11) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 ] with all transitions in problem 15, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 12) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 ]
+We thus obtain the following problem:
+16:	T:
+		(1, 13)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 12) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 ]
+		(?, 1)     eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 12) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 ] with all transitions in problem 16, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 13) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 /\ nondef.1 - 12 >= 0 ]
+We thus obtain the following problem:
+17:	T:
+		(1, 14)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 13) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 /\ nondef.1 - 12 >= 0 ]
+		(?, 1)     eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 13) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 /\ nondef.1 - 12 >= 0 ] with all transitions in problem 17, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 14) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 /\ nondef.1 - 12 >= 0 /\ nondef.1 - 13 >= 0 ]
+We thus obtain the following problem:
+18:	T:
+		(1, 15)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 14) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 /\ nondef.1 - 12 >= 0 /\ nondef.1 - 13 >= 0 ]
+		(?, 1)     eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+By chaining the transition eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 14) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 /\ nondef.1 - 12 >= 0 /\ nondef.1 - 13 >= 0 ] with all transitions in problem 18, the following new transition is obtained:
+	eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 15) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 /\ nondef.1 - 12 >= 0 /\ nondef.1 - 13 >= 0 /\ nondef.1 - 14 >= 0 ]
+We thus obtain the following problem:
+19:	T:
+		(1, 16)    eval_cvtcmap_start(v_i.0) -> eval_cvtcmap_bb1_in(nondef.1 - 15) [ nondef.1 - 1 >= 0 /\ nondef.1 - 2 >= 0 /\ nondef.1 - 3 >= 0 /\ nondef.1 - 4 >= 0 /\ nondef.1 - 5 >= 0 /\ nondef.1 - 6 >= 0 /\ nondef.1 - 7 >= 0 /\ nondef.1 - 8 >= 0 /\ nondef.1 - 9 >= 0 /\ nondef.1 - 10 >= 0 /\ nondef.1 - 11 >= 0 /\ nondef.1 - 12 >= 0 /\ nondef.1 - 13 >= 0 /\ nondef.1 - 14 >= 0 ]
+		(?, 1)     eval_cvtcmap_bb1_in(v_i.0) -> eval_cvtcmap_bb1_in(v_i.0 - 1) [ v_i.0 >= 0 ]
+	start location:	eval_cvtcmap_start
+	leaf cost:	1
+
+Complexity upper bound ?
+
+Time: 0.131 sec (SMT: 0.117 sec)

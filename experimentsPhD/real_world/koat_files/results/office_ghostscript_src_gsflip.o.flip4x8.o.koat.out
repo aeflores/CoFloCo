@@ -1,0 +1,44 @@
+YES(?, v_nbytes + 3)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_flip4x8_start(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb0_in(v_n.0, v_nbytes, v_offset)
+		(?, 1)    eval_flip4x8_bb0_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_nbytes, v_nbytes, v_offset)
+		(?, 1)    eval_flip4x8_bb1_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_n.0 - 1, v_nbytes, v_offset) [ v_n.0 > 0 ]
+		(?, 1)    eval_flip4x8_bb1_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_stop(v_n.0, v_nbytes, v_offset) [ v_n.0 <= 0 ]
+	start location:	eval_flip4x8_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_flip4x8_start(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb0_in(v_n.0, v_nbytes, v_offset)
+		(?, 1)    eval_flip4x8_bb0_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_nbytes, v_nbytes, v_offset)
+		(?, 1)    eval_flip4x8_bb1_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_n.0 - 1, v_nbytes, v_offset) [ v_n.0 > 0 ]
+	start location:	eval_flip4x8_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_flip4x8_start(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb0_in(v_n.0, v_nbytes, v_offset)
+		(1, 1)    eval_flip4x8_bb0_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_nbytes, v_nbytes, v_offset)
+		(?, 1)    eval_flip4x8_bb1_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_n.0 - 1, v_nbytes, v_offset) [ v_n.0 > 0 ]
+	start location:	eval_flip4x8_start
+	leaf cost:	1
+
+A polynomial rank function with
+	Pol(eval_flip4x8_start) = V_2
+	Pol(eval_flip4x8_bb0_in) = V_2
+	Pol(eval_flip4x8_bb1_in) = V_1
+orients all transitions weakly and the transition
+	eval_flip4x8_bb1_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_n.0 - 1, v_nbytes, v_offset) [ v_n.0 > 0 ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)           eval_flip4x8_start(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb0_in(v_n.0, v_nbytes, v_offset)
+		(1, 1)           eval_flip4x8_bb0_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_nbytes, v_nbytes, v_offset)
+		(v_nbytes, 1)    eval_flip4x8_bb1_in(v_n.0, v_nbytes, v_offset) -> eval_flip4x8_bb1_in(v_n.0 - 1, v_nbytes, v_offset) [ v_n.0 > 0 ]
+	start location:	eval_flip4x8_start
+	leaf cost:	1
+
+Complexity upper bound v_nbytes + 3
+
+Time: 0.026 sec (SMT: 0.025 sec)

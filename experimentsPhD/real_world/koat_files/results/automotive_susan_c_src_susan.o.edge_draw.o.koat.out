@@ -1,0 +1,350 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_edge_draw_start(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb0_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_drawing_mode, 0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb0_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb2_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_drawing_mode, v_i.0 + 1, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb6_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_drawing_mode, v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb7_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_stop(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_drawing_mode, v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_drawing_mode, v_i.0, v_i.1 + 1, v_x_size, v_y_size)
+	start location:	eval_edge_draw_start
+	leaf cost:	0
+
+Slicing away variables that do not contribute to conditions from problem 1 leaves variables [v_i.0, v_i.1, v_x_size, v_y_size].
+We thus obtain the following problem:
+2:	T:
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_stop(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+	start location:	eval_edge_draw_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 2 produces the following problem:
+3:	T:
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 3 produces the following problem:
+4:	T:
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+A polynomial rank function with
+	Pol(eval_edge_draw_bb10_in) = 0
+	Pol(eval_edge_draw_bb7_in) = 0
+	Pol(eval_edge_draw_bb6_in) = 1
+	Pol(eval_edge_draw_bb5_in) = 2
+	Pol(eval_edge_draw_bb2_in) = 2
+	Pol(eval_edge_draw_bb0_in) = 2
+	Pol(eval_edge_draw_start) = 2
+orients all transitions weakly and the transitions
+	eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+	eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= v_x_size*v_y_size ]
+strictly and produces the following problem:
+5:	T:
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size)
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+Applied AI with 'oct' on problem 5 to obtain the following invariants:
+  For symbol eval_edge_draw_bb10_in: X_2 >= 0
+  For symbol eval_edge_draw_bb2_in: X_1 >= 0
+  For symbol eval_edge_draw_bb5_in: X_1 >= 0
+  For symbol eval_edge_draw_bb7_in: X_2 >= 0
+
+
+This yielded the following problem:
+6:	T:
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) with all transitions in problem 6, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+We thus obtain the following problem:
+7:	T:
+		(1, 2)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size) with all transitions in problem 7, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 0, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+8:	T:
+		(1, 3)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 0, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 0, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size ] with all transitions in problem 8, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 1, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+9:	T:
+		(1, 4)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 1, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 1, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size ] with all transitions in problem 9, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 1, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+10:	T:
+		(1, 5)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 1, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 1, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size ] with all transitions in problem 10, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 2, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+11:	T:
+		(1, 6)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 2, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 2, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size ] with all transitions in problem 11, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 2, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+12:	T:
+		(1, 7)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 2, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 2, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size ] with all transitions in problem 12, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 3, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+13:	T:
+		(1, 8)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 3, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 3, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size ] with all transitions in problem 13, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 3, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+14:	T:
+		(1, 9)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 3, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size ]
+		(1, 1)    eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)    eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)    eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)    eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)    eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 3, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size ] with all transitions in problem 14, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 4, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+15:	T:
+		(1, 10)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 4, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size ]
+		(1, 1)     eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)     eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)     eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 4, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size ] with all transitions in problem 15, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 4, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+16:	T:
+		(1, 11)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 4, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size ]
+		(1, 1)     eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)     eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)     eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 4, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size ] with all transitions in problem 16, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 5, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+17:	T:
+		(1, 12)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 5, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size ]
+		(1, 1)     eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)     eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)     eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 5, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size ] with all transitions in problem 17, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 5, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+18:	T:
+		(1, 13)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 5, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size ]
+		(1, 1)     eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)     eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)     eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 5, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size ] with all transitions in problem 18, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 6, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+19:	T:
+		(1, 14)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 6, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size ]
+		(1, 1)     eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)     eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)     eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 6, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size ] with all transitions in problem 19, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 6, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size /\ 6 >= 0 /\ 6 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+20:	T:
+		(1, 15)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 6, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size /\ 6 >= 0 /\ 6 < v_x_size*v_y_size ]
+		(1, 1)     eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)     eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)     eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+By chaining the transition eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, 6, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size /\ 6 >= 0 /\ 6 < v_x_size*v_y_size ] with all transitions in problem 20, the following new transition is obtained:
+	eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 7, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size /\ 6 >= 0 /\ 6 < v_x_size*v_y_size ]
+We thus obtain the following problem:
+21:	T:
+		(1, 16)    eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 7, v_x_size, v_y_size) [ 0 >= 0 /\ 0 < v_x_size*v_y_size /\ 1 >= 0 /\ 1 < v_x_size*v_y_size /\ 2 >= 0 /\ 2 < v_x_size*v_y_size /\ 3 >= 0 /\ 3 < v_x_size*v_y_size /\ 4 >= 0 /\ 4 < v_x_size*v_y_size /\ 5 >= 0 /\ 5 < v_x_size*v_y_size /\ 6 >= 0 /\ 6 < v_x_size*v_y_size ]
+		(1, 1)     eval_edge_draw_start(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size)
+		(1, 1)     eval_edge_draw_bb0_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(0, v_i.1, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 < v_x_size*v_y_size ]
+		(2, 1)     eval_edge_draw_bb2_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 /\ v_i.0 >= v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb5_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb2_in(v_i.0 + 1, v_i.1, v_x_size, v_y_size) [ v_i.0 >= 0 ]
+		(2, 1)     eval_edge_draw_bb6_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, 0, v_x_size, v_y_size)
+		(?, 1)     eval_edge_draw_bb7_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) [ v_i.1 >= 0 /\ v_i.1 < v_x_size*v_y_size ]
+		(?, 1)     eval_edge_draw_bb10_in(v_i.0, v_i.1, v_x_size, v_y_size) -> eval_edge_draw_bb7_in(v_i.0, v_i.1 + 1, v_x_size, v_y_size) [ v_i.1 >= 0 ]
+	start location:	eval_edge_draw_start
+	leaf cost:	1
+
+Complexity upper bound ?
+
+Time: 0.445 sec (SMT: 0.339 sec)

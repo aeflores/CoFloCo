@@ -1,0 +1,49 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_file_gc_prepare_start() -> eval_file_gc_prepare_bb0_in()
+		(?, 1)    eval_file_gc_prepare_bb0_in() -> eval_file_gc_prepare_bb1_in()
+		(?, 1)    eval_file_gc_prepare_bb1_in() -> eval_file_gc_prepare_bb1_in()
+		(?, 1)    eval_file_gc_prepare_bb1_in() -> eval_file_gc_prepare_stop()
+	start location:	eval_file_gc_prepare_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_file_gc_prepare_start() -> eval_file_gc_prepare_bb0_in()
+		(?, 1)    eval_file_gc_prepare_bb0_in() -> eval_file_gc_prepare_bb1_in()
+		(?, 1)    eval_file_gc_prepare_bb1_in() -> eval_file_gc_prepare_bb1_in()
+	start location:	eval_file_gc_prepare_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_file_gc_prepare_start() -> eval_file_gc_prepare_bb0_in()
+		(1, 1)    eval_file_gc_prepare_bb0_in() -> eval_file_gc_prepare_bb1_in()
+		(?, 1)    eval_file_gc_prepare_bb1_in() -> eval_file_gc_prepare_bb1_in()
+	start location:	eval_file_gc_prepare_start
+	leaf cost:	1
+
+By chaining the transition eval_file_gc_prepare_start() -> eval_file_gc_prepare_bb0_in() with all transitions in problem 3, the following new transition is obtained:
+	eval_file_gc_prepare_start() -> eval_file_gc_prepare_bb1_in()
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_file_gc_prepare_start() -> eval_file_gc_prepare_bb1_in()
+		(1, 1)    eval_file_gc_prepare_bb0_in() -> eval_file_gc_prepare_bb1_in()
+		(?, 1)    eval_file_gc_prepare_bb1_in() -> eval_file_gc_prepare_bb1_in()
+	start location:	eval_file_gc_prepare_start
+	leaf cost:	1
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_file_gc_prepare_bb0_in() -> eval_file_gc_prepare_bb1_in()
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_file_gc_prepare_bb1_in() -> eval_file_gc_prepare_bb1_in()
+		(1, 2)    eval_file_gc_prepare_start() -> eval_file_gc_prepare_bb1_in()
+	start location:	eval_file_gc_prepare_start
+	leaf cost:	1
+
+Complexity upper bound ?
+
+Time: 0.052 sec (SMT: 0.049 sec)

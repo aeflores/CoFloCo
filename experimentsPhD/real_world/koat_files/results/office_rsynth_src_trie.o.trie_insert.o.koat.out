@@ -1,0 +1,362 @@
+MAYBE
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb0_in())
+		(?, 1)    eval_trie_insert_bb0_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb6_in() -> Com_1(eval_trie_insert_9())
+		(?, 1)    eval_trie_insert_9() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb0_in())
+		(1, 1)    eval_trie_insert_bb0_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb6_in() -> Com_1(eval_trie_insert_9())
+		(?, 1)    eval_trie_insert_9() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_trie_insert_start) = 1
+	Pol(eval_trie_insert_bb0_in) = 1
+	Pol(eval_trie_insert_bb1_in) = 1
+	Pol(eval_trie_insert_bb3_in) = 1
+	Pol(eval_trie_insert_stop) = 0
+	Pol(eval_trie_insert_bb6_in) = 1
+	Pol(eval_trie_insert_bb7_in) = 1
+	Pol(eval_trie_insert_9) = 1
+	Pol(eval_malloc_start) = 0
+	Pol(eval_trie_insert_10) = 1
+	Pol(eval_llvm.memset.p0i8.i64_start) = 0
+	Pol(eval_trie_insert_11) = 1
+orients all transitions weakly and the transition
+	eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+strictly and produces the following problem:
+3:	T:
+		(1, 1)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb0_in())
+		(1, 1)    eval_trie_insert_bb0_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb6_in() -> Com_1(eval_trie_insert_9())
+		(?, 1)    eval_trie_insert_9() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+By chaining the transition eval_trie_insert_start() -> Com_1(eval_trie_insert_bb0_in()) with all transitions in problem 3, the following new transition is obtained:
+	eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+We thus obtain the following problem:
+4:	T:
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+		(1, 1)    eval_trie_insert_bb0_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb6_in() -> Com_1(eval_trie_insert_9())
+		(?, 1)    eval_trie_insert_9() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 4:
+	eval_trie_insert_bb0_in() -> Com_1(eval_trie_insert_bb1_in())
+We thus obtain the following problem:
+5:	T:
+		(?, 1)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_9() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb6_in() -> Com_1(eval_trie_insert_9())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+By chaining the transition eval_trie_insert_11() -> Com_1(eval_trie_insert_bb7_in()) with all transitions in problem 5, the following new transition is obtained:
+	eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in())
+We thus obtain the following problem:
+6:	T:
+		(?, 2)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_9() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb6_in() -> Com_1(eval_trie_insert_9())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+By chaining the transition eval_trie_insert_bb6_in() -> Com_1(eval_trie_insert_9()) with all transitions in problem 6, the following new transition is obtained:
+	eval_trie_insert_bb6_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+We thus obtain the following problem:
+7:	T:
+		(?, 2)    eval_trie_insert_bb6_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 2)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_9() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 7:
+	eval_trie_insert_9() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+We thus obtain the following problem:
+8:	T:
+		(?, 2)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 2)    eval_trie_insert_bb6_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+By chaining the transition eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb7_in()) with all transitions in problem 8, the following new transition is obtained:
+	eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb1_in())
+We thus obtain the following problem:
+9:	T:
+		(?, 2)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 2)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 1)    eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 2)    eval_trie_insert_bb6_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 9:
+	eval_trie_insert_bb7_in() -> Com_1(eval_trie_insert_bb1_in())
+We thus obtain the following problem:
+10:	T:
+		(?, 2)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 2)    eval_trie_insert_bb6_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 2)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+By chaining the transition eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb6_in()) with all transitions in problem 10, the following new transition is obtained:
+	eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+We thus obtain the following problem:
+11:	T:
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 2)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 2)    eval_trie_insert_bb6_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 2)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transition from problem 11:
+	eval_trie_insert_bb6_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+We thus obtain the following problem:
+12:	T:
+		(?, 2)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 2)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+By chaining the transition eval_trie_insert_11() -> Com_1(eval_trie_insert_bb1_in()) with all transitions in problem 12, the following new transitions are obtained:
+	eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+	eval_trie_insert_11() -> Com_1(eval_trie_insert_bb3_in())
+We thus obtain the following problem:
+13:	T:
+		(?, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 2)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_trie_insert_11) = 1
+	Pol(eval_trie_insert_stop) = 0
+	Pol(eval_trie_insert_bb3_in) = 1
+	Pol(eval_trie_insert_10) = 1
+	Pol(eval_llvm.memset.p0i8.i64_start) = 0
+	Pol(eval_malloc_start) = 0
+	Pol(eval_trie_insert_bb1_in) = 1
+	Pol(eval_trie_insert_start) = 1
+orients all transitions weakly and the transition
+	eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+strictly and produces the following problem:
+14:	T:
+		(1, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 2)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb1_in())
+		(?, 1)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+By chaining the transition eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb1_in()) with all transitions in problem 14, the following new transitions are obtained:
+	eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_stop())
+	eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+We thus obtain the following problem:
+15:	T:
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+Repeatedly propagating knowledge in problem 15 produces the following problem:
+16:	T:
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+A polynomial rank function with
+	Pol(eval_trie_insert_bb3_in) = 1
+	Pol(eval_trie_insert_stop) = 0
+	Pol(eval_trie_insert_11) = 1
+	Pol(eval_trie_insert_10) = 1
+	Pol(eval_llvm.memset.p0i8.i64_start) = 0
+	Pol(eval_malloc_start) = 0
+	Pol(eval_trie_insert_bb1_in) = 1
+	Pol(eval_trie_insert_start) = 1
+orients all transitions weakly and the transition
+	eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_stop())
+strictly and produces the following problem:
+17:	T:
+		(1, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 2)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+By chaining the transition eval_trie_insert_start() -> Com_1(eval_trie_insert_bb1_in()) with all transitions in problem 17, the following new transitions are obtained:
+	eval_trie_insert_start() -> Com_1(eval_trie_insert_stop())
+	eval_trie_insert_start() -> Com_1(eval_trie_insert_bb3_in())
+We thus obtain the following problem:
+18:	T:
+		(1, 3)    eval_trie_insert_start() -> Com_1(eval_trie_insert_stop())
+		(1, 3)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb3_in())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+		(1, 1)    eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+Testing for reachability in the complexity graph removes the following transitions from problem 18:
+	eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_stop())
+	eval_trie_insert_bb1_in() -> Com_1(eval_trie_insert_bb3_in())
+We thus obtain the following problem:
+19:	T:
+		(?, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_11() -> Com_1(eval_trie_insert_stop())
+		(?, 1)    eval_trie_insert_10() -> Com_2(eval_llvm.memset.p0i8.i64_start(), eval_trie_insert_11())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_stop())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_2(eval_malloc_start(), eval_trie_insert_10())
+		(?, 3)    eval_trie_insert_bb3_in() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_start() -> Com_1(eval_trie_insert_bb3_in())
+		(1, 3)    eval_trie_insert_start() -> Com_1(eval_trie_insert_stop())
+	start location:	eval_trie_insert_start
+	leaf cost:	0
+
+Complexity upper bound ?
+
+Time: 0.107 sec (SMT: 0.099 sec)

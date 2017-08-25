@@ -1,0 +1,44 @@
+YES(?, v_len + 3)
+
+Initial complexity problem:
+1:	T:
+		(1, 1)    eval_bi_reverse_start(v_.01, v_code, v_len) -> eval_bi_reverse_bb0_in(v_.01, v_code, v_len)
+		(?, 1)    eval_bi_reverse_bb0_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_len, v_code, v_len)
+		(?, 1)    eval_bi_reverse_bb1_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_.01 - 1, v_code, v_len) [ v_.01 - 1 > 0 ]
+		(?, 1)    eval_bi_reverse_bb1_in(v_.01, v_code, v_len) -> eval_bi_reverse_stop(v_.01, v_code, v_len) [ v_.01 - 1 <= 0 ]
+	start location:	eval_bi_reverse_start
+	leaf cost:	0
+
+Repeatedly removing leaves of the complexity graph in problem 1 produces the following problem:
+2:	T:
+		(1, 1)    eval_bi_reverse_start(v_.01, v_code, v_len) -> eval_bi_reverse_bb0_in(v_.01, v_code, v_len)
+		(?, 1)    eval_bi_reverse_bb0_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_len, v_code, v_len)
+		(?, 1)    eval_bi_reverse_bb1_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_.01 - 1, v_code, v_len) [ v_.01 - 1 > 0 ]
+	start location:	eval_bi_reverse_start
+	leaf cost:	1
+
+Repeatedly propagating knowledge in problem 2 produces the following problem:
+3:	T:
+		(1, 1)    eval_bi_reverse_start(v_.01, v_code, v_len) -> eval_bi_reverse_bb0_in(v_.01, v_code, v_len)
+		(1, 1)    eval_bi_reverse_bb0_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_len, v_code, v_len)
+		(?, 1)    eval_bi_reverse_bb1_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_.01 - 1, v_code, v_len) [ v_.01 - 1 > 0 ]
+	start location:	eval_bi_reverse_start
+	leaf cost:	1
+
+A polynomial rank function with
+	Pol(eval_bi_reverse_start) = V_3
+	Pol(eval_bi_reverse_bb0_in) = V_3
+	Pol(eval_bi_reverse_bb1_in) = V_1
+orients all transitions weakly and the transition
+	eval_bi_reverse_bb1_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_.01 - 1, v_code, v_len) [ v_.01 - 1 > 0 ]
+strictly and produces the following problem:
+4:	T:
+		(1, 1)        eval_bi_reverse_start(v_.01, v_code, v_len) -> eval_bi_reverse_bb0_in(v_.01, v_code, v_len)
+		(1, 1)        eval_bi_reverse_bb0_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_len, v_code, v_len)
+		(v_len, 1)    eval_bi_reverse_bb1_in(v_.01, v_code, v_len) -> eval_bi_reverse_bb1_in(v_.01 - 1, v_code, v_len) [ v_.01 - 1 > 0 ]
+	start location:	eval_bi_reverse_start
+	leaf cost:	1
+
+Complexity upper bound v_len + 3
+
+Time: 0.028 sec (SMT: 0.026 sec)
