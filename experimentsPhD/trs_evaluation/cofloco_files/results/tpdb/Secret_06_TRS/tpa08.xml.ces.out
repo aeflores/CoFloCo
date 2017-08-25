@@ -1,0 +1,569 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [minus/3]
+1. recursive  : [plus/3]
+2. recursive [non_tail] : [times/3]
+3. recursive  : [f/2]
+4. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into minus/3
+1. SCC is partially evaluated into plus/3
+2. SCC is partially evaluated into times/3
+3. SCC is partially evaluated into f/2
+4. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations minus/3 
+* CE 8 is refined into CE [17] 
+* CE 6 is refined into CE [18] 
+* CE 7 is refined into CE [19] 
+
+
+#### Refined cost equations minus/3 
+* CE 17: minus(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 18: minus(A,B,A) = 1
+     [A>=0,B=0] 
+* CE 19: minus(V1,V,Out) = 1+ minus(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+
+### Cost equations --> "Loop" of minus/3 
+* CEs [19] --> Loop 12 
+* CEs [17] --> Loop 13 
+* CEs [18] --> Loop 14 
+
+#### Loops of minus/3 
+* Loop 12: minus(V1,V,Out)->  minus(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+* Loop 13: minus(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 14: minus(A,B,A) [A>=0,B=0] 
+
+### Ranking functions of CR minus(V1,V,Out) 
+* RF of phase [12]: [V,V1]
+
+#### Partial ranking functions of CR minus(V1,V,Out) 
+* Partial RF of phase [12]:
+  - RF of loop [12:1]:
+    V
+    V1
+
+
+### Resulting Chains:minus(V1,V,Out) 
+* [[12],14]
+* [[12],13]
+* [14]
+* [13]
+
+
+### Merging Chains  minus/3 into  External patterns of execution 
+* [[14]] --> 1 
+* [[13],[13,[12]]] --> 2 
+* [[14,[12]]] --> 3 
+
+
+### Specialization of cost equations plus/3 
+* CE 11 is refined into CE [20] 
+* CE 9 is refined into CE [21] 
+* CE 10 is refined into CE [22] 
+
+
+#### Refined cost equations plus/3 
+* CE 20: plus(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 21: plus(A,B,B) = 1
+     [B>=0,A=0] 
+* CE 22: plus(V1,V,Out) = 1+ plus(W1,V,X1)
+     [W1>=0,V>=0,X1+1=Out,W1+1=V1] 
+
+### Cost equations --> "Loop" of plus/3 
+* CEs [22] --> Loop 15 
+* CEs [20] --> Loop 16 
+* CEs [21] --> Loop 17 
+
+#### Loops of plus/3 
+* Loop 15: plus(V1,V,Out)->  plus(V1',V,Out')
+                  [V1'>=0,V>=0,Out=Out'+1,V1'+1=V1] 
+* Loop 16: plus(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 17: plus(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR plus(V1,V,Out) 
+* RF of phase [15]: [V1]
+
+#### Partial ranking functions of CR plus(V1,V,Out) 
+* Partial RF of phase [15]:
+  - RF of loop [15:1]:
+    V1
+
+
+### Resulting Chains:plus(V1,V,Out) 
+* [[15],17]
+* [[15],16]
+* [17]
+* [16]
+
+
+### Merging Chains  plus/3 into  External patterns of execution 
+* [[17]] --> 1 
+* [[16]] --> 2 
+* [[17,[15]]] --> 3 
+* [[16,[15]]] --> 4 
+
+
+### Specialization of cost equations times/3 
+* CE 12 is refined into CE [23] 
+* CE 14 is refined into CE [24] 
+* CE 13 is refined into CE [25,26,27,28] 
+
+
+#### Refined cost equations times/3 
+* CE 23: times(V1,V,Out) = 1
+     [V1>=0,Out=0,V=0] 
+* CE 24: times(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 25: times(V1,V,Out) = 1+ times(W1,X1,Out)+ plus(Y1,Out,Out):1
+     [X1>=0,Out>=0,X1+1=V,W1=0,Y1=0,V1=0] 
+* CE 26: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(V1,X1,Y1):2
+     [W1>=0,X1>=0,V1>=0,W1+1=V,Y1=0,Out=0] 
+* CE 27: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(V1,Y1,Out):3
+     [Out>=V1,W1>=0,V1>=1,Out=V1+X1,Out=V1+Y1,W1+1=V] 
+* CE 28: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(V1,X1,Out):4
+     [V1>=Out,W1>=0,Out>=1,X1>=0,W1+1=V] 
+
+### Cost equations --> "Loop" of times/3 
+* CEs [28] --> Loop 18 
+* CEs [27] --> Loop 19 
+* CEs [26] --> Loop 20 
+* CEs [25] --> Loop 21 
+* CEs [23,24] --> Loop 22 
+
+#### Loops of times/3 
+* Loop 18: times(V1,V,Out)->  times(V1,V',Out')
+                  [V1>=Out,Out'>=0,Out>=1,V>=1,V=V'+1] 
+* Loop 19: times(V1,V,Out)->  times(V1,V',Out')
+                  [Out>=V1,V>=1,V1>=1,V1+Out'=Out,V=V'+1] 
+* Loop 20: times(V1,V,Out)->  times(V1,V',Out')
+                  [Out'>=0,V>=1,V1>=0,V=V'+1,Out=0] 
+* Loop 21: times(V1,V,Out)->  times(V1',V',Out)
+                  [Out>=0,V>=1,V=V'+1,V1'=0,V1=0] 
+* Loop 22: times(V1,V,Out) [V>=0,V1>=0,Out=0] 
+
+### Ranking functions of CR times(V1,V,Out) 
+* RF of phase [18,19,20,21]: [V]
+
+#### Partial ranking functions of CR times(V1,V,Out) 
+* Partial RF of phase [18,19,20,21]:
+  - RF of loop [18:1,19:1,20:1,21:1]:
+    V
+
+
+### Resulting Chains:times(V1,V,Out) 
+* [[18,19,20,21],22]
+* [22]
+
+
+### Merging Chains  times/3 into  External patterns of execution 
+* [[22]] --> 1 
+* [[22,[18,19,20,21]]] --> 2 
+
+
+### Specialization of cost equations f/2 
+* CE 16 is refined into CE [29] 
+* CE 15 is refined into CE [30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83] 
+
+
+#### Refined cost equations f/2 
+* CE 29: f(V1,Out) = 0
+     [V1>=0,Out=0] 
+* CE 30: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):1+ plus(C2,D2,E2):1+ times(F2,F2,G2):1+ minus(H2,I2,J2):1+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 31: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):1+ plus(C2,D2,E2):1+ times(F2,F2,G2):1+ minus(H2,I2,J2):2+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 32: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):1+ plus(C2,D2,E2):1+ times(F2,F2,G2):2+ minus(H2,I2,J2):1+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 33: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):1+ plus(C2,D2,E2):1+ times(F2,F2,G2):2+ minus(H2,G2,I2):2+ f(J2,Out)
+     [G2>=0,F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,J2=0,I2=0,H2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 34: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):1+ plus(C2,D2,E2):2+ times(F2,F2,G2):1+ minus(H2,I2,J2):1+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 35: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):1+ plus(C2,D2,E2):2+ times(F2,F2,G2):1+ minus(H2,I2,J2):2+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 36: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):1+ plus(C2,D2,E2):2+ times(F2,F2,G2):2+ minus(H2,I2,J2):1+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 37: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):1+ plus(C2,D2,E2):2+ times(F2,F2,G2):2+ minus(H2,G2,I2):2+ f(J2,Out)
+     [G2>=0,F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,J2=0,I2=0,H2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 38: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,B2,B2):1+ times(D2,D2,E2):1+ minus(B2,F2,B2):1+ f(B2,Out)
+     [B2>=0,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,F2=0,E2=0,C2=0,A2=3,Y1=0] 
+* CE 39: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,B2,B2):1+ times(D2,D2,E2):1+ minus(B2,F2,G2):2+ f(H2,Out)
+     [B2>=0,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,H2=0,G2=0,F2=0,E2=0,C2=0,A2=3,Y1=0] 
+* CE 40: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,B2,B2):1+ times(D2,D2,E2):2+ minus(B2,F2,B2):1+ f(B2,Out)
+     [B2>=0,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,F2=0,E2=0,C2=0,A2=3,Y1=0] 
+* CE 41: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,B2,B2):1+ times(D2,D2,E2):2+ minus(B2,E2,F2):2+ f(G2,Out)
+     [E2>=0,B2>=0,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,G2=0,F2=0,C2=0,A2=3,Y1=0] 
+* CE 42: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,D2,E2):1+ times(F2,F2,G2):2+ minus(H2,G2,I2):3+ f(I2,Out)
+     [I2>=0,G2>=1,F2>=2,G2+I2=H2,G2+I2=E2,G2+I2=D2,G2+I2=B2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,C2=0,A2=3,Y1=0] 
+* CE 43: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,B2,D2):2+ times(E2,E2,F2):1+ minus(G2,H2,I2):1+ f(J2,Out)
+     [E2>=2,B2>=0,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,J2=0,I2=0,H2=0,G2=0,F2=0,D2=0,C2=0,A2=3,Y1=0] 
+* CE 44: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,B2,D2):2+ times(E2,E2,F2):1+ minus(G2,H2,I2):2+ f(J2,Out)
+     [E2>=2,B2>=0,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,J2=0,I2=0,H2=0,G2=0,F2=0,D2=0,C2=0,A2=3,Y1=0] 
+* CE 45: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,B2,D2):2+ times(E2,E2,F2):2+ minus(G2,H2,I2):1+ f(J2,Out)
+     [E2>=2,B2>=0,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,J2=0,I2=0,H2=0,G2=0,F2=0,D2=0,C2=0,A2=3,Y1=0] 
+* CE 46: f(V1,Out) = 1+ times(W1,X1,Y1):1+ times(Z1,A2,B2):2+ plus(C2,B2,D2):2+ times(E2,E2,F2):2+ minus(G2,F2,H2):2+ f(I2,Out)
+     [F2>=0,E2>=2,B2>=0,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,I2=0,H2=0,G2=0,D2=0,C2=0,A2=3,Y1=0] 
+* CE 47: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(C2,D2,E2):1+ times(F2,F2,G2):1+ minus(H2,I2,J2):1+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 48: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(C2,D2,E2):1+ times(F2,F2,G2):1+ minus(H2,I2,J2):2+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 49: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(C2,D2,E2):1+ times(F2,F2,G2):2+ minus(H2,I2,J2):1+ f(K2,Out)
+     [F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,K2=0,J2=0,I2=0,H2=0,G2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 50: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(C2,D2,E2):1+ times(F2,F2,G2):2+ minus(H2,G2,I2):2+ f(J2,Out)
+     [G2>=0,F2>=2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,J2=0,I2=0,H2=0,E2=0,D2=0,C2=0,B2=0,A2=3,Y1=0] 
+* CE 51: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):2+ times(E2,E2,F2):1+ minus(G2,H2,I2):1+ f(J2,Out)
+     [E2>=2,Y1>=0,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,J2=0,I2=0,H2=0,G2=0,F2=0,D2=0,C2=0,B2=0,A2=3] 
+* CE 52: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):2+ times(E2,E2,F2):1+ minus(G2,H2,I2):2+ f(J2,Out)
+     [E2>=2,Y1>=0,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,J2=0,I2=0,H2=0,G2=0,F2=0,D2=0,C2=0,B2=0,A2=3] 
+* CE 53: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):2+ times(E2,E2,F2):2+ minus(G2,H2,I2):1+ f(J2,Out)
+     [E2>=2,Y1>=0,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,J2=0,I2=0,H2=0,G2=0,F2=0,D2=0,C2=0,B2=0,A2=3] 
+* CE 54: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):2+ times(E2,E2,F2):2+ minus(G2,F2,H2):2+ f(I2,Out)
+     [F2>=0,E2>=2,Y1>=0,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,I2=0,H2=0,G2=0,D2=0,C2=0,B2=0,A2=3] 
+* CE 55: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,Y1):3+ times(D2,D2,E2):1+ minus(Y1,F2,Y1):1+ f(Y1,Out)
+     [Y1>=1,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,F2=0,E2=0,C2=0,B2=0,A2=3] 
+* CE 56: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,Y1):3+ times(D2,D2,E2):1+ minus(Y1,F2,G2):2+ f(H2,Out)
+     [Y1>=1,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,H2=0,G2=0,F2=0,E2=0,C2=0,B2=0,A2=3] 
+* CE 57: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,Y1):3+ times(D2,D2,E2):2+ minus(Y1,F2,Y1):1+ f(Y1,Out)
+     [Y1>=1,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,F2=0,E2=0,C2=0,B2=0,A2=3] 
+* CE 58: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,Y1):3+ times(D2,D2,E2):2+ minus(Y1,E2,F2):2+ f(G2,Out)
+     [E2>=0,Y1>=1,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,G2=0,F2=0,C2=0,B2=0,A2=3] 
+* CE 59: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(C2,D2,E2):3+ times(F2,F2,G2):2+ minus(H2,G2,I2):3+ f(I2,Out)
+     [I2>=0,G2>=1,F2>=2,G2+I2=H2,G2+I2=E2,G2+I2=C2,G2+I2=Y1,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,D2=0,B2=0,A2=3] 
+* CE 60: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):4+ times(E2,E2,F2):1+ minus(D2,G2,D2):1+ f(D2,Out)
+     [Y1>=D2,D2>=1,E2>=2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,G2=0,F2=0,C2=0,B2=0,A2=3] 
+* CE 61: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):4+ times(E2,E2,F2):1+ minus(D2,G2,H2):2+ f(I2,Out)
+     [Y1>=D2,D2>=1,E2>=2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,I2=0,H2=0,G2=0,F2=0,C2=0,B2=0,A2=3] 
+* CE 62: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):4+ times(E2,E2,F2):2+ minus(D2,G2,D2):1+ f(D2,Out)
+     [Y1>=D2,D2>=1,E2>=2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,G2=0,F2=0,C2=0,B2=0,A2=3] 
+* CE 63: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):4+ times(E2,E2,F2):2+ minus(D2,F2,G2):2+ f(H2,Out)
+     [Y1>=D2,F2>=0,D2>=1,E2>=2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,H2=0,G2=0,C2=0,B2=0,A2=3] 
+* CE 64: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):1+ plus(Y1,C2,D2):4+ times(E2,E2,F2):2+ minus(G2,F2,H2):3+ f(H2,Out)
+     [Y1>=F2+H2,H2>=0,F2>=1,E2>=2,F2+H2=G2,F2+H2=D2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,C2=0,B2=0,A2=3] 
+* CE 65: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(C2,B2,B2):1+ times(D2,D2,E2):1+ minus(B2,F2,B2):1+ f(B2,Out)
+     [B2>=0,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,F2=0,E2=0,C2=0,A2=3,Y1=0] 
+* CE 66: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(C2,B2,B2):1+ times(D2,D2,E2):1+ minus(B2,F2,G2):2+ f(H2,Out)
+     [B2>=0,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,H2=0,G2=0,F2=0,E2=0,C2=0,A2=3,Y1=0] 
+* CE 67: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(C2,B2,B2):1+ times(D2,D2,E2):2+ minus(B2,F2,B2):1+ f(B2,Out)
+     [B2>=0,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,F2=0,E2=0,C2=0,A2=3,Y1=0] 
+* CE 68: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(C2,B2,B2):1+ times(D2,D2,E2):2+ minus(B2,E2,F2):2+ f(G2,Out)
+     [E2>=0,B2>=0,D2>=2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,G2=0,F2=0,C2=0,A2=3,Y1=0] 
+* CE 69: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(C2,D2,E2):1+ times(F2,F2,G2):2+ minus(H2,G2,I2):3+ f(I2,Out)
+     [I2>=0,G2>=1,F2>=2,G2+I2=H2,G2+I2=E2,G2+I2=D2,G2+I2=B2,F2=Z1+1,F2=X1+1,F2=W1+1,F2=V1+1,C2=0,A2=3,Y1=0] 
+* CE 70: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):2+ times(D2,D2,E2):1+ minus(F2,G2,H2):1+ f(I2,Out)
+     [D2>=2,B2>=0,Y1>=0,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,I2=0,H2=0,G2=0,F2=0,E2=0,C2=0,A2=3] 
+* CE 71: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):2+ times(D2,D2,E2):1+ minus(F2,G2,H2):2+ f(I2,Out)
+     [D2>=2,B2>=0,Y1>=0,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,I2=0,H2=0,G2=0,F2=0,E2=0,C2=0,A2=3] 
+* CE 72: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):2+ times(D2,D2,E2):2+ minus(F2,G2,H2):1+ f(I2,Out)
+     [D2>=2,B2>=0,Y1>=0,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,I2=0,H2=0,G2=0,F2=0,E2=0,C2=0,A2=3] 
+* CE 73: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):2+ times(D2,D2,E2):2+ minus(F2,E2,G2):2+ f(H2,Out)
+     [E2>=0,D2>=2,B2>=0,Y1>=0,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,H2=0,G2=0,F2=0,C2=0,A2=3] 
+* CE 74: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,C2,D2):3+ times(E2,E2,F2):1+ minus(D2,G2,D2):1+ f(D2,Out)
+     [D2>=Y1,E2>=2,Y1>=1,D2=Y1+C2,D2=Y1+B2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,G2=0,F2=0,A2=3] 
+* CE 75: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,C2,D2):3+ times(E2,E2,F2):1+ minus(D2,G2,H2):2+ f(I2,Out)
+     [D2>=Y1,E2>=2,Y1>=1,D2=Y1+C2,D2=Y1+B2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,I2=0,H2=0,G2=0,F2=0,A2=3] 
+* CE 76: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,C2,D2):3+ times(E2,E2,F2):2+ minus(D2,G2,D2):1+ f(D2,Out)
+     [D2>=Y1,E2>=2,Y1>=1,D2=Y1+C2,D2=Y1+B2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,G2=0,F2=0,A2=3] 
+* CE 77: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,C2,D2):3+ times(E2,E2,F2):2+ minus(D2,F2,G2):2+ f(H2,Out)
+     [D2>=Y1,F2>=0,E2>=2,Y1>=1,D2=Y1+C2,D2=Y1+B2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,H2=0,G2=0,A2=3] 
+* CE 78: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,C2,D2):3+ times(E2,E2,F2):2+ minus(G2,F2,H2):3+ f(H2,Out)
+     [F2+H2>=Y1,H2>=0,F2>=1,E2>=2,Y1>=1,F2+H2=Y1+C2,F2+H2=Y1+B2,F2+H2=G2,F2+H2=D2,E2=Z1+1,E2=X1+1,E2=W1+1,E2=V1+1,A2=3] 
+* CE 79: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):4+ times(D2,D2,E2):1+ minus(C2,F2,C2):1+ f(C2,Out)
+     [Y1>=C2,C2>=1,D2>=2,B2>=0,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,F2=0,E2=0,A2=3] 
+* CE 80: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):4+ times(D2,D2,E2):1+ minus(C2,F2,G2):2+ f(H2,Out)
+     [Y1>=C2,C2>=1,D2>=2,B2>=0,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,H2=0,G2=0,F2=0,E2=0,A2=3] 
+* CE 81: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):4+ times(D2,D2,E2):2+ minus(C2,F2,C2):1+ f(C2,Out)
+     [Y1>=C2,C2>=1,D2>=2,B2>=0,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,F2=0,E2=0,A2=3] 
+* CE 82: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):4+ times(D2,D2,E2):2+ minus(C2,E2,F2):2+ f(G2,Out)
+     [Y1>=C2,E2>=0,C2>=1,D2>=2,B2>=0,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,G2=0,F2=0,A2=3] 
+* CE 83: f(V1,Out) = 1+ times(W1,X1,Y1):2+ times(Z1,A2,B2):2+ plus(Y1,B2,C2):4+ times(D2,D2,E2):2+ minus(F2,E2,G2):3+ f(G2,Out)
+     [Y1>=E2+G2,G2>=0,E2>=1,D2>=2,B2>=0,E2+G2=F2,E2+G2=C2,D2=Z1+1,D2=X1+1,D2=W1+1,D2=V1+1,A2=3] 
+
+### Cost equations --> "Loop" of f/2 
+* CEs [30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83] --> Loop 23 
+* CEs [29] --> Loop 24 
+
+#### Loops of f/2 
+* Loop 23: f(V1,Out)->  f(V1',Out)
+                  [V1'>=0,V1>=1] 
+* Loop 24: f(V1,Out) [V1>=0,Out=0] 
+
+### Ranking functions of CR f(V1,Out) 
+
+#### Partial ranking functions of CR f(V1,Out) 
+
+
+### Resulting Chains:f(V1,Out) 
+* [[23]]...
+* [[23],24]
+* [24]
+
+
+### Merging Chains  f/2 into  External patterns of execution 
+* [[24],[24,[23]]] --> 1 
+* [[[23]]] --> 2 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [84,85,86] 
+* CE 3 is refined into CE [87,88,89,90] 
+* CE 4 is refined into CE [91,92] 
+* CE 5 is refined into CE [93,94] 
+
+
+#### Refined cost equations start/2 
+* CE 84: start(V1,V) = 0+ minus(V1,W1,V1):1
+     [V1>=0,W1=0,V=0] 
+* CE 85: start(V1,V) = 0+ minus(V1,V,W1):2
+     [V>=0,V1>=0,W1=0] 
+* CE 86: start(V1,V) = 0+ minus(W1,V,X1):3
+     [X1>=0,V>=1,V+X1=W1,V+X1=V1] 
+* CE 87: start(V1,V) = 0+ plus(W1,V,V):1
+     [V>=0,W1=0,V1=0] 
+* CE 88: start(V1,V) = 0+ plus(V1,V,W1):2
+     [V>=0,V1>=0,W1=0] 
+* CE 89: start(V1,V) = 0+ plus(V1,W1,X1):3
+     [X1>=V1,V1>=1,X1=V1+W1,X1=V1+V] 
+* CE 90: start(V1,V) = 0+ plus(V1,V,W1):4
+     [V1>=W1,W1>=1,V>=0] 
+* CE 91: start(V1,V) = 0+ times(V1,V,W1):1
+     [V>=0,V1>=0,W1=0] 
+* CE 92: start(V1,V) = 0+ times(V1,V,W1):2
+     [W1>=0,V>=1,V1>=0] 
+* CE 93: start(V1,V) = 0+ f(V1,W1):1
+     [V1>=0,W1=0] 
+* CE 94: start(V1,V) = 0+ f(V1,W1):2
+     [V1>=1] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [94] --> Loop 25 
+* CEs [84] --> Loop 26 
+* CEs [85,86,87,88,89,90,91,92,93] --> Loop 27 
+
+#### Loops of start/2 
+* Loop 25: start(V1,V) [V1>=1] 
+* Loop 26: start(V1,V) [V1>=0,V=0] 
+* Loop 27: start(V1,V) [V1>=0] 
+
+### Ranking functions of CR start(V1,V) 
+
+#### Partial ranking functions of CR start(V1,V) 
+
+
+### Resulting Chains:start(V1,V) 
+* [27]
+* [26]
+* [25]...
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[26],[27]] --> 1 
+* [[25]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [12] 
+
+ * loop 12:minus(V1,V,Out) -> [minus(V1',V',Out')] 
+1
+#### Cost of phase [12]:minus(V1,V,Out) -> [minus(V1',V',Out')] 
+1*it(12)+0
+  Such that:it(12) =< V1
+it(12) =< V1-V1'
+it(12) =< V
+it(12) =< V-V'
+
+#### Cost of phase [12]:minus(V1,V,Out) -> [minus(V1',V',Out')] 
+1*it(12)+0
+  Such that:it(12) =< V1
+it(12) =< V1-V1'
+it(12) =< V
+it(12) =< V-V'
+
+#### Cost of chains of minus(V1,V,Out):
+* Chain [[12],14]: 1*it(12)+1
+  Such that:it(12) =< V
+
+  with precondition: [V1=Out+V,V>=1,V1>=V] 
+
+* Chain [[12],13]: 1*it(12)+0
+  Such that:it(12) =< V
+
+  with precondition: [Out=0,V1>=1,V>=1] 
+
+* Chain [14]: 1
+  with precondition: [V=0,V1=Out,V1>=0] 
+
+* Chain [13]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [15] 
+
+ * loop 15:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1
+#### Cost of phase [15]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V1
+it(15) =< V1-V1'
+
+#### Cost of phase [15]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V1
+it(15) =< V1-V1'
+
+#### Cost of chains of plus(V1,V,Out):
+* Chain [[15],17]: 1*it(15)+1
+  Such that:it(15) =< -V+Out
+
+  with precondition: [V+V1=Out,V1>=1,V>=0] 
+
+* Chain [[15],16]: 1*it(15)+0
+  Such that:it(15) =< Out
+
+  with precondition: [V>=0,Out>=1,V1>=Out] 
+
+* Chain [17]: 1
+  with precondition: [V1=0,V=Out,V>=0] 
+
+* Chain [16]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [18,19,20,21] 
+
+ * loop 18:times(V1,V,Out) -> [times(V1',V',Out')] 
+1*s(3)+1
+  Such that:s(3) =< V1'
+
+ * loop 19:times(V1,V,Out) -> [times(V1',V',Out')] 
+1*s(5)+2
+  Such that:s(5) =< V1'
+
+ * loop 20:times(V1,V,Out) -> [times(V1',V',Out')] 
+1
+ * loop 21:times(V1,V,Out) -> [times(V1',V',Out')] 
+2
+#### Cost of phase [18,19,20,21]:times(V1,V,Out) -> [times(V1',V',Out')] 
+6*it(18)+1*s(6)+1*s(7)+0
+  Such that:aux(1) =< V1
+aux(3) =< V
+aux(4) =< V-V'
+it(18) =< aux(3)
+it(18) =< aux(4)
+aux(2) =< aux(1)
+s(6) =< it(18)*aux(1)
+s(7) =< it(18)*aux(2)
+
+#### Cost of chains of times(V1,V,Out):
+* Chain [[18,19,20,21],22]: 6*it(18)+1*s(6)+1*s(7)+1
+  Such that:aux(1) =< V1
+aux(5) =< V
+it(18) =< aux(5)
+aux(2) =< aux(1)
+s(6) =< it(18)*aux(1)
+s(7) =< it(18)*aux(2)
+
+  with precondition: [V1>=0,V>=1,Out>=0] 
+
+* Chain [22]: 1
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [23] 
+
+ * loop 23:f(V1,Out) -> [f(V1',Out')] 
+180*s(637)+30*s(639)+30*s(640)+30*s(644)+168*s(633)+28*s(635)+28*s(636)+222*s(641)+37*s(642)+37*s(643)+8*s(632)+6
+  Such that:s(628) =< 3
+s(629) =< V1
+s(630) =< V1+1
+s(631) =< V1'
+s(632) =< s(631)
+s(633) =< s(628)
+s(634) =< s(629)
+s(635) =< s(633)*s(629)
+s(636) =< s(633)*s(634)
+s(637) =< s(630)
+s(638) =< s(630)
+s(639) =< s(637)*s(630)
+s(640) =< s(637)*s(638)
+s(641) =< s(629)
+s(642) =< s(641)*s(629)
+s(643) =< s(641)*s(634)
+
+#### Cost of phase [23]:f(V1,Out) -> [f(V1',Out')] 
+36*it(23)+180*s(645)+30*s(646)+30*s(647)+168*s(649)+28*s(650)+28*s(651)+222*s(652)+37*s(653)+37*s(654)+8*s(655)+0
+#### Cost of phase [23]:f(V1,Out) -> [f(V1',Out')] 
+36*it(23)+180*s(645)+30*s(646)+30*s(647)+168*s(649)+28*s(650)+28*s(651)+222*s(652)+37*s(653)+37*s(654)+8*s(655)+0
+#### Cost of chains of f(V1,Out):
+* Chain [[23]]...: 804*it(23)+0
+  with precondition: [V1>=1] 
+
+* Chain [[23],24]: 804*it(23)+0
+  with precondition: [Out=0,V1>=1] 
+
+* Chain [24]: 0
+  with precondition: [Out=0,V1>=0] 
+
+
+#### Cost of chains of start(V1,V):
+* Chain [27]: 8*s(661)+2*s(663)+1*s(669)+1*s(670)+1*s(671)+1
+  Such that:aux(85) =< V1
+aux(86) =< V
+s(663) =< aux(85)
+s(661) =< aux(86)
+s(668) =< aux(85)
+s(669) =< s(661)*aux(85)
+s(670) =< s(661)*s(668)
+
+  with precondition: [V1>=0] 
+
+* Chain [26]: 1
+  with precondition: [V=0,V1>=0] 
+
+* Chain [25]...: 804*s(672)+0
+  with precondition: [V1>=1] 
+
+
+Closed-form bounds of start(V1,V): 
+-------------------------------------
+* Chain [27] with precondition: [V1>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [26] with precondition: [V=0,V1>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [25]... with precondition: [V1>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V1,V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 10 ms.
+* Invariants computed in 28 ms.
+   - Backward Invariants 14 ms.
+   - Transitive Invariants 7 ms.
+* Refinement performed in 236 ms.
+* Termination proved in 9 ms.
+* Upper bounds computed in 452 ms.
+   - Equation cost structures 404 ms.
+   - Phase cost structures 424 ms.
+   - Chain cost structures 13 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 756 ms.
+

@@ -1,0 +1,326 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [gt/3]
+1. non_recursive  : [id/2]
+2. non_recursive  : [if/4]
+3. non_recursive  : [not/2]
+4. recursive  : [plus/3]
+5. non_recursive  : [times/3]
+6. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into gt/3
+1. SCC is completely evaluated into other SCCs
+2. SCC is partially evaluated into if/4
+3. SCC is completely evaluated into other SCCs
+4. SCC is partially evaluated into plus/3
+5. SCC is partially evaluated into times/3
+6. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations gt/3 
+* CE 13 is refined into CE [21] 
+* CE 14 is refined into CE [22] 
+* CE 15 is refined into CE [23] 
+* CE 12 is refined into CE [24] 
+
+
+#### Refined cost equations gt/3 
+* CE 21: gt(V1,V,Out) = 1
+     [V1>=1,Out=1,V=2] 
+* CE 22: gt(V1,V,Out) = 1
+     [V>=0,Out=0,V1=2] 
+* CE 23: gt(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 24: gt(V1,V,Out) = 1+ gt(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+
+### Cost equations --> "Loop" of gt/3 
+* CEs [24] --> Loop 14 
+* CEs [21] --> Loop 15 
+* CEs [22,23] --> Loop 16 
+
+#### Loops of gt/3 
+* Loop 14: gt(V1,V,Out)->  gt(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+* Loop 15: gt(V1,V,Out) [V1>=1,Out=1,V=2] 
+* Loop 16: gt(V1,V,Out) [V>=0,V1>=0,Out=0] 
+
+### Ranking functions of CR gt(V1,V,Out) 
+* RF of phase [14]: [V,V1]
+
+#### Partial ranking functions of CR gt(V1,V,Out) 
+* Partial RF of phase [14]:
+  - RF of loop [14:1]:
+    V
+    V1
+
+
+### Resulting Chains:gt(V1,V,Out) 
+* [[14],16]
+* [[14],15]
+* [16]
+* [15]
+
+
+### Merging Chains  gt/3 into  External patterns of execution 
+* [[15]] --> 1 
+* [[16],[16,[14]]] --> 2 
+* [[15,[14]]] --> 3 
+
+
+### Specialization of cost equations if/4 
+* CE 20 is refined into CE [25] 
+* CE 18 is refined into CE [26] 
+* CE 19 is refined into CE [27] 
+
+
+#### Refined cost equations if/4 
+* CE 25: if(V1,V,V13,Out) = 0
+     [V13>=0,V>=0,V1>=0,Out=0] 
+* CE 26: if(A,B,C,B) = 1
+     [C>=0,B>=0,A=1] 
+* CE 27: if(A,B,C,C) = 1
+     [C>=0,B>=0,A=0] 
+
+### Cost equations --> "Loop" of if/4 
+* CEs [25] --> Loop 17 
+* CEs [26] --> Loop 18 
+* CEs [27] --> Loop 19 
+
+#### Loops of if/4 
+* Loop 17: if(V1,V,V13,Out) [V13>=0,V>=0,V1>=0,Out=0] 
+* Loop 18: if(A,B,C,B) [C>=0,B>=0,A=1] 
+* Loop 19: if(A,B,C,C) [C>=0,B>=0,A=0] 
+
+### Ranking functions of CR if(V1,V,V13,Out) 
+
+#### Partial ranking functions of CR if(V1,V,V13,Out) 
+
+
+### Resulting Chains:if(V1,V,V13,Out) 
+* [19]
+* [18]
+* [17]
+
+
+### Merging Chains  if/4 into  External patterns of execution 
+* [[19]] --> 1 
+* [[18]] --> 2 
+* [[17]] --> 3 
+
+
+### Specialization of cost equations plus/3 
+* CE 11 is refined into CE [28] 
+* CE 8 is refined into CE [29] 
+* CE 10 is refined into CE [30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85] 
+* CE 9 is refined into CE [86,87,88,89,90,91] 
+
+
+#### Refined cost equations plus/3 
+* CE 28: plus(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 29: plus(A,B,B) = 1
+     [B>=0,A=2] 
+* CE 30: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):1+ if(D2,E2,F2,G2):2+ if(H2,W1,I2,J2):1+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=2,J2=2,I2=2,H2=0,G2=0,F2=1,E2=0,D2=1,C2=1,B2=2,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 31: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):1+ if(D2,E2,F2,G2):2+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=2,H2=0,G2=0,F2=1,E2=0,D2=1,C2=1,B2=2,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 32: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):1+ if(D2,E2,F2,G2):3+ if(H2,W1,I2,J2):1+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=2,J2=2,I2=2,H2=0,G2=0,F2=1,E2=0,D2=1,C2=1,B2=2,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 33: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):1+ if(D2,E2,F2,G2):3+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=2,H2=0,G2=0,F2=1,E2=0,D2=1,C2=1,B2=2,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 34: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):2+ if(D2,E2,F2,G2):1+ if(H2,W1,I2,W1):2+ plus(W1,W1,J2)
+     [W1>=1,J2+2=Out,W1+1=V1,I2=2,H2=1,G2=1,F2=1,E2=0,D2=0,C2=0,B2=2,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 35: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):2+ if(D2,E2,F2,G2):1+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=2,H2=1,G2=1,F2=1,E2=0,D2=0,C2=0,B2=2,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 36: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):2+ if(D2,E2,F2,G2):3+ if(H2,W1,I2,J2):1+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=2,J2=2,I2=2,H2=0,G2=0,F2=1,E2=0,D2=0,C2=0,B2=2,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 37: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):2+ if(D2,E2,F2,G2):3+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=2,H2=0,G2=0,F2=1,E2=0,D2=0,C2=0,B2=2,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 38: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=2,L2=0,K2=2,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=0,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 39: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=0,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 40: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=2,L2=0,K2=2,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=0,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 41: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=0,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 42: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):1+ if(I2,W1,J2,W1):2+ plus(K2,W1,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=0,J2=2,I2=1,H2=1,G2=1,F2=0,E2=0,D2=0,C2=2,B2=0,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 43: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):1+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=2,I2=1,H2=1,G2=1,F2=0,E2=0,D2=0,C2=2,B2=0,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 44: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=2,L2=0,K2=2,J2=2,I2=0,H2=0,G2=1,F2=0,E2=0,D2=0,C2=2,B2=0,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 45: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=2,I2=0,H2=0,G2=1,F2=0,E2=0,D2=0,C2=2,B2=0,A2=2,Z1=1,Y1=1,X1=2,V=3] 
+* CE 46: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):1+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=2,L2=2,K2=2,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=2,A2=2,Z1=0,Y1=0,X1=2,V=3] 
+* CE 47: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):1+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=2,K2=0,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=2,A2=2,Z1=0,Y1=0,X1=2,V=3] 
+* CE 48: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):1+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=2,L2=2,K2=2,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=2,A2=2,Z1=0,Y1=0,X1=2,V=3] 
+* CE 49: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):1+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=2,K2=0,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=2,A2=2,Z1=0,Y1=0,X1=2,V=3] 
+* CE 50: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):2+ if(B2,C2,D2,E2):1+ if(F2,W1,X1,W1):2+ plus(X1,W1,G2)
+     [W1>=0,X1>=0,G2+2=Out,X1+1=V,W1+1=V1,F2=1,E2=1,D2=1,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 51: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):2+ if(B2,C2,D2,E2):1+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [X1>=0,W1>=0,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=1,E2=1,D2=1,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 52: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):2+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,X1):1+ plus(X1,X1,G2)
+     [X1>=0,W1>=0,G2+2=Out,X1+1=V,W1+1=V1,F2=0,E2=0,D2=1,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 53: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):2+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [X1>=0,W1>=0,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=1,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 54: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):2+ if(F2,W1,X1,X1):1+ plus(X1,X1,G2)
+     [W1+1>=X1,X1>=3,G2+2=Out,X1+1=V,W1+1=V1,F2=0,E2=0,D2=1,C2=0,B2=1,A2=1,Z1=0,Y1=0] 
+* CE 55: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):2+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=1,C2=0,B2=1,A2=1,Z1=0,Y1=0] 
+* CE 56: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,X1):1+ plus(X1,X1,G2)
+     [W1+1>=X1,X1>=3,G2+2=Out,X1+1=V,W1+1=V1,F2=0,E2=0,D2=1,C2=0,B2=1,A2=1,Z1=0,Y1=0] 
+* CE 57: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=1,C2=0,B2=1,A2=1,Z1=0,Y1=0] 
+* CE 58: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=2,L2=0,K2=2,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=0,A2=2,Z1=0,Y1=0,X1=2,V=3] 
+* CE 59: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=0,A2=2,Z1=0,Y1=0,X1=2,V=3] 
+* CE 60: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=2,L2=0,K2=2,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=0,A2=2,Z1=0,Y1=0,X1=2,V=3] 
+* CE 61: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):1+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=2,I2=0,H2=0,G2=1,F2=0,E2=1,D2=1,C2=2,B2=0,A2=2,Z1=0,Y1=0,X1=2,V=3] 
+* CE 62: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):2+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,W1):2+ plus(H2,W1,I2)
+     [W1>=0,X1>=0,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=1,F2=1,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 63: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):2+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [X1>=0,W1>=0,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=1,F2=1,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 64: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):2+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [X1>=0,W1>=0,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 65: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):2+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [X1>=0,W1>=0,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 66: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=1,D2=0,C2=1,B2=1,A2=0,Z1=0,Y1=0] 
+* CE 67: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+1>=X1,X1>=3,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=1,D2=0,C2=1,B2=1,A2=0,Z1=0,Y1=0] 
+* CE 68: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=1,D2=0,C2=1,B2=1,A2=0,Z1=0,Y1=0] 
+* CE 69: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+1>=X1,X1>=3,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=1,D2=0,C2=1,B2=1,A2=0,Z1=0,Y1=0] 
+* CE 70: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):2+ if(B2,C2,D2,E2):1+ if(F2,W1,X1,W1):2+ plus(W1,W1,G2)
+     [W1+1>=X1,X1>=3,G2+2=Out,X1+1=V,W1+1=V1,F2=1,E2=1,D2=1,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 71: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):2+ if(B2,C2,D2,E2):1+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=1,E2=1,D2=1,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 72: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):2+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,X1):1+ plus(W1,X1,G2)
+     [W1+1>=X1,X1>=3,G2+2=Out,X1+1=V,W1+1=V1,F2=0,E2=0,D2=1,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 73: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):2+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=1,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 74: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):2+ if(F2,W1,X1,X1):1+ plus(W1,X1,G2)
+     [W1+1>=X1,X1>=3,G2+2=Out,X1+1=V,W1+1=V1,F2=0,E2=0,D2=1,C2=0,B2=1,A2=1,Z1=1,Y1=1] 
+* CE 75: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):2+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=1,C2=0,B2=1,A2=1,Z1=1,Y1=1] 
+* CE 76: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,X1):1+ plus(W1,X1,G2)
+     [W1+1>=X1,X1>=3,G2+2=Out,X1+1=V,W1+1=V1,F2=0,E2=0,D2=1,C2=0,B2=1,A2=1,Z1=1,Y1=1] 
+* CE 77: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=1,C2=0,B2=1,A2=1,Z1=1,Y1=1] 
+* CE 78: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):2+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,W1):2+ plus(H2,W1,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=1,F2=1,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 79: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):2+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+1>=X1,X1>=3,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=1,F2=1,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 80: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):2+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 81: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):2+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+1>=X1,X1>=3,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 82: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=1,D2=0,C2=1,B2=1,A2=0,Z1=1,Y1=1] 
+* CE 83: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+1>=X1,X1>=3,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=1,D2=0,C2=1,B2=1,A2=0,Z1=1,Y1=1] 
+* CE 84: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [W1+1>=X1,X1>=3,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=1,D2=0,C2=1,B2=1,A2=0,Z1=1,Y1=1] 
+* CE 85: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+1>=X1,X1>=3,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=1,D2=0,C2=1,B2=1,A2=0,Z1=1,Y1=1] 
+* CE 86: plus(V1,V,Out) = 3+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):2+ plus(D2,E2,Out)
+     [E2=3,D2=2,C2=2,B2=2,A2=2,Z1=1,Y1=1,X1=2,W1=2,V=2,V1=3] 
+* CE 87: plus(V1,V,Out) = 3+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):3+ plus(D2,E2,Out)
+     [E2=3,D2=0,C2=0,B2=2,A2=2,Z1=1,Y1=1,X1=2,W1=2,V=2,V1=3] 
+* CE 88: plus(V1,V,Out) = 3+ gt(V,V,W1):2+ if(X1,V,V,V):1+ plus(V,Y1,Out)
+     [V>=0,V+1=Y1,V+1=V1,X1=0,W1=0] 
+* CE 89: plus(V1,V,Out) = 3+ gt(V,V,W1):2+ if(X1,V,V,Y1):3+ plus(Z1,A2,Out)
+     [V>=0,V+1=A2,V+1=V1,Z1=0,Y1=0,X1=0,W1=0] 
+* CE 90: plus(V1,V,Out) = 3+ gt(V,V,W1):3+ if(X1,V,V,V):2+ plus(V,Y1,Out)
+     [V>=3,V+1=Y1,V+1=V1,X1=1,W1=1] 
+* CE 91: plus(V1,V,Out) = 3+ gt(V,V,W1):3+ if(X1,V,V,Y1):3+ plus(Z1,A2,Out)
+     [V>=3,V+1=A2,V+1=V1,Z1=0,Y1=0,X1=1,W1=1] 
+
+### Cost equations --> "Loop" of plus/3 
+* CEs [50] --> Loop 20 
+* CEs [70] --> Loop 21 
+* CEs [72,74,76] --> Loop 22 
+* CEs [71,73,75,77] --> Loop 23 
+* CEs [34] --> Loop 24 
+* CEs [30,32,36] --> Loop 25 
+* CEs [31,33,35,37] --> Loop 26 
+* CEs [46,48,52,54,56] --> Loop 27 
+* CEs [47,49,51,53,55,57] --> Loop 28 
+* CEs [42,62,78] --> Loop 29 
+* CEs [38,40,44,58,60,64,66,68,80,82,84] --> Loop 30 
+* CEs [39,41,43,45,59,61,63,65,67,69,79,81,83,85] --> Loop 31 
+* CEs [86,88,90] --> Loop 32 
+* CEs [87,89,91] --> Loop 33 
+* CEs [28] --> Loop 34 
+* CEs [29] --> Loop 35 
+
+#### Loops of plus/3 
+* Loop 20: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,V1>=1,Out=Out'+2,V1=V'+1,V=V1'+1] 
+* Loop 21: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+1>=V,V>=4,Out=Out'+2,V1=V'+1,V1=V1'+1] 
+* Loop 22: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+1>=V,V>=4,Out=Out'+2,V=V'+1,V1=V1'+1] 
+* Loop 23: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+1>=V,V>=4,Out=Out'+2,V1=V1'+1,V'=0] 
+* Loop 24: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=2,Out=Out'+2,V1=V'+1,V1=V1'+1,V=3] 
+* Loop 25: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=2,Out=Out'+2,V1=V1'+1,V'=2,V=3] 
+* Loop 26: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=2,Out=Out'+2,V1=V1'+1,V'=0,V=3] 
+* Loop 27: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,V1>=1,Out=Out'+2,V=V'+1,V=V1'+1] 
+* Loop 28: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,V1>=1,Out=Out'+2,V=V1'+1,V'=0] 
+* Loop 29: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,V1>=1,Out=Out'+2,V1=V'+1,V1'=0] 
+* Loop 30: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,V1>=1,Out=Out'+2,V=V'+1,V1'=0] 
+* Loop 31: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,V1>=1,Out=Out'+2,V'=0,V1'=0] 
+* Loop 32: plus(V1,V,Out)->  plus(A',V1,Out)
+                  [V1>=1,V1=A'+1,V1=V+1] 
+* Loop 33: plus(V1,V,Out)->  plus(A',V1,Out)
+                  [V1>=1,V1=V+1,A'=0] 
+* Loop 34: plus(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 35: plus(A,B,B) [B>=0,A=2] 
+
+### Ranking functions of CR plus(V1,V,Out) 
+
+#### Partial ranking functions of CR plus(V1,V,Out) 
+* Partial RF of phase [20,21,22,24,25,26,27,28,32]:
+  - RF of loop [20:1,28:1]:
+    V1/2+V/2-1/2 depends on loops [21:1,24:1,27:1] 
+  - RF of loop [21:1,22:1]:
+    V1-2 depends on loops [20:1,27:1,28:1] 
+  - RF of loop [22:1]:
+    V-3 depends on loops [20:1,21:1,24:1,32:1] 
+  - RF of loop [24:1,25:1,26:1]:
+    V1-1 depends on loops [20:1,27:1,28:1] 
+  - RF of loop [25:1]:
+    V-2 depends on loops [20:1,21:1,24:1,32:1] 
+  - RF of loop [26:1]:
+    V/3-2/3 depends on loops [20:1,21:1,24:1,32:1] 
+  - RF of loop [27:1,28:1]:
+    V depends on loops [20:1,21:1,24:1,32:1] 
+  - RF of loop [32:1]:
+    V1 depends on loops [20:1,27:1,28:1] 
+    V1/2-V/2 depends on loops [20:1,21:1,24:1,26:1,27:1,28:1] 
+

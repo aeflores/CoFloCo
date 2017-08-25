@@ -1,0 +1,161 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [m1/1]
+1. non_recursive : [m7/2]
+2. non_recursive : [m4/0]
+3. non_recursive : [n6/0]
+4. non_recursive : [m5/3]
+5. non_recursive : [m3/3]
+6. non_recursive : [m2/3]
+7. non_recursive : [n3/3]
+8. recursive : [m0/2,m6/2,m8/2,m9/2,merge/2,n0/4,n1/4,n2/4,n4/3,n5/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is completely evaluated into other SCCs
+4. SCC is completely evaluated into other SCCs
+5. SCC is completely evaluated into other SCCs
+6. SCC is completely evaluated into other SCCs
+7. SCC is completely evaluated into other SCCs
+8. SCC is partially evaluated into merge/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations merge/2 
+* CE 4 is refined into CE [6] 
+* CE 5 is refined into CE [7] 
+* CE 3 is refined into CE [8] 
+* CE 2 is refined into CE [9] 
+
+
+#### Refined cost equations merge/2 
+* CE 6: merge(A,B) = 26
+     [B>=0,A>=1] 
+* CE 7: merge(A,B) = 4
+     [A>=0,B=0] 
+* CE 8: merge(A,B) = 29+ merge(C,B)
+     [A>=C+1,C>=0,B>=0] 
+* CE 9: merge(A,B) = 26+ merge(A,C)
+     [B>=C+1,C>=0,A>=0] 
+
+### Cost equations --> "Loop" of merge/2 
+* CEs [8] --> Loop 5 
+* CEs [9] --> Loop 6 
+* CEs [6] --> Loop 7 
+* CEs [7] --> Loop 8 
+
+#### Loops of merge/2 
+* Loop 5: merge(A,B)->  merge(A',B)
+                  [A>=A'+1,A'>=0,B>=0] 
+* Loop 6: merge(A,B)->  merge(A,B')
+                  [B>=B'+1,B'>=0,A>=0] 
+* Loop 7: merge(A,B) [B>=0,A>=1] 
+* Loop 8: merge(A,B) [A>=0,B=0] 
+
+### Ranking functions of CR merge(A,B) 
+* RF of phase [5,6]: [A+B]
+
+#### Partial ranking functions of CR merge(A,B) 
+* Partial RF of phase [5,6]:
+  - RF of loop [5:1]:
+    A
+  - RF of loop [6:1]:
+    B
+
+
+### Resulting Chains:merge(A,B) 
+* [[5,6],8]
+* [[5,6],7]
+* [8]
+* [7]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5,6] 
+
+ * loop 5:merge(A,B) -> [merge(A',B')] 
+29
+ * loop 6:merge(A,B) -> [merge(A',B')] 
+26
+#### Cost of phase [5,6]:merge(A,B) -> [merge(A',B')] 
+29*it(5)+26*it(6)+0
+  Such that:it(5) =< A
+it(5)+it(6) =< A+B
+it(5)+it(6) =< A+B-A'-B'
+it(5) =< A-A'
+it(6) =< B
+it(6) =< B-B'
+
+#### Cost of phase [5,6]:merge(A,B) -> [merge(A',B')] 
+29*it(5)+26*it(6)+0
+  Such that:it(5) =< A
+it(5)+it(6) =< A+B
+it(5)+it(6) =< A+B-A'-B'
+it(5) =< A-A'
+it(6) =< B
+it(6) =< B-B'
+
+#### Cost of chains of merge(A,B):
+* Chain [[5,6],8]: 29*it(5)+26*it(6)+4
+  Such that:it(5) =< A
+it(6) =< B
+
+  with precondition: [A>=0,B>=0,A+B>=1] 
+
+* Chain [[5,6],7]: 29*it(5)+26*it(6)+26
+  Such that:it(5) =< A-1
+it(6) =< B
+
+  with precondition: [A>=1,B>=0,A+B>=2] 
+
+* Chain [8]: 4
+  with precondition: [B=0,A>=0] 
+
+* Chain [7]: 26
+  with precondition: [A>=1,B>=0] 
+
+
+Closed-form bounds of merge(A,B): 
+-------------------------------------
+* Chain [[5,6],8] with precondition: [A>=0,B>=0,A+B>=1] 
+    - Lower bound: 4 
+    - Complexity: constant
+ * Chain [[5,6],7] with precondition: [A>=1,B>=0,A+B>=2] 
+    - Lower bound: 26 
+    - Complexity: constant
+ * Chain [8] with precondition: [B=0,A>=0] 
+    - Lower bound: 4 
+    - Complexity: constant
+ * Chain [7] with precondition: [A>=1,B>=0] 
+    - Lower bound: 26 
+    - Complexity: constant
+ 
+### Partitioned lower bound of merge(A,B): 
+* 4 
+ if [A>=0,B>=0]
+Possible lower bounds : [4]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 63 ms.
+* Invariants computed in 22 ms.
+   - Backward Invariants 12 ms.
+   - Transitive Invariants 4 ms.
+* Refinement performed in 24 ms.
+* Termination proved in 8 ms.
+* Upper bounds computed in 71 ms.
+   - Equation cost structures 7 ms.
+   - Phase cost structures 16 ms.
+   - Chain cost structures 22 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 232 ms.
+

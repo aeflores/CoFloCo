@@ -1,0 +1,56 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   tests/tupels.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   Compute ordered tupes of list elements.
+ *   
+ *)
+
+
+
+let rec attach n l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); (n, x)::attach n xs);;
+
+let rec append l1 l2 =
+	match l1 with
+	| [] -> l2
+	| x::xs -> (Raml.tick(1.0); x::append xs l2);;
+
+let rec pairs l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); append (attach x xs) (pairs xs));;
+
+let rec pairsAux l acc =
+	match l with
+	| [] -> acc
+	| x::xs -> (Raml.tick(1.0); pairsAux xs (append (attach x xs) acc));;
+
+let rec pairsp l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); append (pairsp xs) (attach x xs));;
+
+let rec triples l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); append (attach x (pairs xs)) (triples xs));;
+
+let rec quadruples l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); append (attach x (triples xs)) (quadruples xs));;
+
+
+  quadruples [1;2;3;4;5] , triples [1;2;3;4;5;6;7;8;9;10]

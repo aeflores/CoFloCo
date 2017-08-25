@@ -1,0 +1,112 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Unit Tests * *
+ *
+ * File:
+ *   tests/raml1_bfs.raml
+ *
+ * Author:
+ *   Jan Hoffmann, Shu-Chun Weng (2015)
+ * 
+ * Description:
+ *   Depth-first search and breadth-first search.
+ *   
+ *)
+
+type btree = Leaf | Node of int*btree*btree
+
+type 'a option = None | Some of 'a
+
+
+(* depth-first search *)
+
+let dfs t x =
+
+  let rec dfs_aux queue =
+    match queue with
+      | [] -> None
+      | t::ts -> 
+	match t with
+          | Leaf -> dfs_aux ts
+          | Node(a,t1,t2) -> 
+	    if a = x then 
+	      Some t 
+	    else 
+	      dfs_aux (t1::t2::ts)
+  in
+
+  dfs_aux [t]
+
+
+(* Generating test trees *)
+
+
+
+let make_btree l =
+
+  let rec split l =
+    match l with
+      | [] -> ([],[])
+      | x1::xs ->
+	match xs with
+	  | [] -> ([x1],[])
+	  | x2::xs ->
+	    let (a,b) = split xs in
+	    (x1::a,x2::b)
+  in
+
+  let rec mk_tree l =
+    match l with
+      | [] -> Leaf
+      | x::xs ->
+	let (a,b) = split xs in
+	let (t1,t2) = (mk_tree a, mk_tree b) in
+	Node(x,t1,t2)
+  in
+
+  mk_tree l
+	   
+
+
+let rec append_rev l acc = 
+let _ = Raml.tick(1.0) in
+  match l with
+    | [] -> acc
+    | x::xs -> 
+append_rev xs (x::acc)
+  
+let rev l = append_rev l []
+
+(* breadth-first search *)
+
+let bfs =
+
+  let rec bfs_aux queue futurequeue x = 
+    match queue with
+      | [] -> begin
+	match futurequeue with
+          | [] -> Leaf
+          | t::ts -> bfs_aux (rev futurequeue) [] x
+      end
+      | t::ts -> 
+	match t with
+          | Leaf -> bfs_aux ts futurequeue x
+          | Node(y,t1,t2) -> 
+	    if x=y then 
+	      Node(y,t1,t2) 
+	    else
+	      bfs_aux ts (t2::t1::futurequeue) x
+  in
+
+  fun t x ->
+    match bfs_aux [t] [] x with
+      | Leaf -> None
+      | Node(x,t1,t2) -> Some (Node(x,t1,t2))
+
+
+
+;;
+
+()

@@ -1,0 +1,1485 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [le/3]
+1. recursive  : [len/2]
+2. recursive  : [min/3]
+3. recursive  : [sum/3]
+4. recursive  : [take/3]
+5. recursive  : [if/6]
+6. non_recursive  : [addList/3]
+7. non_recursive  : [start/5]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into le/3
+1. SCC is partially evaluated into len/2
+2. SCC is partially evaluated into min/3
+3. SCC is partially evaluated into sum/3
+4. SCC is partially evaluated into take/3
+5. SCC is partially evaluated into if/6
+6. SCC is partially evaluated into addList/3
+7. SCC is partially evaluated into start/5
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations le/3 
+* CE 22 is refined into CE [30] 
+* CE 20 is refined into CE [31] 
+* CE 19 is refined into CE [32] 
+* CE 21 is refined into CE [33] 
+
+
+#### Refined cost equations le/3 
+* CE 30: le(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 31: le(V,V1,Out) = 1
+     [V>=1,Out=1,V1=0] 
+* CE 32: le(V,V1,Out) = 1
+     [V1>=0,Out=2,V=0] 
+* CE 33: le(V,V1,Out) = 1+ le(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V1,W1+1=V] 
+
+### Cost equations --> "Loop" of le/3 
+* CEs [33] --> Loop 21 
+* CEs [30] --> Loop 22 
+* CEs [31] --> Loop 23 
+* CEs [32] --> Loop 24 
+
+#### Loops of le/3 
+* Loop 21: le(V,V1,Out)->  le(V',V1',Out)
+                  [V1'>=0,V'>=0,V1'+1=V1,V'+1=V] 
+* Loop 22: le(V,V1,Out) [V1>=0,V>=0,Out=0] 
+* Loop 23: le(V,V1,Out) [V>=1,Out=1,V1=0] 
+* Loop 24: le(V,V1,Out) [V1>=0,Out=2,V=0] 
+
+### Ranking functions of CR le(V,V1,Out) 
+* RF of phase [21]: [V,V1]
+
+#### Partial ranking functions of CR le(V,V1,Out) 
+* Partial RF of phase [21]:
+  - RF of loop [21:1]:
+    V
+    V1
+
+
+### Resulting Chains:le(V,V1,Out) 
+* [[21],24]
+* [[21],23]
+* [[21],22]
+* [24]
+* [23]
+* [22]
+
+
+### Merging Chains  le/3 into  External patterns of execution 
+* [[24]] --> 1 
+* [[23]] --> 2 
+* [[22],[22,[21]]] --> 3 
+* [[23,[21]]] --> 4 
+* [[24,[21]]] --> 5 
+
+
+### Specialization of cost equations len/2 
+* CE 13 is refined into CE [34] 
+* CE 15 is refined into CE [35] 
+* CE 14 is refined into CE [36] 
+
+
+#### Refined cost equations len/2 
+* CE 34: len(V,Out) = 1
+     [Out=0,V=0] 
+* CE 35: len(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 36: len(V,Out) = 1+ len(W,X)
+     [V>=W+1,W>=0,X+1=Out] 
+
+### Cost equations --> "Loop" of len/2 
+* CEs [36] --> Loop 25 
+* CEs [34,35] --> Loop 26 
+
+#### Loops of len/2 
+* Loop 25: len(V,Out)->  len(V',Out')
+                  [V>=V'+1,V'>=0,Out=Out'+1] 
+* Loop 26: len(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR len(V,Out) 
+* RF of phase [25]: [V]
+
+#### Partial ranking functions of CR len(V,Out) 
+* Partial RF of phase [25]:
+  - RF of loop [25:1]:
+    V
+
+
+### Resulting Chains:len(V,Out) 
+* [[25],26]
+* [26]
+
+
+### Merging Chains  len/2 into  External patterns of execution 
+* [[26]] --> 1 
+* [[26,[25]]] --> 2 
+
+
+### Specialization of cost equations min/3 
+* CE 10 is refined into CE [37] 
+* CE 9 is refined into CE [38] 
+* CE 12 is refined into CE [39] 
+* CE 11 is refined into CE [40] 
+
+
+#### Refined cost equations min/3 
+* CE 37: min(V,V1,Out) = 1
+     [V>=1,Out=0,V1=0] 
+* CE 38: min(V,V1,Out) = 1
+     [V1>=0,Out=0,V=0] 
+* CE 39: min(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 40: min(V,V1,Out) = 1+ min(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V1,W1+1=V] 
+
+### Cost equations --> "Loop" of min/3 
+* CEs [40] --> Loop 27 
+* CEs [37] --> Loop 28 
+* CEs [38,39] --> Loop 29 
+
+#### Loops of min/3 
+* Loop 27: min(V,V1,Out)->  min(V',V1',Out)
+                  [V1'>=0,V'>=0,V1'+1=V1,V'+1=V] 
+* Loop 28: min(V,V1,Out) [V>=1,Out=0,V1=0] 
+* Loop 29: min(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR min(V,V1,Out) 
+* RF of phase [27]: [V,V1]
+
+#### Partial ranking functions of CR min(V,V1,Out) 
+* Partial RF of phase [27]:
+  - RF of loop [27:1]:
+    V
+    V1
+
+
+### Resulting Chains:min(V,V1,Out) 
+* [[27],29]
+* [[27],28]
+* [29]
+* [28]
+
+
+### Merging Chains  min/3 into  External patterns of execution 
+* [[28],[29],[28,[27]],[29,[27]]] --> 1 
+
+
+### Specialization of cost equations sum/3 
+* CE 18 is refined into CE [41] 
+* CE 16 is refined into CE [42] 
+* CE 17 is refined into CE [43] 
+
+
+#### Refined cost equations sum/3 
+* CE 41: sum(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 42: sum(A,B,A) = 1
+     [A>=0,B=0] 
+* CE 43: sum(V,V1,Out) = 1+ sum(V,W1,X1)
+     [W1>=0,V>=0,X1+1=Out,W1+1=V1] 
+
+### Cost equations --> "Loop" of sum/3 
+* CEs [43] --> Loop 30 
+* CEs [41] --> Loop 31 
+* CEs [42] --> Loop 32 
+
+#### Loops of sum/3 
+* Loop 30: sum(V,V1,Out)->  sum(V,V1',Out')
+                  [V1'>=0,V>=0,Out=Out'+1,V1'+1=V1] 
+* Loop 31: sum(V,V1,Out) [V1>=0,V>=0,Out=0] 
+* Loop 32: sum(A,B,A) [A>=0,B=0] 
+
+### Ranking functions of CR sum(V,V1,Out) 
+* RF of phase [30]: [V1]
+
+#### Partial ranking functions of CR sum(V,V1,Out) 
+* Partial RF of phase [30]:
+  - RF of loop [30:1]:
+    V1
+
+
+### Resulting Chains:sum(V,V1,Out) 
+* [[30],32]
+* [[30],31]
+* [32]
+* [31]
+
+
+### Merging Chains  sum/3 into  External patterns of execution 
+* [[32]] --> 1 
+* [[31]] --> 2 
+* [[32,[30]]] --> 3 
+* [[31,[30]]] --> 4 
+
+
+### Specialization of cost equations take/3 
+* CE 25 is refined into CE [44] 
+* CE 23 is refined into CE [45] 
+* CE 24 is refined into CE [46] 
+
+
+#### Refined cost equations take/3 
+* CE 44: take(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 45: take(V,V1,Out) = 1
+     [V1>=Out+1,Out>=0,V=0] 
+* CE 46: take(V,V1,Out) = 1+ take(W1,X1,Out)
+     [V1>=X1+1,X1>=0,W1>=0,W1+1=V] 
+
+### Cost equations --> "Loop" of take/3 
+* CEs [46] --> Loop 33 
+* CEs [44] --> Loop 34 
+* CEs [45] --> Loop 35 
+
+#### Loops of take/3 
+* Loop 33: take(V,V1,Out)->  take(V',V1',Out)
+                  [V1>=V1'+1,V1'>=0,V'>=0,V'+1=V] 
+* Loop 34: take(V,V1,Out) [V1>=0,V>=0,Out=0] 
+* Loop 35: take(V,V1,Out) [V1>=Out+1,Out>=0,V=0] 
+
+### Ranking functions of CR take(V,V1,Out) 
+* RF of phase [33]: [V,V1]
+
+#### Partial ranking functions of CR take(V,V1,Out) 
+* Partial RF of phase [33]:
+  - RF of loop [33:1]:
+    V
+    V1
+
+
+### Resulting Chains:take(V,V1,Out) 
+* [[33],35]
+* [[33],34]
+* [35]
+* [34]
+
+
+### Merging Chains  take/3 into  External patterns of execution 
+* [[35]] --> 1 
+* [[34],[34,[33]]] --> 2 
+* [[35,[33]]] --> 3 
+
+
+### Specialization of cost equations if/6 
+* CE 29 is refined into CE [47] 
+* CE 27 is refined into CE [48] 
+* CE 28 is refined into CE [49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224] 
+
+
+#### Refined cost equations if/6 
+* CE 47: if(V,V1,V28,V26,V27,Out) = 0
+     [V27>=0,V26>=0,V28>=0,V1>=0,V>=0,Out=0] 
+* CE 48: if(A,B,C,D,E,E) = 1
+     [E>=0,D>=0,C>=0,B>=0,A=1] 
+* CE 49: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):1+ take(G29,V26,H29):1+ sum(F29,I29,F29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V28>=F29+1,F29>=0,V26>=1,V27>=0,V27+F29+1=L29,K29=1,J29=1,I29=0,H29=0,G29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 50: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):1+ take(G29,V26,H29):1+ sum(F29,H29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=H29+1,V28>=F29+1,H29>=0,F29>=0,V27>=0,V27+1=L29,K29=1,J29=1,I29=0,G29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 51: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):1+ take(G29,V26,H29):1+ sum(F29,I29,J29):3+ if(K29,L29,V28,V26,M29,Out)
+     [V26+F29>=J29+1,J29>=F29+1,V28>=F29+1,F29>=0,V27>=0,V27+J29+1=M29,J29=F29+I29,J29=F29+H29,L29=1,K29=1,G29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 52: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):1+ take(G29,V26,H29):1+ sum(F29,H29,I29):4+ if(J29,K29,V28,V26,L29,Out)
+     [H29>=I29,V26>=H29+1,V28>=F29+1,I29>=1,F29>=0,V27>=0,V27+I29+1=L29,K29=1,J29=1,G29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 53: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):1+ take(G29,V26,H29):2+ sum(F29,I29,F29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V28>=F29+1,F29>=0,V26>=0,V27>=0,V27+F29+1=L29,K29=1,J29=1,I29=0,H29=0,G29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 54: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):1+ take(G29,V26,H29):2+ sum(F29,I29,J29):2+ if(K29,L29,V28,V26,M29,Out)
+     [V28>=F29+1,F29>=0,V26>=0,V27>=0,V27+1=M29,L29=1,K29=1,J29=0,I29=0,H29=0,G29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 55: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):2+ take(G29,V26,H29):1+ sum(I29,J29,K29):1+ if(L29,M29,V28,V26,N29,Out)
+     [V26>=1,V28>=0,V27>=0,V27+1=N29,M29=1,L29=1,K29=0,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 56: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):2+ take(G29,V26,H29):1+ sum(I29,H29,J29):2+ if(K29,L29,V28,V26,M29,Out)
+     [V26>=H29+1,H29>=0,V28>=0,V27>=0,V27+1=M29,L29=1,K29=1,J29=0,I29=0,G29=0,F29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 57: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):2+ take(G29,V26,H29):1+ sum(I29,H29,H29):3+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=H29+1,H29>=1,V28>=0,V27>=0,V27+H29+1=L29,K29=1,J29=1,I29=0,G29=0,F29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 58: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(E29,V28,F29):2+ take(G29,V26,H29):1+ sum(I29,H29,J29):4+ if(K29,L29,V28,V26,M29,Out)
+     [H29>=J29,V26>=H29+1,J29>=1,V28>=0,V27>=0,V27+J29+1=M29,L29=1,K29=1,I29=0,G29=0,F29=0,E29=0,D29=1,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 59: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):2+ take(V1,V26,F29):2+ sum(G29,H29,I29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=0,V1>=0,V28>=0,V27>=0,V27+1=L29,V1+1=K29,V1+1=B29,J29=1,I29=0,H29=0,G29=0,F29=0,E29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 60: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):2+ take(V1,V26,F29):2+ sum(G29,H29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=0,V1>=0,V28>=0,V27>=0,V27+1=L29,V1+1=K29,V1+1=B29,J29=1,I29=0,H29=0,G29=0,F29=0,E29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 61: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):2+ take(V1,V26,F29):3+ sum(G29,H29,I29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=V1+1,V1>=1,V28>=0,V27>=0,V27+1=L29,V1+1=K29,V1+1=B29,J29=1,I29=0,H29=0,G29=0,F29=0,E29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 62: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):2+ take(V1,V26,F29):3+ sum(G29,F29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=V1+F29+1,F29>=0,V1>=1,V28>=0,V27>=0,V27+1=K29,V1+1=J29,V1+1=B29,I29=1,H29=0,G29=0,E29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 63: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):2+ take(V1,V26,F29):3+ sum(G29,F29,F29):3+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+F29+1,F29>=1,V1>=1,V28>=0,V27>=0,V27+F29+1=J29,V1+1=I29,V1+1=B29,H29=1,G29=0,E29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 64: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):2+ take(V1,V26,F29):3+ sum(G29,F29,H29):4+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=V1+F29+1,F29>=H29,H29>=1,V1>=1,V28>=0,V27>=0,V27+H29+1=K29,V1+1=J29,V1+1=B29,I29=1,G29=0,E29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 65: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):3+ take(V1,V26,F29):2+ sum(E29,G29,E29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=V1+E29+1,E29>=0,V26>=0,V1>=1,V27>=0,V27+E29+1=J29,V1+1=I29,V1+1=B29,H29=1,G29=0,F29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 66: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):3+ take(V1,V26,F29):2+ sum(E29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=V1+E29+1,E29>=0,V26>=0,V1>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=B29,I29=1,H29=0,G29=0,F29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 67: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):3+ take(V1,V26,F29):3+ sum(E29,G29,E29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=V1+E29+1,V26>=V1+1,E29>=0,V1>=1,V27>=0,V27+E29+1=J29,V1+1=I29,V1+1=B29,H29=1,G29=0,F29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 68: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):3+ take(V1,V26,F29):3+ sum(E29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+F29+1,V28>=V1+E29+1,F29>=0,E29>=0,V1>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=B29,H29=1,G29=0,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 69: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):3+ take(V1,V26,F29):3+ sum(E29,G29,H29):3+ if(I29,J29,V28,V26,K29,Out)
+     [V26+E29>=V1+H29+1,V28>=V1+E29+1,H29>=E29+1,E29>=0,V1>=1,V27>=0,V27+H29+1=K29,H29=E29+G29,H29=E29+F29,V1+1=J29,V1+1=B29,I29=1,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 70: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):2+ take(V1,V28,E29):3+ take(V1,V26,F29):3+ sum(E29,F29,G29):4+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+F29+1,V28>=V1+E29+1,F29>=G29,G29>=1,E29>=0,V1>=1,V27>=0,V27+G29+1=J29,V1+1=I29,V1+1=B29,H29=1,D29=1,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 71: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):1+ take(G29,V26,H29):1+ sum(F29,I29,F29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V28>=F29+1,F29>=0,V26>=1,V27>=0,V27+F29+1=L29,K29=1,J29=0,I29=0,H29=0,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 72: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):1+ take(G29,V26,H29):1+ sum(F29,H29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=H29+1,V28>=F29+1,H29>=0,F29>=0,V27>=0,V27+1=L29,K29=1,J29=0,I29=0,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 73: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):1+ take(G29,V26,H29):1+ sum(F29,I29,J29):3+ if(K29,L29,V28,V26,M29,Out)
+     [V26+F29>=J29+1,J29>=F29+1,V28>=F29+1,F29>=0,V27>=0,V27+J29+1=M29,J29=F29+I29,J29=F29+H29,L29=1,K29=0,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 74: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):1+ take(G29,V26,H29):1+ sum(F29,H29,I29):4+ if(J29,K29,V28,V26,L29,Out)
+     [H29>=I29,V26>=H29+1,V28>=F29+1,I29>=1,F29>=0,V27>=0,V27+I29+1=L29,K29=1,J29=0,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 75: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):1+ take(G29,V26,H29):2+ sum(F29,I29,F29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V28>=F29+1,F29>=0,V26>=0,V27>=0,V27+F29+1=L29,K29=1,J29=0,I29=0,H29=0,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 76: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):1+ take(G29,V26,H29):2+ sum(F29,I29,J29):2+ if(K29,L29,V28,V26,M29,Out)
+     [V28>=F29+1,F29>=0,V26>=0,V27>=0,V27+1=M29,L29=1,K29=0,J29=0,I29=0,H29=0,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 77: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):2+ take(G29,V26,H29):1+ sum(I29,J29,K29):1+ if(L29,M29,V28,V26,N29,Out)
+     [V26>=1,V28>=0,V27>=0,V27+1=N29,M29=1,L29=0,K29=0,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 78: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):2+ take(G29,V26,H29):1+ sum(I29,H29,J29):2+ if(K29,L29,V28,V26,M29,Out)
+     [V26>=H29+1,H29>=0,V28>=0,V27>=0,V27+1=M29,L29=1,K29=0,J29=0,I29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 79: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):2+ take(G29,V26,H29):1+ sum(I29,H29,H29):3+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=H29+1,H29>=1,V28>=0,V27>=0,V27+H29+1=L29,K29=1,J29=0,I29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 80: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(E29,V28,F29):2+ take(G29,V26,H29):1+ sum(I29,H29,J29):4+ if(K29,L29,V28,V26,M29,Out)
+     [H29>=J29,V26>=H29+1,J29>=1,V28>=0,V27>=0,V27+J29+1=M29,L29=1,K29=0,I29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=0,Y28=0,X28=0,W28=0,V1=0,V=2] 
+* CE 81: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):2+ take(V1,V26,F29):2+ sum(G29,H29,I29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=0,V1>=0,V28>=0,V27>=0,V27+1=L29,V1+1=K29,V1+1=B29,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 82: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):2+ take(V1,V26,F29):2+ sum(G29,H29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=0,V1>=0,V28>=0,V27>=0,V27+1=L29,V1+1=K29,V1+1=B29,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 83: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):2+ take(V1,V26,F29):3+ sum(G29,H29,I29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=V1+1,V1>=1,V28>=0,V27>=0,V27+1=L29,V1+1=K29,V1+1=B29,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 84: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):2+ take(V1,V26,F29):3+ sum(G29,F29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=V1+F29+1,F29>=0,V1>=1,V28>=0,V27>=0,V27+1=K29,V1+1=J29,V1+1=B29,I29=0,H29=0,G29=0,E29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 85: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):2+ take(V1,V26,F29):3+ sum(G29,F29,F29):3+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+F29+1,F29>=1,V1>=1,V28>=0,V27>=0,V27+F29+1=J29,V1+1=I29,V1+1=B29,H29=0,G29=0,E29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 86: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):2+ take(V1,V26,F29):3+ sum(G29,F29,H29):4+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=V1+F29+1,F29>=H29,H29>=1,V1>=1,V28>=0,V27>=0,V27+H29+1=K29,V1+1=J29,V1+1=B29,I29=0,G29=0,E29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 87: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):3+ take(V1,V26,F29):2+ sum(E29,G29,E29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=V1+E29+1,E29>=0,V26>=0,V1>=1,V27>=0,V27+E29+1=J29,V1+1=I29,V1+1=B29,H29=0,G29=0,F29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 88: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):3+ take(V1,V26,F29):2+ sum(E29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=V1+E29+1,E29>=0,V26>=0,V1>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=B29,I29=0,H29=0,G29=0,F29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 89: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):3+ take(V1,V26,F29):3+ sum(E29,G29,E29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=V1+E29+1,V26>=V1+1,E29>=0,V1>=1,V27>=0,V27+E29+1=J29,V1+1=I29,V1+1=B29,H29=0,G29=0,F29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 90: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):3+ take(V1,V26,F29):3+ sum(E29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+F29+1,V28>=V1+E29+1,F29>=0,E29>=0,V1>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=B29,H29=0,G29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 91: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):3+ take(V1,V26,F29):3+ sum(E29,G29,H29):3+ if(I29,J29,V28,V26,K29,Out)
+     [V26+E29>=V1+H29+1,V28>=V1+E29+1,H29>=E29+1,E29>=0,V1>=1,V27>=0,V27+H29+1=K29,H29=E29+G29,H29=E29+F29,V1+1=J29,V1+1=B29,I29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 92: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):1+ min(Y28,Z28,A29):1+ le(B29,C29,D29):3+ take(V1,V28,E29):3+ take(V1,V26,F29):3+ sum(E29,F29,G29):4+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+F29+1,V28>=V1+E29+1,F29>=G29,G29>=1,E29>=0,V1>=1,V27>=0,V27+G29+1=J29,V1+1=I29,V1+1=B29,H29=0,D29=0,C29=0,A29=0,Z28=0,Y28=0,X28=0,W28=0,V=2] 
+* CE 93: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,H29,E29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=E29+1,V26>=X28,E29>=0,X28>=1,V27>=0,V27+E29+1=K29,J29=1,I29=1,H29=0,G29=0,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 94: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=G29+1,V28>=E29+1,V26>=X28,G29>=0,E29>=0,X28>=1,V27>=0,V27+1=K29,J29=1,I29=1,H29=0,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 95: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,H29,I29):3+ if(J29,K29,V28,V26,L29,Out)
+     [V26+E29>=I29+1,I29>=E29+1,V28>=E29+1,V26>=X28,E29>=0,X28>=1,V27>=0,V27+I29+1=L29,I29=E29+H29,I29=E29+G29,K29=1,J29=1,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 96: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,G29,H29):4+ if(I29,J29,V28,V26,K29,Out)
+     [G29>=H29,V26>=G29+1,V28>=E29+1,V26>=X28,H29>=1,E29>=0,X28>=1,V27>=0,V27+H29+1=K29,J29=1,I29=1,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 97: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):2+ sum(E29,H29,E29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=E29+1,V26>=X28,E29>=0,X28>=1,V27>=0,V27+E29+1=K29,J29=1,I29=1,H29=0,G29=0,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 98: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):2+ sum(E29,H29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V28>=E29+1,V26>=X28,E29>=0,X28>=1,V27>=0,V27+1=L29,K29=1,J29=1,I29=0,H29=0,G29=0,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 99: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,I29,J29):1+ if(K29,L29,V28,V26,M29,Out)
+     [V26>=X28,V28>=0,X28>=1,V27>=0,V27+1=M29,L29=1,K29=1,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 100: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=G29+1,V26>=X28,G29>=0,V28>=0,X28>=1,V27>=0,V27+1=L29,K29=1,J29=1,I29=0,H29=0,F29=0,E29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 101: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,G29):3+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=G29+1,V26>=X28,G29>=1,V28>=0,X28>=1,V27>=0,V27+G29+1=K29,J29=1,I29=1,H29=0,F29=0,E29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 102: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,I29):4+ if(J29,K29,V28,V26,L29,Out)
+     [G29>=I29,V26>=G29+1,V26>=X28,I29>=1,V28>=0,X28>=1,V27>=0,V27+I29+1=L29,K29=1,J29=1,H29=0,F29=0,E29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 103: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):2+ sum(F29,G29,H29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=X28,V1>=0,V28>=0,X28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=1,H29=0,G29=0,F29=0,E29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 104: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):2+ sum(F29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=X28,V1>=0,V28>=0,X28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=1,H29=0,G29=0,F29=0,E29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 105: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,G29,H29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=V1+1,V26>=X28,V1>=1,V28>=0,X28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=1,H29=0,G29=0,F29=0,E29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 106: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+E29+1,V26>=X28,E29>=0,V1>=1,V28>=0,X28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=A29,H29=1,G29=0,F29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 107: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,E29):3+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V26>=X28,E29>=1,V1>=1,V28>=0,X28>=1,V27>=0,V27+E29+1=I29,V1+1=H29,V1+1=A29,G29=1,F29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 108: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,G29):4+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+E29+1,E29>=G29,V26>=X28,G29>=1,V1>=1,V28>=0,X28>=1,V27>=0,V27+G29+1=J29,V1+1=I29,V1+1=A29,H29=1,F29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 109: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):2+ sum(D29,F29,D29):1+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+D29+1,V26>=X28,D29>=0,V1>=1,X28>=1,V27>=0,V27+D29+1=I29,V1+1=H29,V1+1=A29,G29=1,F29=0,E29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 110: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):2+ sum(D29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=V1+D29+1,V26>=X28,D29>=0,V1>=1,X28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=A29,H29=1,G29=0,F29=0,E29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 111: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,F29,D29):1+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+D29+1,V26>=V1+1,V26>=X28,D29>=0,V1>=1,X28>=1,V27>=0,V27+D29+1=I29,V1+1=H29,V1+1=A29,G29=1,F29=0,E29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 112: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,E29,F29):2+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=V1+D29+1,V26>=X28,E29>=0,D29>=0,V1>=1,X28>=1,V27>=0,V27+1=I29,V1+1=H29,V1+1=A29,G29=1,F29=0,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 113: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,F29,G29):3+ if(H29,I29,V28,V26,J29,Out)
+     [V26+D29>=V1+G29+1,V28>=V1+D29+1,G29>=D29+1,V26>=X28,D29>=0,V1>=1,X28>=1,V27>=0,V27+G29+1=J29,G29=D29+F29,G29=D29+E29,V1+1=I29,V1+1=A29,H29=1,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 114: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,E29,F29):4+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=V1+D29+1,E29>=F29,V26>=X28,F29>=1,D29>=0,V1>=1,X28>=1,V27>=0,V27+F29+1=I29,V1+1=H29,V1+1=A29,G29=1,C29=1,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 115: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,H29,E29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=E29+1,V26>=X28,E29>=0,X28>=1,V27>=0,V27+E29+1=K29,J29=1,I29=0,H29=0,G29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 116: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=G29+1,V28>=E29+1,V26>=X28,G29>=0,E29>=0,X28>=1,V27>=0,V27+1=K29,J29=1,I29=0,H29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 117: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,H29,I29):3+ if(J29,K29,V28,V26,L29,Out)
+     [V26+E29>=I29+1,I29>=E29+1,V28>=E29+1,V26>=X28,E29>=0,X28>=1,V27>=0,V27+I29+1=L29,I29=E29+H29,I29=E29+G29,K29=1,J29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 118: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,G29,H29):4+ if(I29,J29,V28,V26,K29,Out)
+     [G29>=H29,V26>=G29+1,V28>=E29+1,V26>=X28,H29>=1,E29>=0,X28>=1,V27>=0,V27+H29+1=K29,J29=1,I29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 119: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):2+ sum(E29,H29,E29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=E29+1,V26>=X28,E29>=0,X28>=1,V27>=0,V27+E29+1=K29,J29=1,I29=0,H29=0,G29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 120: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):2+ sum(E29,H29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V28>=E29+1,V26>=X28,E29>=0,X28>=1,V27>=0,V27+1=L29,K29=1,J29=0,I29=0,H29=0,G29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 121: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,I29,J29):1+ if(K29,L29,V28,V26,M29,Out)
+     [V26>=X28,V28>=0,X28>=1,V27>=0,V27+1=M29,L29=1,K29=0,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 122: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=G29+1,V26>=X28,G29>=0,V28>=0,X28>=1,V27>=0,V27+1=L29,K29=1,J29=0,I29=0,H29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 123: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,G29):3+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=G29+1,V26>=X28,G29>=1,V28>=0,X28>=1,V27>=0,V27+G29+1=K29,J29=1,I29=0,H29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 124: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,I29):4+ if(J29,K29,V28,V26,L29,Out)
+     [G29>=I29,V26>=G29+1,V26>=X28,I29>=1,V28>=0,X28>=1,V27>=0,V27+I29+1=L29,K29=1,J29=0,H29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,W28=0,V1=0,V=2] 
+* CE 125: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):2+ sum(F29,G29,H29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=X28,V1>=0,V28>=0,X28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 126: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):2+ sum(F29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=X28,V1>=0,V28>=0,X28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 127: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,G29,H29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=V1+1,V26>=X28,V1>=1,V28>=0,X28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 128: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+E29+1,V26>=X28,E29>=0,V1>=1,V28>=0,X28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=A29,H29=0,G29=0,F29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 129: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,E29):3+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V26>=X28,E29>=1,V1>=1,V28>=0,X28>=1,V27>=0,V27+E29+1=I29,V1+1=H29,V1+1=A29,G29=0,F29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 130: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,G29):4+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+E29+1,E29>=G29,V26>=X28,G29>=1,V1>=1,V28>=0,X28>=1,V27>=0,V27+G29+1=J29,V1+1=I29,V1+1=A29,H29=0,F29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 131: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):2+ sum(D29,F29,D29):1+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+D29+1,V26>=X28,D29>=0,V1>=1,X28>=1,V27>=0,V27+D29+1=I29,V1+1=H29,V1+1=A29,G29=0,F29=0,E29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 132: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):2+ sum(D29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=V1+D29+1,V26>=X28,D29>=0,V1>=1,X28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=A29,H29=0,G29=0,F29=0,E29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 133: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,F29,D29):1+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+D29+1,V26>=V1+1,V26>=X28,D29>=0,V1>=1,X28>=1,V27>=0,V27+D29+1=I29,V1+1=H29,V1+1=A29,G29=0,F29=0,E29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 134: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,E29,F29):2+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=V1+D29+1,V26>=X28,E29>=0,D29>=0,V1>=1,X28>=1,V27>=0,V27+1=I29,V1+1=H29,V1+1=A29,G29=0,F29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 135: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,F29,G29):3+ if(H29,I29,V28,V26,J29,Out)
+     [V26+D29>=V1+G29+1,V28>=V1+D29+1,G29>=D29+1,V26>=X28,D29>=0,V1>=1,X28>=1,V27>=0,V27+G29+1=J29,G29=D29+F29,G29=D29+E29,V1+1=I29,V1+1=A29,H29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 136: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):1+ len(V26,X28):2+ min(Y28,X28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,E29,F29):4+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=V1+D29+1,E29>=F29,V26>=X28,F29>=1,D29>=0,V1>=1,X28>=1,V27>=0,V27+F29+1=I29,V1+1=H29,V1+1=A29,G29=0,C29=0,B29=0,Z28=0,Y28=0,W28=0,V=2] 
+* CE 137: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,H29,E29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=E29+1,V28>=W28,E29>=0,V26>=1,W28>=1,V27>=0,V27+E29+1=K29,J29=1,I29=1,H29=0,G29=0,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 138: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=G29+1,V28>=E29+1,V28>=W28,G29>=0,E29>=0,W28>=1,V27>=0,V27+1=K29,J29=1,I29=1,H29=0,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 139: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,H29,I29):3+ if(J29,K29,V28,V26,L29,Out)
+     [V26+E29>=I29+1,I29>=E29+1,V28>=E29+1,V28>=W28,E29>=0,W28>=1,V27>=0,V27+I29+1=L29,I29=E29+H29,I29=E29+G29,K29=1,J29=1,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 140: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,G29,H29):4+ if(I29,J29,V28,V26,K29,Out)
+     [G29>=H29,V26>=G29+1,V28>=E29+1,V28>=W28,H29>=1,E29>=0,W28>=1,V27>=0,V27+H29+1=K29,J29=1,I29=1,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 141: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):2+ sum(E29,H29,E29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=E29+1,V28>=W28,E29>=0,V26>=0,W28>=1,V27>=0,V27+E29+1=K29,J29=1,I29=1,H29=0,G29=0,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 142: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):1+ take(F29,V26,G29):2+ sum(E29,H29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V28>=E29+1,V28>=W28,E29>=0,V26>=0,W28>=1,V27>=0,V27+1=L29,K29=1,J29=1,I29=0,H29=0,G29=0,F29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 143: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,I29,J29):1+ if(K29,L29,V28,V26,M29,Out)
+     [V28>=W28,V26>=1,W28>=1,V27>=0,V27+1=M29,L29=1,K29=1,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 144: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=G29+1,V28>=W28,G29>=0,W28>=1,V27>=0,V27+1=L29,K29=1,J29=1,I29=0,H29=0,F29=0,E29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 145: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,G29):3+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=G29+1,V28>=W28,G29>=1,W28>=1,V27>=0,V27+G29+1=K29,J29=1,I29=1,H29=0,F29=0,E29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 146: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,I29):4+ if(J29,K29,V28,V26,L29,Out)
+     [G29>=I29,V26>=G29+1,V28>=W28,I29>=1,W28>=1,V27>=0,V27+I29+1=L29,K29=1,J29=1,H29=0,F29=0,E29=0,D29=0,C29=1,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 147: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):2+ sum(F29,G29,H29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=W28,V26>=0,V1>=0,W28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=1,H29=0,G29=0,F29=0,E29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 148: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):2+ sum(F29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=W28,V26>=0,V1>=0,W28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=1,H29=0,G29=0,F29=0,E29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 149: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,G29,H29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=V1+1,V28>=W28,V1>=1,W28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=1,H29=0,G29=0,F29=0,E29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 150: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+E29+1,V28>=W28,E29>=0,V1>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=A29,H29=1,G29=0,F29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 151: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,E29):3+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=W28,E29>=1,V1>=1,W28>=1,V27>=0,V27+E29+1=I29,V1+1=H29,V1+1=A29,G29=1,F29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 152: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,G29):4+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+E29+1,E29>=G29,V28>=W28,G29>=1,V1>=1,W28>=1,V27>=0,V27+G29+1=J29,V1+1=I29,V1+1=A29,H29=1,F29=0,D29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 153: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):2+ sum(D29,F29,D29):1+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+D29+1,V28>=W28,D29>=0,V26>=0,V1>=1,W28>=1,V27>=0,V27+D29+1=I29,V1+1=H29,V1+1=A29,G29=1,F29=0,E29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 154: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):2+ sum(D29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=V1+D29+1,V28>=W28,D29>=0,V26>=0,V1>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=A29,H29=1,G29=0,F29=0,E29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 155: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,F29,D29):1+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+D29+1,V26>=V1+1,V28>=W28,D29>=0,V1>=1,W28>=1,V27>=0,V27+D29+1=I29,V1+1=H29,V1+1=A29,G29=1,F29=0,E29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 156: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,E29,F29):2+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=V1+D29+1,V28>=W28,E29>=0,D29>=0,V1>=1,W28>=1,V27>=0,V27+1=I29,V1+1=H29,V1+1=A29,G29=1,F29=0,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 157: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,F29,G29):3+ if(H29,I29,V28,V26,J29,Out)
+     [V26+D29>=V1+G29+1,V28>=V1+D29+1,G29>=D29+1,V28>=W28,D29>=0,V1>=1,W28>=1,V27>=0,V27+G29+1=J29,G29=D29+F29,G29=D29+E29,V1+1=I29,V1+1=A29,H29=1,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 158: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):2+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,E29,F29):4+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=V1+D29+1,E29>=F29,V28>=W28,F29>=1,D29>=0,V1>=1,W28>=1,V27>=0,V27+F29+1=I29,V1+1=H29,V1+1=A29,G29=1,C29=1,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 159: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,H29,E29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=E29+1,V28>=W28,E29>=0,V26>=1,W28>=1,V27>=0,V27+E29+1=K29,J29=1,I29=0,H29=0,G29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 160: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=G29+1,V28>=E29+1,V28>=W28,G29>=0,E29>=0,W28>=1,V27>=0,V27+1=K29,J29=1,I29=0,H29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 161: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,H29,I29):3+ if(J29,K29,V28,V26,L29,Out)
+     [V26+E29>=I29+1,I29>=E29+1,V28>=E29+1,V28>=W28,E29>=0,W28>=1,V27>=0,V27+I29+1=L29,I29=E29+H29,I29=E29+G29,K29=1,J29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 162: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):1+ sum(E29,G29,H29):4+ if(I29,J29,V28,V26,K29,Out)
+     [G29>=H29,V26>=G29+1,V28>=E29+1,V28>=W28,H29>=1,E29>=0,W28>=1,V27>=0,V27+H29+1=K29,J29=1,I29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 163: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):2+ sum(E29,H29,E29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=E29+1,V28>=W28,E29>=0,V26>=0,W28>=1,V27>=0,V27+E29+1=K29,J29=1,I29=0,H29=0,G29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 164: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):1+ take(F29,V26,G29):2+ sum(E29,H29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V28>=E29+1,V28>=W28,E29>=0,V26>=0,W28>=1,V27>=0,V27+1=L29,K29=1,J29=0,I29=0,H29=0,G29=0,F29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 165: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,I29,J29):1+ if(K29,L29,V28,V26,M29,Out)
+     [V28>=W28,V26>=1,W28>=1,V27>=0,V27+1=M29,L29=1,K29=0,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 166: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,I29):2+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=G29+1,V28>=W28,G29>=0,W28>=1,V27>=0,V27+1=L29,K29=1,J29=0,I29=0,H29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 167: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,G29):3+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=G29+1,V28>=W28,G29>=1,W28>=1,V27>=0,V27+G29+1=K29,J29=1,I29=0,H29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 168: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(D29,V28,E29):2+ take(F29,V26,G29):1+ sum(H29,G29,I29):4+ if(J29,K29,V28,V26,L29,Out)
+     [G29>=I29,V26>=G29+1,V28>=W28,I29>=1,W28>=1,V27>=0,V27+I29+1=L29,K29=1,J29=0,H29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=1,Z28=0,Y28=0,X28=0,V1=0,V=2] 
+* CE 169: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):2+ sum(F29,G29,H29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=W28,V26>=0,V1>=0,W28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 170: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):2+ sum(F29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=W28,V26>=0,V1>=0,W28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 171: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,G29,H29):1+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=V1+1,V28>=W28,V1>=1,W28>=1,V27>=0,V27+1=K29,V1+1=J29,V1+1=A29,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 172: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+E29+1,V28>=W28,E29>=0,V1>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=A29,H29=0,G29=0,F29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 173: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,E29):3+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=W28,E29>=1,V1>=1,W28>=1,V27>=0,V27+E29+1=I29,V1+1=H29,V1+1=A29,G29=0,F29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 174: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):2+ take(V1,V26,E29):3+ sum(F29,E29,G29):4+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+E29+1,E29>=G29,V28>=W28,G29>=1,V1>=1,W28>=1,V27>=0,V27+G29+1=J29,V1+1=I29,V1+1=A29,H29=0,F29=0,D29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 175: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):2+ sum(D29,F29,D29):1+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+D29+1,V28>=W28,D29>=0,V26>=0,V1>=1,W28>=1,V27>=0,V27+D29+1=I29,V1+1=H29,V1+1=A29,G29=0,F29=0,E29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 176: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):2+ sum(D29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=V1+D29+1,V28>=W28,D29>=0,V26>=0,V1>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=A29,H29=0,G29=0,F29=0,E29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 177: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,F29,D29):1+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+D29+1,V26>=V1+1,V28>=W28,D29>=0,V1>=1,W28>=1,V27>=0,V27+D29+1=I29,V1+1=H29,V1+1=A29,G29=0,F29=0,E29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 178: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,E29,F29):2+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=V1+D29+1,V28>=W28,E29>=0,D29>=0,V1>=1,W28>=1,V27>=0,V27+1=I29,V1+1=H29,V1+1=A29,G29=0,F29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 179: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,F29,G29):3+ if(H29,I29,V28,V26,J29,Out)
+     [V26+D29>=V1+G29+1,V28>=V1+D29+1,G29>=D29+1,V28>=W28,D29>=0,V1>=1,W28>=1,V27>=0,V27+G29+1=J29,G29=D29+F29,G29=D29+E29,V1+1=I29,V1+1=A29,H29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 180: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):1+ min(W28,Y28,Z28):1+ le(A29,B29,C29):3+ take(V1,V28,D29):3+ take(V1,V26,E29):3+ sum(D29,E29,F29):4+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+E29+1,V28>=V1+D29+1,E29>=F29,V28>=W28,F29>=1,D29>=0,V1>=1,W28>=1,V27>=0,V27+F29+1=I29,V1+1=H29,V1+1=A29,G29=0,C29=0,B29=0,Z28=0,Y28=0,X28=0,V=2] 
+* CE 181: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):1+ take(E29,V26,F29):1+ sum(D29,G29,D29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=D29+1,V26>=X28,V28>=W28,D29>=0,X28>=1,W28>=1,V27>=0,V27+D29+1=J29,I29=1,H29=1,G29=0,F29=0,E29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 182: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):1+ take(E29,V26,F29):1+ sum(D29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=F29+1,V28>=D29+1,V26>=X28,V28>=W28,F29>=0,D29>=0,X28>=1,W28>=1,V27>=0,V27+1=J29,I29=1,H29=1,G29=0,E29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 183: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):1+ take(E29,V26,F29):1+ sum(D29,G29,H29):3+ if(I29,J29,V28,V26,K29,Out)
+     [V26+D29>=H29+1,H29>=D29+1,V28>=D29+1,V26>=X28,V28>=W28,D29>=0,X28>=1,W28>=1,V27>=0,V27+H29+1=K29,H29=D29+G29,H29=D29+F29,J29=1,I29=1,E29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 184: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):1+ take(E29,V26,F29):1+ sum(D29,F29,G29):4+ if(H29,I29,V28,V26,J29,Out)
+     [F29>=G29,V26>=F29+1,V28>=D29+1,V26>=X28,V28>=W28,G29>=1,D29>=0,X28>=1,W28>=1,V27>=0,V27+G29+1=J29,I29=1,H29=1,E29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 185: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):1+ take(E29,V26,F29):2+ sum(D29,G29,D29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=D29+1,V26>=X28,V28>=W28,D29>=0,X28>=1,W28>=1,V27>=0,V27+D29+1=J29,I29=1,H29=1,G29=0,F29=0,E29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 186: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):1+ take(E29,V26,F29):2+ sum(D29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=D29+1,V26>=X28,V28>=W28,D29>=0,X28>=1,W28>=1,V27>=0,V27+1=K29,J29=1,I29=1,H29=0,G29=0,F29=0,E29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 187: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):2+ take(E29,V26,F29):1+ sum(G29,H29,I29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=X28,V28>=W28,X28>=1,W28>=1,V27>=0,V27+1=L29,K29=1,J29=1,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 188: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):2+ take(E29,V26,F29):1+ sum(G29,F29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=F29+1,V26>=X28,V28>=W28,F29>=0,X28>=1,W28>=1,V27>=0,V27+1=K29,J29=1,I29=1,H29=0,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 189: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):2+ take(E29,V26,F29):1+ sum(G29,F29,F29):3+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=F29+1,V26>=X28,V28>=W28,F29>=1,X28>=1,W28>=1,V27>=0,V27+F29+1=J29,I29=1,H29=1,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 190: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(C29,V28,D29):2+ take(E29,V26,F29):1+ sum(G29,F29,H29):4+ if(I29,J29,V28,V26,K29,Out)
+     [F29>=H29,V26>=F29+1,V26>=X28,V28>=W28,H29>=1,X28>=1,W28>=1,V27>=0,V27+H29+1=K29,J29=1,I29=1,G29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 191: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):2+ take(V1,V26,D29):2+ sum(E29,F29,G29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=X28,V28>=W28,V1>=0,X28>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=Z28,H29=1,G29=0,F29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 192: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):2+ take(V1,V26,D29):2+ sum(E29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=X28,V28>=W28,V1>=0,X28>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=Z28,H29=1,G29=0,F29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 193: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):2+ take(V1,V26,D29):3+ sum(E29,F29,G29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+1,V26>=X28,V28>=W28,V1>=1,X28>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=Z28,H29=1,G29=0,F29=0,E29=0,D29=0,C29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 194: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):2+ take(V1,V26,D29):3+ sum(E29,D29,F29):2+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+D29+1,V26>=X28,V28>=W28,D29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+1=I29,V1+1=H29,V1+1=Z28,G29=1,F29=0,E29=0,C29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 195: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):2+ take(V1,V26,D29):3+ sum(E29,D29,D29):3+ if(F29,G29,V28,V26,H29,Out)
+     [V26>=V1+D29+1,V26>=X28,V28>=W28,D29>=1,V1>=1,X28>=1,W28>=1,V27>=0,V27+D29+1=H29,V1+1=G29,V1+1=Z28,F29=1,E29=0,C29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 196: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):2+ take(V1,V26,D29):3+ sum(E29,D29,F29):4+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+D29+1,D29>=F29,V26>=X28,V28>=W28,F29>=1,V1>=1,X28>=1,W28>=1,V27>=0,V27+F29+1=I29,V1+1=H29,V1+1=Z28,G29=1,E29=0,C29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 197: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):3+ take(V1,V26,D29):2+ sum(C29,E29,C29):1+ if(F29,G29,V28,V26,H29,Out)
+     [V28>=V1+C29+1,V26>=X28,V28>=W28,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+C29+1=H29,V1+1=G29,V1+1=Z28,F29=1,E29=0,D29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 198: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):3+ take(V1,V26,D29):2+ sum(C29,E29,F29):2+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+C29+1,V26>=X28,V28>=W28,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+1=I29,V1+1=H29,V1+1=Z28,G29=1,F29=0,E29=0,D29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 199: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):3+ take(V1,V26,D29):3+ sum(C29,E29,C29):1+ if(F29,G29,V28,V26,H29,Out)
+     [V28>=V1+C29+1,V26>=V1+1,V26>=X28,V28>=W28,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+C29+1=H29,V1+1=G29,V1+1=Z28,F29=1,E29=0,D29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 200: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):3+ take(V1,V26,D29):3+ sum(C29,D29,E29):2+ if(F29,G29,V28,V26,H29,Out)
+     [V26>=V1+D29+1,V28>=V1+C29+1,V26>=X28,V28>=W28,D29>=0,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+1=H29,V1+1=G29,V1+1=Z28,F29=1,E29=0,B29=1,A29=0,Y28=0,V=2] 
+* CE 201: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):3+ take(V1,V26,D29):3+ sum(C29,E29,F29):3+ if(G29,H29,V28,V26,I29,Out)
+     [V26+C29>=V1+F29+1,V28>=V1+C29+1,F29>=C29+1,V26>=X28,V28>=W28,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+F29+1=I29,F29=C29+E29,F29=C29+D29,V1+1=H29,V1+1=Z28,G29=1,B29=1,A29=0,Y28=0,V=2] 
+* CE 202: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):2+ take(V1,V28,C29):3+ take(V1,V26,D29):3+ sum(C29,D29,E29):4+ if(F29,G29,V28,V26,H29,Out)
+     [V26>=V1+D29+1,V28>=V1+C29+1,D29>=E29,V26>=X28,V28>=W28,E29>=1,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+E29+1=H29,V1+1=G29,V1+1=Z28,F29=1,B29=1,A29=0,Y28=0,V=2] 
+* CE 203: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):1+ take(E29,V26,F29):1+ sum(D29,G29,D29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=D29+1,V26>=X28,V28>=W28,D29>=0,X28>=1,W28>=1,V27>=0,V27+D29+1=J29,I29=1,H29=0,G29=0,F29=0,E29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 204: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):1+ take(E29,V26,F29):1+ sum(D29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=F29+1,V28>=D29+1,V26>=X28,V28>=W28,F29>=0,D29>=0,X28>=1,W28>=1,V27>=0,V27+1=J29,I29=1,H29=0,G29=0,E29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 205: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):1+ take(E29,V26,F29):1+ sum(D29,G29,H29):3+ if(I29,J29,V28,V26,K29,Out)
+     [V26+D29>=H29+1,H29>=D29+1,V28>=D29+1,V26>=X28,V28>=W28,D29>=0,X28>=1,W28>=1,V27>=0,V27+H29+1=K29,H29=D29+G29,H29=D29+F29,J29=1,I29=0,E29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 206: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):1+ take(E29,V26,F29):1+ sum(D29,F29,G29):4+ if(H29,I29,V28,V26,J29,Out)
+     [F29>=G29,V26>=F29+1,V28>=D29+1,V26>=X28,V28>=W28,G29>=1,D29>=0,X28>=1,W28>=1,V27>=0,V27+G29+1=J29,I29=1,H29=0,E29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 207: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):1+ take(E29,V26,F29):2+ sum(D29,G29,D29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V28>=D29+1,V26>=X28,V28>=W28,D29>=0,X28>=1,W28>=1,V27>=0,V27+D29+1=J29,I29=1,H29=0,G29=0,F29=0,E29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 208: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):1+ take(E29,V26,F29):2+ sum(D29,G29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V28>=D29+1,V26>=X28,V28>=W28,D29>=0,X28>=1,W28>=1,V27>=0,V27+1=K29,J29=1,I29=0,H29=0,G29=0,F29=0,E29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 209: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):2+ take(E29,V26,F29):1+ sum(G29,H29,I29):1+ if(J29,K29,V28,V26,L29,Out)
+     [V26>=X28,V28>=W28,X28>=1,W28>=1,V27>=0,V27+1=L29,K29=1,J29=0,I29=0,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 210: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):2+ take(E29,V26,F29):1+ sum(G29,F29,H29):2+ if(I29,J29,V28,V26,K29,Out)
+     [V26>=F29+1,V26>=X28,V28>=W28,F29>=0,X28>=1,W28>=1,V27>=0,V27+1=K29,J29=1,I29=0,H29=0,G29=0,E29=0,D29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 211: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):2+ take(E29,V26,F29):1+ sum(G29,F29,F29):3+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=F29+1,V26>=X28,V28>=W28,F29>=1,X28>=1,W28>=1,V27>=0,V27+F29+1=J29,I29=1,H29=0,G29=0,E29=0,D29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 212: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(C29,V28,D29):2+ take(E29,V26,F29):1+ sum(G29,F29,H29):4+ if(I29,J29,V28,V26,K29,Out)
+     [F29>=H29,V26>=F29+1,V26>=X28,V28>=W28,H29>=1,X28>=1,W28>=1,V27>=0,V27+H29+1=K29,J29=1,I29=0,G29=0,E29=0,D29=0,C29=0,B29=0,A29=0,Z28=1,Y28=0,V1=0,V=2] 
+* CE 213: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):2+ take(V1,V26,D29):2+ sum(E29,F29,G29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=X28,V28>=W28,V1>=0,X28>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=Z28,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 214: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):2+ take(V1,V26,D29):2+ sum(E29,F29,G29):2+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=X28,V28>=W28,V1>=0,X28>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=Z28,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 215: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):2+ take(V1,V26,D29):3+ sum(E29,F29,G29):1+ if(H29,I29,V28,V26,J29,Out)
+     [V26>=V1+1,V26>=X28,V28>=W28,V1>=1,X28>=1,W28>=1,V27>=0,V27+1=J29,V1+1=I29,V1+1=Z28,H29=0,G29=0,F29=0,E29=0,D29=0,C29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 216: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):2+ take(V1,V26,D29):3+ sum(E29,D29,F29):2+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+D29+1,V26>=X28,V28>=W28,D29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+1=I29,V1+1=H29,V1+1=Z28,G29=0,F29=0,E29=0,C29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 217: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):2+ take(V1,V26,D29):3+ sum(E29,D29,D29):3+ if(F29,G29,V28,V26,H29,Out)
+     [V26>=V1+D29+1,V26>=X28,V28>=W28,D29>=1,V1>=1,X28>=1,W28>=1,V27>=0,V27+D29+1=H29,V1+1=G29,V1+1=Z28,F29=0,E29=0,C29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 218: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):2+ take(V1,V26,D29):3+ sum(E29,D29,F29):4+ if(G29,H29,V28,V26,I29,Out)
+     [V26>=V1+D29+1,D29>=F29,V26>=X28,V28>=W28,F29>=1,V1>=1,X28>=1,W28>=1,V27>=0,V27+F29+1=I29,V1+1=H29,V1+1=Z28,G29=0,E29=0,C29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 219: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):3+ take(V1,V26,D29):2+ sum(C29,E29,C29):1+ if(F29,G29,V28,V26,H29,Out)
+     [V28>=V1+C29+1,V26>=X28,V28>=W28,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+C29+1=H29,V1+1=G29,V1+1=Z28,F29=0,E29=0,D29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 220: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):3+ take(V1,V26,D29):2+ sum(C29,E29,F29):2+ if(G29,H29,V28,V26,I29,Out)
+     [V28>=V1+C29+1,V26>=X28,V28>=W28,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+1=I29,V1+1=H29,V1+1=Z28,G29=0,F29=0,E29=0,D29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 221: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):3+ take(V1,V26,D29):3+ sum(C29,E29,C29):1+ if(F29,G29,V28,V26,H29,Out)
+     [V28>=V1+C29+1,V26>=V1+1,V26>=X28,V28>=W28,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+C29+1=H29,V1+1=G29,V1+1=Z28,F29=0,E29=0,D29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 222: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):3+ take(V1,V26,D29):3+ sum(C29,D29,E29):2+ if(F29,G29,V28,V26,H29,Out)
+     [V26>=V1+D29+1,V28>=V1+C29+1,V26>=X28,V28>=W28,D29>=0,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+1=H29,V1+1=G29,V1+1=Z28,F29=0,E29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 223: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):3+ take(V1,V26,D29):3+ sum(C29,E29,F29):3+ if(G29,H29,V28,V26,I29,Out)
+     [V26+C29>=V1+F29+1,V28>=V1+C29+1,F29>=C29+1,V26>=X28,V28>=W28,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+F29+1=I29,F29=C29+E29,F29=C29+D29,V1+1=H29,V1+1=Z28,G29=0,B29=0,A29=0,Y28=0,V=2] 
+* CE 224: if(V,V1,V28,V26,V27,Out) = 1+ len(V28,W28):2+ len(V26,X28):2+ min(W28,X28,Y28):1+ le(Z28,A29,B29):3+ take(V1,V28,C29):3+ take(V1,V26,D29):3+ sum(C29,D29,E29):4+ if(F29,G29,V28,V26,H29,Out)
+     [V26>=V1+D29+1,V28>=V1+C29+1,D29>=E29,V26>=X28,V28>=W28,E29>=1,C29>=0,V1>=1,X28>=1,W28>=1,V27>=0,V27+E29+1=H29,V1+1=G29,V1+1=Z28,F29=0,B29=0,A29=0,Y28=0,V=2] 
+
+### Cost equations --> "Loop" of if/6 
+* CEs [69,113,157,201] --> Loop 36 
+* CEs [65,67,109,111,153,155,197,199] --> Loop 37 
+* CEs [63,64,70,107,108,114,151,152,158,195,196,202] --> Loop 38 
+* CEs [91,135,179,223] --> Loop 39 
+* CEs [87,89,131,133,175,177,219,221] --> Loop 40 
+* CEs [85,86,92,129,130,136,173,174,180,217,218,224] --> Loop 41 
+* CEs [51,95,139,183] --> Loop 42 
+* CEs [52,57,58,96,101,102,140,145,146,184,189,190] --> Loop 43 
+* CEs [49,53,54,93,97,137,141,142,181,185] --> Loop 44 
+* CEs [50,55,56,59,60,61,62,66,68,94,98,99,100,103,104,105,106,110,112,138,143,144,147,148,149,150,154,156,182,186,187,188,191,192,193,194,198,200] --> Loop 45 
+* CEs [73,117,161,205] --> Loop 46 
+* CEs [74,79,80,118,123,124,162,167,168,206,211,212] --> Loop 47 
+* CEs [71,75,76,115,119,159,163,164,203,207] --> Loop 48 
+* CEs [72,77,78,81,82,83,84,88,90,116,120,121,122,125,126,127,128,132,134,160,165,166,169,170,171,172,176,178,204,208,209,210,213,214,215,216,220,222] --> Loop 49 
+* CEs [47] --> Loop 50 
+* CEs [48] --> Loop 51 
+
+#### Loops of if/6 
+* Loop 36: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V28+V26+V27>=2*V1+V27'+1,V27'>=V27+2,V26>=V1+2,V28>=V1+1,V27>=0,V1>=1,V1+1=V1',V'=1,V=2] 
+* Loop 37: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V28+V27>=V1+V27',V27'>=V27+1,V27>=0,V26>=0,V1>=1,V1+1=V1',V'=1,V=2] 
+* Loop 38: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V26+V27>=V1+V27',V27'>=V27+2,V27>=0,V28>=0,V1>=1,V1+1=V1',V'=1,V=2] 
+* Loop 39: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V28+V26+V27>=2*V1+V27'+1,V27'>=V27+2,V26>=V1+2,V28>=V1+1,V27>=0,V1>=1,V1+1=V1',V'=0,V=2] 
+* Loop 40: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V28+V27>=V1+V27',V27'>=V27+1,V27>=0,V26>=0,V1>=1,V1+1=V1',V'=0,V=2] 
+* Loop 41: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V26+V27>=V1+V27',V27'>=V27+2,V27>=0,V28>=0,V1>=1,V1+1=V1',V'=0,V=2] 
+* Loop 42: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V28+V26+V27>=V27'+1,V27'>=V27+2,V27>=0,V26>=2,V28>=1,V1'=1,V'=1,V1=0,V=2] 
+* Loop 43: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V26+V27>=V27',V27'>=V27+2,V27>=0,V28>=0,V1'=1,V'=1,V1=0,V=2] 
+* Loop 44: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V28+V27>=V27',V27'>=V27+1,V27>=0,V26>=0,V1'=1,V'=1,V1=0,V=2] 
+* Loop 45: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V27>=0,V26>=0,V28>=0,V1>=0,V27+1=V27',V1+1=V1',V'=1,V=2] 
+* Loop 46: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V28+V26+V27>=V27'+1,V27'>=V27+2,V27>=0,V26>=2,V28>=1,V1'=1,V'=0,V1=0,V=2] 
+* Loop 47: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V26+V27>=V27',V27'>=V27+2,V27>=0,V28>=0,V1'=1,V'=0,V1=0,V=2] 
+* Loop 48: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V28+V27>=V27',V27'>=V27+1,V27>=0,V26>=0,V1'=1,V'=0,V1=0,V=2] 
+* Loop 49: if(V,V1,V28,V26,V27,Out)->  if(V',V1',V28,V26,V27',Out)
+                  [V27>=0,V26>=0,V28>=0,V1>=0,V27+1=V27',V1+1=V1',V'=0,V=2] 
+* Loop 50: if(V,V1,V28,V26,V27,Out) [V27>=0,V26>=0,V28>=0,V1>=0,V>=0,Out=0] 
+* Loop 51: if(A,B,C,D,E,E) [E>=0,D>=0,C>=0,B>=0,A=1] 
+
+### Ranking functions of CR if(V,V1,V28,V26,V27,Out) 
+
+#### Partial ranking functions of CR if(V,V1,V28,V26,V27,Out) 
+
+
+### Resulting Chains:if(V,V1,V28,V26,V27,Out) 
+* [51]
+* [50]
+* [49,50]
+* [48,50]
+* [47,50]
+* [46,50]
+* [45,51]
+* [45,50]
+* [44,51]
+* [44,50]
+* [43,51]
+* [43,50]
+* [42,51]
+* [42,50]
+* [41,50]
+* [40,50]
+* [39,50]
+* [38,51]
+* [38,50]
+* [37,51]
+* [37,50]
+* [36,51]
+* [36,50]
+
+
+### Merging Chains  if/6 into  External patterns of execution 
+* [[51]] --> 1 
+* [[50,36],[50,37],[50,38],[50,39],[50,40],[50,41],[50,42],[50,43],[50,45],[50,46],[50,47],[50,49],[50]] --> 2 
+* [[50,44],[50,48]] --> 3 
+* [[51,43]] --> 4 
+* [[51,42]] --> 5 
+* [[51,44]] --> 6 
+* [[51,45]] --> 7 
+* [[51,38]] --> 8 
+* [[51,37]] --> 9 
+* [[51,36]] --> 10 
+
+
+### Specialization of cost equations addList/3 
+* CE 26 is refined into CE [225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252] 
+
+
+#### Refined cost equations addList/3 
+* CE 225: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):1+ min(Y1,Z1,A2):1+ le(B2,C2,D2):1+ if(E2,F2,V,V1,G2,H2):2
+     [V1>=0,V>=0,H2=0,G2=0,F2=0,E2=2,D2=2,C2=0,B2=0,A2=0,Z1=0,Y1=0,X1=0,W1=0,Out=0] 
+* CE 226: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):1+ min(Y1,Z1,A2):1+ le(B2,C2,D2):1+ if(E2,F2,V,V1,G2,H2):3
+     [V1>=0,V>=1,H2=0,G2=0,F2=0,E2=2,D2=2,C2=0,B2=0,A2=0,Z1=0,Y1=0,X1=0,W1=0,Out=0] 
+* CE 227: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):1+ min(Y1,Z1,A2):1+ le(B2,C2,D2):1+ if(E2,F2,V,V1,G2,Out):4
+     [V1>=Out,Out>=2,V>=0,G2=0,F2=0,E2=2,D2=2,C2=0,B2=0,A2=0,Z1=0,Y1=0,X1=0,W1=0] 
+* CE 228: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):1+ min(Y1,Z1,A2):1+ le(B2,C2,D2):1+ if(E2,F2,V,V1,G2,Out):5
+     [V+V1>=Out+1,Out>=2,V1>=2,V>=1,G2=0,F2=0,E2=2,D2=2,C2=0,B2=0,A2=0,Z1=0,Y1=0,X1=0,W1=0] 
+* CE 229: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):1+ min(Y1,Z1,A2):1+ le(B2,C2,D2):1+ if(E2,F2,V,V1,G2,Out):6
+     [V>=Out,Out>=1,V1>=0,G2=0,F2=0,E2=2,D2=2,C2=0,B2=0,A2=0,Z1=0,Y1=0,X1=0,W1=0] 
+* CE 230: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):1+ min(Y1,Z1,A2):1+ le(B2,C2,D2):1+ if(E2,F2,V,V1,G2,H2):7
+     [V1>=0,V>=0,H2=1,G2=0,F2=0,E2=2,D2=2,C2=0,B2=0,A2=0,Z1=0,Y1=0,X1=0,W1=0,Out=1] 
+* CE 231: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):1+ min(Y1,Z1,A2):1+ le(B2,C2,D2):3+ if(E2,F2,V,V1,G2,H2):2
+     [V1>=0,V>=0,H2=0,G2=0,F2=0,E2=0,D2=0,C2=0,B2=0,A2=0,Z1=0,Y1=0,X1=0,W1=0,Out=0] 
+* CE 232: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):2+ min(Y1,X1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,G2):2
+     [V1>=X1,V>=0,X1>=1,G2=0,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,W1=0,Out=0] 
+* CE 233: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):2+ min(Y1,X1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,G2):3
+     [V1>=X1,V>=1,X1>=1,G2=0,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,W1=0,Out=0] 
+* CE 234: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):2+ min(Y1,X1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,Out):4
+     [V1>=Out,V1>=X1,Out>=2,V>=0,X1>=1,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,W1=0] 
+* CE 235: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):2+ min(Y1,X1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,Out):5
+     [V+V1>=Out+1,V1>=X1,Out>=2,V1>=2,V>=1,X1>=1,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,W1=0] 
+* CE 236: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):2+ min(Y1,X1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,Out):6
+     [V>=Out,V1>=X1,Out>=1,X1>=1,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,W1=0] 
+* CE 237: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):2+ min(Y1,X1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,G2):7
+     [V1>=X1,V>=0,X1>=1,G2=1,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,W1=0,Out=1] 
+* CE 238: addList(V,V1,Out) = 1+ len(V,W1):1+ len(V1,X1):2+ min(Y1,X1,Z1):1+ le(A2,B2,C2):3+ if(D2,E2,V,V1,F2,G2):2
+     [V1>=X1,V>=0,X1>=1,G2=0,F2=0,E2=0,D2=0,C2=0,B2=0,A2=0,Z1=0,Y1=0,W1=0,Out=0] 
+* CE 239: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):1+ min(W1,Y1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,G2):2
+     [V>=W1,V1>=0,W1>=1,G2=0,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,X1=0,Out=0] 
+* CE 240: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):1+ min(W1,Y1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,G2):3
+     [V>=W1,V1>=0,W1>=1,G2=0,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,X1=0,Out=0] 
+* CE 241: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):1+ min(W1,Y1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,Out):4
+     [V1>=Out,V>=W1,Out>=2,W1>=1,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,X1=0] 
+* CE 242: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):1+ min(W1,Y1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,Out):5
+     [V+V1>=Out+1,V>=W1,Out>=2,V1>=2,W1>=1,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,X1=0] 
+* CE 243: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):1+ min(W1,Y1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,Out):6
+     [V>=Out,V>=W1,Out>=1,V1>=0,W1>=1,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,X1=0] 
+* CE 244: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):1+ min(W1,Y1,Z1):1+ le(A2,B2,C2):1+ if(D2,E2,V,V1,F2,G2):7
+     [V>=W1,V1>=0,W1>=1,G2=1,F2=0,E2=0,D2=2,C2=2,B2=0,A2=0,Z1=0,Y1=0,X1=0,Out=1] 
+* CE 245: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):1+ min(W1,Y1,Z1):1+ le(A2,B2,C2):3+ if(D2,E2,V,V1,F2,G2):2
+     [V>=W1,V1>=0,W1>=1,G2=0,F2=0,E2=0,D2=0,C2=0,B2=0,A2=0,Z1=0,Y1=0,X1=0,Out=0] 
+* CE 246: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):2+ min(W1,X1,Y1):1+ le(Z1,A2,B2):1+ if(C2,D2,V,V1,E2,F2):2
+     [V1>=X1,V>=W1,X1>=1,W1>=1,F2=0,E2=0,D2=0,C2=2,B2=2,A2=0,Z1=0,Y1=0,Out=0] 
+* CE 247: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):2+ min(W1,X1,Y1):1+ le(Z1,A2,B2):1+ if(C2,D2,V,V1,E2,F2):3
+     [V1>=X1,V>=W1,X1>=1,W1>=1,F2=0,E2=0,D2=0,C2=2,B2=2,A2=0,Z1=0,Y1=0,Out=0] 
+* CE 248: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):2+ min(W1,X1,Y1):1+ le(Z1,A2,B2):1+ if(C2,D2,V,V1,E2,Out):4
+     [V1>=Out,V1>=X1,V>=W1,Out>=2,X1>=1,W1>=1,E2=0,D2=0,C2=2,B2=2,A2=0,Z1=0,Y1=0] 
+* CE 249: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):2+ min(W1,X1,Y1):1+ le(Z1,A2,B2):1+ if(C2,D2,V,V1,E2,Out):5
+     [V+V1>=Out+1,V1>=X1,V>=W1,Out>=2,V1>=2,X1>=1,W1>=1,E2=0,D2=0,C2=2,B2=2,A2=0,Z1=0,Y1=0] 
+* CE 250: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):2+ min(W1,X1,Y1):1+ le(Z1,A2,B2):1+ if(C2,D2,V,V1,E2,Out):6
+     [V>=Out,V1>=X1,V>=W1,Out>=1,X1>=1,W1>=1,E2=0,D2=0,C2=2,B2=2,A2=0,Z1=0,Y1=0] 
+* CE 251: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):2+ min(W1,X1,Y1):1+ le(Z1,A2,B2):1+ if(C2,D2,V,V1,E2,F2):7
+     [V1>=X1,V>=W1,X1>=1,W1>=1,F2=1,E2=0,D2=0,C2=2,B2=2,A2=0,Z1=0,Y1=0,Out=1] 
+* CE 252: addList(V,V1,Out) = 1+ len(V,W1):2+ len(V1,X1):2+ min(W1,X1,Y1):1+ le(Z1,A2,B2):3+ if(C2,D2,V,V1,E2,F2):2
+     [V1>=X1,V>=W1,X1>=1,W1>=1,F2=0,E2=0,D2=0,C2=0,B2=0,A2=0,Z1=0,Y1=0,Out=0] 
+
+### Cost equations --> "Loop" of addList/3 
+* CEs [229,236,243,250] --> Loop 52 
+* CEs [228,235,242,249] --> Loop 53 
+* CEs [227,234,241,248] --> Loop 54 
+* CEs [230,237,244,251] --> Loop 55 
+* CEs [225,226,231,232,233,238,239,240,245,246,247,252] --> Loop 56 
+
+#### Loops of addList/3 
+* Loop 52: addList(V,V1,Out) [V>=Out,Out>=1,V1>=0] 
+* Loop 53: addList(V,V1,Out) [V+V1>=Out+1,Out>=2,V1>=2,V>=1] 
+* Loop 54: addList(V,V1,Out) [V1>=Out,Out>=2,V>=0] 
+* Loop 55: addList(V,V1,Out) [V1>=0,V>=0,Out=1] 
+* Loop 56: addList(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR addList(V,V1,Out) 
+
+#### Partial ranking functions of CR addList(V,V1,Out) 
+
+
+### Resulting Chains:addList(V,V1,Out) 
+* [56]
+* [55]
+* [54]
+* [53]
+* [52]
+
+
+### Merging Chains  addList/3 into  External patterns of execution 
+* [[56]] --> 1 
+* [[55]] --> 2 
+* [[54]] --> 3 
+* [[53]] --> 4 
+* [[52]] --> 5 
+
+
+### Specialization of cost equations start/5 
+* CE 2 is refined into CE [253] 
+* CE 3 is refined into CE [254,255] 
+* CE 4 is refined into CE [256,257,258,259] 
+* CE 5 is refined into CE [260,261,262,263,264] 
+* CE 6 is refined into CE [265,266,267] 
+* CE 7 is refined into CE [268,269,270,271,272] 
+* CE 8 is refined into CE [273,274,275,276,277,278,279,280,281,282] 
+
+
+#### Refined cost equations start/5 
+* CE 253: start(V,V1,V28,V26,V27) = 0+ min(V,V1,W28):1
+     [V1>=0,V>=0,W28=0] 
+* CE 254: start(V,V1,V28,V26,V27) = 0+ len(V,W28):1
+     [V>=0,W28=0] 
+* CE 255: start(V,V1,V28,V26,V27) = 0+ len(V,W28):2
+     [V>=W28,W28>=1] 
+* CE 256: start(V,V1,V28,V26,V27) = 0+ sum(V,W28,V):1
+     [V>=0,W28=0,V1=0] 
+* CE 257: start(V,V1,V28,V26,V27) = 0+ sum(V,V1,W28):2
+     [V1>=0,V>=0,W28=0] 
+* CE 258: start(V,V1,V28,V26,V27) = 0+ sum(V,W28,X28):3
+     [X28>=V+1,V>=0,X28=V+W28,X28=V+V1] 
+* CE 259: start(V,V1,V28,V26,V27) = 0+ sum(V,V1,W28):4
+     [V1>=W28,W28>=1,V>=0] 
+* CE 260: start(V,V1,V28,V26,V27) = 0+ le(W28,V1,X28):1
+     [V1>=0,X28=2,W28=0,V=0] 
+* CE 261: start(V,V1,V28,V26,V27) = 0+ le(V,W28,X28):2
+     [V>=1,X28=1,W28=0,V1=0] 
+* CE 262: start(V,V1,V28,V26,V27) = 0+ le(V,V1,W28):3
+     [V1>=0,V>=0,W28=0] 
+* CE 263: start(V,V1,V28,V26,V27) = 0+ le(V,V1,W28):4
+     [V>=V1+1,V1>=1,W28=1] 
+* CE 264: start(V,V1,V28,V26,V27) = 0+ le(V,V1,W28):5
+     [V1>=V,V>=1,W28=2] 
+* CE 265: start(V,V1,V28,V26,V27) = 0+ take(W28,V1,X28):1
+     [V1>=X28+1,X28>=0,W28=0,V=0] 
+* CE 266: start(V,V1,V28,V26,V27) = 0+ take(V,V1,W28):2
+     [V1>=0,V>=0,W28=0] 
+* CE 267: start(V,V1,V28,V26,V27) = 0+ take(V,V1,W28):3
+     [V1>=V+W28+1,W28>=0,V>=1] 
+* CE 268: start(V,V1,V28,V26,V27) = 0+ addList(V,V1,W28):1
+     [V1>=0,V>=0,W28=0] 
+* CE 269: start(V,V1,V28,V26,V27) = 0+ addList(V,V1,W28):2
+     [V1>=0,V>=0,W28=1] 
+* CE 270: start(V,V1,V28,V26,V27) = 0+ addList(V,V1,W28):3
+     [V1>=W28,W28>=2,V>=0] 
+* CE 271: start(V,V1,V28,V26,V27) = 0+ addList(V,V1,W28):4
+     [V+V1>=W28+1,W28>=2,V1>=2,V>=1] 
+* CE 272: start(V,V1,V28,V26,V27) = 0+ addList(V,V1,W28):5
+     [V>=W28,W28>=1,V1>=0] 
+* CE 273: start(V,V1,V28,V26,V27) = 0+ if(W28,V1,V28,V26,V27,V27):1
+     [V27>=0,V26>=0,V28>=0,V1>=0,W28=1,V=1] 
+* CE 274: start(V,V1,V28,V26,V27) = 0+ if(V,V1,V28,V26,V27,W28):2
+     [V27>=0,V26>=0,V28>=0,V1>=0,V>=0,W28=0] 
+* CE 275: start(V,V1,V28,V26,V27) = 0+ if(W28,X28,V28,V26,V27,Y28):3
+     [V27>=0,V26>=0,V28>=1,Y28=0,X28=0,W28=2,V1=0,V=2] 
+* CE 276: start(V,V1,V28,V26,V27) = 0+ if(W28,X28,V28,V26,V27,Y28):4
+     [V26+V27>=Y28,Y28>=V27+2,V27>=0,V28>=0,X28=0,W28=2,V1=0,V=2] 
+* CE 277: start(V,V1,V28,V26,V27) = 0+ if(W28,X28,V28,V26,V27,Y28):5
+     [V28+V26+V27>=Y28+1,Y28>=V27+2,V27>=0,V26>=2,V28>=1,X28=0,W28=2,V1=0,V=2] 
+* CE 278: start(V,V1,V28,V26,V27) = 0+ if(W28,X28,V28,V26,V27,Y28):6
+     [V28+V27>=Y28,Y28>=V27+1,V27>=0,V26>=0,X28=0,W28=2,V1=0,V=2] 
+* CE 279: start(V,V1,V28,V26,V27) = 0+ if(W28,V1,V28,V26,X28,Y28):7
+     [Y28>=1,V26>=0,V28>=0,V1>=0,Y28=X28+1,Y28=V27+1,W28=2,V=2] 
+* CE 280: start(V,V1,V28,V26,V27) = 0+ if(W28,V1,V28,V26,V27,X28):8
+     [V26+V27>=V1+X28,X28>=V27+2,V27>=0,V28>=0,V1>=1,W28=2,V=2] 
+* CE 281: start(V,V1,V28,V26,V27) = 0+ if(W28,V1,V28,V26,V27,X28):9
+     [V28+V27>=V1+X28,X28>=V27+1,V27>=0,V26>=0,V1>=1,W28=2,V=2] 
+* CE 282: start(V,V1,V28,V26,V27) = 0+ if(W28,V1,V28,V26,V27,X28):10
+     [V28+V26+V27>=2*V1+X28+1,X28>=V27+2,V26>=V1+2,V28>=V1+1,V27>=0,V1>=1,W28=2,V=2] 
+
+### Cost equations --> "Loop" of start/5 
+* CEs [256,261,275,278] --> Loop 57 
+* CEs [276,277,279,280,281,282] --> Loop 58 
+* CEs [273] --> Loop 59 
+* CEs [253,254,255,257,258,259,260,262,263,264,265,266,267,268,269,270,271,272,274] --> Loop 60 
+
+#### Loops of start/5 
+* Loop 57: start(V,V1,V28,V26,V27) [V>=0,V1=0] 
+* Loop 58: start(V,V1,V28,V26,V27) [V27>=0,V26>=0,V28>=0,V1>=0,V=2] 
+* Loop 59: start(V,V1,V28,V26,V27) [V27>=0,V26>=0,V28>=0,V1>=0,V=1] 
+* Loop 60: start(V,V1,V28,V26,V27) [V>=0] 
+
+### Ranking functions of CR start(V,V1,V28,V26,V27) 
+
+#### Partial ranking functions of CR start(V,V1,V28,V26,V27) 
+
+
+### Resulting Chains:start(V,V1,V28,V26,V27) 
+* [60]
+* [59]
+* [58]
+* [57]
+
+
+### Merging Chains  start/5 into  External patterns of execution 
+* [[59],[60]] --> 1 
+* [[58]] --> 2 
+* [[57]] --> 3 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [21] 
+
+ * loop 21:le(V,V1,Out) -> [le(V',V1',Out')] 
+1
+#### Cost of phase [21]:le(V,V1,Out) -> [le(V',V1',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V
+it(21) =< V-V'
+it(21) =< V1
+it(21) =< V1-V1'
+
+#### Cost of phase [21]:le(V,V1,Out) -> [le(V',V1',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V
+it(21) =< V-V'
+it(21) =< V1
+it(21) =< V1-V1'
+
+#### Cost of phase [21]:le(V,V1,Out) -> [le(V',V1',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V
+it(21) =< V-V'
+it(21) =< V1
+it(21) =< V1-V1'
+
+#### Cost of chains of le(V,V1,Out):
+* Chain [[21],24]: 1*it(21)+1
+  Such that:it(21) =< V
+
+  with precondition: [Out=2,V>=1,V1>=V] 
+
+* Chain [[21],23]: 1*it(21)+1
+  Such that:it(21) =< V1
+
+  with precondition: [Out=1,V1>=1,V>=V1+1] 
+
+* Chain [[21],22]: 1*it(21)+0
+  Such that:it(21) =< V1
+
+  with precondition: [Out=0,V>=1,V1>=1] 
+
+* Chain [24]: 1
+  with precondition: [V=0,Out=2,V1>=0] 
+
+* Chain [23]: 1
+  with precondition: [V1=0,Out=1,V>=1] 
+
+* Chain [22]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of loops [25] 
+
+ * loop 25:len(V,Out) -> [len(V',Out')] 
+1
+#### Cost of phase [25]:len(V,Out) -> [len(V',Out')] 
+1*it(25)+0
+  Such that:it(25) =< V
+it(25) =< V-V'
+
+#### Cost of chains of len(V,Out):
+* Chain [[25],26]: 1*it(25)+1
+  Such that:it(25) =< V
+
+  with precondition: [Out>=1,V>=Out] 
+
+* Chain [26]: 1
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of loops [27] 
+
+ * loop 27:min(V,V1,Out) -> [min(V',V1',Out')] 
+1
+#### Cost of phase [27]:min(V,V1,Out) -> [min(V',V1',Out')] 
+1*it(27)+0
+  Such that:it(27) =< V
+it(27) =< V-V'
+it(27) =< V1
+it(27) =< V1-V1'
+
+#### Cost of phase [27]:min(V,V1,Out) -> [min(V',V1',Out')] 
+1*it(27)+0
+  Such that:it(27) =< V
+it(27) =< V-V'
+it(27) =< V1
+it(27) =< V1-V1'
+
+#### Cost of chains of min(V,V1,Out):
+* Chain [[27],29]: 1*it(27)+1
+  Such that:it(27) =< V1
+
+  with precondition: [Out=0,V>=1,V1>=1] 
+
+* Chain [[27],28]: 1*it(27)+1
+  Such that:it(27) =< V1
+
+  with precondition: [Out=0,V1>=1,V>=V1+1] 
+
+* Chain [29]: 1
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+* Chain [28]: 1
+  with precondition: [V1=0,Out=0,V>=1] 
+
+
+#### Cost of loops [30] 
+
+ * loop 30:sum(V,V1,Out) -> [sum(V',V1',Out')] 
+1
+#### Cost of phase [30]:sum(V,V1,Out) -> [sum(V',V1',Out')] 
+1*it(30)+0
+  Such that:it(30) =< V1
+it(30) =< V1-V1'
+
+#### Cost of phase [30]:sum(V,V1,Out) -> [sum(V',V1',Out')] 
+1*it(30)+0
+  Such that:it(30) =< V1
+it(30) =< V1-V1'
+
+#### Cost of chains of sum(V,V1,Out):
+* Chain [[30],32]: 1*it(30)+1
+  Such that:it(30) =< V1
+
+  with precondition: [V+V1=Out,V>=0,V1>=1] 
+
+* Chain [[30],31]: 1*it(30)+0
+  Such that:it(30) =< Out
+
+  with precondition: [V>=0,Out>=1,V1>=Out] 
+
+* Chain [32]: 1
+  with precondition: [V1=0,V=Out,V>=0] 
+
+* Chain [31]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of loops [33] 
+
+ * loop 33:take(V,V1,Out) -> [take(V',V1',Out')] 
+1
+#### Cost of phase [33]:take(V,V1,Out) -> [take(V',V1',Out')] 
+1*it(33)+0
+  Such that:it(33) =< V
+it(33) =< V-V'
+it(33) =< V1
+it(33) =< V1-V1'
+
+#### Cost of phase [33]:take(V,V1,Out) -> [take(V',V1',Out')] 
+1*it(33)+0
+  Such that:it(33) =< V
+it(33) =< V-V'
+it(33) =< V1
+it(33) =< V1-V1'
+
+#### Cost of chains of take(V,V1,Out):
+* Chain [[33],35]: 1*it(33)+1
+  Such that:it(33) =< V
+
+  with precondition: [V>=1,Out>=0,V1>=Out+V+1] 
+
+* Chain [[33],34]: 1*it(33)+0
+  Such that:it(33) =< V1
+
+  with precondition: [Out=0,V>=1,V1>=1] 
+
+* Chain [35]: 1
+  with precondition: [V=0,Out>=0,V1>=Out+1] 
+
+* Chain [34]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of chains of if(V,V1,V28,V26,V27,Out):
+* Chain [51]: 1
+  with precondition: [V=1,V27=Out,V1>=0,V28>=0,V26>=0,V27>=0] 
+
+* Chain [50]: 0
+  with precondition: [Out=0,V>=0,V1>=0,V28>=0,V26>=0,V27>=0] 
+
+* Chain [49,50]: 43*s(11)+74*s(20)+17*s(30)+3*s(207)+6
+  Such that:aux(56) =< V1
+aux(59) =< V1+1
+aux(62) =< V28
+aux(63) =< V26
+s(207) =< aux(56)
+s(11) =< aux(62)
+s(20) =< aux(63)
+s(30) =< aux(59)
+
+  with precondition: [V=2,Out=0,V1>=0,V28>=0,V26>=0,V27>=0] 
+
+* Chain [48,50]: 18*s(222)+5*s(236)+7
+  Such that:aux(74) =< V28
+aux(76) =< V26
+s(222) =< aux(76)
+s(236) =< aux(74)
+
+  with precondition: [V=2,V1=0,Out=0,V28>=1,V26>=0,V27>=0] 
+
+* Chain [47,50]: 30*s(264)+14*s(268)+6
+  Such that:aux(98) =< V28
+aux(99) =< V26
+s(268) =< aux(98)
+s(264) =< aux(99)
+
+  with precondition: [V=2,V1=0,Out=0,V28>=0,V26>=2,V27>=0] 
+
+* Chain [46,50]: 4*s(332)+6*s(333)+2*s(338)+7
+  Such that:aux(104) =< V28+V26
+aux(105) =< V26
+aux(106) =< V28
+s(338) =< aux(106)
+s(332) =< aux(104)
+s(333) =< aux(105)
+
+  with precondition: [V=2,V1=0,Out=0,V28>=1,V26>=2,V27>=0] 
+
+* Chain [45,51]: 43*s(353)+74*s(360)+20*s(368)+8
+  Such that:aux(144) =< V1+1
+aux(146) =< V26
+aux(147) =< V28
+s(368) =< aux(144)
+s(353) =< aux(147)
+s(360) =< aux(146)
+
+  with precondition: [V=2,Out=V27+1,V1>=0,V28>=0,V26>=0,Out>=1] 
+
+* Chain [45,50]: 43*s(353)+74*s(360)+20*s(368)+7
+  Such that:aux(144) =< V1+1
+aux(146) =< V26
+aux(148) =< V28
+s(368) =< aux(144)
+s(353) =< aux(148)
+s(360) =< aux(146)
+
+  with precondition: [V=2,Out=0,V1>=0,V28>=0,V26>=0,V27>=0] 
+
+* Chain [44,51]: 18*s(526)+5*s(537)+9
+  Such that:aux(153) =< V28
+aux(154) =< V26
+s(537) =< aux(153)
+s(526) =< aux(154)
+
+  with precondition: [V=2,V1=0,V26>=0,V27>=0,Out>=V27+1,V27+V28>=Out] 
+
+* Chain [44,50]: 18*s(526)+5*s(537)+8
+  Such that:aux(153) =< V28
+aux(154) =< V26
+s(537) =< aux(153)
+s(526) =< aux(154)
+
+  with precondition: [V=2,V1=0,Out=0,V28>=1,V26>=0,V27>=0] 
+
+* Chain [43,51]: 12*s(559)+14*s(562)+18*s(568)+8
+  Such that:aux(168) =< V26
+aux(166) =< -V27+Out
+aux(169) =< V28
+s(559) =< aux(166)
+s(562) =< aux(169)
+s(568) =< aux(168)
+
+  with precondition: [V=2,V1=0,V28>=0,V27>=0,Out>=V27+2,V26+V27>=Out] 
+
+* Chain [43,50]: 30*s(559)+14*s(562)+7
+  Such that:aux(170) =< V28
+aux(171) =< V26
+s(559) =< aux(171)
+s(562) =< aux(170)
+
+  with precondition: [V=2,V1=0,Out=0,V28>=0,V26>=2,V27>=0] 
+
+* Chain [42,51]: 4*s(615)+6*s(616)+2*s(620)+9
+  Such that:aux(175) =< V28
+aux(176) =< V26
+aux(174) =< -V27+Out
+s(615) =< aux(174)
+s(620) =< aux(175)
+s(616) =< aux(176)
+
+  with precondition: [V=2,V1=0,V28>=1,V26>=2,V27>=0,Out>=V27+2,V26+V27+V28>=Out+1] 
+
+* Chain [42,50]: 4*s(615)+6*s(616)+2*s(620)+8
+  Such that:aux(175) =< V28
+aux(174) =< V28+V26
+aux(176) =< V26
+s(615) =< aux(174)
+s(620) =< aux(175)
+s(616) =< aux(176)
+
+  with precondition: [V=2,V1=0,Out=0,V28>=1,V26>=2,V27>=0] 
+
+* Chain [41,50]: 14*s(632)+6*s(633)+12*s(634)+10*s(644)+18*s(647)+6
+  Such that:aux(200) =< -V1+V26
+aux(197) =< V1
+aux(201) =< V1+1
+aux(204) =< V28
+aux(205) =< V26
+s(644) =< aux(197)
+s(632) =< aux(204)
+s(634) =< aux(200)
+s(633) =< aux(201)
+s(647) =< aux(205)
+
+  with precondition: [V=2,Out=0,V1>=1,V28>=0,V27>=0,V26>=V1+2] 
+
+* Chain [40,50]: 4*s(716)+16*s(717)+8*s(733)+4*s(735)+7
+  Such that:aux(218) =< V1
+aux(221) =< V1+1
+aux(224) =< V28
+aux(225) =< V26
+s(733) =< aux(218)
+s(735) =< aux(224)
+s(716) =< aux(221)
+s(717) =< aux(225)
+
+  with precondition: [V=2,Out=0,V1>=1,V26>=0,V27>=0,V28>=V1+1] 
+
+* Chain [39,50]: 4*s(764)+2*s(766)+6*s(767)+4*s(771)+2*s(773)+2*s(774)+7
+  Such that:aux(237) =< -2*V1+V28+V26
+aux(234) =< -V1+V26
+aux(235) =< V1
+aux(238) =< V1+1
+aux(236) =< V28
+aux(239) =< V26
+s(766) =< aux(234)
+s(774) =< aux(236)
+s(773) =< aux(237)
+s(764) =< aux(235)
+s(767) =< aux(239)
+s(771) =< aux(238)
+
+  with precondition: [V=2,Out=0,V1>=1,V27>=0,V28>=V1+1,V26>=V1+2] 
+
+* Chain [38,51]: 14*s(791)+10*s(792)+12*s(793)+18*s(804)+6*s(808)+8
+  Such that:aux(254) =< V1
+aux(258) =< V1+1
+aux(257) =< -V27+Out
+aux(261) =< V28
+aux(262) =< V26
+s(808) =< aux(254)
+s(791) =< aux(261)
+s(793) =< aux(257)
+s(792) =< aux(258)
+s(804) =< aux(262)
+
+  with precondition: [V=2,V1>=1,V28>=0,V27>=0,Out>=V27+2,V26+V27>=Out+V1] 
+
+* Chain [38,50]: 14*s(791)+10*s(792)+12*s(793)+18*s(804)+6*s(808)+7
+  Such that:aux(257) =< -V1+V26
+aux(254) =< V1
+aux(258) =< V1+1
+aux(263) =< V28
+aux(264) =< V26
+s(808) =< aux(254)
+s(791) =< aux(263)
+s(793) =< aux(257)
+s(792) =< aux(258)
+s(804) =< aux(264)
+
+  with precondition: [V=2,Out=0,V1>=1,V28>=0,V27>=0,V26>=V1+2] 
+
+* Chain [37,51]: 9*s(863)+16*s(864)+4*s(879)+3*s(893)+9
+  Such that:aux(273) =< V1
+aux(274) =< V1+1
+aux(275) =< V28
+aux(276) =< V26
+s(893) =< aux(273)
+s(863) =< aux(274)
+s(879) =< aux(275)
+s(864) =< aux(276)
+
+  with precondition: [V=2,V1>=1,V26>=0,V27>=0,Out>=V27+1,V27+V28>=Out+V1] 
+
+* Chain [37,50]: 9*s(863)+16*s(864)+4*s(879)+3*s(893)+8
+  Such that:aux(273) =< V1
+aux(274) =< V1+1
+aux(275) =< V28
+aux(276) =< V26
+s(893) =< aux(273)
+s(863) =< aux(274)
+s(879) =< aux(275)
+s(864) =< aux(276)
+
+  with precondition: [V=2,Out=0,V1>=1,V26>=0,V27>=0,V28>=V1+1] 
+
+* Chain [36,51]: 4*s(903)+4*s(905)+6*s(906)+4*s(909)+2*s(912)+9
+  Such that:aux(283) =< V1
+aux(286) =< V1+1
+aux(284) =< V28
+aux(285) =< -V27+Out
+aux(287) =< V26
+s(912) =< aux(284)
+s(905) =< aux(285)
+s(909) =< aux(283)
+s(906) =< aux(287)
+s(903) =< aux(286)
+
+  with precondition: [V=2,V1>=1,V27>=0,V28>=V1+1,V26>=V1+2,Out>=V27+2,V26+V27+V28>=2*V1+Out+1] 
+
+* Chain [36,50]: 4*s(903)+4*s(905)+6*s(906)+4*s(909)+2*s(912)+8
+  Such that:aux(285) =< -2*V1+V28+V26
+aux(283) =< V1
+aux(286) =< V1+1
+aux(284) =< V28
+aux(288) =< V26
+s(912) =< aux(284)
+s(905) =< aux(285)
+s(909) =< aux(283)
+s(906) =< aux(288)
+s(903) =< aux(286)
+
+  with precondition: [V=2,Out=0,V1>=1,V27>=0,V28>=V1+1,V26>=V1+2] 
+
+
+#### Cost of chains of addList(V,V1,Out):
+* Chain [56]: 1310*s(1034)+112*s(1035)+2770*s(1037)+592*s(1038)+13
+  Such that:aux(328) =< 1
+aux(329) =< V
+aux(330) =< V+V1
+aux(331) =< V1
+s(1034) =< aux(329)
+s(1035) =< aux(330)
+s(1037) =< aux(331)
+s(1038) =< aux(328)
+
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+* Chain [55]: 80*s(1198)+174*s(1199)+302*s(1200)+13
+  Such that:aux(336) =< 1
+aux(337) =< V
+aux(338) =< V1
+s(1198) =< aux(336)
+s(1199) =< aux(337)
+s(1200) =< aux(338)
+
+  with precondition: [Out=1,V>=0,V1>=0] 
+
+* Chain [54]: 126*s(1234)+58*s(1235)+13
+  Such that:aux(345) =< V
+aux(346) =< V1
+s(1235) =< aux(345)
+s(1234) =< aux(346)
+
+  with precondition: [V>=0,Out>=2,V1>=Out] 
+
+* Chain [53]: 16*s(1270)+10*s(1271)+30*s(1272)+14
+  Such that:aux(351) =< V
+aux(352) =< V+V1
+aux(353) =< V1
+s(1270) =< aux(352)
+s(1271) =< aux(351)
+s(1272) =< aux(353)
+
+  with precondition: [V>=1,V1>=2,Out>=2,V+V1>=Out+1] 
+
+* Chain [52]: 22*s(1305)+78*s(1306)+14
+  Such that:aux(358) =< V
+aux(359) =< V1
+s(1305) =< aux(358)
+s(1306) =< aux(359)
+
+  with precondition: [V1>=0,Out>=1,V>=Out] 
+
+
+#### Cost of chains of start(V,V1,V28,V26,V27):
+* Chain [60]: 3351*s(1330)+1577*s(1331)+128*s(1344)+672*s(1346)+158*s(1374)+6*s(1375)+300*s(1377)+74*s(1378)+26*s(1379)+8*s(1380)+14
+  Such that:s(1367) =< -2*V1+V28+V26
+s(1368) =< -V1+V26
+s(1370) =< V1+1
+s(1371) =< V28
+s(1372) =< V28+V26
+s(1373) =< V26
+aux(360) =< 1
+aux(361) =< V
+aux(362) =< V+V1
+aux(363) =< V1
+s(1331) =< aux(361)
+s(1330) =< aux(363)
+s(1344) =< aux(362)
+s(1346) =< aux(360)
+s(1374) =< s(1371)
+s(1375) =< s(1367)
+s(1377) =< s(1373)
+s(1378) =< s(1370)
+s(1379) =< s(1368)
+s(1380) =< s(1372)
+
+  with precondition: [V>=0] 
+
+* Chain [59]: 1
+  with precondition: [V=1,V1>=0,V28>=0,V26>=0,V27>=0] 
+
+* Chain [58]: 150*s(1384)+79*s(1385)+4*s(1390)+43*s(1396)+13*s(1404)+12*s(1406)+4*s(1423)+9
+  Such that:s(1420) =< -2*V1+V28+V26
+s(1401) =< -V1+V26
+s(1389) =< V28+V26
+aux(365) =< V1
+aux(366) =< V1+1
+aux(367) =< V28
+aux(368) =< V26
+s(1385) =< aux(367)
+s(1423) =< s(1420)
+s(1404) =< aux(365)
+s(1384) =< aux(368)
+s(1396) =< aux(366)
+s(1406) =< s(1401)
+s(1390) =< s(1389)
+
+  with precondition: [V=2,V1>=0,V28>=0,V26>=0,V27>=0] 
+
+* Chain [57]: 15*s(1429)+54*s(1430)+9
+  Such that:aux(369) =< V28
+aux(370) =< V26
+s(1429) =< aux(369)
+s(1430) =< aux(370)
+
+  with precondition: [V1=0,V>=0] 
+
+
+Closed-form bounds of start(V,V1,V28,V26,V27): 
+-------------------------------------
+* Chain [60] with precondition: [V>=0] 
+    - Upper bound: 1577*V+686+nat(V1)*3351+nat(V28)*158+nat(V26)*300+nat(V+V1)*128+nat(V1+1)*74+nat(V28+V26)*8+nat(-V1+V26)*26+nat(-2*V1+V28+V26)*6 
+    - Complexity: n 
+* Chain [59] with precondition: [V=1,V1>=0,V28>=0,V26>=0,V27>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [58] with precondition: [V=2,V1>=0,V28>=0,V26>=0,V27>=0] 
+    - Upper bound: 56*V1+83*V28+154*V26+52+nat(-V1+V26)*12+nat(-2*V1+V28+V26)*4 
+    - Complexity: n 
+* Chain [57] with precondition: [V1=0,V>=0] 
+    - Upper bound: nat(V28)*15+9+nat(V26)*54 
+    - Complexity: n 
+
+### Maximum cost of start(V,V1,V28,V26,V27): 1577*V+677+nat(V1)*3338+nat(V28)*79+nat(V26)*150+nat(V+V1)*128+nat(V1+1)*31+nat(V28+V26)*4+nat(-V1+V26)*14+nat(-2*V1+V28+V26)*2+ (nat(V28)*64+nat(V1)*13+nat(V26)*96+nat(V1+1)*43+nat(V28+V26)*4+nat(-V1+V26)*12+nat(-2*V1+V28+V26)*4)+ (nat(V28)*15+8+nat(V26)*54)+1 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 21 ms.
+* Invariants computed in 133 ms.
+   - Backward Invariants 69 ms.
+   - Transitive Invariants 6 ms.
+* Refinement performed in 1431 ms.
+* Termination proved in 7 ms.
+* Upper bounds computed in 1349 ms.
+   - Equation cost structures 186 ms.
+   - Phase cost structures 11 ms.
+   - Chain cost structures 27 ms.
+   - Solving cost expressions 4 ms.
+* Total analysis performed in 2996 ms.
+

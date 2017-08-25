@@ -1,0 +1,464 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [and/3]
+1. recursive  : [gr/3]
+2. non_recursive  : [p/2]
+3. recursive  : [cond/4]
+4. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into and/3
+1. SCC is partially evaluated into gr/3
+2. SCC is partially evaluated into p/2
+3. SCC is partially evaluated into cond/4
+4. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations and/3 
+* CE 9 is refined into CE [16] 
+* CE 8 is refined into CE [17] 
+* CE 10 is refined into CE [18] 
+
+
+#### Refined cost equations and/3 
+* CE 16: and(V1,V,Out) = 1
+     [V1>=0,Out=0,V=0] 
+* CE 17: and(V1,V,Out) = 1
+     [Out=1,V=1,V1=1] 
+* CE 18: and(V1,V,Out) = 1
+     [V>=0,Out=0,V1=0] 
+
+### Cost equations --> "Loop" of and/3 
+* CEs [16] --> Loop 12 
+* CEs [17] --> Loop 13 
+* CEs [18] --> Loop 14 
+
+#### Loops of and/3 
+* Loop 12: and(V1,V,Out) [V1>=0,Out=0,V=0] 
+* Loop 13: and(V1,V,Out) [Out=1,V=1,V1=1] 
+* Loop 14: and(V1,V,Out) [V>=0,Out=0,V1=0] 
+
+### Ranking functions of CR and(V1,V,Out) 
+
+#### Partial ranking functions of CR and(V1,V,Out) 
+
+
+### Resulting Chains:and(V1,V,Out) 
+* [14]
+* [13]
+* [12]
+
+
+### Merging Chains  and/3 into  External patterns of execution 
+* [[14]] --> 1 
+* [[13]] --> 2 
+* [[12]] --> 3 
+
+
+### Specialization of cost equations gr/3 
+* CE 13 is refined into CE [19] 
+* CE 12 is refined into CE [20] 
+* CE 11 is refined into CE [21] 
+
+
+#### Refined cost equations gr/3 
+* CE 19: gr(V1,V,Out) = 1+ gr(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+* CE 20: gr(V1,V,Out) = 1
+     [V1>=1,Out=1,V=0] 
+* CE 21: gr(V1,V,Out) = 1
+     [V>=0,Out=0,V1=0] 
+
+### Cost equations --> "Loop" of gr/3 
+* CEs [20] --> Loop 15 
+* CEs [21] --> Loop 16 
+* CEs [19] --> Loop 17 
+
+#### Loops of gr/3 
+* Loop 15: gr(V1,V,Out) [V1>=1,Out=1,V=0] 
+* Loop 16: gr(V1,V,Out) [V>=0,Out=0,V1=0] 
+* Loop 17: gr(V1,V,Out)->  gr(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+
+### Ranking functions of CR gr(V1,V,Out) 
+* RF of phase [17]: [V,V1]
+
+#### Partial ranking functions of CR gr(V1,V,Out) 
+* Partial RF of phase [17]:
+  - RF of loop [17:1]:
+    V
+    V1
+
+
+### Resulting Chains:gr(V1,V,Out) 
+* [[17],16]
+* [[17],15]
+* [16]
+* [15]
+
+
+### Merging Chains  gr/3 into  External patterns of execution 
+* [[16]] --> 1 
+* [[15]] --> 2 
+* [[16,[17]]] --> 3 
+* [[15,[17]]] --> 4 
+
+
+### Specialization of cost equations p/2 
+* CE 15 is refined into CE [22] 
+* CE 14 is refined into CE [23] 
+
+
+#### Refined cost equations p/2 
+* CE 22: p(V1,Out) = 1
+     [Out>=0,Out+1=V1] 
+* CE 23: p(V1,Out) = 1
+     [Out=0,V1=0] 
+
+### Cost equations --> "Loop" of p/2 
+* CEs [22] --> Loop 18 
+* CEs [23] --> Loop 19 
+
+#### Loops of p/2 
+* Loop 18: p(V1,Out) [V1>=1,V1=Out+1] 
+* Loop 19: p(V1,Out) [Out=0,V1=0] 
+
+### Ranking functions of CR p(V1,Out) 
+
+#### Partial ranking functions of CR p(V1,Out) 
+
+
+### Resulting Chains:p(V1,Out) 
+* [19]
+* [18]
+
+
+### Merging Chains  p/2 into  External patterns of execution 
+* [[19]] --> 1 
+* [[18]] --> 2 
+
+
+### Specialization of cost equations cond/4 
+* CE 7 is refined into CE [24] 
+* CE 6 is refined into CE [25,26,27,28,29] 
+
+
+#### Refined cost equations cond/4 
+* CE 24: cond(V1,V,V2,Out) = 0
+     [V2>=0,V>=0,V1>=0,Out=0] 
+* CE 25: cond(V1,V,V2,Out) = 1+ gr(W2,X2,Y2):1+ gr(Z2,A3,B3):1+ and(C3,D3,E3):1+ p(F3,G3):1+ p(H3,I3):1+ cond(J3,K3,L3,Out)
+     [L3=0,K3=0,J3=0,I3=0,H3=0,G3=0,F3=0,E3=0,D3=0,C3=0,B3=0,A3=0,Z2=0,Y2=0,X2=0,W2=0,V2=0,V=0,V1=1] 
+* CE 26: cond(V1,V,V2,Out) = 1+ gr(W2,X2,Y2):1+ gr(Z2,A3,B3):1+ and(C3,D3,E3):3+ p(F3,G3):1+ p(H3,I3):1+ cond(J3,K3,L3,Out)
+     [L3=0,K3=0,J3=0,I3=0,H3=0,G3=0,F3=0,E3=0,D3=0,C3=0,B3=0,A3=0,Z2=0,Y2=0,X2=0,W2=0,V2=0,V=0,V1=1] 
+* CE 27: cond(V1,V,V2,Out) = 1+ gr(W2,X2,Y2):1+ gr(Z2,A3,B3):2+ and(C3,D3,E3):1+ p(F3,G3):1+ p(H3,I3):2+ cond(J3,K3,I3,Out)
+     [I3>=0,I3+1=H3,I3+1=Z2,I3+1=V2,K3=0,J3=0,G3=0,F3=0,E3=0,D3=1,C3=0,B3=1,A3=0,Y2=0,X2=0,W2=0,V=0,V1=1] 
+* CE 28: cond(V1,V,V2,Out) = 1+ gr(W2,X2,Y2):2+ gr(Z2,A3,B3):1+ and(C3,D3,E3):3+ p(F3,G3):2+ p(H3,I3):1+ cond(J3,G3,K3,Out)
+     [G3>=0,G3+1=F3,G3+1=W2,G3+1=V,K3=0,J3=0,I3=0,H3=0,E3=0,D3=0,C3=1,B3=0,A3=0,Z2=0,Y2=1,X2=0,V2=0,V1=1] 
+* CE 29: cond(V1,V,V2,Out) = 1+ gr(W2,X2,Y2):2+ gr(Z2,A3,B3):2+ and(C3,D3,E3):2+ p(F3,G3):2+ p(H3,I3):2+ cond(J3,G3,I3,Out)
+     [I3>=0,G3>=0,I3+1=H3,G3+1=F3,I3+1=Z2,G3+1=W2,I3+1=V2,G3+1=V,J3=1,E3=1,D3=1,C3=1,B3=1,A3=0,Y2=1,X2=0,V1=1] 
+
+### Cost equations --> "Loop" of cond/4 
+* CEs [29] --> Loop 20 
+* CEs [28] --> Loop 21 
+* CEs [27] --> Loop 22 
+* CEs [25,26] --> Loop 23 
+* CEs [24] --> Loop 24 
+
+#### Loops of cond/4 
+* Loop 20: cond(V1,V,V2,Out)->  cond(V1',V',V2',Out)
+                  [V2>=1,V>=1,V2=V2'+1,V=V'+1,V1'=1,V1=1] 
+* Loop 21: cond(V1,V,V2,Out)->  cond(V1',V',V2',Out)
+                  [V>=1,V=V'+1,V2'=0,V1'=0,V2=0,V1=1] 
+* Loop 22: cond(V1,V,V2,Out)->  cond(V1',V',V2',Out)
+                  [V2>=1,V2=V2'+1,V'=0,V1'=0,V=0,V1=1] 
+* Loop 23: cond(V1,V,V2,Out)->  cond(V1',V',V2',Out)
+                  [V2'=0,V'=0,V1'=0,V2=0,V=0,V1=1] 
+* Loop 24: cond(V1,V,V2,Out) [V2>=0,V>=0,V1>=0,Out=0] 
+
+### Ranking functions of CR cond(V1,V,V2,Out) 
+* RF of phase [20]: [V,V2]
+
+#### Partial ranking functions of CR cond(V1,V,V2,Out) 
+* Partial RF of phase [20]:
+  - RF of loop [20:1]:
+    V
+    V2
+
+
+### Resulting Chains:cond(V1,V,V2,Out) 
+* [[20],24]
+* [[20],23,24]
+* [[20],22,24]
+* [[20],21,24]
+* [24]
+* [23,24]
+* [22,24]
+* [21,24]
+
+
+### Merging Chains  cond/4 into  External patterns of execution 
+* [[24,23],[24]] --> 1 
+* [[24,22]] --> 2 
+* [[24,21]] --> 3 
+* [[24,21,[20]],[24,22,[20]],[24,23,[20]],[24,[20]]] --> 4 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [30,31,32,33] 
+* CE 3 is refined into CE [34,35,36] 
+* CE 4 is refined into CE [37,38,39,40] 
+* CE 5 is refined into CE [41,42] 
+
+
+#### Refined cost equations start/3 
+* CE 30: start(V1,V,V2) = 0+ cond(V1,V,V2,W2):1
+     [V2>=0,V>=0,V1>=0,W2=0] 
+* CE 31: start(V1,V,V2) = 0+ cond(W2,X2,V2,Y2):2
+     [V2>=1,Y2=0,X2=0,W2=1,V=0,V1=1] 
+* CE 32: start(V1,V,V2) = 0+ cond(W2,V,X2,Y2):3
+     [V>=1,Y2=0,X2=0,W2=1,V2=0,V1=1] 
+* CE 33: start(V1,V,V2) = 0+ cond(W2,V,V2,X2):4
+     [V2>=1,V>=1,X2=0,W2=1,V1=1] 
+* CE 34: start(V1,V,V2) = 0+ and(W2,V,X2):1
+     [V>=0,X2=0,W2=0,V1=0] 
+* CE 35: start(V1,V,V2) = 0+ and(W2,X2,Y2):2
+     [Y2=1,X2=1,W2=1,V=1,V1=1] 
+* CE 36: start(V1,V,V2) = 0+ and(V1,W2,X2):3
+     [V1>=0,X2=0,W2=0,V=0] 
+* CE 37: start(V1,V,V2) = 0+ gr(W2,V,X2):1
+     [V>=0,X2=0,W2=0,V1=0] 
+* CE 38: start(V1,V,V2) = 0+ gr(V1,W2,X2):2
+     [V1>=1,X2=1,W2=0,V=0] 
+* CE 39: start(V1,V,V2) = 0+ gr(V1,V,W2):3
+     [V>=V1,V1>=1,W2=0] 
+* CE 40: start(V1,V,V2) = 0+ gr(V1,V,W2):4
+     [V1>=V+1,V>=1,W2=1] 
+* CE 41: start(V1,V,V2) = 0+ p(W2,X2):1
+     [X2=0,W2=0,V1=0] 
+* CE 42: start(V1,V,V2) = 0+ p(W2,X2):2
+     [X2>=0,X2+1=W2,X2+1=V1] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [33] --> Loop 25 
+* CEs [30,32] --> Loop 26 
+* CEs [35,39,40,42] --> Loop 27 
+* CEs [31,36,38] --> Loop 28 
+* CEs [34,37,41] --> Loop 29 
+
+#### Loops of start/3 
+* Loop 25: start(V1,V,V2) [V2>=1,V>=1,V1=1] 
+* Loop 26: start(V1,V,V2) [V2>=0,V>=0,V1>=0] 
+* Loop 27: start(V1,V,V2) [V1>=1] 
+* Loop 28: start(V1,V,V2) [V1>=0,V=0] 
+* Loop 29: start(V1,V,V2) [V1=0] 
+
+### Ranking functions of CR start(V1,V,V2) 
+
+#### Partial ranking functions of CR start(V1,V,V2) 
+
+
+### Resulting Chains:start(V1,V,V2) 
+* [29]
+* [28]
+* [27]
+* [26]
+* [25]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[29]] --> 1 
+* [[25],[26]] --> 2 
+* [[28]] --> 3 
+* [[27]] --> 4 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of and(V1,V,Out):
+* Chain [14]: 1
+  with precondition: [V1=0,Out=0,V>=0] 
+
+* Chain [13]: 1
+  with precondition: [V1=1,V=1,Out=1] 
+
+* Chain [12]: 1
+  with precondition: [V=0,Out=0,V1>=0] 
+
+
+#### Cost of loops [17] 
+
+ * loop 17:gr(V1,V,Out) -> [gr(V1',V',Out')] 
+1
+#### Cost of phase [17]:gr(V1,V,Out) -> [gr(V1',V',Out')] 
+1*it(17)+0
+  Such that:it(17) =< V1
+it(17) =< V1-V1'
+it(17) =< V
+it(17) =< V-V'
+
+#### Cost of phase [17]:gr(V1,V,Out) -> [gr(V1',V',Out')] 
+1*it(17)+0
+  Such that:it(17) =< V1
+it(17) =< V1-V1'
+it(17) =< V
+it(17) =< V-V'
+
+#### Cost of chains of gr(V1,V,Out):
+* Chain [[17],16]: 1*it(17)+1
+  Such that:it(17) =< V1
+
+  with precondition: [Out=0,V1>=1,V>=V1] 
+
+* Chain [[17],15]: 1*it(17)+1
+  Such that:it(17) =< V
+
+  with precondition: [Out=1,V>=1,V1>=V+1] 
+
+* Chain [16]: 1
+  with precondition: [V1=0,Out=0,V>=0] 
+
+* Chain [15]: 1
+  with precondition: [V=0,Out=1,V1>=1] 
+
+
+#### Cost of chains of p(V1,Out):
+* Chain [19]: 1
+  with precondition: [V1=0,Out=0] 
+
+* Chain [18]: 1
+  with precondition: [V1=Out+1,V1>=1] 
+
+
+#### Cost of loops [20] 
+
+ * loop 20:cond(V1,V,V2,Out) -> [cond(V1',V',V2',Out')] 
+6
+#### Cost of phase [20]:cond(V1,V,V2,Out) -> [cond(V1',V',V2',Out')] 
+6*it(20)+0
+  Such that:it(20) =< V
+it(20) =< V-V'
+it(20) =< V2
+it(20) =< V2-V2'
+
+#### Cost of phase [20]:cond(V1,V,V2,Out) -> [cond(V1',V',V2',Out')] 
+6*it(20)+0
+  Such that:it(20) =< V
+it(20) =< V-V'
+it(20) =< V2
+it(20) =< V2-V2'
+
+#### Cost of phase [20]:cond(V1,V,V2,Out) -> [cond(V1',V',V2',Out')] 
+6*it(20)+0
+  Such that:it(20) =< V
+it(20) =< V-V'
+it(20) =< V2
+it(20) =< V2-V2'
+
+#### Cost of phase [20]:cond(V1,V,V2,Out) -> [cond(V1',V',V2',Out')] 
+6*it(20)+0
+  Such that:it(20) =< V
+it(20) =< V-V'
+it(20) =< V2
+it(20) =< V2-V2'
+
+#### Cost of chains of cond(V1,V,V2,Out):
+* Chain [[20],24]: 6*it(20)+0
+  Such that:it(20) =< V2
+
+  with precondition: [V1=1,Out=0,V>=1,V2>=1] 
+
+* Chain [[20],23,24]: 6*it(20)+6
+  Such that:it(20) =< V
+
+  with precondition: [V1=1,Out=0,V=V2,V>=1] 
+
+* Chain [[20],22,24]: 6*it(20)+6
+  Such that:it(20) =< V
+
+  with precondition: [V1=1,Out=0,V>=1,V2>=V+1] 
+
+* Chain [[20],21,24]: 6*it(20)+6
+  Such that:it(20) =< V2
+
+  with precondition: [V1=1,Out=0,V2>=1,V>=V2+1] 
+
+* Chain [24]: 0
+  with precondition: [Out=0,V1>=0,V>=0,V2>=0] 
+
+* Chain [23,24]: 6
+  with precondition: [V1=1,V=0,V2=0,Out=0] 
+
+* Chain [22,24]: 6
+  with precondition: [V1=1,V=0,Out=0,V2>=1] 
+
+* Chain [21,24]: 6
+  with precondition: [V1=1,V2=0,Out=0,V>=1] 
+
+
+#### Cost of chains of start(V1,V,V2):
+* Chain [29]: 1
+  with precondition: [V1=0] 
+
+* Chain [28]: 6
+  with precondition: [V=0,V1>=0] 
+
+* Chain [27]: 1*s(5)+1*s(6)+1
+  Such that:s(5) =< V1
+s(6) =< V
+
+  with precondition: [V1>=1] 
+
+* Chain [26]: 6
+  with precondition: [V1>=0,V>=0,V2>=0] 
+
+* Chain [25]: 12*s(9)+12*s(10)+6
+  Such that:s(7) =< V
+s(8) =< V2
+s(9) =< s(7)
+s(10) =< s(8)
+
+  with precondition: [V1=1,V>=1,V2>=1] 
+
+
+Closed-form bounds of start(V1,V,V2): 
+-------------------------------------
+* Chain [29] with precondition: [V1=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [28] with precondition: [V=0,V1>=0] 
+    - Upper bound: 6 
+    - Complexity: constant 
+* Chain [27] with precondition: [V1>=1] 
+    - Upper bound: V1+1+nat(V) 
+    - Complexity: n 
+* Chain [26] with precondition: [V1>=0,V>=0,V2>=0] 
+    - Upper bound: 6 
+    - Complexity: constant 
+* Chain [25] with precondition: [V1=1,V>=1,V2>=1] 
+    - Upper bound: 12*V+12*V2+6 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V,V2): max([5,nat(V)+max([V1,nat(V)*11+5+nat(V2)*12])])+1 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 10 ms.
+* Invariants computed in 36 ms.
+   - Backward Invariants 19 ms.
+   - Transitive Invariants 3 ms.
+* Refinement performed in 62 ms.
+* Termination proved in 4 ms.
+* Upper bounds computed in 51 ms.
+   - Equation cost structures 13 ms.
+   - Phase cost structures 7 ms.
+   - Chain cost structures 18 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 187 ms.
+

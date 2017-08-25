@@ -1,0 +1,47 @@
+/* * * * * * * * * * *
+ Translation to ABS
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/duplicates.raml
+ *
+ * 
+ * Description:
+ *   removeL duplicates from a list.
+ */
+
+module Duplicates;
+
+def Bool eqD(List<Int> l1,List<Int> l2) =
+	case l1 {
+	Nil=>
+		case l2 {
+		Nil=> True ;
+		Cons(y,ys) => False;
+		};
+	Cons(x,xs) =>
+		case l2 {
+		Nil=> False;
+		Cons(y,ys) => x == y && eqD (xs,ys);
+		};
+	};
+
+
+def List<List<Int>> removeL(List<Int> x,List<List<Int>> l) =
+	case l {
+	Nil=> Nil;
+	Cons(y,ys) =>	
+		if eqD(x,y) then removeL(x, ys)
+		else Cons(y,removeL( x,ys));
+		};
+
+def List<List<Int>> nub(List<List<Int>> l) =
+	case l {
+	Nil=> Nil;
+	Cons(x,xs) => Cons(x,nub(removeL( x, xs)));
+	};
+
+
+{}

@@ -1,0 +1,104 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases * *
+ *
+ * File:
+ *   example/calculator.raml
+ *
+ * Author:
+ *   Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   An evaluator for simple arithmetic expressions.
+ *   
+ *)
+
+
+
+type nat = Zero | Succ of nat
+
+type expr =
+  | Nat of nat
+  | Add of expr * expr
+  | Sub of expr * expr
+
+let rec add n1 n2 = Raml.tick(1.0);
+  match n1 with
+    | Zero -> n2
+    | Succ n -> Succ (add n n2)
+
+
+let rec sub n1 n2 = Raml.tick(1.0);
+  match n2 with
+    | Zero -> n1
+    | Succ n2' ->
+      match n1 with
+	| Zero -> Zero
+	| Succ n1' ->
+	  sub n1' n2'
+      
+
+let rec mult n1 n2 = 
+  match n1 with
+    | Zero -> Zero
+    | Succ n ->
+      add n (mult n n2)
+
+      
+let eval_simpl expr =
+  let rec eval expr =
+    match expr with
+      | Nat n -> n
+      | Add (e1,e2) ->
+	let n1 = eval e1 in
+	let n2 = eval e2 in      
+	add n1 n2
+      | Sub (e1,e2) ->
+	let n1 = eval e1 in
+	let n2 = eval e2 in      
+	sub n1 n2
+  in
+  eval expr
+
+
+let rec eval expr =
+  match expr with
+    | Nat n -> n
+    | Add (e1,e2) ->
+      let n1 = eval e1 in
+      begin
+	match n1 with
+	  | Zero -> eval e2
+	  | Succ n -> Succ (eval (Add (Nat n, e2)) )
+      end
+    | Sub (e1,e2) ->
+      let n2 = eval e2 in
+      begin
+	match n2 with
+	  | Zero -> eval e1
+	  | Succ m ->
+	    let n1 = eval e1 in
+	    begin
+	      match n1 with
+		| Zero -> Zero
+		| Succ n -> eval (Sub (Nat n, Nat m))
+	    end
+      end
+
+let rec nat_to_int n =
+  match n with
+    | Zero -> 0
+    | Succ n ->
+      let i = nat_to_int n in
+      i + 1
+
+
+let one = Nat (Succ Zero)      
+
+let two = Nat (Succ (Succ Zero)	)
+
+      
+let _ = let n = eval (Sub ((Add (Add (two,two), Add (two, one))), two)) in
+	nat_to_int n

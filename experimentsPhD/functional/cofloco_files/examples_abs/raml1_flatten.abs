@@ -1,0 +1,58 @@
+/* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   tests/flatten.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   Flatten and sort a binary tree.
+ */
+
+module Flatten;
+
+data Tree =
+	  Leaf
+	| Node(List<Int> node,Tree left,Tree right);
+
+def  List<Int> appendL(List<Int> l1,List<Int> l2) =
+	case l1 {
+	 Nil => l2;
+	 Cons(x,xs) => Cons(x,appendL(xs,l2));	 
+	};
+
+def List<Int> flatten(Tree t)=
+	case t {
+	Leaf => Nil;
+	Node(l, t1, t2) =>  appendL(l, appendL(flatten(t1), flatten(t2)));
+	};
+
+
+def List<Int> insertL(Int x,List<Int> l) = 
+	case l {
+	Nil => Cons(x,Nil);
+	Cons(y,ys) =>	
+		if y < x then Cons(y,insertL(x,ys))
+		else Cons(x,Cons(y,ys));
+		};
+
+def List<Int> insertionsort(List<Int> l) =
+	case l {
+	Nil => Nil;
+	Cons(x,xs) =>  insertL(x,insertionsort(xs));
+	};
+
+def List<Int> flattensort(Tree t) =
+	insertionsort(flatten(t));
+
+{}
+
+
+
+
+

@@ -1,0 +1,1578 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive : [mkBase/1]
+1. non_recursive : [makeBase/2]
+2. recursive : [mult/2]
+3. recursive : [linemult/3]
+4. recursive : [matrixmultp/4]
+5. recursive : [attach/3]
+6. recursive : [transAcc/4]
+7. non_recursive : [matrixmult/4]
+9. non_recursive : [matrixmult3/6]
+10. recursive : [out_mkBase/1]
+11. non_recursive : [out1_makeBase/2]
+12. recursive : [out1_split/2]
+13. recursive : [out1_transAcc/4]
+14. recursive : [out2_split/2]
+15. recursive : [out2_transAcc/4]
+16. recursive : [out3_split/2]
+17. recursive : [split/2]
+18. recursive : [transpose/2]
+Warning: the following predicates are never called:[out1_makeBase/2,out2_makeBase/2,out_mkBase/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into mkBase/1
+1. SCC is partially evaluated into makeBase/2
+2. SCC is partially evaluated into mult/2
+3. SCC is partially evaluated into linemult/3
+4. SCC is partially evaluated into matrixmultp/4
+5. SCC is partially evaluated into attach/3
+6. SCC is partially evaluated into transAcc/4
+7. SCC is partially evaluated into matrixmult/4
+9. SCC is completely evaluated into other SCCs
+10. SCC is partially evaluated into out_mkBase/1
+11. SCC is partially evaluated into out1_makeBase/2
+12. SCC is completely evaluated into other SCCs
+13. SCC is completely evaluated into other SCCs
+14. SCC is completely evaluated into other SCCs
+15. SCC is completely evaluated into other SCCs
+16. SCC is completely evaluated into other SCCs
+17. SCC is completely evaluated into other SCCs
+18. SCC is completely evaluated into other SCCs
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations mkBase/1 
+* CE 15 is refined into CE [19] 
+* CE 14 is refined into CE [20] 
+
+
+#### Refined cost equations mkBase/1 
+* CE 19: mkBase(A) = 1+ mkBase(B)
+     [A>=1,A=B+1] 
+* CE 20: mkBase(A) = 1
+     [A=0] 
+
+### Cost equations --> "Loop" of mkBase/1 
+* CEs [20] --> Loop 18 
+* CEs [19] --> Loop 19 
+
+#### Loops of mkBase/1 
+* Loop 18: mkBase(A) [A=0] 
+* Loop 19: mkBase(A)->  mkBase(A')
+                  [A>=1,A=A'+1] 
+
+### Ranking functions of CR mkBase(A) 
+* RF of phase [19]: [A]
+
+#### Partial ranking functions of CR mkBase(A) 
+* Partial RF of phase [19]:
+  - RF of loop [19:1]:
+    A
+
+
+### Resulting Chains:mkBase(A) 
+* [[19],18]
+* [18]
+
+
+### Specialization of cost equations makeBase/2 
+* CE 8 is refined into CE [21,22] 
+* CE 7 is refined into CE [23] 
+
+
+#### Refined cost equations makeBase/2 
+* CE 21: makeBase(A,B) = 1+ mkBase(B):[[19],18]
+     [B>=1,A>=1] 
+* CE 22: makeBase(A,B) = 1+ mkBase(C):[18]
+     [A>=1,C=0,B=0] 
+* CE 23: makeBase(A,B) = 1
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of makeBase/2 
+* CEs [21] --> Loop 20 
+* CEs [22] --> Loop 21 
+* CEs [23] --> Loop 22 
+
+#### Loops of makeBase/2 
+* Loop 20: makeBase(A,B) [B>=1,A>=1] 
+* Loop 21: makeBase(A,B) [A>=1,B=0] 
+* Loop 22: makeBase(A,B) [B>=0,A=0] 
+
+### Ranking functions of CR makeBase(A,B) 
+
+#### Partial ranking functions of CR makeBase(A,B) 
+
+
+### Resulting Chains:makeBase(A,B) 
+* [22]
+* [21]
+* [20]
+
+
+### Specialization of cost equations mult/2 
+* CE 18 is refined into CE [24] 
+* CE 17 is refined into CE [25] 
+* CE 16 is refined into CE [26] 
+
+
+#### Refined cost equations mult/2 
+* CE 24: mult(A,B) = 1+ mult(C,D)
+     [B>=1,A>=1,B=D+1,A=C+1] 
+* CE 25: mult(A,B) = 1
+     [A>=1,B=0] 
+* CE 26: mult(A,B) = 1
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of mult/2 
+* CEs [25] --> Loop 23 
+* CEs [26] --> Loop 24 
+* CEs [24] --> Loop 25 
+
+#### Loops of mult/2 
+* Loop 23: mult(A,B) [A>=1,B=0] 
+* Loop 24: mult(A,B) [B>=0,A=0] 
+* Loop 25: mult(A,B)->  mult(A',B')
+                  [B>=1,A>=1,B=B'+1,A=A'+1] 
+
+### Ranking functions of CR mult(A,B) 
+* RF of phase [25]: [A,B]
+
+#### Partial ranking functions of CR mult(A,B) 
+* Partial RF of phase [25]:
+  - RF of loop [25:1]:
+    A
+    B
+
+
+### Resulting Chains:mult(A,B) 
+* [[25],24]
+* [[25],23]
+* [24]
+
+
+### Specialization of cost equations linemult/3 
+* CE 13 is refined into CE [27,28,29] 
+* CE 12 is refined into CE [30] 
+
+
+#### Refined cost equations linemult/3 
+* CE 27: linemult(A,B,C) = 1+ mult(A,C):[[25],24]+ linemult(A,D,C)
+     [C>=A,A>=1,B>=1,B=D+1] 
+* CE 28: linemult(A,B,C) = 1+ mult(A,C):[[25],23]+ linemult(A,D,C)
+     [A>=C+1,C>=1,B>=1,B=D+1] 
+* CE 29: linemult(A,B,C) = 1+ mult(D,C):[24]+ linemult(E,F,C)
+     [C>=1,B>=1,B=F+1,E=0,D=0,A=0] 
+* CE 30: linemult(A,B,C) = 1
+     [C>=1,A>=0,B=0] 
+
+### Cost equations --> "Loop" of linemult/3 
+* CEs [30] --> Loop 26 
+* CEs [28] --> Loop 27 
+* CEs [27] --> Loop 28 
+* CEs [29] --> Loop 29 
+
+#### Loops of linemult/3 
+* Loop 26: linemult(A,B,C) [C>=1,A>=0,B=0] 
+* Loop 27: linemult(A,B,C)->  linemult(A,B',C)
+                  [A>=C+1,C>=1,B>=1,B=B'+1] 
+* Loop 28: linemult(A,B,C)->  linemult(A,B',C)
+                  [C>=A,B>=1,A>=1,B=B'+1] 
+* Loop 29: linemult(A,B,C)->  linemult(A',B',C)
+                  [C>=1,B>=1,B=B'+1,A'=0,A=0] 
+
+### Ranking functions of CR linemult(A,B,C) 
+* RF of phase [27]: [B]
+* RF of phase [28]: [B]
+* RF of phase [29]: [B]
+
+#### Partial ranking functions of CR linemult(A,B,C) 
+* Partial RF of phase [27]:
+  - RF of loop [27:1]:
+    B
+* Partial RF of phase [28]:
+  - RF of loop [28:1]:
+    B
+* Partial RF of phase [29]:
+  - RF of loop [29:1]:
+    B
+
+
+### Resulting Chains:linemult(A,B,C) 
+* [[29],26]
+* [[28],26]
+* [[27],26]
+* [26]
+
+
+### Specialization of cost equations matrixmultp/4 
+* CE 6 is refined into CE [31,32,33,34] 
+* CE 5 is refined into CE [35] 
+
+
+#### Refined cost equations matrixmultp/4 
+* CE 31: matrixmultp(A,B,C,D) = 1+ linemult(E,C,D):[[29],26]+ matrixmultp(F,G,C,D)
+     [D>=A,C>=1,A>=1,A=F+1,G=0,E=0,B=0] 
+* CE 32: matrixmultp(A,B,C,D) = 1+ linemult(B,C,D):[[28],26]+ matrixmultp(E,B,C,D)
+     [D>=B,D>=A,C>=1,B>=1,A>=1,A=E+1] 
+* CE 33: matrixmultp(A,B,C,D) = 1+ linemult(B,C,D):[[27],26]+ matrixmultp(E,B,C,D)
+     [B>=D+1,D>=A,C>=1,A>=1,A=E+1] 
+* CE 34: matrixmultp(A,B,C,D) = 1+ linemult(B,E,D):[26]+ matrixmultp(F,B,G,D)
+     [D>=A,B>=0,A>=1,A=F+1,G=0,E=0,C=0] 
+* CE 35: matrixmultp(A,B,C,D) = 1
+     [D>=0,C>=0,B>=0,A=0] 
+
+### Cost equations --> "Loop" of matrixmultp/4 
+* CEs [35] --> Loop 30 
+* CEs [33] --> Loop 31 
+* CEs [32] --> Loop 32 
+* CEs [34] --> Loop 33 
+* CEs [31] --> Loop 34 
+
+#### Loops of matrixmultp/4 
+* Loop 30: matrixmultp(A,B,C,D) [D>=0,C>=0,B>=0,A=0] 
+* Loop 31: matrixmultp(A,B,C,D)->  matrixmultp(A',B,C,D)
+                  [B>=D+1,D>=A,C>=1,A>=1,A=A'+1] 
+* Loop 32: matrixmultp(A,B,C,D)->  matrixmultp(A',B,C,D)
+                  [D>=B,D>=A,C>=1,B>=1,A>=1,A=A'+1] 
+* Loop 33: matrixmultp(A,B,C,D)->  matrixmultp(A',B,C',D)
+                  [D>=A,B>=0,A>=1,A=A'+1,C'=0,C=0] 
+* Loop 34: matrixmultp(A,B,C,D)->  matrixmultp(A',B',C,D)
+                  [D>=A,C>=1,A>=1,A=A'+1,B'=0,B=0] 
+
+### Ranking functions of CR matrixmultp(A,B,C,D) 
+* RF of phase [31]: [A]
+* RF of phase [32]: [A]
+* RF of phase [33]: [A]
+* RF of phase [34]: [A]
+
+#### Partial ranking functions of CR matrixmultp(A,B,C,D) 
+* Partial RF of phase [31]:
+  - RF of loop [31:1]:
+    A
+* Partial RF of phase [32]:
+  - RF of loop [32:1]:
+    A
+* Partial RF of phase [33]:
+  - RF of loop [33:1]:
+    A
+* Partial RF of phase [34]:
+  - RF of loop [34:1]:
+    A
+
+
+### Resulting Chains:matrixmultp(A,B,C,D) 
+* [[34],30]
+* [[33],30]
+* [[32],30]
+* [[31],30]
+* [30]
+
+
+### Specialization of cost equations attach/3 
+* CE 11 is refined into CE [36] 
+* CE 10 is refined into CE [37] 
+* CE 9 is refined into CE [38] 
+
+
+#### Refined cost equations attach/3 
+* CE 36: attach(A,B,C) = 1+ attach(D,E,C)
+     [C>=B,C>=0,A>=1,B=E+1,A=D+1] 
+* CE 37: attach(A,B,C) = 1
+     [C>=0,A>=1,B=0] 
+* CE 38: attach(A,B,C) = 1
+     [C>=B,B>=0,A=0] 
+
+### Cost equations --> "Loop" of attach/3 
+* CEs [37] --> Loop 35 
+* CEs [38] --> Loop 36 
+* CEs [36] --> Loop 37 
+
+#### Loops of attach/3 
+* Loop 35: attach(A,B,C) [C>=0,A>=1,B=0] 
+* Loop 36: attach(A,B,C) [C>=B,B>=0,A=0] 
+* Loop 37: attach(A,B,C)->  attach(A',B',C)
+                  [C>=B,C>=0,A>=1,B=B'+1,A=A'+1] 
+
+### Ranking functions of CR attach(A,B,C) 
+* RF of phase [37]: [A]
+
+#### Partial ranking functions of CR attach(A,B,C) 
+* Partial RF of phase [37]:
+  - RF of loop [37:1]:
+    A
+
+
+### Resulting Chains:attach(A,B,C) 
+* [[37],36]
+* [[37],35]
+* [36]
+* [35]
+
+
+### Specialization of cost equations transAcc/4 
+* CE 4 is refined into CE [39,40,41,42] 
+* CE 3 is refined into CE [43] 
+
+
+#### Refined cost equations transAcc/4 
+* CE 39: transAcc(A,B,C,D) = 1+ attach(B,E,E):[[37],36]+ transAcc(E,B,C,F)
+     [C>=E+1,E>=B,B>=1,E+1=A,F=0,D=0] 
+* CE 40: transAcc(A,B,C,D) = 1+ attach(B,E,E):[[37],35]+ transAcc(E,B,C,F)
+     [B>=E+1,C>=E+1,E>=1,E+1=A,F=0,D=0] 
+* CE 41: transAcc(A,B,C,D) = 1+ attach(E,F,F):[36]+ transAcc(F,G,C,H)
+     [C>=F+1,F>=0,F+1=A,H=0,G=0,E=0,D=0,B=0] 
+* CE 42: transAcc(A,B,C,D) = 1+ attach(B,E,F):[35]+ transAcc(G,B,C,H)
+     [B>=1,C>=1,H=0,G=0,F=0,E=0,D=0,A=1] 
+* CE 43: transAcc(A,B,C,D) = 1
+     [C>=0,B>=0,D=0,A=0] 
+
+### Cost equations --> "Loop" of transAcc/4 
+* CEs [43] --> Loop 38 
+* CEs [40] --> Loop 39 
+* CEs [39] --> Loop 40 
+* CEs [41] --> Loop 41 
+* CEs [42] --> Loop 42 
+
+#### Loops of transAcc/4 
+* Loop 38: transAcc(A,B,C,D) [C>=0,B>=0,D=0,A=0] 
+* Loop 39: transAcc(A,B,C,D)->  transAcc(A',B,C,D')
+                  [C>=A'+1,B>=A'+1,A'>=1,A'+1=A,D'=0,D=0] 
+* Loop 40: transAcc(A,B,C,D)->  transAcc(A',B,C,D')
+                  [C>=A'+1,A'>=B,B>=1,A'+1=A,D'=0,D=0] 
+* Loop 41: transAcc(A,B,C,D)->  transAcc(A',B',C,D')
+                  [C>=A'+1,A'>=0,A'+1=A,D'=0,B'=0,D=0,B=0] 
+* Loop 42: transAcc(A,B,C,D)->  transAcc(A',B,C,D')
+                  [C>=1,B>=1,D'=0,A'=0,D=0,A=1] 
+
+### Ranking functions of CR transAcc(A,B,C,D) 
+* RF of phase [39]: [A-1]
+* RF of phase [40]: [A-1,A-B]
+* RF of phase [41]: [A]
+
+#### Partial ranking functions of CR transAcc(A,B,C,D) 
+* Partial RF of phase [39]:
+  - RF of loop [39:1]:
+    A-1
+* Partial RF of phase [40]:
+  - RF of loop [40:1]:
+    A-1
+    A-B
+* Partial RF of phase [41]:
+  - RF of loop [41:1]:
+    A
+
+
+### Resulting Chains:transAcc(A,B,C,D) 
+* [[41],38]
+* [[40],[39],42,38]
+* [[40],42,38]
+* [[39],42,38]
+* [42,38]
+* [38]
+
+
+### Specialization of cost equations matrixmult/4 
+* CE 2 is refined into CE [44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65] 
+
+
+#### Refined cost equations matrixmult/4 
+* CE 44: matrixmult(A,B,C,D) = 1+ transAcc(C,E,C,F):[[41],38]+ matrixmultp(A,G,C,A):[[34],30]+ makeBase(C,H):[21]
+     [C>=1,A>=1,H=0,G=0,F=0,E=0,D=0,B=0] 
+* CE 45: matrixmult(A,B,C,D) = 1+ transAcc(C,E,C,F):[[41],38]+ matrixmultp(A,B,C,A):[[32],30]+ makeBase(C,G):[21]
+     [A>=B,C>=1,B>=1,G=0,F=0,E=0,D=0] 
+* CE 46: matrixmult(A,B,C,D) = 1+ transAcc(C,E,C,F):[[41],38]+ matrixmultp(A,B,C,A):[[31],30]+ makeBase(C,G):[21]
+     [B>=A+1,C>=1,A>=1,G=0,F=0,E=0,D=0] 
+* CE 47: matrixmult(A,B,C,D) = 1+ transAcc(C,E,C,F):[[41],38]+ matrixmultp(G,B,C,H):[30]+ makeBase(C,I):[21]
+     [C>=1,B>=0,I=0,H=0,G=0,F=0,E=0,D=0,A=0] 
+* CE 48: matrixmult(A,B,C,D) = 1+ transAcc(C,D,C,E):[[40],[39],42,38]+ matrixmultp(A,F,C,G):[[34],30]+ makeBase(C,D):[20]
+     [C>=D+1,D>=2,A>=1,A+D=G,F=0,E=0,B=0] 
+* CE 49: matrixmult(A,B,C,D) = 1+ transAcc(C,D,C,E):[[40],[39],42,38]+ matrixmultp(A,B,C,F):[[32],30]+ makeBase(C,D):[20]
+     [A+D>=B,C>=D+1,D>=2,B>=1,A>=1,A+D=F,E=0] 
+* CE 50: matrixmult(A,B,C,D) = 1+ transAcc(C,D,C,E):[[40],[39],42,38]+ matrixmultp(A,B,C,F):[[31],30]+ makeBase(C,D):[20]
+     [B>=A+D+1,C>=D+1,D>=2,A>=1,A+D=F,E=0] 
+* CE 51: matrixmult(A,B,C,D) = 1+ transAcc(C,D,C,E):[[40],[39],42,38]+ matrixmultp(F,B,C,D):[30]+ makeBase(C,D):[20]
+     [C>=D+1,D>=2,B>=0,F=0,E=0,A=0] 
+* CE 52: matrixmult(A,B,C,D) = 1+ transAcc(C,E,C,F):[[40],42,38]+ matrixmultp(A,G,C,H):[[34],30]+ makeBase(C,I):[20]
+     [C>=2,A>=1,A+1=H,I=1,G=0,F=0,E=1,D=1,B=0] 
+* CE 53: matrixmult(A,B,C,D) = 1+ transAcc(C,E,C,F):[[40],42,38]+ matrixmultp(A,B,C,G):[[32],30]+ makeBase(C,H):[20]
+     [A+1>=B,C>=2,B>=1,A>=1,A+1=G,H=1,F=0,E=1,D=1] 
+* CE 54: matrixmult(A,B,C,D) = 1+ transAcc(C,E,C,F):[[40],42,38]+ matrixmultp(A,B,C,G):[[31],30]+ makeBase(C,H):[20]
+     [B>=A+2,C>=2,A>=1,A+1=G,H=1,F=0,E=1,D=1] 
+* CE 55: matrixmult(A,B,C,D) = 1+ transAcc(C,E,C,F):[[40],42,38]+ matrixmultp(G,B,C,H):[30]+ makeBase(C,I):[20]
+     [C>=2,B>=0,I=1,H=1,G=0,F=0,E=1,D=1,A=0] 
+* CE 56: matrixmult(A,B,C,D) = 1+ transAcc(C,D,C,E):[[39],42,38]+ matrixmultp(A,F,C,G):[[34],30]+ makeBase(C,D):[20]
+     [D>=C,C>=2,A>=1,A+D=G,F=0,E=0,B=0] 
+* CE 57: matrixmult(A,B,C,D) = 1+ transAcc(C,D,C,E):[[39],42,38]+ matrixmultp(A,B,C,F):[[32],30]+ makeBase(C,D):[20]
+     [A+D>=B,D>=C,C>=2,B>=1,A>=1,A+D=F,E=0] 
+* CE 58: matrixmult(A,B,C,D) = 1+ transAcc(C,D,C,E):[[39],42,38]+ matrixmultp(A,B,C,F):[[31],30]+ makeBase(C,D):[20]
+     [B>=A+D+1,D>=C,C>=2,A>=1,A+D=F,E=0] 
+* CE 59: matrixmult(A,B,C,D) = 1+ transAcc(C,D,C,E):[[39],42,38]+ matrixmultp(F,B,C,D):[30]+ makeBase(C,D):[20]
+     [D>=C,C>=2,B>=0,F=0,E=0,A=0] 
+* CE 60: matrixmult(A,B,C,D) = 1+ transAcc(E,D,F,G):[42,38]+ matrixmultp(A,H,I,J):[[34],30]+ makeBase(K,D):[20]
+     [D>=1,A>=1,A+D=J,K=1,I=1,H=0,G=0,F=1,E=1,C=1,B=0] 
+* CE 61: matrixmult(A,B,C,D) = 1+ transAcc(E,D,F,G):[42,38]+ matrixmultp(A,B,H,I):[[32],30]+ makeBase(J,D):[20]
+     [A+D>=B,D>=1,B>=1,A>=1,A+D=I,J=1,H=1,G=0,F=1,E=1,C=1] 
+* CE 62: matrixmult(A,B,C,D) = 1+ transAcc(E,D,F,G):[42,38]+ matrixmultp(A,B,H,I):[[31],30]+ makeBase(J,D):[20]
+     [B>=A+D+1,D>=1,A>=1,A+D=I,J=1,H=1,G=0,F=1,E=1,C=1] 
+* CE 63: matrixmult(A,B,C,D) = 1+ transAcc(E,D,F,G):[42,38]+ matrixmultp(H,B,I,D):[30]+ makeBase(J,D):[20]
+     [D>=1,B>=0,J=1,I=1,H=0,G=0,F=1,E=1,C=1,A=0] 
+* CE 64: matrixmult(A,B,C,D) = 1+ transAcc(E,D,F,G):[38]+ matrixmultp(A,B,H,I):[[33],30]+ makeBase(J,D):[22]
+     [D>=0,B>=0,A>=1,A+D=I,J=0,H=0,G=0,F=0,E=0,C=0] 
+* CE 65: matrixmult(A,B,C,D) = 1+ transAcc(E,D,F,G):[38]+ matrixmultp(H,B,I,D):[30]+ makeBase(J,D):[22]
+     [D>=0,B>=0,J=0,I=0,H=0,G=0,F=0,E=0,C=0,A=0] 
+
+### Cost equations --> "Loop" of matrixmult/4 
+* CEs [50] --> Loop 43 
+* CEs [58] --> Loop 44 
+* CEs [49] --> Loop 45 
+* CEs [57] --> Loop 46 
+* CEs [54] --> Loop 47 
+* CEs [53] --> Loop 48 
+* CEs [45] --> Loop 49 
+* CEs [46] --> Loop 50 
+* CEs [62] --> Loop 51 
+* CEs [61] --> Loop 52 
+* CEs [64] --> Loop 53 
+* CEs [48] --> Loop 54 
+* CEs [56] --> Loop 55 
+* CEs [52] --> Loop 56 
+* CEs [44] --> Loop 57 
+* CEs [60] --> Loop 58 
+* CEs [51] --> Loop 59 
+* CEs [59] --> Loop 60 
+* CEs [55] --> Loop 61 
+* CEs [47] --> Loop 62 
+* CEs [63] --> Loop 63 
+* CEs [65] --> Loop 64 
+
+#### Loops of matrixmult/4 
+* Loop 43: matrixmult(A,B,C,D) [B>=A+D+1,C>=D+1,D>=2,A>=1] 
+* Loop 44: matrixmult(A,B,C,D) [B>=A+D+1,D>=C,C>=2,A>=1] 
+* Loop 45: matrixmult(A,B,C,D) [A+D>=B,C>=D+1,D>=2,B>=1,A>=1] 
+* Loop 46: matrixmult(A,B,C,D) [A+D>=B,D>=C,C>=2,B>=1,A>=1] 
+* Loop 47: matrixmult(A,B,C,D) [B>=A+2,C>=2,A>=1,D=1] 
+* Loop 48: matrixmult(A,B,C,D) [A+1>=B,C>=2,B>=1,A>=1,D=1] 
+* Loop 49: matrixmult(A,B,C,D) [A>=B,C>=1,B>=1,D=0] 
+* Loop 50: matrixmult(A,B,C,D) [B>=A+1,C>=1,A>=1,D=0] 
+* Loop 51: matrixmult(A,B,C,D) [B>=A+D+1,D>=1,A>=1,C=1] 
+* Loop 52: matrixmult(A,B,C,D) [A+D>=B,D>=1,B>=1,A>=1,C=1] 
+* Loop 53: matrixmult(A,B,C,D) [D>=0,B>=0,A>=1,C=0] 
+* Loop 54: matrixmult(A,B,C,D) [C>=D+1,D>=2,A>=1,B=0] 
+* Loop 55: matrixmult(A,B,C,D) [D>=C,C>=2,A>=1,B=0] 
+* Loop 56: matrixmult(A,B,C,D) [C>=2,A>=1,D=1,B=0] 
+* Loop 57: matrixmult(A,B,C,D) [C>=1,A>=1,D=0,B=0] 
+* Loop 58: matrixmult(A,B,C,D) [D>=1,A>=1,C=1,B=0] 
+* Loop 59: matrixmult(A,B,C,D) [C>=D+1,D>=2,B>=0,A=0] 
+* Loop 60: matrixmult(A,B,C,D) [D>=C,C>=2,B>=0,A=0] 
+* Loop 61: matrixmult(A,B,C,D) [C>=2,B>=0,D=1,A=0] 
+* Loop 62: matrixmult(A,B,C,D) [C>=1,B>=0,D=0,A=0] 
+* Loop 63: matrixmult(A,B,C,D) [D>=1,B>=0,C=1,A=0] 
+* Loop 64: matrixmult(A,B,C,D) [D>=0,B>=0,C=0,A=0] 
+
+### Ranking functions of CR matrixmult(A,B,C,D) 
+
+#### Partial ranking functions of CR matrixmult(A,B,C,D) 
+
+
+### Resulting Chains:matrixmult(A,B,C,D) 
+* [64]
+* [63]
+* [62]
+* [61]
+* [60]
+* [59]
+* [58]
+* [57]
+* [56]
+* [55]
+* [54]
+* [53]
+* [52]
+* [51]
+* [50]
+* [49]
+* [48]
+* [47]
+* [46]
+* [45]
+* [44]
+* [43]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [19] 
+
+ * loop 19:mkBase(A) -> [mkBase(A')] 
+1
+#### Cost of phase [19]:mkBase(A) -> [mkBase(A')] 
+1*it(19)+0
+  Such that:it(19) =< A
+it(19) =< A-A'
+it(19) >= A-A'
+
+#### Cost of chains of mkBase(A):
+* Chain [[19],18]: 1*it(19)+1
+  Such that:it(19) =< A
+it(19) >= A
+
+  with precondition: [A>=1] 
+
+* Chain [18]: 1
+  with precondition: [A=0] 
+
+
+#### Cost of chains of makeBase(A,B):
+* Chain [22]: 1
+  with precondition: [A=0,B>=0] 
+
+* Chain [21]: 2
+  with precondition: [B=0,A>=1] 
+
+* Chain [20]: 1*s(1)+2
+  Such that:s(1) =< B
+s(1) >= B
+
+  with precondition: [A>=1,B>=1] 
+
+
+#### Cost of loops [25] 
+
+ * loop 25:mult(A,B) -> [mult(A',B')] 
+1
+#### Cost of phase [25]:mult(A,B) -> [mult(A',B')] 
+1*it(25)+0
+  Such that:it(25) =< A
+it(25) =< A-A'
+it(25) =< B
+it(25) =< B-B'
+it(25) >= A-A'
+it(25) >= B-B'
+
+#### Cost of phase [25]:mult(A,B) -> [mult(A',B')] 
+1*it(25)+0
+  Such that:it(25) =< A
+it(25) =< A-A'
+it(25) =< B
+it(25) =< B-B'
+it(25) >= A-A'
+it(25) >= B-B'
+
+#### Cost of chains of mult(A,B):
+* Chain [[25],24]: 1*it(25)+1
+  Such that:it(25) =< A
+it(25) >= A
+
+  with precondition: [A>=1,B>=A] 
+
+* Chain [[25],23]: 1*it(25)+1
+  Such that:it(25) =< B
+it(25) >= B
+
+  with precondition: [B>=1,A>=B+1] 
+
+* Chain [24]: 1
+  with precondition: [A=0,B>=0] 
+
+
+#### Cost of loops [29] 
+
+ * loop 29:linemult(A,B,C) -> [linemult(A',B',C')] 
+2
+#### Cost of phase [29]:linemult(A,B,C) -> [linemult(A',B',C')] 
+2*it(29)+0
+  Such that:it(29) =< B
+it(29) =< B-B'
+it(29) >= B-B'
+
+#### Cost of loops [28] 
+
+ * loop 28:linemult(A,B,C) -> [linemult(A',B',C')] 
+1*s(3)+2
+  Such that:s(3) =< A'
+s(3) >= A'
+
+#### Cost of phase [28]:linemult(A,B,C) -> [linemult(A',B',C')] 
+2*it(28)+1*s(4)+0
+  Such that:aux(5) =< A
+it(28) =< B
+it(28) =< B-B'
+s(4) =< it(28)*aux(5)
+aux(4) >= A
+aux(6) >= B-B'
+it(28) >= aux(6)
+s(4) >= aux(6)
+s(4) >= it(28)*aux(4)
+
+#### Cost of loops [27] 
+
+ * loop 27:linemult(A,B,C) -> [linemult(A',B',C')] 
+1*s(6)+2
+  Such that:s(6) =< C'
+s(6) >= C'
+
+#### Cost of phase [27]:linemult(A,B,C) -> [linemult(A',B',C')] 
+2*it(27)+1*s(7)+0
+  Such that:it(27) =< B
+it(27) =< B-B'
+aux(8) =< C
+s(7) =< it(27)*aux(8)
+aux(7) >= C
+aux(9) >= B-B'
+it(27) >= aux(9)
+s(7) >= aux(9)
+s(7) >= it(27)*aux(7)
+
+#### Cost of chains of linemult(A,B,C):
+* Chain [[29],26]: 2*it(29)+1
+  Such that:it(29) =< B
+it(29) >= B
+
+  with precondition: [A=0,B>=1,C>=1] 
+
+* Chain [[28],26]: 2*it(28)+1*s(4)+1
+  Such that:aux(5) =< A
+it(28) =< B
+s(4) =< it(28)*aux(5)
+aux(4) >= A
+aux(6) >= B
+it(28) >= aux(6)
+s(4) >= aux(6)
+s(4) >= it(28)*aux(4)
+
+  with precondition: [A>=1,B>=1,C>=A] 
+
+* Chain [[27],26]: 2*it(27)+1*s(7)+1
+  Such that:it(27) =< B
+aux(8) =< C
+s(7) =< it(27)*aux(8)
+aux(9) >= B
+aux(7) >= C
+it(27) >= aux(9)
+s(7) >= aux(9)
+s(7) >= it(27)*aux(7)
+
+  with precondition: [B>=1,C>=1,A>=C+1] 
+
+* Chain [26]: 1
+  with precondition: [B=0,A>=0,C>=1] 
+
+
+#### Cost of loops [34] 
+
+ * loop 34:matrixmultp(A,B,C,D) -> [matrixmultp(A',B',C',D')] 
+2*s(9)+2
+  Such that:s(9) =< C'
+s(9) >= C'
+
+#### Cost of phase [34]:matrixmultp(A,B,C,D) -> [matrixmultp(A',B',C',D')] 
+2*it(34)+2*s(10)+0
+  Such that:it(34) =< A
+it(34) =< A-A'
+aux(11) =< C
+s(10) =< it(34)*aux(11)
+aux(10) >= C
+aux(12) >= A-A'
+it(34) >= aux(12)
+s(10) >= aux(12)
+s(10) >= it(34)*aux(10)
+
+#### Cost of loops [33] 
+
+ * loop 33:matrixmultp(A,B,C,D) -> [matrixmultp(A',B',C',D')] 
+2
+#### Cost of phase [33]:matrixmultp(A,B,C,D) -> [matrixmultp(A',B',C',D')] 
+2*it(33)+0
+  Such that:it(33) =< A
+it(33) =< A-A'
+it(33) >= A-A'
+
+#### Cost of loops [32] 
+
+ * loop 32:matrixmultp(A,B,C,D) -> [matrixmultp(A',B',C',D')] 
+2*s(17)+1*s(20)+2
+  Such that:s(16) =< B'
+s(17) =< C'
+s(20) =< s(17)*s(16)
+s(18) >= B'
+s(19) >= C'
+s(17) >= s(19)
+s(20) >= s(19)
+s(20) >= s(17)*s(18)
+
+#### Cost of phase [32]:matrixmultp(A,B,C,D) -> [matrixmultp(A',B',C',D')] 
+2*it(32)+2*s(21)+1*s(22)+0
+  Such that:it(32) =< A
+it(32) =< A-A'
+s(16) =< B
+aux(14) =< C
+s(21) =< it(32)*aux(14)
+s(22) =< s(21)*s(16)
+s(18) >= B
+aux(13) >= C
+aux(15) >= A-A'
+it(32) >= aux(15)
+s(23) >= aux(15)
+s(23) >= it(32)*aux(13)
+s(21) >= s(23)
+s(22) >= s(23)
+s(22) >= s(21)*s(18)
+
+#### Cost of loops [31] 
+
+ * loop 31:matrixmultp(A,B,C,D) -> [matrixmultp(A',B',C',D')] 
+2*s(29)+1*s(33)+2
+  Such that:s(29) =< C'
+s(30) =< D'
+s(33) =< s(29)*s(30)
+s(31) >= C'
+s(32) >= D'
+s(29) >= s(31)
+s(33) >= s(31)
+s(33) >= s(29)*s(32)
+
+#### Cost of phase [31]:matrixmultp(A,B,C,D) -> [matrixmultp(A',B',C',D')] 
+2*it(31)+2*s(34)+1*s(35)+0
+  Such that:it(31) =< A
+it(31) =< A-A'
+aux(17) =< C
+s(30) =< D
+s(34) =< it(31)*aux(17)
+s(35) =< s(34)*s(30)
+aux(16) >= C
+s(32) >= D
+aux(18) >= A-A'
+it(31) >= aux(18)
+s(36) >= aux(18)
+s(36) >= it(31)*aux(16)
+s(34) >= s(36)
+s(35) >= s(36)
+s(35) >= s(34)*s(32)
+
+#### Cost of chains of matrixmultp(A,B,C,D):
+* Chain [[34],30]: 2*it(34)+2*s(10)+1
+  Such that:it(34) =< A
+aux(11) =< C
+s(10) =< it(34)*aux(11)
+aux(12) >= A
+aux(10) >= C
+it(34) >= aux(12)
+s(10) >= aux(12)
+s(10) >= it(34)*aux(10)
+
+  with precondition: [B=0,A>=1,C>=1,D>=A] 
+
+* Chain [[33],30]: 2*it(33)+1
+  Such that:it(33) =< A
+it(33) >= A
+
+  with precondition: [C=0,A>=1,B>=0,D>=A] 
+
+* Chain [[32],30]: 2*it(32)+2*s(21)+1*s(22)+1
+  Such that:it(32) =< A
+s(16) =< B
+aux(14) =< C
+s(21) =< it(32)*aux(14)
+s(22) =< s(21)*s(16)
+aux(15) >= A
+s(18) >= B
+aux(13) >= C
+it(32) >= aux(15)
+s(23) >= aux(15)
+s(23) >= it(32)*aux(13)
+s(21) >= s(23)
+s(22) >= s(23)
+s(22) >= s(21)*s(18)
+
+  with precondition: [A>=1,B>=1,C>=1,D>=A,D>=B] 
+
+* Chain [[31],30]: 2*it(31)+2*s(34)+1*s(35)+1
+  Such that:it(31) =< A
+aux(17) =< C
+s(30) =< D
+s(34) =< it(31)*aux(17)
+s(35) =< s(34)*s(30)
+aux(18) >= A
+aux(16) >= C
+s(32) >= D
+it(31) >= aux(18)
+s(36) >= aux(18)
+s(36) >= it(31)*aux(16)
+s(34) >= s(36)
+s(35) >= s(36)
+s(35) >= s(34)*s(32)
+
+  with precondition: [A>=1,C>=1,D>=A,B>=D+1] 
+
+* Chain [30]: 1
+  with precondition: [A=0,B>=0,C>=0,D>=0] 
+
+
+#### Cost of loops [37] 
+
+ * loop 37:attach(A,B,C) -> [attach(A',B',C')] 
+1
+#### Cost of phase [37]:attach(A,B,C) -> [attach(A',B',C')] 
+1*it(37)+0
+  Such that:it(37) =< A
+it(37) =< A-A'
+it(37) >= A-A'
+
+#### Cost of phase [37]:attach(A,B,C) -> [attach(A',B',C')] 
+1*it(37)+0
+  Such that:it(37) =< A
+it(37) =< A-A'
+it(37) >= A-A'
+
+#### Cost of chains of attach(A,B,C):
+* Chain [[37],36]: 1*it(37)+1
+  Such that:it(37) =< A
+it(37) >= A
+
+  with precondition: [A>=1,B>=A,C>=B] 
+
+* Chain [[37],35]: 1*it(37)+1
+  Such that:it(37) =< B
+it(37) >= B
+
+  with precondition: [B>=1,A>=B+1,C>=B] 
+
+* Chain [36]: 1
+  with precondition: [A=0,B>=0,C>=B] 
+
+* Chain [35]: 1
+  with precondition: [B=0,A>=1,C>=0] 
+
+
+#### Cost of loops [41] 
+
+ * loop 41:transAcc(A,B,C,D) -> [transAcc(A',B',C',D')] 
+2
+#### Cost of phase [41]:transAcc(A,B,C,D) -> [transAcc(A',B',C',D')] 
+2*it(41)+0
+  Such that:it(41) =< A
+it(41) =< A-A'
+it(41) >= A-A'
+
+#### Cost of loops [39] 
+
+ * loop 39:transAcc(A,B,C,D) -> [transAcc(A',B',C',D')] 
+1*s(38)+2
+  Such that:s(38) =< A-1
+s(38) >= A-1
+
+#### Cost of phase [39]:transAcc(A,B,C,D) -> [transAcc(A',B',C',D')] 
+2*it(39)+1*s(39)+0
+  Such that:it(39) =< A-A'
+aux(22) =< A-1
+it(39) =< aux(22)
+s(39) =< it(39)*aux(22)
+aux(19) =< it(39)
+aux(20) >= A-1
+it(39) >= A-A'
+aux(19) >= it(39)
+s(39) >= aux(19)*aux(20)+aux(19)* (1/2)-aux(19)*aux(19)* (1/2)
+
+#### Cost of loops [40] 
+
+ * loop 40:transAcc(A,B,C,D) -> [transAcc(A',B',C',D')] 
+1*s(41)+2
+  Such that:s(41) =< B'
+s(41) >= B'
+
+#### Cost of phase [40]:transAcc(A,B,C,D) -> [transAcc(A',B',C',D')] 
+2*it(40)+1*s(42)+0
+  Such that:it(40) =< A-1
+it(40) =< A-B
+it(40) =< A-B-A'+B'
+it(40) =< A-A'
+aux(26) =< B
+s(42) =< it(40)*aux(26)
+it(40) >= A-B-A'+B'
+aux(25) >= B
+aux(27) >= A-A'
+it(40) >= aux(27)
+s(42) >= aux(27)
+s(42) >= it(40)*aux(25)
+
+#### Cost of phase [40]:transAcc(A,B,C,D) -> [transAcc(A',B',C',D')] 
+2*it(40)+1*s(42)+0
+  Such that:it(40) =< A-1
+it(40) =< A-B
+it(40) =< A-B-A'+B'
+it(40) =< A-A'
+aux(26) =< B
+s(42) =< it(40)*aux(26)
+it(40) >= A-B-A'+B'
+aux(25) >= B
+aux(27) >= A-A'
+it(40) >= aux(27)
+s(42) >= aux(27)
+s(42) >= it(40)*aux(25)
+
+#### Cost of chains of transAcc(A,B,C,D):
+* Chain [[41],38]: 2*it(41)+1
+  Such that:it(41) =< A
+it(41) >= A
+
+  with precondition: [B=0,D=0,A>=1,C>=A] 
+
+* Chain [[40],[39],42,38]: 2*it(39)+2*it(40)+1*s(39)+1*s(42)+3
+  Such that:it(40) =< A-B
+aux(23) =< B-1
+aux(26) =< B
+it(39) =< aux(23)
+s(39) =< it(39)*aux(23)
+aux(19) =< it(39)
+s(42) =< it(40)*aux(26)
+aux(24) >= B-1
+aux(25) >= B
+aux(28) >= A-B
+aux(28) >= aux(28)
+it(40) >= aux(28)
+aux(24) >= aux(24)
+it(39) >= aux(24)
+aux(19) >= it(39)
+s(39) >= aux(19)*aux(24)+aux(19)* (1/2)-aux(19)*aux(19)* (1/2)
+s(42) >= aux(28)
+s(42) >= it(40)*aux(25)
+
+  with precondition: [D=0,B>=2,C>=A,A>=B+1] 
+
+* Chain [[40],42,38]: 2*it(40)+1*s(42)+3
+  Such that:aux(26) =< 1
+it(40) =< A-1
+s(42) =< it(40)*aux(26)
+aux(25) >= 1
+aux(29) >= A-1
+aux(29) >= aux(29)
+it(40) >= aux(29)
+s(42) >= aux(29)
+s(42) >= it(40)*aux(25)
+
+  with precondition: [B=1,D=0,A>=2,C>=A] 
+
+* Chain [[39],42,38]: 2*it(39)+1*s(39)+3
+  Such that:aux(23) =< A-1
+it(39) =< aux(23)
+s(39) =< it(39)*aux(23)
+aux(19) =< it(39)
+aux(24) >= A-1
+aux(24) >= aux(24)
+it(39) >= aux(24)
+aux(19) >= it(39)
+s(39) >= aux(19)*aux(24)+aux(19)* (1/2)-aux(19)*aux(19)* (1/2)
+
+  with precondition: [D=0,A>=2,B>=A,C>=A] 
+
+* Chain [42,38]: 3
+  with precondition: [A=1,D=0,B>=1,C>=1] 
+
+* Chain [38]: 1
+  with precondition: [A=0,D=0,B>=0,C>=0] 
+
+
+#### Cost of chains of matrixmult(A,B,C,D):
+* Chain [64]: 4
+  with precondition: [A=0,C=0,B>=0,D>=0] 
+
+* Chain [63]: 1*s(43)+7
+  Such that:s(43) =< D
+s(43) >= D
+
+  with precondition: [A=0,C=1,B>=0,D>=1] 
+
+* Chain [62]: 2*s(44)+5
+  Such that:s(44) =< C
+s(44) >= C
+
+  with precondition: [A=0,D=0,B>=0,C>=1] 
+
+* Chain [61]: 2*s(46)+1*s(49)+1*s(50)+7
+  Such that:s(46) =< C-1
+aux(30) =< 1
+s(50) =< aux(30)
+s(49) =< s(46)*aux(30)
+s(48) >= C-1
+aux(31) >= 1
+aux(31) >= aux(31)
+s(50) >= aux(31)
+s(48) >= s(48)
+s(46) >= s(48)
+s(49) >= s(48)
+s(49) >= s(46)*aux(31)
+
+  with precondition: [A=0,D=1,B>=0,C>=2] 
+
+* Chain [60]: 2*s(53)+1*s(54)+1*s(56)+7
+  Such that:s(51) =< C-1
+s(56) =< D
+s(53) =< s(51)
+s(54) =< s(53)*s(51)
+s(55) =< s(53)
+s(52) >= C-1
+s(56) >= D
+s(52) >= s(52)
+s(53) >= s(52)
+s(55) >= s(53)
+s(54) >= s(55)*s(52)+s(55)* (1/2)-s(55)*s(55)* (1/2)
+
+  with precondition: [A=0,B>=0,C>=2,D>=C] 
+
+* Chain [59]: 2*s(57)+2*s(63)+1*s(64)+1*s(66)+1*s(67)+7
+  Such that:s(57) =< C-D
+s(58) =< D-1
+aux(32) =< D
+s(67) =< aux(32)
+s(63) =< s(58)
+s(64) =< s(63)*s(58)
+s(65) =< s(63)
+s(66) =< s(57)*aux(32)
+s(62) >= C-D
+s(60) >= D-1
+aux(33) >= D
+aux(33) >= aux(33)
+s(67) >= aux(33)
+s(62) >= s(62)
+s(57) >= s(62)
+s(60) >= s(60)
+s(63) >= s(60)
+s(65) >= s(63)
+s(64) >= s(65)*s(60)+s(65)* (1/2)-s(65)*s(65)* (1/2)
+s(66) >= s(62)
+s(66) >= s(57)*aux(33)
+
+  with precondition: [A=0,B>=0,D>=2,C>=D+1] 
+
+* Chain [58]: 2*s(68)+2*s(72)+1*s(73)+7
+  Such that:s(69) =< 1
+s(68) =< A
+s(73) =< D
+s(72) =< s(68)*s(69)
+s(71) >= 1
+s(70) >= A
+s(73) >= D
+s(68) >= s(70)
+s(72) >= s(70)
+s(72) >= s(68)*s(71)
+
+  with precondition: [B=0,C=1,A>=1,D>=1] 
+
+* Chain [57]: 2*s(74)+2*s(75)+2*s(79)+5
+  Such that:s(75) =< A
+aux(34) =< C
+s(74) =< aux(34)
+s(79) =< s(75)*aux(34)
+s(77) >= A
+aux(35) >= C
+s(74) >= aux(35)
+aux(35) >= aux(35)
+s(75) >= s(77)
+s(79) >= s(77)
+s(79) >= s(75)*aux(35)
+
+  with precondition: [B=0,D=0,A>=1,C>=1] 
+
+* Chain [56]: 2*s(81)+1*s(84)+2*s(85)+2*s(89)+1*s(90)+7
+  Such that:s(85) =< A
+s(81) =< C-1
+s(86) =< C
+aux(36) =< 1
+s(90) =< aux(36)
+s(89) =< s(85)*s(86)
+s(84) =< s(81)*aux(36)
+s(87) >= A
+s(83) >= C-1
+s(88) >= C
+aux(37) >= 1
+aux(37) >= aux(37)
+s(90) >= aux(37)
+s(85) >= s(87)
+s(89) >= s(87)
+s(89) >= s(85)*s(88)
+s(83) >= s(83)
+s(81) >= s(83)
+s(84) >= s(83)
+s(84) >= s(81)*aux(37)
+
+  with precondition: [B=0,D=1,A>=1,C>=2] 
+
+* Chain [55]: 2*s(93)+1*s(94)+2*s(96)+2*s(100)+1*s(101)+7
+  Such that:s(96) =< A
+s(91) =< C-1
+s(97) =< C
+s(101) =< D
+s(100) =< s(96)*s(97)
+s(93) =< s(91)
+s(94) =< s(93)*s(91)
+s(95) =< s(93)
+s(98) >= A
+s(92) >= C-1
+s(99) >= C
+s(101) >= D
+s(96) >= s(98)
+s(100) >= s(98)
+s(100) >= s(96)*s(99)
+s(92) >= s(92)
+s(93) >= s(92)
+s(95) >= s(93)
+s(94) >= s(95)*s(92)+s(95)* (1/2)-s(95)*s(95)* (1/2)
+
+  with precondition: [B=0,A>=1,C>=2,D>=C] 
+
+* Chain [54]: 2*s(102)+2*s(108)+1*s(109)+1*s(111)+2*s(112)+2*s(116)+1*s(117)+7
+  Such that:s(112) =< A
+s(113) =< C
+s(102) =< C-D
+s(103) =< D-1
+aux(38) =< D
+s(117) =< aux(38)
+s(116) =< s(112)*s(113)
+s(108) =< s(103)
+s(109) =< s(108)*s(103)
+s(110) =< s(108)
+s(111) =< s(102)*aux(38)
+s(114) >= A
+s(115) >= C
+s(107) >= C-D
+s(105) >= D-1
+aux(39) >= D
+aux(39) >= aux(39)
+s(117) >= aux(39)
+s(112) >= s(114)
+s(116) >= s(114)
+s(116) >= s(112)*s(115)
+s(107) >= s(107)
+s(102) >= s(107)
+s(105) >= s(105)
+s(108) >= s(105)
+s(110) >= s(108)
+s(109) >= s(110)*s(105)+s(110)* (1/2)-s(110)*s(110)* (1/2)
+s(111) >= s(107)
+s(111) >= s(102)*aux(39)
+
+  with precondition: [B=0,A>=1,D>=2,C>=D+1] 
+
+* Chain [53]: 2*s(118)+4
+  Such that:s(118) =< A
+s(118) >= A
+
+  with precondition: [C=0,A>=1,B>=0,D>=0] 
+
+* Chain [52]: 2*s(119)+2*s(126)+1*s(127)+1*s(128)+7
+  Such that:s(121) =< 1
+s(119) =< A
+s(120) =< B
+s(128) =< D
+s(126) =< s(119)*s(121)
+s(127) =< s(126)*s(120)
+s(124) >= 1
+s(122) >= A
+s(123) >= B
+s(128) >= D
+s(119) >= s(122)
+s(125) >= s(122)
+s(125) >= s(119)*s(124)
+s(126) >= s(125)
+s(127) >= s(125)
+s(127) >= s(126)*s(123)
+
+  with precondition: [C=1,A>=1,B>=1,D>=1,A+D>=B] 
+
+* Chain [51]: 2*s(129)+2*s(136)+1*s(137)+1*s(138)+7
+  Such that:s(130) =< 1
+s(129) =< A
+s(131) =< A+D
+s(138) =< D
+s(136) =< s(129)*s(130)
+s(137) =< s(136)*s(131)
+s(133) >= 1
+s(132) >= A
+s(134) >= A+D
+s(138) >= D
+s(129) >= s(132)
+s(135) >= s(132)
+s(135) >= s(129)*s(133)
+s(136) >= s(135)
+s(137) >= s(135)
+s(137) >= s(136)*s(134)
+
+  with precondition: [C=1,A>=1,D>=1,B>=A+D+1] 
+
+* Chain [50]: 2*s(139)+2*s(140)+2*s(147)+1*s(148)+5
+  Such that:aux(40) =< A
+aux(41) =< C
+s(140) =< aux(40)
+s(139) =< aux(41)
+s(147) =< s(140)*aux(41)
+s(148) =< s(147)*aux(40)
+aux(42) >= A
+aux(43) >= C
+aux(42) >= aux(42)
+s(139) >= aux(43)
+aux(43) >= aux(43)
+s(140) >= aux(42)
+s(146) >= aux(42)
+s(146) >= s(140)*aux(43)
+s(147) >= s(146)
+s(148) >= s(146)
+s(148) >= s(147)*aux(42)
+
+  with precondition: [D=0,A>=1,C>=1,B>=A+1] 
+
+* Chain [49]: 2*s(149)+2*s(150)+2*s(157)+1*s(158)+5
+  Such that:s(150) =< A
+s(151) =< B
+aux(44) =< C
+s(149) =< aux(44)
+s(157) =< s(150)*aux(44)
+s(158) =< s(157)*s(151)
+s(153) >= A
+s(154) >= B
+aux(45) >= C
+s(149) >= aux(45)
+aux(45) >= aux(45)
+s(150) >= s(153)
+s(156) >= s(153)
+s(156) >= s(150)*aux(45)
+s(157) >= s(156)
+s(158) >= s(156)
+s(158) >= s(157)*s(154)
+
+  with precondition: [D=0,B>=1,C>=1,A>=B] 
+
+* Chain [48]: 2*s(160)+1*s(163)+2*s(164)+2*s(171)+1*s(172)+1*s(173)+7
+  Such that:s(164) =< A
+s(165) =< B
+s(160) =< C-1
+s(166) =< C
+aux(46) =< 1
+s(173) =< aux(46)
+s(171) =< s(164)*s(166)
+s(172) =< s(171)*s(165)
+s(163) =< s(160)*aux(46)
+s(167) >= A
+s(168) >= B
+s(162) >= C-1
+s(169) >= C
+aux(47) >= 1
+aux(47) >= aux(47)
+s(173) >= aux(47)
+s(164) >= s(167)
+s(170) >= s(167)
+s(170) >= s(164)*s(169)
+s(171) >= s(170)
+s(172) >= s(170)
+s(172) >= s(171)*s(168)
+s(162) >= s(162)
+s(160) >= s(162)
+s(163) >= s(162)
+s(163) >= s(160)*aux(47)
+
+  with precondition: [D=1,A>=1,B>=1,C>=2,A+1>=B] 
+
+* Chain [47]: 2*s(175)+1*s(178)+2*s(179)+2*s(186)+1*s(187)+1*s(188)+7
+  Such that:s(179) =< A
+s(181) =< A+1
+s(175) =< C-1
+s(180) =< C
+aux(48) =< 1
+s(188) =< aux(48)
+s(186) =< s(179)*s(180)
+s(187) =< s(186)*s(181)
+s(178) =< s(175)*aux(48)
+s(182) >= A
+s(184) >= A+1
+s(177) >= C-1
+s(183) >= C
+aux(49) >= 1
+aux(49) >= aux(49)
+s(188) >= aux(49)
+s(179) >= s(182)
+s(185) >= s(182)
+s(185) >= s(179)*s(183)
+s(186) >= s(185)
+s(187) >= s(185)
+s(187) >= s(186)*s(184)
+s(177) >= s(177)
+s(175) >= s(177)
+s(178) >= s(177)
+s(178) >= s(175)*aux(49)
+
+  with precondition: [D=1,A>=1,C>=2,B>=A+2] 
+
+* Chain [46]: 2*s(191)+1*s(192)+2*s(194)+2*s(201)+1*s(202)+1*s(203)+7
+  Such that:s(194) =< A
+s(195) =< B
+s(189) =< C-1
+s(196) =< C
+s(203) =< D
+s(201) =< s(194)*s(196)
+s(202) =< s(201)*s(195)
+s(191) =< s(189)
+s(192) =< s(191)*s(189)
+s(193) =< s(191)
+s(197) >= A
+s(198) >= B
+s(190) >= C-1
+s(199) >= C
+s(203) >= D
+s(194) >= s(197)
+s(200) >= s(197)
+s(200) >= s(194)*s(199)
+s(201) >= s(200)
+s(202) >= s(200)
+s(202) >= s(201)*s(198)
+s(190) >= s(190)
+s(191) >= s(190)
+s(193) >= s(191)
+s(192) >= s(193)*s(190)+s(193)* (1/2)-s(193)*s(193)* (1/2)
+
+  with precondition: [A>=1,B>=1,C>=2,D>=C,A+D>=B] 
+
+* Chain [45]: 2*s(204)+2*s(210)+1*s(211)+1*s(213)+2*s(214)+2*s(221)+1*s(222)+1*s(223)+7
+  Such that:s(214) =< A
+s(215) =< B
+s(216) =< C
+s(204) =< C-D
+s(205) =< D-1
+aux(50) =< D
+s(223) =< aux(50)
+s(221) =< s(214)*s(216)
+s(222) =< s(221)*s(215)
+s(210) =< s(205)
+s(211) =< s(210)*s(205)
+s(212) =< s(210)
+s(213) =< s(204)*aux(50)
+s(217) >= A
+s(218) >= B
+s(219) >= C
+s(209) >= C-D
+s(207) >= D-1
+aux(51) >= D
+aux(51) >= aux(51)
+s(223) >= aux(51)
+s(214) >= s(217)
+s(220) >= s(217)
+s(220) >= s(214)*s(219)
+s(221) >= s(220)
+s(222) >= s(220)
+s(222) >= s(221)*s(218)
+s(209) >= s(209)
+s(204) >= s(209)
+s(207) >= s(207)
+s(210) >= s(207)
+s(212) >= s(210)
+s(211) >= s(212)*s(207)+s(212)* (1/2)-s(212)*s(212)* (1/2)
+s(213) >= s(209)
+s(213) >= s(204)*aux(51)
+
+  with precondition: [A>=1,B>=1,D>=2,C>=D+1,A+D>=B] 
+
+* Chain [44]: 2*s(226)+1*s(227)+2*s(229)+2*s(236)+1*s(237)+1*s(238)+7
+  Such that:s(229) =< A
+s(231) =< A+D
+s(224) =< C-1
+s(230) =< C
+s(238) =< D
+s(236) =< s(229)*s(230)
+s(237) =< s(236)*s(231)
+s(226) =< s(224)
+s(227) =< s(226)*s(224)
+s(228) =< s(226)
+s(232) >= A
+s(234) >= A+D
+s(225) >= C-1
+s(233) >= C
+s(238) >= D
+s(229) >= s(232)
+s(235) >= s(232)
+s(235) >= s(229)*s(233)
+s(236) >= s(235)
+s(237) >= s(235)
+s(237) >= s(236)*s(234)
+s(225) >= s(225)
+s(226) >= s(225)
+s(228) >= s(226)
+s(227) >= s(228)*s(225)+s(228)* (1/2)-s(228)*s(228)* (1/2)
+
+  with precondition: [A>=1,C>=2,D>=C,B>=A+D+1] 
+
+* Chain [43]: 2*s(239)+2*s(245)+1*s(246)+1*s(248)+2*s(249)+2*s(256)+1*s(257)+1*s(258)+7
+  Such that:s(249) =< A
+s(251) =< A+D
+s(250) =< C
+s(239) =< C-D
+s(240) =< D-1
+aux(52) =< D
+s(258) =< aux(52)
+s(256) =< s(249)*s(250)
+s(257) =< s(256)*s(251)
+s(245) =< s(240)
+s(246) =< s(245)*s(240)
+s(247) =< s(245)
+s(248) =< s(239)*aux(52)
+s(252) >= A
+s(254) >= A+D
+s(253) >= C
+s(244) >= C-D
+s(242) >= D-1
+aux(53) >= D
+aux(53) >= aux(53)
+s(258) >= aux(53)
+s(249) >= s(252)
+s(255) >= s(252)
+s(255) >= s(249)*s(253)
+s(256) >= s(255)
+s(257) >= s(255)
+s(257) >= s(256)*s(254)
+s(244) >= s(244)
+s(239) >= s(244)
+s(242) >= s(242)
+s(245) >= s(242)
+s(247) >= s(245)
+s(246) >= s(247)*s(242)+s(247)* (1/2)-s(247)*s(247)* (1/2)
+s(248) >= s(244)
+s(248) >= s(239)*aux(53)
+
+  with precondition: [A>=1,D>=2,C>=D+1,B>=A+D+1] 
+
+
+Closed-form bounds of matrixmult(A,B,C,D): 
+-------------------------------------
+* Chain [64] with precondition: [A=0,C=0,B>=0,D>=0] 
+    - Lower bound: 4 
+    - Complexity: constant
+ * Chain [63] with precondition: [A=0,C=1,B>=0,D>=1] 
+    - Lower bound: D+7 
+    - Complexity: n
+ * Chain [62] with precondition: [A=0,D=0,B>=0,C>=1] 
+    - Lower bound: 2*C+5 
+    - Complexity: n
+ * Chain [61] with precondition: [A=0,D=1,B>=0,C>=2] 
+    - Lower bound: 3*C+5 
+    - Complexity: n
+ * Chain [60] with precondition: [A=0,B>=0,C>=2,D>=C] 
+    - Lower bound: 5/2*C+D+9/2+ (C/2-1/2)* (C-1) 
+    - Complexity: n^2
+ * Chain [59] with precondition: [A=0,B>=0,D>=2,C>=D+1] 
+    - Lower bound: 5/2*D-5/2+ (2*C-2*D+ (D+7+ (C-D)*D))+ (D/2-1/2)* (D-1) 
+    - Complexity: n^2
+ * Chain [58] with precondition: [B=0,C=1,A>=1,D>=1] 
+    - Lower bound: 4*A+D+7 
+    - Complexity: n
+ * Chain [57] with precondition: [B=0,D=0,A>=1,C>=1] 
+    - Lower bound: 2*A+2*C+5+2*C*A 
+    - Complexity: n^2
+ * Chain [56] with precondition: [B=0,D=1,A>=1,C>=2] 
+    - Lower bound: 3*C-3+ (2*A+8+2*C*A) 
+    - Complexity: n^2
+ * Chain [55] with precondition: [B=0,A>=1,C>=2,D>=C] 
+    - Lower bound: 5/2*C-5/2+ (2*A+7+2*C*A+D)+ (C/2-1/2)* (C-1) 
+    - Complexity: n^2
+ * Chain [54] with precondition: [B=0,A>=1,D>=2,C>=D+1] 
+    - Lower bound: 5/2*D-5/2+ (2*C-2*D+ (2*A+7+2*C*A+D+ (C-D)*D))+ (D/2-1/2)* (D-1) 
+    - Complexity: n^2
+ * Chain [53] with precondition: [C=0,A>=1,B>=0,D>=0] 
+    - Lower bound: 2*A+4 
+    - Complexity: n
+ * Chain [52] with precondition: [C=1,A>=1,B>=1,D>=1,A+D>=B] 
+    - Lower bound: 4*A+7+B*A+D 
+    - Complexity: n^2
+ * Chain [51] with precondition: [C=1,A>=1,D>=1,B>=A+D+1] 
+    - Lower bound: 4*A+D+7+ (A+D)*A 
+    - Complexity: n^2
+ * Chain [50] with precondition: [D=0,A>=1,C>=1,B>=A+1] 
+    - Lower bound: 2*A+5+C*A*A+2*C+2*C*A 
+    - Complexity: n^3
+ * Chain [49] with precondition: [D=0,B>=1,C>=1,A>=B] 
+    - Lower bound: 2*A+5+C*B*A+2*C+2*C*A 
+    - Complexity: n^3
+ * Chain [48] with precondition: [D=1,A>=1,B>=1,C>=2,A+1>=B] 
+    - Lower bound: 3*C-3+ (2*A+8+C*B*A+2*C*A) 
+    - Complexity: n^3
+ * Chain [47] with precondition: [D=1,A>=1,C>=2,B>=A+2] 
+    - Lower bound: 3*C-3+ (2*A+8+2*C*A+ (A+1)*C*A) 
+    - Complexity: n^3
+ * Chain [46] with precondition: [A>=1,B>=1,C>=2,D>=C,A+D>=B] 
+    - Lower bound: 5/2*C-5/2+ (2*A+7+C*B*A+2*C*A+D)+ (C/2-1/2)* (C-1) 
+    - Complexity: n^3
+ * Chain [45] with precondition: [A>=1,B>=1,D>=2,C>=D+1,A+D>=B] 
+    - Lower bound: 5/2*D-5/2+ (2*C-2*D+ (2*A+7+C*B*A+2*C*A+D+ (C-D)*D))+ (D/2-1/2)* (D-1) 
+    - Complexity: n^3
+ * Chain [44] with precondition: [A>=1,C>=2,D>=C,B>=A+D+1] 
+    - Lower bound: 5/2*C-5/2+ (2*A+7+2*C*A+D+ (A+D)*C*A)+ (C/2-1/2)* (C-1) 
+    - Complexity: n^3
+ * Chain [43] with precondition: [A>=1,D>=2,C>=D+1,B>=A+D+1] 
+    - Lower bound: 5/2*D-5/2+ (2*C-2*D+ (2*A+7+2*C*A+D+ (C-D)*D+ (A+D)*C*A))+ (D/2-1/2)* (D-1) 
+    - Complexity: n^3
+ 
+### Partitioned lower bound of matrixmult(A,B,C,D): 
+* 4 
+ if [A=0,C=0,B>=0,D>=0]
+* D+7 
+ if [A=0,C=1,B>=0,D>=1]
+* 2*A+4 
+ if [C=0,A>=1,B>=0,D>=0]
+* 2*C+5 
+ if [A=0,D=0,B>=0,C>=1]
+* 3*C+5 
+ if [A=0,D=1,B>=0,C>=2]
+* 4*A+D+7 
+ if [B=0,C=1,A>=1,D>=1]
+* 2*A+2*C+5+2*C*A 
+ if [B=0,D=0,A>=1,C>=1]
+* 4*A+D+7+ (A+D)*A 
+ if [C=1,A>=1,D>=1,B>=A+D+1]
+* 4*A+7+B*A+D 
+ if [C=1,A>=1,B>=1,D>=1,A+D>=B]
+* 5/2*C+D+9/2+ (C/2-1/2)* (C-1) 
+ if [A=0,B>=0,C>=2,D>=C]
+* 2*A+5+C*A*A+2*C+2*C*A 
+ if [D=0,A>=1,C>=1,B>=A+1]
+* 2*A+5+C*B*A+2*C+2*C*A 
+ if [D=0,B>=1,C>=1,A>=B]
+* 5/2*C-5/2+ (2*A+7+2*C*A+D)+ (C/2-1/2)* (C-1) 
+ if [B=0,A>=1,C>=2,D>=C]
+* 5/2*C-5/2+ (2*A+7+C*B*A+2*C*A+D)+ (C/2-1/2)* (C-1) 
+ if [A>=1,B>=1,C>=2,D>=C,A+D>=B]
+* 5/2*C-5/2+ (2*A+7+2*C*A+D+ (A+D)*C*A)+ (C/2-1/2)* (C-1) 
+ if [A>=1,C>=2,D>=C,B>=A+D+1]
+* 5/2*D-5/2+ (2*C-2*D+ (D+7+ (C-D)*D))+ (D/2-1/2)* (D-1) 
+ if [A=0,B>=0,D>=2,C>=D+1]
+* 5/2*D-5/2+ (2*C-2*D+ (2*A+7+2*C*A+D+ (C-D)*D))+ (D/2-1/2)* (D-1) 
+ if [B=0,A>=1,D>=2,C>=D+1]
+* 5/2*D-5/2+ (2*C-2*D+ (2*A+7+C*B*A+2*C*A+D+ (C-D)*D))+ (D/2-1/2)* (D-1) 
+ if [A>=1,B>=1,D>=2,C>=D+1,A+D>=B]
+* 5/2*D-5/2+ (2*C-2*D+ (2*A+7+2*C*A+D+ (C-D)*D+ (A+D)*C*A))+ (D/2-1/2)* (D-1) 
+ if [A>=1,D>=2,C>=D+1,B>=A+D+1]
+* 3*C-3+ (2*A+8+2*C*A) 
+ if [B=0,D=1,A>=1,C>=2]
+* 3*C-3+ (2*A+8+C*B*A+2*C*A) 
+ if [D=1,A>=1,B>=1,C>=2,A+1>=B]
+* 3*C-3+ (2*A+8+2*C*A+ (A+1)*C*A) 
+ if [D=1,A>=1,C>=2,B>=A+2]
+Possible lower bounds : [4,D+7,2*A+4,2*C+5,3*C+5,4*A+D+7,2*A+2*C+5+2*C*A,4*A+D+7+ (A+D)*A,4*A+7+B*A+D,5/2*C+D+9/2+ (C/2-1/2)* (C-1),2*A+5+C*A*A+2*C+2*C*A,2*A+5+C*B*A+2*C+2*C*A,5/2*C-5/2+ (2*A+7+2*C*A+D)+ (C/2-1/2)* (C-1),5/2*C-5/2+ (2*A+7+C*B*A+2*C*A+D)+ (C/2-1/2)* (C-1),5/2*C-5/2+ (2*A+7+2*C*A+D+ (A+D)*C*A)+ (C/2-1/2)* (C-1),5/2*D-5/2+ (2*C-2*D+ (D+7+ (C-D)*D))+ (D/2-1/2)* (D-1),5/2*D-5/2+ (2*C-2*D+ (2*A+7+2*C*A+D+ (C-D)*D))+ (D/2-1/2)* (D-1),5/2*D-5/2+ (2*C-2*D+ (2*A+7+C*B*A+2*C*A+D+ (C-D)*D))+ (D/2-1/2)* (D-1),5/2*D-5/2+ (2*C-2*D+ (2*A+7+2*C*A+D+ (C-D)*D+ (A+D)*C*A))+ (D/2-1/2)* (D-1),3*C-3+ (2*A+8+2*C*A),3*C-3+ (2*A+8+C*B*A+2*C*A),3*C-3+ (2*A+8+2*C*A+ (A+1)*C*A)]
+Maximum lower bound complexity: n^3
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 32 ms.
+* Invariants computed in 351 ms.
+   - Backward Invariants 159 ms.
+   - Transitive Invariants 68 ms.
+* Refinement performed in 605 ms.
+* Termination proved in 93 ms.
+* Upper bounds computed in 1361 ms.
+   - Equation cost structures 442 ms.
+   - Phase cost structures 384 ms.
+   - Chain cost structures 199 ms.
+   - Solving cost expressions 94 ms.
+* Total analysis performed in 2555 ms.
+

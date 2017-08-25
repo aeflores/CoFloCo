@@ -1,0 +1,1319 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [a/1]
+1. recursive  : [ge/3]
+2. recursive  : [gen/4,if/5]
+3. non_recursive  : [generate/3]
+4. non_recursive  : [head/2]
+5. recursive  : [p/2]
+6. non_recursive  : [isNil/2]
+7. recursive  : [isZero/2]
+8. non_recursive  : [tail/2]
+9. recursive  : [ifsum/5,ifsum2/4,sum2/3]
+10. non_recursive  : [sum/2]
+11. non_recursive  : [times/3]
+12. non_recursive  : [start/4]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into a/1
+1. SCC is partially evaluated into ge/3
+2. SCC is partially evaluated into gen/4
+3. SCC is completely evaluated into other SCCs
+4. SCC is partially evaluated into head/2
+5. SCC is partially evaluated into p/2
+6. SCC is partially evaluated into isNil/2
+7. SCC is partially evaluated into isZero/2
+8. SCC is partially evaluated into tail/2
+9. SCC is partially evaluated into sum2/3
+10. SCC is completely evaluated into other SCCs
+11. SCC is partially evaluated into times/3
+12. SCC is partially evaluated into start/4
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations a/1 
+* CE 53 is refined into CE [54] 
+* CE 52 is refined into CE [55] 
+
+
+#### Refined cost equations a/1 
+* CE 54: a(Out) = 1
+     [Out=1] 
+* CE 55: a(Out) = 1
+     [Out=0] 
+
+### Cost equations --> "Loop" of a/1 
+* CEs [54] --> Loop 30 
+* CEs [55] --> Loop 31 
+
+#### Loops of a/1 
+* Loop 30: a(Out) [Out=1] 
+* Loop 31: a(Out) [Out=0] 
+
+### Ranking functions of CR a(Out) 
+
+#### Partial ranking functions of CR a(Out) 
+
+
+### Resulting Chains:a(Out) 
+* [31]
+* [30]
+
+
+### Merging Chains  a/1 into  External patterns of execution 
+* [[31]] --> 1 
+* [[30]] --> 2 
+
+
+### Specialization of cost equations ge/3 
+* CE 51 is refined into CE [56] 
+* CE 48 is refined into CE [57] 
+* CE 49 is refined into CE [58] 
+* CE 50 is refined into CE [59] 
+
+
+#### Refined cost equations ge/3 
+* CE 56: ge(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 57: ge(V,V1,Out) = 1
+     [V>=0,Out=2,V1=0] 
+* CE 58: ge(V,V1,Out) = 1
+     [V1>=1,Out=1,V=0] 
+* CE 59: ge(V,V1,Out) = 1+ ge(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V1,W1+1=V] 
+
+### Cost equations --> "Loop" of ge/3 
+* CEs [59] --> Loop 32 
+* CEs [56] --> Loop 33 
+* CEs [57] --> Loop 34 
+* CEs [58] --> Loop 35 
+
+#### Loops of ge/3 
+* Loop 32: ge(V,V1,Out)->  ge(V',V1',Out)
+                  [V1'>=0,V'>=0,V1'+1=V1,V'+1=V] 
+* Loop 33: ge(V,V1,Out) [V1>=0,V>=0,Out=0] 
+* Loop 34: ge(V,V1,Out) [V>=0,Out=2,V1=0] 
+* Loop 35: ge(V,V1,Out) [V1>=1,Out=1,V=0] 
+
+### Ranking functions of CR ge(V,V1,Out) 
+* RF of phase [32]: [V,V1]
+
+#### Partial ranking functions of CR ge(V,V1,Out) 
+* Partial RF of phase [32]:
+  - RF of loop [32:1]:
+    V
+    V1
+
+
+### Resulting Chains:ge(V,V1,Out) 
+* [[32],35]
+* [[32],34]
+* [[32],33]
+* [35]
+* [34]
+* [33]
+
+
+### Merging Chains  ge/3 into  External patterns of execution 
+* [[35]] --> 1 
+* [[34]] --> 2 
+* [[33],[33,[32]]] --> 3 
+* [[35,[32]]] --> 4 
+* [[34,[32]]] --> 5 
+
+
+### Specialization of cost equations gen/4 
+* CE 37 is refined into CE [60,61,62,63,64] 
+* CE 39 is refined into CE [65,66] 
+* CE 38 is refined into CE [67,68] 
+
+
+#### Refined cost equations gen/4 
+* CE 60: gen(V,V1,V9,Out) = 1+ ge(W9,V,X9):1
+     [V>=1,V1>=0,X9=1,W9=0,Out=0,V9=0] 
+* CE 61: gen(V,V1,V9,Out) = 1+ ge(V9,W9,X9):2
+     [V9>=0,V1>=0,X9=2,W9=0,Out=0,V=0] 
+* CE 62: gen(V,V1,V9,Out) = 1+ ge(V9,V,W9):3
+     [V>=0,V9>=0,V1>=0,W9=0,Out=0] 
+* CE 63: gen(V,V1,V9,Out) = 1+ ge(V9,V,W9):4
+     [V>=V9+1,V9>=1,V1>=0,W9=1,Out=0] 
+* CE 64: gen(V,V1,V9,Out) = 1+ ge(V9,V,W9):5
+     [V9>=V,V>=1,V1>=0,W9=2,Out=0] 
+* CE 65: gen(V,V1,V9,Out) = 2+ ge(V9,W9,X9):2
+     [V9>=0,V1>=0,X9=2,W9=0,Out=0,V=0] 
+* CE 66: gen(V,V1,V9,Out) = 2+ ge(V9,V,W9):5
+     [V9>=V,V>=1,V1>=0,W9=2,Out=0] 
+* CE 67: gen(V,V1,V9,Out) = 2+ ge(W9,V,X9):1+ gen(V,V1,Y9,Z9)
+     [V>=1,V1>=0,V1+Z9+1=Out,Y9=1,X9=1,W9=0,V9=0] 
+* CE 68: gen(V,V1,V9,Out) = 2+ ge(V9,V,W9):4+ gen(V,V1,X9,Y9)
+     [V>=V9+1,V9>=1,V1>=0,V1+Y9+1=Out,V9+1=X9,W9=1] 
+
+### Cost equations --> "Loop" of gen/4 
+* CEs [68] --> Loop 36 
+* CEs [67] --> Loop 37 
+* CEs [60] --> Loop 38 
+* CEs [61,62,63,64,65,66] --> Loop 39 
+
+#### Loops of gen/4 
+* Loop 36: gen(V,V1,V9,Out)->  gen(V,V1,V9',Out')
+                  [V>=V9+1,V9>=1,V1>=0,V1+Out'+1=Out,V9+1=V9'] 
+* Loop 37: gen(V,V1,V9,Out)->  gen(V,V1,V9',Out')
+                  [V1>=0,V>=1,V1+Out'+1=Out,V9'=1,V9=0] 
+* Loop 38: gen(V,V1,V9,Out) [V1>=0,V>=1,Out=0,V9=0] 
+* Loop 39: gen(V,V1,V9,Out) [V9>=0,V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR gen(V,V1,V9,Out) 
+* RF of phase [36]: [V-V9]
+
+#### Partial ranking functions of CR gen(V,V1,V9,Out) 
+* Partial RF of phase [36]:
+  - RF of loop [36:1]:
+    V-V9
+
+
+### Resulting Chains:gen(V,V1,V9,Out) 
+* [[36],39]
+* [39]
+* [38]
+* [37,[36],39]
+* [37,39]
+
+
+### Merging Chains  gen/4 into  External patterns of execution 
+* [[38],[39]] --> 1 
+* [[39,37]] --> 2 
+* [[39,[36],37]] --> 3 
+* [[39,[36]]] --> 4 
+
+
+### Specialization of cost equations head/2 
+* CE 22 is refined into CE [69] 
+* CE 24 is refined into CE [70] 
+* CE 23 is refined into CE [71] 
+
+
+#### Refined cost equations head/2 
+* CE 69: head(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 70: head(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 71: head(V,Out) = 1
+     [Out=1,V=0] 
+
+### Cost equations --> "Loop" of head/2 
+* CEs [69] --> Loop 40 
+* CEs [70] --> Loop 41 
+* CEs [71] --> Loop 42 
+
+#### Loops of head/2 
+* Loop 40: head(V,Out) [V>=Out+1,Out>=0] 
+* Loop 41: head(V,Out) [V>=0,Out=0] 
+* Loop 42: head(V,Out) [Out=1,V=0] 
+
+### Ranking functions of CR head(V,Out) 
+
+#### Partial ranking functions of CR head(V,Out) 
+
+
+### Resulting Chains:head(V,Out) 
+* [42]
+* [41]
+* [40]
+
+
+### Merging Chains  head/2 into  External patterns of execution 
+* [[42]] --> 1 
+* [[41]] --> 2 
+* [[40]] --> 3 
+
+
+### Specialization of cost equations p/2 
+* CE 26 is refined into CE [72] 
+* CE 28 is refined into CE [73] 
+* CE 25 is refined into CE [74] 
+* CE 27 is refined into CE [75] 
+
+
+#### Refined cost equations p/2 
+* CE 72: p(V,Out) = 1
+     [Out=0,V=1] 
+* CE 73: p(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 74: p(V,Out) = 1
+     [Out=2,V=0] 
+* CE 75: p(V,Out) = 1+ p(W,X)
+     [V>=2,V=W+1,X+1=Out] 
+
+### Cost equations --> "Loop" of p/2 
+* CEs [75] --> Loop 43 
+* CEs [72,73] --> Loop 44 
+* CEs [74] --> Loop 45 
+
+#### Loops of p/2 
+* Loop 43: p(V,Out)->  p(V',Out')
+                  [V>=2,Out=Out'+1,V=V'+1] 
+* Loop 44: p(V,Out) [V>=0,Out=0] 
+* Loop 45: p(V,Out) [Out=2,V=0] 
+
+### Ranking functions of CR p(V,Out) 
+* RF of phase [43]: [V-1]
+
+#### Partial ranking functions of CR p(V,Out) 
+* Partial RF of phase [43]:
+  - RF of loop [43:1]:
+    V-1
+
+
+### Resulting Chains:p(V,Out) 
+* [[43],44]
+* [45]
+* [44]
+
+
+### Merging Chains  p/2 into  External patterns of execution 
+* [[45]] --> 1 
+* [[44]] --> 2 
+* [[44,[43]]] --> 3 
+
+
+### Specialization of cost equations isNil/2 
+* CE 42 is refined into CE [76] 
+* CE 43 is refined into CE [77] 
+* CE 41 is refined into CE [78] 
+
+
+#### Refined cost equations isNil/2 
+* CE 76: isNil(V,Out) = 1
+     [V>=1,Out=1] 
+* CE 77: isNil(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 78: isNil(V,Out) = 1
+     [Out=2,V=0] 
+
+### Cost equations --> "Loop" of isNil/2 
+* CEs [76] --> Loop 46 
+* CEs [77] --> Loop 47 
+* CEs [78] --> Loop 48 
+
+#### Loops of isNil/2 
+* Loop 46: isNil(V,Out) [V>=1,Out=1] 
+* Loop 47: isNil(V,Out) [V>=0,Out=0] 
+* Loop 48: isNil(V,Out) [Out=2,V=0] 
+
+### Ranking functions of CR isNil(V,Out) 
+
+#### Partial ranking functions of CR isNil(V,Out) 
+
+
+### Resulting Chains:isNil(V,Out) 
+* [48]
+* [47]
+* [46]
+
+
+### Merging Chains  isNil/2 into  External patterns of execution 
+* [[48]] --> 1 
+* [[47]] --> 2 
+* [[46]] --> 3 
+
+
+### Specialization of cost equations isZero/2 
+* CE 47 is refined into CE [79] 
+* CE 45 is refined into CE [80] 
+* CE 44 is refined into CE [81] 
+* CE 46 is refined into CE [82] 
+
+
+#### Refined cost equations isZero/2 
+* CE 79: isZero(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 80: isZero(V,Out) = 1
+     [Out=1,V=1] 
+* CE 81: isZero(V,Out) = 1
+     [Out=2,V=0] 
+* CE 82: isZero(V,Out) = 1+ isZero(W,Out)
+     [V>=2,V=W+1] 
+
+### Cost equations --> "Loop" of isZero/2 
+* CEs [82] --> Loop 49 
+* CEs [79] --> Loop 50 
+* CEs [80] --> Loop 51 
+* CEs [81] --> Loop 52 
+
+#### Loops of isZero/2 
+* Loop 49: isZero(V,Out)->  isZero(V',Out)
+                  [V>=2,V=V'+1] 
+* Loop 50: isZero(V,Out) [V>=0,Out=0] 
+* Loop 51: isZero(V,Out) [Out=1,V=1] 
+* Loop 52: isZero(V,Out) [Out=2,V=0] 
+
+### Ranking functions of CR isZero(V,Out) 
+* RF of phase [49]: [V-1]
+
+#### Partial ranking functions of CR isZero(V,Out) 
+* Partial RF of phase [49]:
+  - RF of loop [49:1]:
+    V-1
+
+
+### Resulting Chains:isZero(V,Out) 
+* [[49],51]
+* [[49],50]
+* [52]
+* [51]
+* [50]
+
+
+### Merging Chains  isZero/2 into  External patterns of execution 
+* [[52]] --> 1 
+* [[51]] --> 2 
+* [[50],[50,[49]]] --> 3 
+* [[51,[49]]] --> 4 
+
+
+### Specialization of cost equations tail/2 
+* CE 30 is refined into CE [83] 
+* CE 29 is refined into CE [84] 
+* CE 31 is refined into CE [85] 
+
+
+#### Refined cost equations tail/2 
+* CE 83: tail(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 84: tail(V,Out) = 1
+     [Out=0,V=0] 
+* CE 85: tail(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of tail/2 
+* CEs [83] --> Loop 53 
+* CEs [84,85] --> Loop 54 
+
+#### Loops of tail/2 
+* Loop 53: tail(V,Out) [V>=Out+1,Out>=0] 
+* Loop 54: tail(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR tail(V,Out) 
+
+#### Partial ranking functions of CR tail(V,Out) 
+
+
+### Resulting Chains:tail(V,Out) 
+* [54]
+* [53]
+
+
+### Merging Chains  tail/2 into  External patterns of execution 
+* [[54]] --> 1 
+* [[53]] --> 2 
+
+
+### Specialization of cost equations sum2/3 
+* CE 36 is refined into CE [86,87,88,89] 
+* CE 32 is refined into CE [90,91,92,93,94,95] 
+* CE 35 is refined into CE [96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113] 
+* CE 34 is refined into CE [114,115,116,117] 
+* CE 33 is refined into CE [118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137] 
+
+
+#### Refined cost equations sum2/3 
+* CE 86: sum2(A,B,B) = 2+ isNil(C,D):1+ head(E,F):1+ isZero(G,H):2
+     [B>=0,H=1,G=1,F=1,E=0,D=2,C=0,A=0] 
+* CE 87: sum2(A,B,B) = 2+ isNil(C,D):1+ head(E,F):1+ isZero(G,H):3
+     [B>=0,H=0,G=1,F=1,E=0,D=2,C=0,A=0] 
+* CE 88: sum2(A,B,B) = 2+ isNil(C,D):1+ head(E,F):2+ isZero(G,H):1
+     [B>=0,H=2,G=0,F=0,E=0,D=2,C=0,A=0] 
+* CE 89: sum2(A,B,B) = 2+ isNil(C,D):1+ head(E,F):2+ isZero(G,H):3
+     [B>=0,H=0,G=0,F=0,E=0,D=2,C=0,A=0] 
+* CE 90: sum2(V,V1,Out) = 2+ isNil(V,W1):3+ head(V,X1):2+ isZero(Y1,Z1):1
+     [V>=1,V1>=0,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 91: sum2(V,V1,Out) = 2+ isNil(V,W1):3+ head(V,X1):2+ isZero(Y1,Z1):3
+     [V>=1,V1>=0,Z1=0,Y1=0,X1=0,W1=1,Out=0] 
+* CE 92: sum2(V,V1,Out) = 2+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):1
+     [V>=1,V1>=0,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 93: sum2(V,V1,Out) = 2+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2
+     [V>=2,V1>=0,Z1=1,Y1=1,X1=1,W1=1,Out=0] 
+* CE 94: sum2(V,V1,Out) = 2+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):3
+     [V>=X1+1,X1>=0,V1>=0,Y1=0,W1=1,Out=0] 
+* CE 95: sum2(V,V1,Out) = 2+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4
+     [V>=X1+1,X1>=2,V1>=0,Y1=1,W1=1,Out=0] 
+* CE 96: sum2(V,V1,Out) = 1+ isNil(W1,X1):1+ head(Y1,Z1):1+ isZero(A2,B2):2
+     [V1>=0,B2=1,A2=1,Z1=1,Y1=0,X1=2,W1=0,Out=0,V=0] 
+* CE 97: sum2(V,V1,Out) = 1+ isNil(W1,X1):1+ head(Y1,Z1):1+ isZero(A2,B2):3
+     [V1>=0,B2=0,A2=1,Z1=1,Y1=0,X1=2,W1=0,Out=0,V=0] 
+* CE 98: sum2(V,V1,Out) = 1+ isNil(W1,X1):1+ head(Y1,Z1):2+ isZero(A2,B2):1
+     [V1>=0,B2=2,A2=0,Z1=0,Y1=0,X1=2,W1=0,Out=0,V=0] 
+* CE 99: sum2(V,V1,Out) = 1+ isNil(W1,X1):1+ head(Y1,Z1):2+ isZero(A2,B2):3
+     [V1>=0,B2=0,A2=0,Z1=0,Y1=0,X1=2,W1=0,Out=0,V=0] 
+* CE 100: sum2(V,V1,Out) = 1+ isNil(W1,X1):2+ head(Y1,Z1):1+ isZero(A2,B2):2
+     [V1>=0,B2=1,A2=1,Z1=1,Y1=0,X1=0,W1=0,Out=0,V=0] 
+* CE 101: sum2(V,V1,Out) = 1+ isNil(W1,X1):2+ head(Y1,Z1):1+ isZero(A2,B2):3
+     [V1>=0,B2=0,A2=1,Z1=1,Y1=0,X1=0,W1=0,Out=0,V=0] 
+* CE 102: sum2(V,V1,Out) = 1+ isNil(V,W1):2+ head(V,X1):2+ isZero(Y1,Z1):1
+     [V>=0,V1>=0,Z1=2,Y1=0,X1=0,W1=0,Out=0] 
+* CE 103: sum2(V,V1,Out) = 1+ isNil(V,W1):2+ head(V,X1):2+ isZero(Y1,Z1):3
+     [V>=0,V1>=0,Z1=0,Y1=0,X1=0,W1=0,Out=0] 
+* CE 104: sum2(V,V1,Out) = 1+ isNil(V,W1):2+ head(V,X1):3+ isZero(Y1,Z1):1
+     [V>=1,V1>=0,Z1=2,Y1=0,X1=0,W1=0,Out=0] 
+* CE 105: sum2(V,V1,Out) = 1+ isNil(V,W1):2+ head(V,X1):3+ isZero(Y1,Z1):2
+     [V>=2,V1>=0,Z1=1,Y1=1,X1=1,W1=0,Out=0] 
+* CE 106: sum2(V,V1,Out) = 1+ isNil(V,W1):2+ head(V,X1):3+ isZero(X1,Y1):3
+     [V>=X1+1,X1>=0,V1>=0,Y1=0,W1=0,Out=0] 
+* CE 107: sum2(V,V1,Out) = 1+ isNil(V,W1):2+ head(V,X1):3+ isZero(X1,Y1):4
+     [V>=X1+1,X1>=2,V1>=0,Y1=1,W1=0,Out=0] 
+* CE 108: sum2(V,V1,Out) = 1+ isNil(V,W1):3+ head(V,X1):2+ isZero(Y1,Z1):1
+     [V>=1,V1>=0,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 109: sum2(V,V1,Out) = 1+ isNil(V,W1):3+ head(V,X1):2+ isZero(Y1,Z1):3
+     [V>=1,V1>=0,Z1=0,Y1=0,X1=0,W1=1,Out=0] 
+* CE 110: sum2(V,V1,Out) = 1+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):1
+     [V>=1,V1>=0,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 111: sum2(V,V1,Out) = 1+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2
+     [V>=2,V1>=0,Z1=1,Y1=1,X1=1,W1=1,Out=0] 
+* CE 112: sum2(V,V1,Out) = 1+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):3
+     [V>=X1+1,X1>=0,V1>=0,Y1=0,W1=1,Out=0] 
+* CE 113: sum2(V,V1,Out) = 1+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4
+     [V>=X1+1,X1>=2,V1>=0,Y1=1,W1=1,Out=0] 
+* CE 114: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):2+ isZero(Y1,Z1):1+ tail(V,A2):1+ sum2(B2,V1,Out)
+     [V>=1,V1>=0,B2=0,A2=0,Z1=2,Y1=0,X1=0,W1=1] 
+* CE 115: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):2+ isZero(Y1,Z1):1+ tail(V,A2):2+ sum2(A2,V1,Out)
+     [V>=A2+1,A2>=0,V1>=0,Z1=2,Y1=0,X1=0,W1=1] 
+* CE 116: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):1+ tail(V,A2):1+ sum2(B2,V1,Out)
+     [V>=1,V1>=0,B2=0,A2=0,Z1=2,Y1=0,X1=0,W1=1] 
+* CE 117: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):1+ tail(V,A2):2+ sum2(A2,V1,Out)
+     [V>=A2+1,A2>=0,V1>=0,Z1=2,Y1=0,X1=0,W1=1] 
+* CE 118: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):2+ p(B2,C2):1+ tail(V,D2):1+ sum2(E2,F2,Out)
+     [V>=2,V1>=0,V1+1=F2,E2=3,D2=0,C2=2,B2=0,A2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 119: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):2+ p(B2,C2):1+ tail(V,D2):2+ sum2(E2,F2,Out)
+     [V>=D2+1,D2>=0,V>=2,V1>=0,V1+1=F2,D2+3=E2,C2=2,B2=0,A2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 120: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):2+ p(B2,C2):2+ tail(V,D2):1+ sum2(E2,F2,Out)
+     [V>=2,V1>=0,V1+1=F2,E2=1,D2=0,C2=0,B2=0,A2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 121: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):2+ p(B2,C2):2+ tail(V,D2):2+ sum2(E2,F2,Out)
+     [V>=D2+1,D2>=0,V>=2,V1>=0,V1+1=F2,D2+1=E2,C2=0,B2=0,A2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 122: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):3+ p(B2,C2):1+ tail(V,D2):1+ sum2(E2,F2,Out)
+     [V>=2,V1>=0,V1+1=F2,E2=3,D2=0,C2=2,B2=0,A2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 123: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):3+ p(B2,C2):1+ tail(V,D2):2+ sum2(E2,F2,Out)
+     [V>=D2+1,D2>=0,V>=2,V1>=0,V1+1=F2,D2+3=E2,C2=2,B2=0,A2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 124: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):3+ p(A2,B2):2+ tail(V,C2):1+ sum2(D2,E2,Out)
+     [V>=A2+1,V>=2,A2>=0,V1>=0,V1+1=E2,D2=1,C2=0,B2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 125: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):3+ p(A2,B2):2+ tail(V,C2):2+ sum2(D2,E2,Out)
+     [V>=C2+1,V>=A2+1,C2>=0,V>=2,A2>=0,V1>=0,V1+1=E2,C2+1=D2,B2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 126: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):3+ p(A2,B2):3+ tail(V,C2):1+ sum2(D2,E2,Out)
+     [A2>=B2+1,V>=A2+1,B2>=1,V1>=0,V1+1=E2,B2+1=D2,C2=0,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 127: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(Y1,Z1):2+ head(V,A2):3+ p(A2,B2):3+ tail(V,C2):2+ sum2(D2,E2,Out)
+     [V>=C2+1,A2>=B2+1,V>=A2+1,C2>=0,B2>=1,V1>=0,B2+C2+1=D2,V1+1=E2,Z1=1,Y1=1,X1=1,W1=1] 
+* CE 128: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):2+ p(A2,B2):1+ tail(V,C2):1+ sum2(D2,E2,Out)
+     [V>=X1+1,X1>=2,V1>=0,V1+1=E2,D2=3,C2=0,B2=2,A2=0,Z1=0,Y1=1,W1=1] 
+* CE 129: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):2+ p(A2,B2):1+ tail(V,C2):2+ sum2(D2,E2,Out)
+     [V>=C2+1,V>=X1+1,C2>=0,X1>=2,V1>=0,V1+1=E2,C2+3=D2,B2=2,A2=0,Z1=0,Y1=1,W1=1] 
+* CE 130: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):2+ p(A2,B2):2+ tail(V,C2):1+ sum2(D2,E2,Out)
+     [V>=X1+1,X1>=2,V1>=0,V1+1=E2,D2=1,C2=0,B2=0,A2=0,Z1=0,Y1=1,W1=1] 
+* CE 131: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):2+ p(A2,B2):2+ tail(V,C2):2+ sum2(D2,E2,Out)
+     [V>=C2+1,V>=X1+1,C2>=0,X1>=2,V1>=0,V1+1=E2,C2+1=D2,B2=0,A2=0,Z1=0,Y1=1,W1=1] 
+* CE 132: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):3+ p(A2,B2):1+ tail(V,C2):1+ sum2(D2,E2,Out)
+     [V>=X1+1,X1>=2,V1>=0,V1+1=E2,D2=3,C2=0,B2=2,A2=0,Z1=0,Y1=1,W1=1] 
+* CE 133: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):3+ p(A2,B2):1+ tail(V,C2):2+ sum2(D2,E2,Out)
+     [V>=C2+1,V>=X1+1,C2>=0,X1>=2,V1>=0,V1+1=E2,C2+3=D2,B2=2,A2=0,Z1=0,Y1=1,W1=1] 
+* CE 134: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):3+ p(Z1,A2):2+ tail(V,B2):1+ sum2(C2,D2,Out)
+     [V>=Z1+1,V>=X1+1,Z1>=0,X1>=2,V1>=0,V1+1=D2,C2=1,B2=0,A2=0,Y1=1,W1=1] 
+* CE 135: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):3+ p(Z1,A2):2+ tail(V,B2):2+ sum2(C2,D2,Out)
+     [V>=B2+1,V>=Z1+1,V>=X1+1,B2>=0,Z1>=0,X1>=2,V1>=0,V1+1=D2,B2+1=C2,A2=0,Y1=1,W1=1] 
+* CE 136: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):3+ p(Z1,A2):3+ tail(V,B2):1+ sum2(C2,D2,Out)
+     [Z1>=A2+1,V>=Z1+1,V>=X1+1,A2>=1,X1>=2,V1>=0,V1+1=D2,A2+1=C2,B2=0,Y1=1,W1=1] 
+* CE 137: sum2(V,V1,Out) = 3+ isNil(V,W1):3+ head(V,X1):3+ isZero(X1,Y1):4+ head(V,Z1):3+ p(Z1,A2):3+ tail(V,B2):2+ sum2(C2,D2,Out)
+     [V>=B2+1,Z1>=A2+1,V>=Z1+1,V>=X1+1,B2>=0,A2>=1,X1>=2,V1>=0,A2+B2+1=C2,V1+1=D2,Y1=1,W1=1] 
+
+### Cost equations --> "Loop" of sum2/3 
+* CEs [127,137] --> Loop 55 
+* CEs [118,119,122,123,128,129,132,133] --> Loop 56 
+* CEs [120,121,124,125,126,130,131,134,135,136] --> Loop 57 
+* CEs [114,115,116,117] --> Loop 58 
+* CEs [86,87,88,89] --> Loop 59 
+* CEs [90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113] --> Loop 60 
+
+#### Loops of sum2/3 
+* Loop 55: sum2(V,V1,Out)->  sum2(V',V1',Out)
+                  [2*V>=V'+2,V'>=2,V1>=0,V>=3,V1+1=V1'] 
+* Loop 56: sum2(V,V1,Out)->  sum2(V',V1',Out)
+                  [V+2>=V',V'>=3,V1>=0,V>=2,V1+1=V1'] 
+* Loop 57: sum2(V,V1,Out)->  sum2(V',V1',Out)
+                  [V>=V',V'>=1,V1>=0,V>=2,V1+1=V1'] 
+* Loop 58: sum2(V,V1,Out)->  sum2(V',V1,Out)
+                  [V>=V'+1,V'>=0,V1>=0] 
+* Loop 59: sum2(A,B,B) [B>=0,A=0] 
+* Loop 60: sum2(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR sum2(V,V1,Out) 
+
+#### Partial ranking functions of CR sum2(V,V1,Out) 
+* Partial RF of phase [55,56,57,58]:
+  - RF of loop [58:1]:
+    V depends on loops [55:1,56:1] 
+
+
+### Resulting Chains:sum2(V,V1,Out) 
+* [[55,56,57,58]]...
+* [[55,56,57,58],60]
+* [[55,56,57,58],59]
+* [60]
+* [59]
+
+
+### Merging Chains  sum2/3 into  External patterns of execution 
+* [[59]] --> 1 
+* [[60],[60,[55,56,57,58]]] --> 2 
+* [[59,[55,56,57,58]]] --> 3 
+* [[[55,56,57,58]]] --> 4 
+
+
+### Specialization of cost equations times/3 
+* CE 40 is refined into CE [138,139,140,141,142,143,144,145] 
+
+
+#### Refined cost equations times/3 
+* CE 138: times(V,V1,Out) = 3+ gen(V,V1,W1,X1):1+ sum2(Y1,Z1,A2):1
+     [V1>=0,V>=0,A2=0,Z1=0,Y1=0,X1=0,W1=0,Out=0] 
+* CE 139: times(V,V1,Out) = 3+ gen(V,V1,W1,X1):1+ sum2(Y1,Z1,A2):2
+     [V1>=0,V>=0,A2=0,Z1=0,Y1=0,X1=0,W1=0,Out=0] 
+* CE 140: times(V,V1,Out) = 3+ gen(V,W1,X1,Y1):2+ sum2(Y1,Z1,A2):2
+     [Y1>=1,V>=1,Y1=W1+1,Y1=V1+1,A2=0,Z1=0,X1=0,Out=0] 
+* CE 141: times(V,V1,Out) = 3+ gen(V,W1,X1,Y1):2+ sum2(Y1,Z1,Out):3
+     [Out>=0,Y1>=1,V>=1,Y1=W1+1,Y1=V1+1,Z1=0,X1=0] 
+* CE 142: times(V,V1,Out) = 3+ gen(V,W1,X1,Y1):2+ sum2(Y1,Z1,Out):4
+     [Y1>=1,V>=1,Y1=W1+1,Y1=V1+1,Z1=0,X1=0] 
+* CE 143: times(V,V1,Out) = 3+ gen(V,V1,W1,X1):3+ sum2(X1,Y1,Z1):2
+     [X1>=2*V1+2,V1>=0,V>=2,Z1=0,Y1=0,W1=0,Out=0] 
+* CE 144: times(V,V1,Out) = 3+ gen(V,V1,W1,X1):3+ sum2(X1,Y1,Out):3
+     [X1>=2*V1+2,Out>=0,V1>=0,V>=2,Y1=0,W1=0] 
+* CE 145: times(V,V1,Out) = 3+ gen(V,V1,W1,X1):3+ sum2(X1,Y1,Out):4
+     [X1>=2*V1+2,V1>=0,V>=2,Y1=0,W1=0] 
+
+### Cost equations --> "Loop" of times/3 
+* CEs [142,145] --> Loop 61 
+* CEs [141,144] --> Loop 62 
+* CEs [138,139,140,143] --> Loop 63 
+
+#### Loops of times/3 
+* Loop 61: times(V,V1,Out) [V1>=0,V>=1] 
+* Loop 62: times(V,V1,Out) [Out>=0,V1>=0,V>=1] 
+* Loop 63: times(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR times(V,V1,Out) 
+
+#### Partial ranking functions of CR times(V,V1,Out) 
+
+
+### Resulting Chains:times(V,V1,Out) 
+* [63]
+* [62]
+* [61]...
+
+
+### Merging Chains  times/3 into  External patterns of execution 
+* [[63]] --> 1 
+* [[62]] --> 2 
+* [[61]] --> 3 
+
+
+### Specialization of cost equations start/4 
+* CE 2 is refined into CE [146] 
+* CE 3 is refined into CE [147] 
+* CE 4 is refined into CE [148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180] 
+* CE 5 is refined into CE [181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213] 
+* CE 6 is refined into CE [214,215,216,217,218,219] 
+* CE 7 is refined into CE [220,221,222,223,224,225] 
+* CE 8 is refined into CE [226] 
+* CE 9 is refined into CE [227,228] 
+* CE 10 is refined into CE [229,230,231] 
+* CE 11 is refined into CE [232,233,234] 
+* CE 12 is refined into CE [235,236,237,238] 
+* CE 13 is refined into CE [239,240,241,242] 
+* CE 14 is refined into CE [243,244,245,246] 
+* CE 15 is refined into CE [247,248,249] 
+* CE 16 is refined into CE [250,251] 
+* CE 17 is refined into CE [252,253,254] 
+* CE 18 is refined into CE [255,256,257,258] 
+* CE 19 is refined into CE [259,260,261] 
+* CE 20 is refined into CE [262,263,264,265,266] 
+* CE 21 is refined into CE [267,268] 
+
+
+#### Refined cost equations start/4 
+* CE 146: start(V,V1,V9,V13) = 1
+     [V13>=0,V9>=0,V1>=0,V=1] 
+* CE 147: start(V,V1,V9,V13) = 0
+     [V9>=0,V1>=0,V>=0] 
+* CE 148: start(V,V1,V9,V13) = 2+ head(W13,X13):1+ p(Y13,Z13):2+ tail(A14,B14):1+ sum2(C14,D14,E14):2
+     [D14>=1,D14=V13+1,E14=0,C14=1,B14=0,A14=0,Z13=0,Y13=1,X13=1,W13=0,V9=0,V1=1,V=1] 
+* CE 149: start(V,V1,V9,V13) = 2+ head(W13,X13):1+ p(Y13,Z13):2+ tail(A14,B14):1+ sum2(C14,D14,E14):3
+     [E14>=D14,D14>=1,D14=V13+1,C14=1,B14=0,A14=0,Z13=0,Y13=1,X13=1,W13=0,V9=0,V1=1,V=1] 
+* CE 150: start(V,V1,V9,V13) = 2+ head(W13,X13):1+ p(Y13,Z13):2+ tail(A14,B14):1+ sum2(C14,D14,E14):4
+     [D14>=1,D14=V13+1,C14=1,B14=0,A14=0,Z13=0,Y13=1,X13=1,W13=0,V9=0,V1=1,V=1] 
+* CE 151: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):1+ tail(V9,Z13):1+ sum2(A14,B14,C14):2
+     [B14>=1,V9>=0,B14=V13+1,C14=0,A14=3,Z13=0,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 152: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):1+ tail(V9,Z13):1+ sum2(A14,B14,C14):3
+     [C14>=B14,B14>=1,V9>=0,B14=V13+1,A14=3,Z13=0,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 153: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):1+ tail(V9,Z13):1+ sum2(A14,B14,C14):4
+     [B14>=1,V9>=0,B14=V13+1,A14=3,Z13=0,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 154: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):1+ tail(V9,Z13):2+ sum2(A14,B14,C14):2
+     [V9+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V13+1,C14=0,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 155: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):1+ tail(V9,Z13):2+ sum2(A14,B14,C14):3
+     [C14>=B14,V9+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V13+1,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 156: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):1+ tail(V9,Z13):2+ sum2(A14,B14,C14):4
+     [V9+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V13+1,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 157: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):2+ tail(V9,Z13):1+ sum2(A14,B14,C14):2
+     [B14>=1,V9>=0,B14=V13+1,C14=0,A14=1,Z13=0,Y13=0,X13=0,W13=0,V1=1,V=1] 
+* CE 158: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):2+ tail(V9,Z13):1+ sum2(A14,B14,C14):3
+     [C14>=B14,B14>=1,V9>=0,B14=V13+1,A14=1,Z13=0,Y13=0,X13=0,W13=0,V1=1,V=1] 
+* CE 159: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):2+ tail(V9,Z13):1+ sum2(A14,B14,C14):4
+     [B14>=1,V9>=0,B14=V13+1,A14=1,Z13=0,Y13=0,X13=0,W13=0,V1=1,V=1] 
+* CE 160: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):2+ tail(V9,Z13):2+ sum2(A14,B14,C14):2
+     [V9>=A14,B14>=1,A14>=1,A14=Z13+1,B14=V13+1,C14=0,Y13=0,X13=0,W13=0,V1=1,V=1] 
+* CE 161: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):2+ tail(V9,Z13):2+ sum2(A14,B14,C14):3
+     [C14>=B14,V9>=A14,B14>=1,A14>=1,A14=Z13+1,B14=V13+1,Y13=0,X13=0,W13=0,V1=1,V=1] 
+* CE 162: start(V,V1,V9,V13) = 2+ head(V9,W13):2+ p(X13,Y13):2+ tail(V9,Z13):2+ sum2(A14,B14,C14):4
+     [V9>=A14,B14>=1,A14>=1,A14=Z13+1,B14=V13+1,Y13=0,X13=0,W13=0,V1=1,V=1] 
+* CE 163: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(X13,Y13):1+ tail(V9,Z13):1+ sum2(A14,B14,C14):2
+     [B14>=1,V9>=1,B14=V13+1,C14=0,A14=3,Z13=0,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 164: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(X13,Y13):1+ tail(V9,Z13):1+ sum2(A14,B14,C14):3
+     [C14>=B14,B14>=1,V9>=1,B14=V13+1,A14=3,Z13=0,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 165: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(X13,Y13):1+ tail(V9,Z13):1+ sum2(A14,B14,C14):4
+     [B14>=1,V9>=1,B14=V13+1,A14=3,Z13=0,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 166: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(X13,Y13):1+ tail(V9,Z13):2+ sum2(A14,B14,C14):2
+     [V9+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V13+1,C14=0,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 167: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(X13,Y13):1+ tail(V9,Z13):2+ sum2(A14,B14,C14):3
+     [C14>=B14,V9+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V13+1,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 168: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(X13,Y13):1+ tail(V9,Z13):2+ sum2(A14,B14,C14):4
+     [V9+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V13+1,Y13=2,X13=0,W13=0,V1=1,V=1] 
+* CE 169: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):2+ tail(V9,Y13):1+ sum2(Z13,A14,B14):2
+     [V9>=W13+1,A14>=1,W13>=0,A14=V13+1,B14=0,Z13=1,Y13=0,X13=0,V1=1,V=1] 
+* CE 170: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):2+ tail(V9,Y13):1+ sum2(Z13,A14,B14):3
+     [B14>=A14,V9>=W13+1,A14>=1,W13>=0,A14=V13+1,Z13=1,Y13=0,X13=0,V1=1,V=1] 
+* CE 171: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):2+ tail(V9,Y13):1+ sum2(Z13,A14,B14):4
+     [V9>=W13+1,A14>=1,W13>=0,A14=V13+1,Z13=1,Y13=0,X13=0,V1=1,V=1] 
+* CE 172: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):2+ tail(V9,Y13):2+ sum2(Z13,A14,B14):2
+     [V9>=Z13,V9>=W13+1,A14>=1,Z13>=1,W13>=0,Z13=Y13+1,A14=V13+1,B14=0,X13=0,V1=1,V=1] 
+* CE 173: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):2+ tail(V9,Y13):2+ sum2(Z13,A14,B14):3
+     [B14>=A14,V9>=Z13,V9>=W13+1,A14>=1,Z13>=1,W13>=0,Z13=Y13+1,A14=V13+1,X13=0,V1=1,V=1] 
+* CE 174: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):2+ tail(V9,Y13):2+ sum2(Z13,A14,B14):4
+     [V9>=Z13,V9>=W13+1,A14>=1,Z13>=1,W13>=0,Z13=Y13+1,A14=V13+1,X13=0,V1=1,V=1] 
+* CE 175: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):3+ tail(V9,Y13):1+ sum2(Z13,A14,B14):2
+     [W13>=Z13,V9>=W13+1,A14>=1,Z13>=2,Z13=X13+1,A14=V13+1,B14=0,Y13=0,V1=1,V=1] 
+* CE 176: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):3+ tail(V9,Y13):1+ sum2(Z13,A14,B14):3
+     [B14>=A14,W13>=Z13,V9>=W13+1,A14>=1,Z13>=2,Z13=X13+1,A14=V13+1,Y13=0,V1=1,V=1] 
+* CE 177: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):3+ tail(V9,Y13):1+ sum2(Z13,A14,B14):4
+     [W13>=Z13,V9>=W13+1,A14>=1,Z13>=2,Z13=X13+1,A14=V13+1,Y13=0,V1=1,V=1] 
+* CE 178: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):3+ tail(V9,Y13):2+ sum2(Z13,A14,B14):2
+     [W13+Y13>=Z13,Z13>=Y13+2,V9>=Y13+1,V9>=W13+1,A14>=1,Y13>=0,Z13=X13+Y13+1,A14=V13+1,B14=0,V1=1,V=1] 
+* CE 179: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):3+ tail(V9,Y13):2+ sum2(Z13,A14,B14):3
+     [W13+Y13>=Z13,B14>=A14,Z13>=Y13+2,V9>=Y13+1,V9>=W13+1,A14>=1,Y13>=0,Z13=X13+Y13+1,A14=V13+1,V1=1,V=1] 
+* CE 180: start(V,V1,V9,V13) = 2+ head(V9,W13):3+ p(W13,X13):3+ tail(V9,Y13):2+ sum2(Z13,A14,B14):4
+     [W13+Y13>=Z13,Z13>=Y13+2,V9>=Y13+1,V9>=W13+1,A14>=1,Y13>=0,Z13=X13+Y13+1,A14=V13+1,V1=1,V=1] 
+* CE 181: start(V,V1,V9,V13) = 1+ head(W13,X13):1+ p(Y13,Z13):2+ tail(A14,B14):1+ sum2(C14,D14,E14):2
+     [D14>=1,D14=V9+1,E14=0,C14=1,B14=0,A14=0,Z13=0,Y13=1,X13=1,W13=0,V1=0,V=1] 
+* CE 182: start(V,V1,V9,V13) = 1+ head(W13,X13):1+ p(Y13,Z13):2+ tail(A14,B14):1+ sum2(C14,D14,E14):3
+     [E14>=D14,D14>=1,D14=V9+1,C14=1,B14=0,A14=0,Z13=0,Y13=1,X13=1,W13=0,V1=0,V=1] 
+* CE 183: start(V,V1,V9,V13) = 1+ head(W13,X13):1+ p(Y13,Z13):2+ tail(A14,B14):1+ sum2(C14,D14,E14):4
+     [D14>=1,D14=V9+1,C14=1,B14=0,A14=0,Z13=0,Y13=1,X13=1,W13=0,V1=0,V=1] 
+* CE 184: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):1+ tail(V1,Z13):1+ sum2(A14,B14,C14):2
+     [B14>=1,V1>=0,B14=V9+1,C14=0,A14=3,Z13=0,Y13=2,X13=0,W13=0,V=1] 
+* CE 185: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):1+ tail(V1,Z13):1+ sum2(A14,B14,C14):3
+     [C14>=B14,B14>=1,V1>=0,B14=V9+1,A14=3,Z13=0,Y13=2,X13=0,W13=0,V=1] 
+* CE 186: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):1+ tail(V1,Z13):1+ sum2(A14,B14,C14):4
+     [B14>=1,V1>=0,B14=V9+1,A14=3,Z13=0,Y13=2,X13=0,W13=0,V=1] 
+* CE 187: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):1+ tail(V1,Z13):2+ sum2(A14,B14,C14):2
+     [V1+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V9+1,C14=0,Y13=2,X13=0,W13=0,V=1] 
+* CE 188: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):1+ tail(V1,Z13):2+ sum2(A14,B14,C14):3
+     [C14>=B14,V1+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V9+1,Y13=2,X13=0,W13=0,V=1] 
+* CE 189: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):1+ tail(V1,Z13):2+ sum2(A14,B14,C14):4
+     [V1+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V9+1,Y13=2,X13=0,W13=0,V=1] 
+* CE 190: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):2+ tail(V1,Z13):1+ sum2(A14,B14,C14):2
+     [B14>=1,V1>=0,B14=V9+1,C14=0,A14=1,Z13=0,Y13=0,X13=0,W13=0,V=1] 
+* CE 191: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):2+ tail(V1,Z13):1+ sum2(A14,B14,C14):3
+     [C14>=B14,B14>=1,V1>=0,B14=V9+1,A14=1,Z13=0,Y13=0,X13=0,W13=0,V=1] 
+* CE 192: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):2+ tail(V1,Z13):1+ sum2(A14,B14,C14):4
+     [B14>=1,V1>=0,B14=V9+1,A14=1,Z13=0,Y13=0,X13=0,W13=0,V=1] 
+* CE 193: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):2+ tail(V1,Z13):2+ sum2(A14,B14,C14):2
+     [V1>=A14,B14>=1,A14>=1,A14=Z13+1,B14=V9+1,C14=0,Y13=0,X13=0,W13=0,V=1] 
+* CE 194: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):2+ tail(V1,Z13):2+ sum2(A14,B14,C14):3
+     [C14>=B14,V1>=A14,B14>=1,A14>=1,A14=Z13+1,B14=V9+1,Y13=0,X13=0,W13=0,V=1] 
+* CE 195: start(V,V1,V9,V13) = 1+ head(V1,W13):2+ p(X13,Y13):2+ tail(V1,Z13):2+ sum2(A14,B14,C14):4
+     [V1>=A14,B14>=1,A14>=1,A14=Z13+1,B14=V9+1,Y13=0,X13=0,W13=0,V=1] 
+* CE 196: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(X13,Y13):1+ tail(V1,Z13):1+ sum2(A14,B14,C14):2
+     [B14>=1,V1>=1,B14=V9+1,C14=0,A14=3,Z13=0,Y13=2,X13=0,W13=0,V=1] 
+* CE 197: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(X13,Y13):1+ tail(V1,Z13):1+ sum2(A14,B14,C14):3
+     [C14>=B14,B14>=1,V1>=1,B14=V9+1,A14=3,Z13=0,Y13=2,X13=0,W13=0,V=1] 
+* CE 198: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(X13,Y13):1+ tail(V1,Z13):1+ sum2(A14,B14,C14):4
+     [B14>=1,V1>=1,B14=V9+1,A14=3,Z13=0,Y13=2,X13=0,W13=0,V=1] 
+* CE 199: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(X13,Y13):1+ tail(V1,Z13):2+ sum2(A14,B14,C14):2
+     [V1+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V9+1,C14=0,Y13=2,X13=0,W13=0,V=1] 
+* CE 200: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(X13,Y13):1+ tail(V1,Z13):2+ sum2(A14,B14,C14):3
+     [C14>=B14,V1+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V9+1,Y13=2,X13=0,W13=0,V=1] 
+* CE 201: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(X13,Y13):1+ tail(V1,Z13):2+ sum2(A14,B14,C14):4
+     [V1+2>=A14,B14>=1,A14>=3,A14=Z13+3,B14=V9+1,Y13=2,X13=0,W13=0,V=1] 
+* CE 202: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):2+ tail(V1,Y13):1+ sum2(Z13,A14,B14):2
+     [V1>=W13+1,A14>=1,W13>=0,A14=V9+1,B14=0,Z13=1,Y13=0,X13=0,V=1] 
+* CE 203: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):2+ tail(V1,Y13):1+ sum2(Z13,A14,B14):3
+     [B14>=A14,V1>=W13+1,A14>=1,W13>=0,A14=V9+1,Z13=1,Y13=0,X13=0,V=1] 
+* CE 204: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):2+ tail(V1,Y13):1+ sum2(Z13,A14,B14):4
+     [V1>=W13+1,A14>=1,W13>=0,A14=V9+1,Z13=1,Y13=0,X13=0,V=1] 
+* CE 205: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):2+ tail(V1,Y13):2+ sum2(Z13,A14,B14):2
+     [V1>=Z13,V1>=W13+1,A14>=1,Z13>=1,W13>=0,Z13=Y13+1,A14=V9+1,B14=0,X13=0,V=1] 
+* CE 206: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):2+ tail(V1,Y13):2+ sum2(Z13,A14,B14):3
+     [B14>=A14,V1>=Z13,V1>=W13+1,A14>=1,Z13>=1,W13>=0,Z13=Y13+1,A14=V9+1,X13=0,V=1] 
+* CE 207: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):2+ tail(V1,Y13):2+ sum2(Z13,A14,B14):4
+     [V1>=Z13,V1>=W13+1,A14>=1,Z13>=1,W13>=0,Z13=Y13+1,A14=V9+1,X13=0,V=1] 
+* CE 208: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):3+ tail(V1,Y13):1+ sum2(Z13,A14,B14):2
+     [W13>=Z13,V1>=W13+1,A14>=1,Z13>=2,Z13=X13+1,A14=V9+1,B14=0,Y13=0,V=1] 
+* CE 209: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):3+ tail(V1,Y13):1+ sum2(Z13,A14,B14):3
+     [B14>=A14,W13>=Z13,V1>=W13+1,A14>=1,Z13>=2,Z13=X13+1,A14=V9+1,Y13=0,V=1] 
+* CE 210: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):3+ tail(V1,Y13):1+ sum2(Z13,A14,B14):4
+     [W13>=Z13,V1>=W13+1,A14>=1,Z13>=2,Z13=X13+1,A14=V9+1,Y13=0,V=1] 
+* CE 211: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):3+ tail(V1,Y13):2+ sum2(Z13,A14,B14):2
+     [W13+Y13>=Z13,Z13>=Y13+2,V1>=Y13+1,V1>=W13+1,A14>=1,Y13>=0,Z13=X13+Y13+1,A14=V9+1,B14=0,V=1] 
+* CE 212: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):3+ tail(V1,Y13):2+ sum2(Z13,A14,B14):3
+     [W13+Y13>=Z13,B14>=A14,Z13>=Y13+2,V1>=Y13+1,V1>=W13+1,A14>=1,Y13>=0,Z13=X13+Y13+1,A14=V9+1,V=1] 
+* CE 213: start(V,V1,V9,V13) = 1+ head(V1,W13):3+ p(W13,X13):3+ tail(V1,Y13):2+ sum2(Z13,A14,B14):4
+     [W13+Y13>=Z13,Z13>=Y13+2,V1>=Y13+1,V1>=W13+1,A14>=1,Y13>=0,Z13=X13+Y13+1,A14=V9+1,V=1] 
+* CE 214: start(V,V1,V9,V13) = 2+ tail(V9,W13):1+ sum2(X13,V13,V13):1
+     [V13>=0,V9>=0,X13=0,W13=0,V1=2,V=1] 
+* CE 215: start(V,V1,V9,V13) = 2+ tail(V9,W13):1+ sum2(X13,V13,Y13):2
+     [V13>=0,V9>=0,Y13=0,X13=0,W13=0,V1=2,V=1] 
+* CE 216: start(V,V1,V9,V13) = 2+ tail(V9,W13):2+ sum2(X13,V13,V13):1
+     [V13>=0,V9>=1,X13=0,W13=0,V1=2,V=1] 
+* CE 217: start(V,V1,V9,V13) = 2+ tail(V9,W13):2+ sum2(W13,V13,X13):2
+     [V9>=W13+1,V13>=0,W13>=0,X13=0,V1=2,V=1] 
+* CE 218: start(V,V1,V9,V13) = 2+ tail(V9,W13):2+ sum2(W13,V13,X13):3
+     [X13>=V13,V9>=W13+1,V13>=0,W13>=1,V1=2,V=1] 
+* CE 219: start(V,V1,V9,V13) = 2+ tail(V9,W13):2+ sum2(W13,V13,X13):4
+     [V9>=W13+1,V13>=0,W13>=1,V1=2,V=1] 
+* CE 220: start(V,V1,V9,V13) = 1+ tail(V1,W13):1+ sum2(X13,V9,V9):1
+     [V9>=0,V1>=0,X13=0,W13=0,V=2] 
+* CE 221: start(V,V1,V9,V13) = 1+ tail(V1,W13):1+ sum2(X13,V9,Y13):2
+     [V9>=0,V1>=0,Y13=0,X13=0,W13=0,V=2] 
+* CE 222: start(V,V1,V9,V13) = 1+ tail(V1,W13):2+ sum2(X13,V9,V9):1
+     [V9>=0,V1>=1,X13=0,W13=0,V=2] 
+* CE 223: start(V,V1,V9,V13) = 1+ tail(V1,W13):2+ sum2(W13,V9,X13):2
+     [V1>=W13+1,V9>=0,W13>=0,X13=0,V=2] 
+* CE 224: start(V,V1,V9,V13) = 1+ tail(V1,W13):2+ sum2(W13,V9,X13):3
+     [X13>=V9,V1>=W13+1,V9>=0,W13>=1,V=2] 
+* CE 225: start(V,V1,V9,V13) = 1+ tail(V1,W13):2+ sum2(W13,V9,X13):4
+     [V1>=W13+1,V9>=0,W13>=1,V=2] 
+* CE 226: start(V,V1,V9,V13) = 1
+     [V13>=0,V9>=0,V1>=0,V=2] 
+* CE 227: start(V,V1,V9,V13) = 1+ gen(V1,V9,W13,X13):1
+     [W13>=1,V9>=0,V1>=0,W13=V13+1,X13=0,V=1] 
+* CE 228: start(V,V1,V9,V13) = 1+ gen(V1,V9,W13,X13):4
+     [V1>=W13+1,X13>=V9+1,W13>=1,V9>=0,W13=V13+1,V=1] 
+* CE 229: start(V,V1,V9,V13) = 0+ times(V,V1,W13):1
+     [V1>=0,V>=0,W13=0] 
+* CE 230: start(V,V1,V9,V13) = 0+ times(V,V1,W13):2
+     [W13>=0,V1>=0,V>=1] 
+* CE 231: start(V,V1,V9,V13) = 0+ times(V,V1,W13):3
+     [V1>=0,V>=1] 
+* CE 232: start(V,V1,V9,V13) = 1+ gen(V,V1,W13,X13):1
+     [V1>=0,V>=0,X13=0,W13=0] 
+* CE 233: start(V,V1,V9,V13) = 1+ gen(V,W13,X13,Y13):2
+     [Y13>=1,V>=1,Y13=W13+1,Y13=V1+1,X13=0] 
+* CE 234: start(V,V1,V9,V13) = 1+ gen(V,V1,W13,X13):3
+     [X13>=2*V1+2,V1>=0,V>=2,W13=0] 
+* CE 235: start(V,V1,V9,V13) = 0+ gen(V,V1,V9,W13):1
+     [V9>=0,V1>=0,V>=0,W13=0] 
+* CE 236: start(V,V1,V9,V13) = 0+ gen(V,W13,X13,Y13):2
+     [Y13>=1,V>=1,Y13=W13+1,Y13=V1+1,X13=0,V9=0] 
+* CE 237: start(V,V1,V9,V13) = 0+ gen(V,V1,W13,X13):3
+     [X13>=2*V1+2,V1>=0,V>=2,W13=0,V9=0] 
+* CE 238: start(V,V1,V9,V13) = 0+ gen(V,V1,V9,W13):4
+     [V>=V9+1,W13>=V1+1,V9>=1,V1>=0] 
+* CE 239: start(V,V1,V9,V13) = 1+ sum2(W13,X13,Y13):1
+     [Y13=0,X13=0,W13=0,V=0] 
+* CE 240: start(V,V1,V9,V13) = 1+ sum2(V,W13,X13):2
+     [V>=0,X13=0,W13=0] 
+* CE 241: start(V,V1,V9,V13) = 1+ sum2(V,W13,X13):3
+     [X13>=0,V>=1,W13=0] 
+* CE 242: start(V,V1,V9,V13) = 1+ sum2(V,W13,X13):4
+     [V>=1,W13=0] 
+* CE 243: start(V,V1,V9,V13) = 0+ sum2(W13,V1,V1):1
+     [V1>=0,W13=0,V=0] 
+* CE 244: start(V,V1,V9,V13) = 0+ sum2(V,V1,W13):2
+     [V1>=0,V>=0,W13=0] 
+* CE 245: start(V,V1,V9,V13) = 0+ sum2(V,V1,W13):3
+     [W13>=V1,V1>=0,V>=1] 
+* CE 246: start(V,V1,V9,V13) = 0+ sum2(V,V1,W13):4
+     [V1>=0,V>=1] 
+* CE 247: start(V,V1,V9,V13) = 0+ isNil(W13,X13):1
+     [X13=2,W13=0,V=0] 
+* CE 248: start(V,V1,V9,V13) = 0+ isNil(V,W13):2
+     [V>=0,W13=0] 
+* CE 249: start(V,V1,V9,V13) = 0+ isNil(V,W13):3
+     [V>=1,W13=1] 
+* CE 250: start(V,V1,V9,V13) = 0+ tail(V,W13):1
+     [V>=0,W13=0] 
+* CE 251: start(V,V1,V9,V13) = 0+ tail(V,W13):2
+     [V>=W13+1,W13>=0] 
+* CE 252: start(V,V1,V9,V13) = 0+ head(W13,X13):1
+     [X13=1,W13=0,V=0] 
+* CE 253: start(V,V1,V9,V13) = 0+ head(V,W13):2
+     [V>=0,W13=0] 
+* CE 254: start(V,V1,V9,V13) = 0+ head(V,W13):3
+     [V>=W13+1,W13>=0] 
+* CE 255: start(V,V1,V9,V13) = 0+ isZero(W13,X13):1
+     [X13=2,W13=0,V=0] 
+* CE 256: start(V,V1,V9,V13) = 0+ isZero(W13,X13):2
+     [X13=1,W13=1,V=1] 
+* CE 257: start(V,V1,V9,V13) = 0+ isZero(V,W13):3
+     [V>=0,W13=0] 
+* CE 258: start(V,V1,V9,V13) = 0+ isZero(V,W13):4
+     [V>=2,W13=1] 
+* CE 259: start(V,V1,V9,V13) = 0+ p(W13,X13):1
+     [X13=2,W13=0,V=0] 
+* CE 260: start(V,V1,V9,V13) = 0+ p(V,W13):2
+     [V>=0,W13=0] 
+* CE 261: start(V,V1,V9,V13) = 0+ p(V,W13):3
+     [V>=W13+1,W13>=1] 
+* CE 262: start(V,V1,V9,V13) = 0+ ge(W13,V1,X13):1
+     [V1>=1,X13=1,W13=0,V=0] 
+* CE 263: start(V,V1,V9,V13) = 0+ ge(V,W13,X13):2
+     [V>=0,X13=2,W13=0,V1=0] 
+* CE 264: start(V,V1,V9,V13) = 0+ ge(V,V1,W13):3
+     [V1>=0,V>=0,W13=0] 
+* CE 265: start(V,V1,V9,V13) = 0+ ge(V,V1,W13):4
+     [V1>=V+1,V>=1,W13=1] 
+* CE 266: start(V,V1,V9,V13) = 0+ ge(V,V1,W13):5
+     [V>=V1,V1>=1,W13=2] 
+* CE 267: start(V,V1,V9,V13) = 0+ a(W13):1
+     [W13=0] 
+* CE 268: start(V,V1,V9,V13) = 0+ a(W13):2
+     [W13=1] 
+
+### Cost equations --> "Loop" of start/4 
+* CEs [146,147,148,149,151,152,154,155,157,158,160,161,163,164,166,167,169,170,172,173,175,176,178,179,181,182,184,185,187,188,190,191,193,194,196,197,199,200,202,203,205,206,208,209,211,212,214,215,216,217,218,220,221,222,223,224,226,227,228,229,230,232,233,234,235,236,237,238,239,240,241,243,244,245,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268] --> Loop 64 
+* CEs [225] --> Loop 65 
+* CEs [219] --> Loop 66 
+* CEs [150,153,156,159,162,165,168,171,174,177,180] --> Loop 67 
+* CEs [183,186,189,192,195,198,201,204,207,210,213,231,242,246] --> Loop 68 
+
+#### Loops of start/4 
+* Loop 64: start(V,V1,V9,V13) [] 
+* Loop 65: start(V,V1,V9,V13) [V9>=0,V1>=2,V=2] 
+* Loop 66: start(V,V1,V9,V13) [V13>=0,V9>=2,V1=2,V=1] 
+* Loop 67: start(V,V1,V9,V13) [V13>=0,V9>=0,V1=1,V=1] 
+* Loop 68: start(V,V1,V9,V13) [V>=1] 
+
+### Ranking functions of CR start(V,V1,V9,V13) 
+
+#### Partial ranking functions of CR start(V,V1,V9,V13) 
+
+
+### Resulting Chains:start(V,V1,V9,V13) 
+* [68]...
+* [67]...
+* [66]...
+* [65]...
+* [64]
+
+
+### Merging Chains  start/4 into  External patterns of execution 
+* [[64]] --> 1 
+* [[67]] --> 2 
+* [[66]] --> 3 
+* [[65]] --> 4 
+* [[68]] --> 5 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of a(Out):
+* Chain [31]: 1
+  with precondition: [Out=0] 
+
+* Chain [30]: 1
+  with precondition: [Out=1] 
+
+
+#### Cost of loops [32] 
+
+ * loop 32:ge(V,V1,Out) -> [ge(V',V1',Out')] 
+1
+#### Cost of phase [32]:ge(V,V1,Out) -> [ge(V',V1',Out')] 
+1*it(32)+0
+  Such that:it(32) =< V
+it(32) =< V-V'
+it(32) =< V1
+it(32) =< V1-V1'
+
+#### Cost of phase [32]:ge(V,V1,Out) -> [ge(V',V1',Out')] 
+1*it(32)+0
+  Such that:it(32) =< V
+it(32) =< V-V'
+it(32) =< V1
+it(32) =< V1-V1'
+
+#### Cost of phase [32]:ge(V,V1,Out) -> [ge(V',V1',Out')] 
+1*it(32)+0
+  Such that:it(32) =< V
+it(32) =< V-V'
+it(32) =< V1
+it(32) =< V1-V1'
+
+#### Cost of chains of ge(V,V1,Out):
+* Chain [[32],35]: 1*it(32)+1
+  Such that:it(32) =< V
+
+  with precondition: [Out=1,V>=1,V1>=V+1] 
+
+* Chain [[32],34]: 1*it(32)+1
+  Such that:it(32) =< V1
+
+  with precondition: [Out=2,V1>=1,V>=V1] 
+
+* Chain [[32],33]: 1*it(32)+0
+  Such that:it(32) =< V1
+
+  with precondition: [Out=0,V>=1,V1>=1] 
+
+* Chain [35]: 1
+  with precondition: [V=0,Out=1,V1>=1] 
+
+* Chain [34]: 1
+  with precondition: [V1=0,Out=2,V>=0] 
+
+* Chain [33]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of loops [36] 
+
+ * loop 36:gen(V,V1,V9,Out) -> [gen(V',V1',V9',Out')] 
+1*s(7)+3
+  Such that:s(7) =< V9'
+
+#### Cost of phase [36]:gen(V,V1,V9,Out) -> [gen(V',V1',V9',Out')] 
+3*it(36)+1*s(8)+0
+  Such that:aux(2) =< V
+it(36) =< V-V9
+it(36) =< V-V9-V'+V9'
+s(8) =< it(36)*aux(2)
+
+#### Cost of chains of gen(V,V1,V9,Out):
+* Chain [[36],39]: 3*it(36)+4*s(2)+1*s(8)+3
+  Such that:it(36) =< V-V9
+aux(3) =< V
+s(2) =< aux(3)
+s(8) =< it(36)*aux(3)
+
+  with precondition: [V1>=0,V9>=1,Out>=V1+1,V>=V9+1] 
+
+* Chain [39]: 3*s(2)+1*s(3)+3
+  Such that:s(3) =< V9
+aux(1) =< V
+s(2) =< aux(1)
+
+  with precondition: [Out=0,V>=0,V1>=0,V9>=0] 
+
+* Chain [38]: 2
+  with precondition: [V9=0,Out=0,V>=1,V1>=0] 
+
+* Chain [37,[36],39]: 7*it(36)+1*s(8)+6
+  Such that:aux(4) =< V
+it(36) =< aux(4)
+s(8) =< it(36)*aux(4)
+
+  with precondition: [V9=0,V>=2,V1>=0,Out>=2*V1+2] 
+
+* Chain [37,39]: 3*s(2)+1*s(3)+6
+  Such that:s(3) =< 1
+aux(1) =< V
+s(2) =< aux(1)
+
+  with precondition: [V9=0,Out=V1+1,V>=1,Out>=1] 
+
+
+#### Cost of chains of head(V,Out):
+* Chain [42]: 1
+  with precondition: [V=0,Out=1] 
+
+* Chain [41]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [40]: 1
+  with precondition: [Out>=0,V>=Out+1] 
+
+
+#### Cost of loops [43] 
+
+ * loop 43:p(V,Out) -> [p(V',Out')] 
+1
+#### Cost of phase [43]:p(V,Out) -> [p(V',Out')] 
+1*it(43)+0
+  Such that:it(43) =< V
+it(43) =< V-V'
+
+#### Cost of chains of p(V,Out):
+* Chain [[43],44]: 1*it(43)+1
+  Such that:it(43) =< Out
+
+  with precondition: [Out>=1,V>=Out+1] 
+
+* Chain [45]: 1
+  with precondition: [V=0,Out=2] 
+
+* Chain [44]: 1
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of chains of isNil(V,Out):
+* Chain [48]: 1
+  with precondition: [V=0,Out=2] 
+
+* Chain [47]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [46]: 1
+  with precondition: [Out=1,V>=1] 
+
+
+#### Cost of loops [49] 
+
+ * loop 49:isZero(V,Out) -> [isZero(V',Out')] 
+1
+#### Cost of phase [49]:isZero(V,Out) -> [isZero(V',Out')] 
+1*it(49)+0
+  Such that:it(49) =< V
+it(49) =< V-V'
+
+#### Cost of phase [49]:isZero(V,Out) -> [isZero(V',Out')] 
+1*it(49)+0
+  Such that:it(49) =< V
+it(49) =< V-V'
+
+#### Cost of chains of isZero(V,Out):
+* Chain [[49],51]: 1*it(49)+1
+  Such that:it(49) =< V
+
+  with precondition: [Out=1,V>=2] 
+
+* Chain [[49],50]: 1*it(49)+0
+  Such that:it(49) =< V
+
+  with precondition: [Out=0,V>=2] 
+
+* Chain [52]: 1
+  with precondition: [V=0,Out=2] 
+
+* Chain [51]: 1
+  with precondition: [V=1,Out=1] 
+
+* Chain [50]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of chains of tail(V,Out):
+* Chain [54]: 1
+  with precondition: [Out=0,V>=0] 
+
+* Chain [53]: 1
+  with precondition: [Out>=0,V>=Out+1] 
+
+
+#### Cost of loops [55,56,57,58] 
+
+ * loop 55:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+3*s(17)+9
+  Such that:s(16) =< V
+s(17) =< s(16)
+
+ * loop 56:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+4*s(23)+9
+  Such that:s(22) =< V
+s(23) =< s(22)
+
+ * loop 57:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+2*s(34)+5*s(33)+9
+  Such that:s(31) =< V
+s(32) =< V'
+s(33) =< s(31)
+s(34) =< s(32)
+
+ * loop 58:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+7
+#### Cost of phase [55,56,57,58]:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+34*it(55)+3*s(35)+4*s(37)+2*s(39)+5*s(40)+0
+#### Cost of phase [55,56,57,58]:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+34*it(55)+3*s(35)+4*s(37)+2*s(39)+5*s(40)+0
+#### Cost of loops [55,56,57,58] 
+
+ * loop 55:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+3*s(17)+9
+  Such that:s(16) =< V
+s(17) =< s(16)
+
+ * loop 56:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+4*s(23)+9
+  Such that:s(22) =< V
+s(23) =< s(22)
+
+ * loop 57:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+2*s(34)+5*s(33)+9
+  Such that:s(31) =< V
+s(32) =< V'
+s(33) =< s(31)
+s(34) =< s(32)
+
+ * loop 58:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+7
+#### Cost of phase [55,56,57,58]:sum2(V,V1,Out) -> [] 
+34*it(55)+7*it([60])+3*s(35)+4*s(37)+2*s(39)+5*s(40)+6*s(55)+0
+  Such that:aux(34) =< 1
+it([60]) =< aux(34)
+
+#### Cost of phase [55,56,57,58]:sum2(V,V1,Out) -> [sum2(V',V1',Out')] 
+34*it(55)+3*s(35)+4*s(37)+2*s(39)+5*s(40)+0
+#### Cost of chains of sum2(V,V1,Out):
+* Chain [[55,56,57,58]]...: 48*it(55)+0
+  with precondition: [V>=1,V1>=0] 
+
+* Chain [[55,56,57,58],60]: 34*it(55)+7*it([60])+3*s(35)+4*s(37)+2*s(39)+5*s(40)+6*s(55)+0
+  Such that:aux(34) =< 1
+it([60]) =< aux(34)
+
+  with precondition: [Out=0,V>=1,V1>=0] 
+
+* Chain [[55,56,57,58],59]: 48*it(55)+6
+  with precondition: [V>=1,V1>=0,Out>=V1] 
+
+* Chain [60]: 6*s(44)+2*s(46)+5
+  Such that:aux(21) =< 1
+aux(22) =< V
+s(46) =< aux(21)
+s(44) =< aux(22)
+
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+* Chain [59]: 6
+  with precondition: [V=0,V1=Out,V1>=0] 
+
+
+#### Cost of chains of times(V,V1,Out):
+* Chain [63]: 16*s(75)+28*s(81)+168*s(83)+6*s(90)+1*s(94)+14
+  Such that:s(87) =< V1+1
+aux(39) =< 1
+aux(40) =< V
+s(81) =< aux(39)
+s(75) =< aux(40)
+s(94) =< s(75)*aux(40)
+s(90) =< s(87)
+
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+* Chain [62]: 1*s(100)+10*s(102)+96*s(103)+1*s(106)+15
+  Such that:s(100) =< 1
+aux(41) =< V
+s(102) =< aux(41)
+s(106) =< s(102)*aux(41)
+
+  with precondition: [V>=1,V1>=0,Out>=0] 
+
+* Chain [61]...: 1*s(108)+10*s(110)+96*s(111)+1*s(114)+9
+  Such that:s(108) =< 1
+aux(42) =< V
+s(110) =< aux(42)
+s(114) =< s(110)*aux(42)
+
+  with precondition: [V>=1,V1>=0] 
+
+
+#### Cost of chains of start(V,V1,V9,V13):
+* Chain [68]...: 720*s(116)+2*s(125)+1*s(129)+10*s(131)+1*s(132)+9
+  Such that:s(129) =< 1
+s(130) =< V
+aux(43) =< V1
+s(125) =< aux(43)
+s(131) =< s(130)
+s(132) =< s(131)*s(130)
+
+  with precondition: [V>=1] 
+
+* Chain [67]...: 528*s(136)+2*s(145)+5
+  Such that:aux(44) =< V9
+s(145) =< aux(44)
+
+  with precondition: [V=1,V1=1,V9>=0,V13>=0] 
+
+* Chain [66]...: 48*s(149)+3
+  with precondition: [V=1,V1=2,V9>=2,V13>=0] 
+
+* Chain [65]...: 48*s(150)+2
+  with precondition: [V=2,V1>=2,V9>=0] 
+
+* Chain [64]: 319*s(153)+3024*s(155)+24*s(160)+12*s(166)+29*s(178)+6*s(217)+12*s(236)+37*s(248)+6*s(287)+1*s(314)+3*s(316)+1*s(319)+72*s(324)+4*s(325)+6*s(326)+3*s(351)+1*s(354)+15
+  Such that:s(351) =< V-V9
+s(320) =< V1+1
+s(316) =< V1-V13
+s(284) =< 2*V1
+s(214) =< 2*V9
+s(314) =< V13+1
+aux(53) =< 1
+aux(54) =< 3
+aux(55) =< V
+aux(56) =< V1
+aux(57) =< V1+2
+aux(58) =< V9
+aux(59) =< V9+2
+s(153) =< aux(53)
+s(324) =< aux(55)
+s(248) =< aux(56)
+s(178) =< aux(58)
+s(160) =< aux(54)
+s(166) =< aux(59)
+s(217) =< s(214)
+s(236) =< aux(57)
+s(287) =< s(284)
+s(325) =< s(324)*aux(55)
+s(326) =< s(320)
+s(354) =< s(351)*aux(55)
+s(319) =< s(316)*aux(56)
+
+  with precondition: [] 
+
+
+Closed-form bounds of start(V,V1,V9,V13): 
+-------------------------------------
+* Chain [68]... with precondition: [V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [67]... with precondition: [V=1,V1=1,V9>=0,V13>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [66]... with precondition: [V=1,V1=2,V9>=2,V13>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [65]... with precondition: [V=2,V1>=2,V9>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [64] with precondition: [] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V1,V9,V13): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 58 ms.
+* Invariants computed in 55 ms.
+   - Backward Invariants 30 ms.
+   - Transitive Invariants 9 ms.
+* Refinement performed in 463 ms.
+* Termination proved in 10 ms.
+* Upper bounds computed in 355 ms.
+   - Equation cost structures 242 ms.
+   - Phase cost structures 120 ms.
+   - Chain cost structures 21 ms.
+   - Solving cost expressions 3 ms.
+* Total analysis performed in 998 ms.
+

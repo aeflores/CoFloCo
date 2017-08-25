@@ -1,0 +1,1682 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [gt/3]
+1. non_recursive  : [id/2]
+2. non_recursive  : [if/4]
+3. non_recursive  : [not/2]
+4. recursive  : [plus/3]
+5. recursive [non_tail] : [times/3]
+6. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into gt/3
+1. SCC is completely evaluated into other SCCs
+2. SCC is partially evaluated into if/4
+3. SCC is completely evaluated into other SCCs
+4. SCC is partially evaluated into plus/3
+5. SCC is partially evaluated into times/3
+6. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations gt/3 
+* CE 21 is refined into CE [22] 
+* CE 18 is refined into CE [23] 
+* CE 19 is refined into CE [24] 
+* CE 20 is refined into CE [25] 
+
+
+#### Refined cost equations gt/3 
+* CE 22: gt(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 23: gt(V1,V,Out) = 1
+     [V1>=1,Out=2,V=3] 
+* CE 24: gt(V1,V,Out) = 1
+     [V>=0,Out=1,V1=3] 
+* CE 25: gt(V1,V,Out) = 1+ gt(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+
+### Cost equations --> "Loop" of gt/3 
+* CEs [25] --> Loop 15 
+* CEs [22] --> Loop 16 
+* CEs [23] --> Loop 17 
+* CEs [24] --> Loop 18 
+
+#### Loops of gt/3 
+* Loop 15: gt(V1,V,Out)->  gt(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+* Loop 16: gt(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 17: gt(V1,V,Out) [V1>=1,Out=2,V=3] 
+* Loop 18: gt(V1,V,Out) [V>=0,Out=1,V1=3] 
+
+### Ranking functions of CR gt(V1,V,Out) 
+* RF of phase [15]: [V,V1]
+
+#### Partial ranking functions of CR gt(V1,V,Out) 
+* Partial RF of phase [15]:
+  - RF of loop [15:1]:
+    V
+    V1
+
+
+### Resulting Chains:gt(V1,V,Out) 
+* [[15],18]
+* [[15],17]
+* [[15],16]
+* [18]
+* [17]
+* [16]
+
+
+### Merging Chains  gt/3 into  External patterns of execution 
+* [[18]] --> 1 
+* [[17]] --> 2 
+* [[16],[16,[15]]] --> 3 
+* [[18,[15]]] --> 4 
+* [[17,[15]]] --> 5 
+
+
+### Specialization of cost equations if/4 
+* CE 17 is refined into CE [26] 
+* CE 15 is refined into CE [27] 
+* CE 16 is refined into CE [28] 
+
+
+#### Refined cost equations if/4 
+* CE 26: if(V1,V,V11,Out) = 0
+     [V11>=0,V>=0,V1>=0,Out=0] 
+* CE 27: if(A,B,C,B) = 1
+     [C>=0,B>=0,A=2] 
+* CE 28: if(A,B,C,C) = 1
+     [C>=0,B>=0,A=1] 
+
+### Cost equations --> "Loop" of if/4 
+* CEs [26] --> Loop 19 
+* CEs [27] --> Loop 20 
+* CEs [28] --> Loop 21 
+
+#### Loops of if/4 
+* Loop 19: if(V1,V,V11,Out) [V11>=0,V>=0,V1>=0,Out=0] 
+* Loop 20: if(A,B,C,B) [C>=0,B>=0,A=2] 
+* Loop 21: if(A,B,C,C) [C>=0,B>=0,A=1] 
+
+### Ranking functions of CR if(V1,V,V11,Out) 
+
+#### Partial ranking functions of CR if(V1,V,V11,Out) 
+
+
+### Resulting Chains:if(V1,V,V11,Out) 
+* [21]
+* [20]
+* [19]
+
+
+### Merging Chains  if/4 into  External patterns of execution 
+* [[21]] --> 1 
+* [[20]] --> 2 
+* [[19]] --> 3 
+
+
+### Specialization of cost equations plus/3 
+* CE 14 is refined into CE [29] 
+* CE 13 is refined into CE [30] 
+* CE 11 is refined into CE [31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123] 
+* CE 12 is refined into CE [124,125,126,127,128,129,130,131,132] 
+
+
+#### Refined cost equations plus/3 
+* CE 29: plus(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 30: plus(A,B,B) = 1
+     [B>=0,A=3] 
+* CE 31: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,X1):1+ gt(B2,X1,C2):1+ if(D2,E2,F2,G2):1+ if(H2,I2,X1,J2):2+ plus(X1,K2,L2)
+     [X1>=0,L2+2=Out,X1+1=V,K2=3,J2=3,I2=3,H2=2,G2=2,F2=2,E2=1,D2=1,C2=1,B2=3,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 32: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,X1):1+ gt(B2,X1,C2):1+ if(D2,E2,F2,G2):1+ if(H2,I2,X1,J2):3+ plus(X1,K2,L2)
+     [X1>=0,L2+2=Out,X1+1=V,K2=0,J2=0,I2=3,H2=2,G2=2,F2=2,E2=1,D2=1,C2=1,B2=3,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 33: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,X1):1+ gt(B2,X1,C2):1+ if(D2,E2,F2,G2):3+ if(H2,I2,X1,J2):3+ plus(X1,K2,L2)
+     [X1>=0,L2+2=Out,X1+1=V,K2=0,J2=0,I2=3,H2=0,G2=0,F2=2,E2=1,D2=1,C2=1,B2=3,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 34: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):1+ gt(D2,E2,F2):2+ if(G2,H2,I2,J2):2+ if(K2,L2,M2,N2):1+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=3,O2=3,N2=3,M2=3,L2=3,K2=1,J2=1,I2=2,H2=1,G2=2,F2=2,E2=3,D2=3,C2=3,B2=3,A2=3,Z1=1,Y1=1,X1=3,W1=3,V=4,V1=4] 
+* CE 35: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):1+ gt(D2,E2,F2):2+ if(G2,H2,I2,J2):2+ if(K2,L2,M2,N2):3+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=0,O2=3,N2=0,M2=3,L2=3,K2=1,J2=1,I2=2,H2=1,G2=2,F2=2,E2=3,D2=3,C2=3,B2=3,A2=3,Z1=1,Y1=1,X1=3,W1=3,V=4,V1=4] 
+* CE 36: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):1+ gt(D2,E2,F2):2+ if(G2,H2,I2,J2):3+ if(K2,L2,M2,N2):3+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=0,O2=3,N2=0,M2=3,L2=3,K2=0,J2=0,I2=2,H2=1,G2=2,F2=2,E2=3,D2=3,C2=3,B2=3,A2=3,Z1=1,Y1=1,X1=3,W1=3,V=4,V1=4] 
+* CE 37: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,X1):1+ gt(B2,X1,C2):3+ if(D2,E2,F2,G2):3+ if(H2,I2,X1,J2):3+ plus(X1,K2,L2)
+     [X1>=0,L2+2=Out,X1+1=V,K2=0,J2=0,I2=3,H2=0,G2=0,F2=2,E2=1,D2=0,C2=0,B2=3,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 38: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,X1):1+ gt(B2,X1,C2):5+ if(D2,E2,F2,G2):2+ if(H2,I2,X1,X1):1+ plus(X1,X1,J2)
+     [X1>=4,5>=X1,J2+2=Out,X1+1=V,I2=3,H2=1,G2=1,F2=2,E2=1,D2=2,C2=2,B2=3,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 39: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,X1):1+ gt(B2,X1,C2):5+ if(D2,E2,F2,G2):2+ if(H2,I2,X1,J2):3+ plus(X1,K2,L2)
+     [X1>=4,5>=X1,L2+2=Out,X1+1=V,K2=0,J2=0,I2=3,H2=1,G2=1,F2=2,E2=1,D2=2,C2=2,B2=3,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 40: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,X1):1+ gt(B2,X1,C2):5+ if(D2,E2,F2,G2):3+ if(H2,I2,X1,J2):3+ plus(X1,K2,L2)
+     [X1>=4,5>=X1,L2+2=Out,X1+1=V,K2=0,J2=0,I2=3,H2=0,G2=0,F2=2,E2=1,D2=2,C2=2,B2=3,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 41: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):1+ if(I2,J2,X1,K2):2+ plus(L2,M2,N2)
+     [X1>=0,N2+2=Out,X1+1=V,M2=3,L2=0,K2=3,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 42: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):1+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=0,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 43: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):3+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=0,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 44: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):3+ gt(D2,E2,F2):2+ if(G2,H2,I2,J2):2+ if(K2,L2,M2,N2):1+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=3,O2=0,N2=3,M2=3,L2=3,K2=1,J2=1,I2=2,H2=1,G2=2,F2=2,E2=3,D2=3,C2=0,B2=3,A2=3,Z1=1,Y1=1,X1=3,W1=3,V=4,V1=4] 
+* CE 45: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):3+ gt(D2,E2,F2):2+ if(G2,H2,I2,J2):2+ if(K2,L2,M2,N2):3+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=0,O2=0,N2=0,M2=3,L2=3,K2=1,J2=1,I2=2,H2=1,G2=2,F2=2,E2=3,D2=3,C2=0,B2=3,A2=3,Z1=1,Y1=1,X1=3,W1=3,V=4,V1=4] 
+* CE 46: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):3+ gt(D2,E2,F2):2+ if(G2,H2,I2,J2):3+ if(K2,L2,M2,N2):3+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=0,O2=0,N2=0,M2=3,L2=3,K2=0,J2=0,I2=2,H2=1,G2=2,F2=2,E2=3,D2=3,C2=0,B2=3,A2=3,Z1=1,Y1=1,X1=3,W1=3,V=4,V1=4] 
+* CE 47: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):3+ if(E2,F2,G2,H2):3+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=0,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=0,D2=0,C2=3,B2=0,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 48: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):5+ if(E2,F2,G2,H2):2+ if(I2,J2,X1,X1):1+ plus(K2,X1,L2)
+     [X1>=4,5>=X1,L2+2=Out,X1+1=V,K2=0,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 49: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):5+ if(E2,F2,G2,H2):2+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=4,5>=X1,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 50: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):1+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):5+ if(E2,F2,G2,H2):3+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=4,5>=X1,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=1,Y1=1,W1=3,V1=4] 
+* CE 51: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,A2,B2,C2):2+ gt(D2,E2,F2):1+ if(G2,H2,I2,J2):1+ if(K2,L2,M2,N2):2+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=3,O2=3,N2=3,M2=3,L2=3,K2=2,J2=2,I2=2,H2=1,G2=1,F2=1,E2=3,D2=3,C2=3,B2=3,A2=3,Z1=2,Y1=2,X1=3,W1=3,V=4,V1=4] 
+* CE 52: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,A2,B2,C2):2+ gt(D2,E2,F2):1+ if(G2,H2,I2,J2):1+ if(K2,L2,M2,N2):3+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=0,O2=3,N2=0,M2=3,L2=3,K2=2,J2=2,I2=2,H2=1,G2=1,F2=1,E2=3,D2=3,C2=3,B2=3,A2=3,Z1=2,Y1=2,X1=3,W1=3,V=4,V1=4] 
+* CE 53: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,A2,B2,C2):2+ gt(D2,E2,F2):1+ if(G2,H2,I2,J2):3+ if(K2,L2,M2,N2):3+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=0,O2=3,N2=0,M2=3,L2=3,K2=0,J2=0,I2=2,H2=1,G2=1,F2=1,E2=3,D2=3,C2=3,B2=3,A2=3,Z1=2,Y1=2,X1=3,W1=3,V=4,V1=4] 
+* CE 54: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):2+ if(D2,E2,F2,G2):2+ if(H2,W1,I2,J2):1+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=3,J2=3,I2=3,H2=1,G2=1,F2=2,E2=1,D2=2,C2=2,B2=3,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 55: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):2+ if(D2,E2,F2,G2):2+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=3,H2=1,G2=1,F2=2,E2=1,D2=2,C2=2,B2=3,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 56: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):2+ if(D2,E2,F2,G2):3+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=3,H2=0,G2=0,F2=2,E2=1,D2=2,C2=2,B2=3,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 57: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):3+ if(D2,E2,F2,G2):3+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=3,H2=0,G2=0,F2=2,E2=1,D2=0,C2=0,B2=3,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 58: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):4+ if(D2,E2,F2,G2):1+ if(H2,W1,I2,W1):2+ plus(W1,W1,J2)
+     [W1>=4,6>=W1,J2+2=Out,W1+1=V1,I2=3,H2=2,G2=2,F2=2,E2=1,D2=1,C2=1,B2=3,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 59: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):4+ if(D2,E2,F2,G2):1+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=4,6>=W1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=3,H2=2,G2=2,F2=2,E2=1,D2=1,C2=1,B2=3,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 60: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,W1):2+ gt(W1,B2,C2):4+ if(D2,E2,F2,G2):3+ if(H2,W1,I2,J2):3+ plus(W1,K2,L2)
+     [W1>=4,6>=W1,L2+2=Out,W1+1=V1,K2=0,J2=0,I2=3,H2=0,G2=0,F2=2,E2=1,D2=1,C2=1,B2=3,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 61: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,A2,B2,C2):3+ gt(D2,E2,F2):1+ if(G2,H2,I2,J2):1+ if(K2,L2,M2,N2):2+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=3,O2=0,N2=3,M2=3,L2=3,K2=2,J2=2,I2=2,H2=1,G2=1,F2=1,E2=3,D2=3,C2=0,B2=3,A2=3,Z1=2,Y1=2,X1=3,W1=3,V=4,V1=4] 
+* CE 62: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,A2,B2,C2):3+ gt(D2,E2,F2):1+ if(G2,H2,I2,J2):1+ if(K2,L2,M2,N2):3+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=0,O2=0,N2=0,M2=3,L2=3,K2=2,J2=2,I2=2,H2=1,G2=1,F2=1,E2=3,D2=3,C2=0,B2=3,A2=3,Z1=2,Y1=2,X1=3,W1=3,V=4,V1=4] 
+* CE 63: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,A2,B2,C2):3+ gt(D2,E2,F2):1+ if(G2,H2,I2,J2):3+ if(K2,L2,M2,N2):3+ plus(O2,P2,Q2)
+     [Q2+2=Out,P2=0,O2=0,N2=0,M2=3,L2=3,K2=0,J2=0,I2=2,H2=1,G2=1,F2=1,E2=3,D2=3,C2=0,B2=3,A2=3,Z1=2,Y1=2,X1=3,W1=3,V=4,V1=4] 
+* CE 64: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=3,L2=0,K2=3,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 65: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 66: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 67: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):3+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=0,D2=0,C2=3,B2=0,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 68: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):4+ if(E2,F2,G2,H2):1+ if(I2,W1,J2,W1):2+ plus(K2,W1,L2)
+     [W1>=4,6>=W1,L2+2=Out,W1+1=V1,K2=0,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 69: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):4+ if(E2,F2,G2,H2):1+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=4,6>=W1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 70: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):2+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):4+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=4,6>=W1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=2,Y1=2,X1=3,V=4] 
+* CE 71: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):1+ if(I2,J2,X1,K2):2+ plus(L2,M2,N2)
+     [X1>=0,N2+2=Out,X1+1=V,M2=3,L2=0,K2=3,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=0,Y1=0,W1=3,V1=4] 
+* CE 72: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):1+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=0,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=0,Y1=0,W1=3,V1=4] 
+* CE 73: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):3+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=0,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=0,Y1=0,W1=3,V1=4] 
+* CE 74: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=3,L2=0,K2=3,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=0,Y1=0,X1=3,V=4] 
+* CE 75: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=0,Y1=0,X1=3,V=4] 
+* CE 76: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=0,Y1=0,X1=3,V=4] 
+* CE 77: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [X1>=0,W1>=0,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=0,B2=0,A2=0,Z1=0,Y1=0] 
+* CE 78: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,W1):2+ plus(H2,W1,I2)
+     [X1+3>=W1,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=2,F2=2,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=0,Y1=0] 
+* CE 79: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [X1+3>=W1,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=2,F2=2,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=0,Y1=0] 
+* CE 80: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [X1+3>=W1,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=0,Y1=0] 
+* CE 81: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [W1+2>=X1,X1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=1,F2=1,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=0,Y1=0] 
+* CE 82: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=1,F2=1,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=0,Y1=0] 
+* CE 83: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):3+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=0,Y1=0] 
+* CE 84: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,A2,B2):1+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=4,6>=W1,N2+2=Out,W1+1=V1,M2=3,L2=3,K2=3,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=3,A2=3,Z1=1,Y1=1,X1=3,V=4] 
+* CE 85: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,A2,B2):1+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=4,6>=W1,N2+2=Out,W1+1=V1,M2=0,L2=3,K2=0,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=3,A2=3,Z1=1,Y1=1,X1=3,V=4] 
+* CE 86: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,A2,B2):1+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=4,6>=W1,N2+2=Out,W1+1=V1,M2=0,L2=3,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=2,D2=2,C2=3,B2=3,A2=3,Z1=1,Y1=1,X1=3,V=4] 
+* CE 87: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [X1+3>=W1,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=2,C2=1,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 88: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):4+ if(B2,C2,D2,E2):1+ if(F2,W1,X1,W1):2+ plus(X1,W1,G2)
+     [X1+3>=W1,W1>=4,G2+2=Out,X1+1=V,W1+1=V1,F2=2,E2=2,D2=2,C2=1,B2=1,A2=1,Z1=1,Y1=1] 
+* CE 89: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):4+ if(B2,C2,D2,E2):1+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [X1+3>=W1,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=2,E2=2,D2=2,C2=1,B2=1,A2=1,Z1=1,Y1=1] 
+* CE 90: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):4+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [X1+3>=W1,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=2,C2=1,B2=1,A2=1,Z1=1,Y1=1] 
+* CE 91: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):5+ if(B2,C2,D2,E2):2+ if(F2,W1,X1,X1):1+ plus(X1,X1,G2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,G2+2=Out,X1+1=V,W1+1=V1,F2=1,E2=1,D2=2,C2=1,B2=2,A2=2,Z1=1,Y1=1] 
+* CE 92: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):5+ if(B2,C2,D2,E2):2+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=1,E2=1,D2=2,C2=1,B2=2,A2=2,Z1=1,Y1=1] 
+* CE 93: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,X1):1+ gt(W1,X1,A2):5+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(X1,H2,I2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=2,C2=1,B2=2,A2=2,Z1=1,Y1=1] 
+* CE 94: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):1+ plus(L2,M2,N2)
+     [W1>=4,6>=W1,N2+2=Out,W1+1=V1,M2=3,L2=0,K2=3,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=1,Y1=1,X1=3,V=4] 
+* CE 95: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):2+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=4,6>=W1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=1,H2=1,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=1,Y1=1,X1=3,V=4] 
+* CE 96: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,A2,B2):3+ gt(W1,C2,D2):2+ if(E2,F2,G2,H2):3+ if(I2,W1,J2,K2):3+ plus(L2,M2,N2)
+     [W1>=4,6>=W1,N2+2=Out,W1+1=V1,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=2,D2=2,C2=3,B2=0,A2=3,Z1=1,Y1=1,X1=3,V=4] 
+* CE 97: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [X1+3>=W1,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=0,B2=0,A2=0,Z1=1,Y1=1] 
+* CE 98: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,W1):2+ plus(H2,W1,I2)
+     [X1+3>=W1,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=2,F2=2,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=1,Y1=1] 
+* CE 99: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [X1+3>=W1,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=2,F2=2,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=1,Y1=1] 
+* CE 100: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [X1+3>=W1,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=1,Y1=1] 
+* CE 101: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=1,F2=1,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=1,Y1=1] 
+* CE 102: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=1,F2=1,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=1,Y1=1] 
+* CE 103: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):4+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=1,Y1=1] 
+* CE 104: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,A2,X1,B2):2+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):1+ if(I2,J2,X1,K2):2+ plus(L2,M2,N2)
+     [X1>=4,5>=X1,N2+2=Out,X1+1=V,M2=3,L2=3,K2=3,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=3,A2=3,Z1=2,Y1=2,W1=3,V1=4] 
+* CE 105: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,A2,X1,B2):2+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):1+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=4,5>=X1,N2+2=Out,X1+1=V,M2=0,L2=3,K2=0,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=3,A2=3,Z1=2,Y1=2,W1=3,V1=4] 
+* CE 106: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,A2,X1,B2):2+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):3+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=4,5>=X1,N2+2=Out,X1+1=V,M2=0,L2=3,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=1,D2=1,C2=3,B2=3,A2=3,Z1=2,Y1=2,W1=3,V1=4] 
+* CE 107: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):3+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+2>=X1,X1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=2,C2=1,B2=0,A2=0,Z1=2,Y1=2] 
+* CE 108: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):4+ if(B2,C2,D2,E2):1+ if(F2,W1,X1,W1):2+ plus(W1,W1,G2)
+     [X1+3>=W1,W1+2>=X1,W1>=4,X1>=4,G2+2=Out,X1+1=V,W1+1=V1,F2=2,E2=2,D2=2,C2=1,B2=1,A2=1,Z1=2,Y1=2] 
+* CE 109: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):4+ if(B2,C2,D2,E2):1+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=2,E2=2,D2=2,C2=1,B2=1,A2=1,Z1=2,Y1=2] 
+* CE 110: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):4+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=2,C2=1,B2=1,A2=1,Z1=2,Y1=2] 
+* CE 111: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):5+ if(B2,C2,D2,E2):2+ if(F2,W1,X1,X1):1+ plus(W1,X1,G2)
+     [W1+2>=X1,X1>=4,G2+2=Out,X1+1=V,W1+1=V1,F2=1,E2=1,D2=2,C2=1,B2=2,A2=2,Z1=2,Y1=2] 
+* CE 112: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):5+ if(B2,C2,D2,E2):2+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+2>=X1,X1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=1,E2=1,D2=2,C2=1,B2=2,A2=2,Z1=2,Y1=2] 
+* CE 113: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,W1):2+ gt(W1,X1,A2):5+ if(B2,C2,D2,E2):3+ if(F2,W1,X1,G2):3+ plus(W1,H2,I2)
+     [W1+2>=X1,X1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=0,F2=0,E2=0,D2=2,C2=1,B2=2,A2=2,Z1=2,Y1=2] 
+* CE 114: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):1+ if(I2,J2,X1,K2):2+ plus(L2,M2,N2)
+     [X1>=4,5>=X1,N2+2=Out,X1+1=V,M2=3,L2=0,K2=3,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=2,Y1=2,W1=3,V1=4] 
+* CE 115: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):1+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=4,5>=X1,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=2,H2=2,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=2,Y1=2,W1=3,V1=4] 
+* CE 116: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,A2,X1,B2):3+ gt(C2,X1,D2):1+ if(E2,F2,G2,H2):3+ if(I2,J2,X1,K2):3+ plus(L2,M2,N2)
+     [X1>=4,5>=X1,N2+2=Out,X1+1=V,M2=0,L2=0,K2=0,J2=3,I2=0,H2=0,G2=2,F2=1,E2=1,D2=1,C2=3,B2=0,A2=3,Z1=2,Y1=2,W1=3,V1=4] 
+* CE 117: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):3+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=0,B2=0,A2=0,Z1=2,Y1=2] 
+* CE 118: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,W1):2+ plus(H2,W1,I2)
+     [X1+3>=W1,W1+2>=X1,W1>=4,X1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=2,F2=2,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=2,Y1=2] 
+* CE 119: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):1+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=2,F2=2,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=2,Y1=2] 
+* CE 120: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):4+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1+3>=W1,X1>=4,W1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=1,B2=1,A2=0,Z1=2,Y1=2] 
+* CE 121: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,X1):1+ plus(H2,X1,I2)
+     [W1+2>=X1,X1>=4,I2+2=Out,X1+1=V,W1+1=V1,H2=0,G2=1,F2=1,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=2,Y1=2] 
+* CE 122: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):2+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=1,F2=1,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=2,Y1=2] 
+* CE 123: plus(V1,V,Out) = 4+ gt(W1,X1,Y1):5+ if(Z1,W1,X1,A2):3+ gt(W1,X1,B2):5+ if(C2,D2,E2,F2):3+ if(G2,W1,X1,H2):3+ plus(I2,J2,K2)
+     [W1+2>=X1,X1>=4,K2+2=Out,X1+1=V,W1+1=V1,J2=0,I2=0,H2=0,G2=0,F2=0,E2=2,D2=1,C2=2,B2=2,A2=0,Z1=2,Y1=2] 
+* CE 124: plus(V1,V,Out) = 3+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):1+ plus(D2,E2,Out)
+     [E2=4,D2=3,C2=3,B2=3,A2=3,Z1=1,Y1=1,X1=3,W1=3,V=3,V1=4] 
+* CE 125: plus(V1,V,Out) = 3+ gt(W1,X1,Y1):1+ if(Z1,A2,B2,C2):3+ plus(D2,E2,Out)
+     [E2=4,D2=0,C2=0,B2=3,A2=3,Z1=1,Y1=1,X1=3,W1=3,V=3,V1=4] 
+* CE 126: plus(V1,V,Out) = 3+ gt(W1,X1,Y1):2+ if(Z1,A2,B2,C2):2+ plus(D2,E2,Out)
+     [E2=4,D2=3,C2=3,B2=3,A2=3,Z1=2,Y1=2,X1=3,W1=3,V=3,V1=4] 
+* CE 127: plus(V1,V,Out) = 3+ gt(W1,X1,Y1):2+ if(Z1,A2,B2,C2):3+ plus(D2,E2,Out)
+     [E2=4,D2=0,C2=0,B2=3,A2=3,Z1=2,Y1=2,X1=3,W1=3,V=3,V1=4] 
+* CE 128: plus(V1,V,Out) = 3+ gt(V,V,W1):3+ if(X1,V,V,Y1):3+ plus(Z1,A2,Out)
+     [V>=0,V+1=A2,V+1=V1,Z1=0,Y1=0,X1=0,W1=0] 
+* CE 129: plus(V1,V,Out) = 3+ gt(V,V,W1):4+ if(X1,V,V,V):1+ plus(V,Y1,Out)
+     [V>=4,V+1=Y1,V+1=V1,X1=1,W1=1] 
+* CE 130: plus(V1,V,Out) = 3+ gt(V,V,W1):4+ if(X1,V,V,Y1):3+ plus(Z1,A2,Out)
+     [V>=4,V+1=A2,V+1=V1,Z1=0,Y1=0,X1=1,W1=1] 
+* CE 131: plus(V1,V,Out) = 3+ gt(V,V,W1):5+ if(X1,V,V,V):2+ plus(V,Y1,Out)
+     [V>=4,V+1=Y1,V+1=V1,X1=2,W1=2] 
+* CE 132: plus(V1,V,Out) = 3+ gt(V,V,W1):5+ if(X1,V,V,Y1):3+ plus(Z1,A2,Out)
+     [V>=4,V+1=A2,V+1=V1,Z1=0,Y1=0,X1=2,W1=2] 
+
+### Cost equations --> "Loop" of plus/3 
+* CEs [91] --> Loop 22 
+* CEs [88] --> Loop 23 
+* CEs [108] --> Loop 24 
+* CEs [111] --> Loop 25 
+* CEs [129,131] --> Loop 26 
+* CEs [92,93] --> Loop 27 
+* CEs [109,110] --> Loop 28 
+* CEs [118] --> Loop 29 
+* CEs [58] --> Loop 30 
+* CEs [54] --> Loop 31 
+* CEs [55,56,57,59,60] --> Loop 32 
+* CEs [84] --> Loop 33 
+* CEs [85,86,87,89,90] --> Loop 34 
+* CEs [68,78,98] --> Loop 35 
+* CEs [64,74,94] --> Loop 36 
+* CEs [65,66,67,69,70,75,76,95,96] --> Loop 37 
+* CEs [38] --> Loop 38 
+* CEs [39,40] --> Loop 39 
+* CEs [104] --> Loop 40 
+* CEs [105,106,107,112,113] --> Loop 41 
+* CEs [48,81,101,121] --> Loop 42 
+* CEs [114] --> Loop 43 
+* CEs [49,50,115,116] --> Loop 44 
+* CEs [31,34,51] --> Loop 45 
+* CEs [32,33,35,36,37,52,53] --> Loop 46 
+* CEs [41,44,61,71] --> Loop 47 
+* CEs [42,43,45,46,47,62,63,72,73,77,79,80,82,83,97,99,100,102,103,117,119,120,122,123] --> Loop 48 
+* CEs [124,126] --> Loop 49 
+* CEs [125,127,128,130,132] --> Loop 50 
+* CEs [29] --> Loop 51 
+* CEs [30] --> Loop 52 
+
+#### Loops of plus/3 
+* Loop 22: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+2>=V,V+3>=V1,V>=5,V1>=5,Out=Out'+2,V=V'+1,V=V1'+1] 
+* Loop 23: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V+3>=V1,V1>=5,Out=Out'+2,V1=V'+1,V=V1'+1] 
+* Loop 24: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+2>=V,V+3>=V1,V>=5,V1>=5,Out=Out'+2,V1=V'+1,V1=V1'+1] 
+* Loop 25: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+2>=V,V>=5,Out=Out'+2,V=V'+1,V1=V1'+1] 
+* Loop 26: plus(V1,V,Out)->  plus(A',V1,Out)
+                  [V1>=5,V1=A'+1,V1=V+1] 
+* Loop 27: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+2>=V,V+3>=V1,V>=5,V1>=5,Out=Out'+2,V=V1'+1,V'=0] 
+* Loop 28: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+2>=V,V+3>=V1,V>=5,V1>=5,Out=Out'+2,V1=V1'+1,V'=0] 
+* Loop 29: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+2>=V,V+3>=V1,V>=5,V1>=5,Out=Out'+2,V1=V'+1,V1'=0] 
+* Loop 30: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=5,7>=V1,Out=Out'+2,V1=V'+1,V1=V1'+1,V=4] 
+* Loop 31: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=2,Out=Out'+2,V1=V1'+1,V'=3,V=4] 
+* Loop 32: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=2,Out=Out'+2,V1=V1'+1,V'=0,V=4] 
+* Loop 33: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=5,7>=V1,Out=Out'+2,V'=3,V1'=3,V=4] 
+* Loop 34: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V+3>=V1,V1>=5,Out=Out'+2,V=V1'+1,V'=0] 
+* Loop 35: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V+3>=V1,V1>=5,Out=Out'+2,V1=V'+1,V1'=0] 
+* Loop 36: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=2,Out=Out'+2,V'=3,V1'=0,V=4] 
+* Loop 37: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1>=2,Out=Out'+2,V'=0,V1'=0,V=4] 
+* Loop 38: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=5,6>=V,Out=Out'+2,V=V'+1,V=V1'+1,V1=4] 
+* Loop 39: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=5,6>=V,Out=Out'+2,V=V1'+1,V'=0,V1=4] 
+* Loop 40: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=5,6>=V,Out=Out'+2,V'=3,V1'=3,V1=4] 
+* Loop 41: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+2>=V,V>=5,Out=Out'+2,V1=V1'+1,V'=0] 
+* Loop 42: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V1+2>=V,V>=5,Out=Out'+2,V=V'+1,V1'=0] 
+* Loop 43: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=5,6>=V,Out=Out'+2,V'=3,V1'=0,V1=4] 
+* Loop 44: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=5,6>=V,Out=Out'+2,V'=0,V1'=0,V1=4] 
+* Loop 45: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,Out=Out'+2,V=V1'+1,V'=3,V1=4] 
+* Loop 46: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,Out=Out'+2,V=V1'+1,V'=0,V1=4] 
+* Loop 47: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,Out=Out'+2,V'=3,V1'=0,V1=4] 
+* Loop 48: plus(V1,V,Out)->  plus(V1',V',Out')
+                  [V>=1,V1>=1,Out=Out'+2,V'=0,V1'=0] 
+* Loop 49: plus(V1,V,Out)->  plus(V1',V',Out)
+                  [V'=4,V1'=3,V=3,V1=4] 
+* Loop 50: plus(V1,V,Out)->  plus(A',V1,Out)
+                  [V1>=1,V1=V+1,A'=0] 
+* Loop 51: plus(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 52: plus(A,B,B) [B>=0,A=3] 
+
+### Ranking functions of CR plus(V1,V,Out) 
+
+#### Partial ranking functions of CR plus(V1,V,Out) 
+* Partial RF of phase [22,23,24,25,26,30,31,38,45,49]:
+  - RF of loop [22:1,25:1,38:1]:
+    V-4 depends on loops [23:1,24:1,26:1,30:1,45:1,49:1] 
+  - RF of loop [23:1]:
+    V1/2+V/2-3 depends on loops [24:1,30:1] 
+  - RF of loop [24:1,26:1,30:1]:
+    V1-4 depends on loops [22:1,23:1,38:1,45:1] 
+  - RF of loop [25:1]:
+    V1-2 depends on loops [22:1,23:1,38:1,45:1] 
+  - RF of loop [26:1]:
+    V1/2-V/2 depends on loops [22:1,23:1,24:1,38:1,45:1] 
+  - RF of loop [31:1]:
+    V-3 depends on loops [23:1,24:1,26:1,30:1,45:1,49:1] 
+    V1-1 depends on loops [22:1,23:1,38:1,45:1] 
+  - RF of loop [45:1]:
+    V1/2+V/2-2 depends on loops [24:1,30:1] 
+  - RF of loop [49:1]:
+    -V+4 depends on loops [22:1,23:1,24:1,25:1,31:1,38:1,45:1] 
+    V1-3 depends on loops [22:1,23:1,38:1,45:1] 
+
+
+### Resulting Chains:plus(V1,V,Out) 
+* [[22,23,24,25,26,30,31,38,45,49]]...
+* [[22,23,24,25,26,30,31,38,45,49],52]
+* [[22,23,24,25,26,30,31,38,45,49],51]
+* [[22,23,24,25,26,30,31,38,45,49],50,51]
+* [[22,23,24,25,26,30,31,38,45,49],48,51]
+* [[22,23,24,25,26,30,31,38,45,49],47,51]
+* [[22,23,24,25,26,30,31,38,45,49],46,52]
+* [[22,23,24,25,26,30,31,38,45,49],46,51]
+* [[22,23,24,25,26,30,31,38,45,49],44,51]
+* [[22,23,24,25,26,30,31,38,45,49],43,51]
+* [[22,23,24,25,26,30,31,38,45,49],42,51]
+* [[22,23,24,25,26,30,31,38,45,49],41,52]
+* [[22,23,24,25,26,30,31,38,45,49],41,51]
+* [[22,23,24,25,26,30,31,38,45,49],40,52]
+* [[22,23,24,25,26,30,31,38,45,49],40,51]
+* [[22,23,24,25,26,30,31,38,45,49],40,48,51]
+* [[22,23,24,25,26,30,31,38,45,49],39,51]
+* [[22,23,24,25,26,30,31,38,45,49],37,51]
+* [[22,23,24,25,26,30,31,38,45,49],36,51]
+* [[22,23,24,25,26,30,31,38,45,49],35,51]
+* [[22,23,24,25,26,30,31,38,45,49],34,52]
+* [[22,23,24,25,26,30,31,38,45,49],34,51]
+* [[22,23,24,25,26,30,31,38,45,49],33,52]
+* [[22,23,24,25,26,30,31,38,45,49],33,51]
+* [[22,23,24,25,26,30,31,38,45,49],33,48,51]
+* [[22,23,24,25,26,30,31,38,45,49],32,52]
+* [[22,23,24,25,26,30,31,38,45,49],32,51]
+* [[22,23,24,25,26,30,31,38,45,49],32,50,51]
+* [[22,23,24,25,26,30,31,38,45,49],29,51]
+* [[22,23,24,25,26,30,31,38,45,49],28,51]
+* [[22,23,24,25,26,30,31,38,45,49],27,51]
+* [52]
+* [51]
+* [50,51]
+* [48,51]
+* [47,51]
+* [46,52]
+* [46,51]
+* [46,50,51]
+* [44,51]
+* [43,51]
+* [42,51]
+* [41,52]
+* [41,51]
+* [40,52]
+* [40,51]
+* [40,48,51]
+* [39,51]
+* [37,51]
+* [36,51]
+* [35,51]
+* [34,52]
+* [34,51]
+* [34,50,51]
+* [33,52]
+* [33,51]
+* [33,48,51]
+* [32,52]
+* [32,51]
+* [32,50,51]
+* [29,51]
+* [28,51]
+* [27,51]
+
+
+### Merging Chains  plus/3 into  External patterns of execution 
+* [[51,27],[51,28],[51,29],[51,50,32],[51,32],[51,34],[51,35],[51,36],[51,37],[51,41],[51,42],[51,48]] --> 1 
+* [[52]] --> 2 
+* [[51,50,46],[51,46],[51,47],[51,27,[22,23,24,25,26,30,31,38,45,49]],[51,28,[22,23,24,25,26,30,31,38,45,49]],[51,29,[22,23,24,25,26,30,31,38,45,49]],[51,50,32,[22,23,24,25,26,30,31,38,45,49]],[51,32,[22,23,24,25,26,30,31,38,45,49]],[52,32,[22,23,24,25,26,30,31,38,45,49]],[51,48,33,[22,23,24,25,26,30,31,38,45,49]],[51,33,[22,23,24,25,26,30,31,38,45,49]],[52,33,[22,23,24,25,26,30,31,38,45,49]],[51,34,[22,23,24,25,26,30,31,38,45,49]],[52,34,[22,23,24,25,26,30,31,38,45,49]],[51,35,[22,23,24,25,26,30,31,38,45,49]],[51,36,[22,23,24,25,26,30,31,38,45,49]],[51,37,[22,23,24,25,26,30,31,38,45,49]],[51,39,[22,23,24,25,26,30,31,38,45,49]],[51,48,40,[22,23,24,25,26,30,31,38,45,49]],[51,40,[22,23,24,25,26,30,31,38,45,49]],[52,40,[22,23,24,25,26,30,31,38,45,49]],[51,41,[22,23,24,25,26,30,31,38,45,49]],[52,41,[22,23,24,25,26,30,31,38,45,49]],[51,42,[22,23,24,25,26,30,31,38,45,49]],[51,43,[22,23,24,25,26,30,31,38,45,49]],[51,44,[22,23,24,25,26,30,31,38,45,49]],[51,46,[22,23,24,25,26,30,31,38,45,49]],[52,46,[22,23,24,25,26,30,31,38,45,49]],[51,47,[22,23,24,25,26,30,31,38,45,49]],[51,48,[22,23,24,25,26,30,31,38,45,49]],[51,50,[22,23,24,25,26,30,31,38,45,49]],[51,[22,23,24,25,26,30,31,38,45,49]],[52,[22,23,24,25,26,30,31,38,45,49]]] --> 3 
+* [[52,32],[52,46]] --> 4 
+* [[51,39],[51,40],[52,41],[51,43],[51,44]] --> 5 
+* [[51,48,40]] --> 6 
+* [[52,40]] --> 7 
+* [[51,50,34]] --> 8 
+* [[51,33],[52,34]] --> 9 
+* [[51,48,33]] --> 10 
+* [[52,33]] --> 11 
+* [[51,50],[51]] --> 12 
+* [[[22,23,24,25,26,30,31,38,45,49]]] --> 13 
+
+
+### Specialization of cost equations times/3 
+* CE 8 is refined into CE [133] 
+* CE 10 is refined into CE [134] 
+* CE 9 is refined into CE [135,136,137,138,139,140,141,142,143,144,145,146,147] 
+
+
+#### Refined cost equations times/3 
+* CE 133: times(V1,V,Out) = 1
+     [V1>=0,Out=0,V=0] 
+* CE 134: times(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 135: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(X1,V1,Y1):1
+     [W1>=0,V1>=1,X1>=1,W1+1=V,Y1=2,Out=2] 
+* CE 136: times(A,B,A) = 1+ times(A,C,D)+ plus(E,A,A):2
+     [C>=0,A>=0,C+1=B,D=3,E=3] 
+* CE 137: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(X1,V1,Out):3
+     [2*V1+2*Out+3*X1>=18,2*V1+3*X1>=14,V1+Out>=3,Out+X1>=4,W1>=0,Out>=0,V1>=1,X1>=2,W1+1=V] 
+* CE 138: times(V1,V,Out) = 1+ times(W1,X1,Y1)+ plus(Z1,A2,B2):4
+     [X1>=0,X1+1=V,Y1=4,W1=4,B2=2,A2=4,Z1=4,Out=2,V1=4] 
+* CE 139: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(Y1,V1,Z1):5
+     [W1>=0,V1>=5,6>=V1,W1+1=V,X1=4,Z1=2,Y1=4,Out=2] 
+* CE 140: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(Y1,V1,Z1):6
+     [W1>=0,V1>=5,6>=V1,W1+1=V,X1=4,Z1=4,Y1=4,Out=4] 
+* CE 141: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(Y1,V1,Z1):7
+     [W1>=0,V1>=5,6>=V1,W1+1=V,X1=4,Z1=5,Y1=4,Out=5] 
+* CE 142: times(V1,V,Out) = 1+ times(W1,X1,Y1)+ plus(Z1,A2,B2):8
+     [X1>=0,X1+1=V,Y1=5,W1=2,B2=2,A2=2,Z1=5,Out=2,V1=2] 
+* CE 143: times(V1,V,Out) = 1+ times(W1,X1,Y1)+ plus(Y1,Z1,A2):9
+     [X1>=0,Y1>=5,7>=Y1,X1+1=V,W1=4,A2=2,Z1=4,Out=2,V1=4] 
+* CE 144: times(V1,V,Out) = 1+ times(W1,X1,Y1)+ plus(Y1,Z1,A2):10
+     [X1>=0,Y1>=5,7>=Y1,X1+1=V,W1=4,A2=4,Z1=4,Out=4,V1=4] 
+* CE 145: times(V1,V,Out) = 1+ times(W1,X1,Y1)+ plus(Y1,Z1,A2):11
+     [X1>=0,Y1>=5,7>=Y1,X1+1=V,W1=4,A2=5,Z1=4,Out=5,V1=4] 
+* CE 146: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(X1,V1,Y1):12
+     [W1>=0,V1>=0,X1>=0,W1+1=V,Y1=0,Out=0] 
+* CE 147: times(V1,V,Out) = 1+ times(V1,W1,X1)+ plus(X1,V1,Out):13
+     [2*V1+3*X1>=14,W1>=0,V1>=1,X1>=2,W1+1=V] 
+
+### Cost equations --> "Loop" of times/3 
+* CEs [147] --> Loop 53 
+* CEs [136] --> Loop 54 
+* CEs [141] --> Loop 55 
+* CEs [140] --> Loop 56 
+* CEs [139] --> Loop 57 
+* CEs [146] --> Loop 58 
+* CEs [145] --> Loop 59 
+* CEs [144] --> Loop 60 
+* CEs [143] --> Loop 61 
+* CEs [137,138] --> Loop 62 
+* CEs [135,142] --> Loop 63 
+* CEs [133,134] --> Loop 64 
+
+#### Loops of times/3 
+* Loop 53: times(V1,V,Out) [V>=1,V1>=1] 
+* Loop 54: times(A,B,A)->  times(A,A',B')
+                  [B>=1,A>=0,B=A'+1,B'=3] 
+* Loop 55: times(V1,V,Out)->  times(V1,V',Out')
+                  [V>=1,V1>=5,6>=V1,V=V'+1,Out'=4,Out=5] 
+* Loop 56: times(V1,V,Out)->  times(V1,V',Out')
+                  [V>=1,V1>=5,6>=V1,V=V'+1,Out'=4,Out=4] 
+* Loop 57: times(V1,V,Out)->  times(V1,V',Out')
+                  [V>=1,V1>=5,6>=V1,V=V'+1,Out'=4,Out=2] 
+* Loop 58: times(V1,V,Out)->  times(V1,V',Out')
+                  [Out'>=0,V>=1,V1>=0,V=V'+1,Out=0] 
+* Loop 59: times(V1,V,Out)->  times(V1',V',Out')
+                  [Out'>=5,V>=1,7>=Out',V=V'+1,V1'=4,Out=5,V1=4] 
+* Loop 60: times(V1,V,Out)->  times(V1',V',Out')
+                  [Out'>=5,V>=1,7>=Out',V=V'+1,V1'=4,Out=4,V1=4] 
+* Loop 61: times(V1,V,Out)->  times(V1',V',Out')
+                  [Out'>=5,V>=1,7>=Out',V=V'+1,V1'=4,Out=2,V1=4] 
+* Loop 62: times(V1,V,Out)->  times(V1,V',Out')
+                  [2*V1+2*Out+3*Out'>=18,2*V1+3*Out'>=14,Out+Out'>=4,V1+Out>=3,Out'>=2,Out>=0,V>=1,V1>=1,V=V'+1] 
+* Loop 63: times(V1,V,Out)->  times(V1,V',Out')
+                  [Out'>=1,V>=1,V1>=1,V=V'+1,Out=2] 
+* Loop 64: times(V1,V,Out) [V>=0,V1>=0,Out=0] 
+
+### Ranking functions of CR times(V1,V,Out) 
+* RF of phase [54,55,56,57,59,60,61,62,63]: [V]
+* RF of phase [58]: [V]
+
+#### Partial ranking functions of CR times(V1,V,Out) 
+* Partial RF of phase [54,55,56,57,59,60,61,62,63]:
+  - RF of loop [54:1,55:1,56:1,57:1,59:1,60:1,61:1,62:1,63:1]:
+    V
+* Partial RF of phase [58]:
+  - RF of loop [58:1]:
+    V
+
+
+### Resulting Chains:times(V1,V,Out) 
+* [[58],[54,55,56,57,59,60,61,62,63],53]...
+* [[58],64]
+* [[58],53]...
+* [[54,55,56,57,59,60,61,62,63],53]...
+* [64]
+* [53]...
+
+
+### Merging Chains  times/3 into  External patterns of execution 
+* [[64],[64,[58]]] --> 1 
+* [[53,[58]]] --> 2 
+* [[53,[54,55,56,57,59,60,61,62,63],[58]]] --> 3 
+* [[53]] --> 4 
+* [[53,[54,55,56,57,59,60,61,62,63]]] --> 5 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [148,149,150,151,152] 
+* CE 3 is refined into CE [153,154,155,156,157,158,159,160,161,162,163,164,165] 
+* CE 4 is refined into CE [166] 
+* CE 5 is refined into CE [167,168,169] 
+* CE 6 is refined into CE [170,171,172] 
+* CE 7 is refined into CE [173,174,175,176,177] 
+
+
+#### Refined cost equations start/3 
+* CE 148: start(V1,V,V11) = 0+ times(V1,V,W11):1
+     [V>=0,V1>=0,W11=0] 
+* CE 149: start(V1,V,V11) = 0+ times(V1,V,W11):2
+     [V>=2,V1>=1,W11=0] 
+* CE 150: start(V1,V,V11) = 0+ times(V1,V,W11):3
+     [V>=3,V1>=1,W11=0] 
+* CE 151: start(V1,V,V11) = 0+ times(V1,V,W11):4
+     [V>=1,V1>=1] 
+* CE 152: start(V1,V,V11) = 0+ times(V1,V,W11):5
+     [V1+2*W11>=3,W11>=0,V>=2,V1>=1] 
+* CE 153: start(V1,V,V11) = 0+ plus(V1,V,W11):1
+     [V>=1,V1>=1,W11=2] 
+* CE 154: start(V1,V,V11) = 0+ plus(W11,V,V):2
+     [V>=0,W11=3,V1=3] 
+* CE 155: start(V1,V,V11) = 0+ plus(V1,V,W11):3
+     [2*V+2*W11+3*V1>=18,2*V+3*V1>=14,V+W11>=3,V1+W11>=4,W11>=0,V>=1,V1>=2] 
+* CE 156: start(V1,V,V11) = 0+ plus(W11,X11,Y11):4
+     [Y11=2,X11=4,W11=4,V=4,V1=4] 
+* CE 157: start(V1,V,V11) = 0+ plus(W11,V,X11):5
+     [V>=5,6>=V,X11=2,W11=4,V1=4] 
+* CE 158: start(V1,V,V11) = 0+ plus(W11,V,X11):6
+     [V>=5,6>=V,X11=4,W11=4,V1=4] 
+* CE 159: start(V1,V,V11) = 0+ plus(W11,V,X11):7
+     [V>=5,6>=V,X11=5,W11=4,V1=4] 
+* CE 160: start(V1,V,V11) = 0+ plus(W11,X11,Y11):8
+     [Y11=2,X11=2,W11=5,V=2,V1=5] 
+* CE 161: start(V1,V,V11) = 0+ plus(V1,W11,X11):9
+     [V1>=5,7>=V1,X11=2,W11=4,V=4] 
+* CE 162: start(V1,V,V11) = 0+ plus(V1,W11,X11):10
+     [V1>=5,7>=V1,X11=4,W11=4,V=4] 
+* CE 163: start(V1,V,V11) = 0+ plus(V1,W11,X11):11
+     [V1>=5,7>=V1,X11=5,W11=4,V=4] 
+* CE 164: start(V1,V,V11) = 0+ plus(V1,V,W11):12
+     [V>=0,V1>=0,W11=0] 
+* CE 165: start(V1,V,V11) = 0+ plus(V1,V,W11):13
+     [2*V+3*V1>=14,V>=1,V1>=2] 
+* CE 166: start(V1,V,V11) = 1
+     [V1>=0] 
+* CE 167: start(V1,V,V11) = 0+ if(W11,V,V11,V11):1
+     [V11>=0,V>=0,W11=1,V1=1] 
+* CE 168: start(V1,V,V11) = 0+ if(W11,V,V11,V):2
+     [V>=0,V11>=0,W11=2,V1=2] 
+* CE 169: start(V1,V,V11) = 0+ if(V1,V,V11,W11):3
+     [V11>=0,V>=0,V1>=0,W11=0] 
+* CE 170: start(V1,V,V11) = 1+ if(W11,X11,Y11,Z11):1
+     [Z11=2,Y11=2,X11=1,W11=1,V1=1] 
+* CE 171: start(V1,V,V11) = 1+ if(W11,X11,Y11,Z11):2
+     [Z11=1,Y11=2,X11=1,W11=2,V1=2] 
+* CE 172: start(V1,V,V11) = 1+ if(V1,W11,X11,Y11):3
+     [V1>=0,Y11=0,X11=2,W11=1] 
+* CE 173: start(V1,V,V11) = 0+ gt(W11,V,X11):1
+     [V>=0,X11=1,W11=3,V1=3] 
+* CE 174: start(V1,V,V11) = 0+ gt(V1,W11,X11):2
+     [V1>=1,X11=2,W11=3,V=3] 
+* CE 175: start(V1,V,V11) = 0+ gt(V1,V,W11):3
+     [V>=0,V1>=0,W11=0] 
+* CE 176: start(V1,V,V11) = 0+ gt(V1,V,W11):4
+     [V+3>=V1,V1>=4,W11=1] 
+* CE 177: start(V1,V,V11) = 0+ gt(V1,V,W11):5
+     [V1+2>=V,V>=4,W11=2] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [161,162,163] --> Loop 65 
+* CEs [174] --> Loop 66 
+* CEs [160] --> Loop 67 
+* CEs [157,158,159] --> Loop 68 
+* CEs [156] --> Loop 69 
+* CEs [154,173] --> Loop 70 
+* CEs [168,171] --> Loop 71 
+* CEs [148,153,155,164,166,167,169,170,172,175,176,177] --> Loop 72 
+* CEs [149,150,151,152,165] --> Loop 73 
+
+#### Loops of start/3 
+* Loop 65: start(V1,V,V11) [V1>=5,7>=V1,V=4] 
+* Loop 66: start(V1,V,V11) [V1>=1,V=3] 
+* Loop 67: start(V1,V,V11) [V=2,V1=5] 
+* Loop 68: start(V1,V,V11) [V>=5,6>=V,V1=4] 
+* Loop 69: start(V1,V,V11) [V=4,V1=4] 
+* Loop 70: start(V1,V,V11) [V>=0,V1=3] 
+* Loop 71: start(V1,V,V11) [V1=2] 
+* Loop 72: start(V1,V,V11) [V1>=0] 
+* Loop 73: start(V1,V,V11) [V>=1,V1>=1] 
+
+### Ranking functions of CR start(V1,V,V11) 
+
+#### Partial ranking functions of CR start(V1,V,V11) 
+
+
+### Resulting Chains:start(V1,V,V11) 
+* [73]...
+* [72]
+* [71]
+* [70]
+* [69]
+* [68]
+* [67]
+* [66]
+* [65]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[71],[72]] --> 1 
+* [[70]] --> 2 
+* [[69]] --> 3 
+* [[68]] --> 4 
+* [[67]] --> 5 
+* [[66]] --> 6 
+* [[65]] --> 7 
+* [[73]] --> 8 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [15] 
+
+ * loop 15:gt(V1,V,Out) -> [gt(V1',V',Out')] 
+1
+#### Cost of phase [15]:gt(V1,V,Out) -> [gt(V1',V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V1
+it(15) =< V1-V1'
+it(15) =< V
+it(15) =< V-V'
+
+#### Cost of phase [15]:gt(V1,V,Out) -> [gt(V1',V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V1
+it(15) =< V1-V1'
+it(15) =< V
+it(15) =< V-V'
+
+#### Cost of phase [15]:gt(V1,V,Out) -> [gt(V1',V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V1
+it(15) =< V1-V1'
+it(15) =< V
+it(15) =< V-V'
+
+#### Cost of chains of gt(V1,V,Out):
+* Chain [[15],18]: 1*it(15)+1
+  Such that:it(15) =< V1
+
+  with precondition: [Out=1,V1>=4,V+3>=V1] 
+
+* Chain [[15],17]: 1*it(15)+1
+  Such that:it(15) =< V
+
+  with precondition: [Out=2,V>=4,V1+2>=V] 
+
+* Chain [[15],16]: 1*it(15)+0
+  Such that:it(15) =< V
+
+  with precondition: [Out=0,V1>=1,V>=1] 
+
+* Chain [18]: 1
+  with precondition: [V1=3,Out=1,V>=0] 
+
+* Chain [17]: 1
+  with precondition: [V=3,Out=2,V1>=1] 
+
+* Chain [16]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of chains of if(V1,V,V11,Out):
+* Chain [21]: 1
+  with precondition: [V1=1,V11=Out,V>=0,V11>=0] 
+
+* Chain [20]: 1
+  with precondition: [V1=2,V=Out,V>=0,V11>=0] 
+
+* Chain [19]: 0
+  with precondition: [Out=0,V1>=0,V>=0,V11>=0] 
+
+
+#### Cost of loops [22,23,24,25,26,30,31,38,45,49] 
+
+ * loop 22:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1*s(4)+1*s(5)+9
+  Such that:s(4) =< V1
+s(5) =< V'
+
+ * loop 23:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+2*s(9)+9
+  Such that:s(8) =< V'
+s(9) =< s(8)
+
+ * loop 24:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1*s(12)+1*s(13)+9
+  Such that:s(12) =< V
+s(13) =< V'
+
+ * loop 25:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+2*s(17)+9
+  Such that:s(16) =< V'
+s(17) =< s(16)
+
+ * loop 26:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+2*s(21)+5
+  Such that:s(20) =< V'
+s(21) =< s(20)
+
+ * loop 30:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1*s(23)+9
+  Such that:s(23) =< V1'
+
+ * loop 31:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+9
+ * loop 38:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1*s(25)+9
+  Such that:s(25) =< V1'
+
+ * loop 45:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+9
+ * loop 49:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+5
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of phase [22,23,24,25,26,30,31,38,45,49]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+88*it(22)+2*s(28)+2*s(32)+2*s(34)+0
+#### Cost of chains of plus(V1,V,Out):
+* Chain [[22,23,24,25,26,30,31,38,45,49]]...: 94*it(22)+0
+  with precondition: [V>=1,2*V+3*V1>=14,V1>=2] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],52]: 94*it(22)+1
+  with precondition: [V1>=4,V+3>=V1,2*V1>=V+1,11*V1+25*Out>=7*V+123,Out+V1>=V+1,V1+3*Out>=V+9] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],51]: 94*it(22)+0
+  with precondition: [V1>=2,V>=1,Out>=0,Out+V1>=4,Out+V>=3,2*V+3*V1>=14,2*Out+2*V+3*V1>=18] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],50,51]: 94*it(22)+3*s(38)+4
+  Such that:aux(89) =< 5/4*V1+V/2+Out/4
+s(38) =< aux(89)
+
+  with precondition: [V1>=4,V>=4,Out>=2,Out+V>=V1+1,Out+V1>=V+1] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],48,51]: 94*it(22)+22*s(41)+11*s(47)+7
+  Such that:aux(98) =< V1+5/2*V+Out/2
+aux(100) =< 5/2*V1+V+Out/2
+aux(98) =< aux(100)
+s(47) =< aux(98)
+s(41) =< aux(100)
+
+  with precondition: [V1>=2,V>=1,Out>=2,Out+V1>=6,Out+2*V>=8,2*V+3*V1>=14,Out+2*V+2*V1>=16] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],47,51]: 94*it(22)+1*s(74)+8
+  Such that:s(74) =< 7
+
+  with precondition: [V1>=4,V>=4,3*Out+4>=2*V1,3*Out+2>=2*V,V+3>=V1,V+V1>=9,3*Out+10*V1>=8*V+2,3*Out+14*V1>=8*V+22,2*V1+3*Out+6>=4*V,3*Out+6*V1>=4*V+14,3*Out+4*V1>=2*V+18] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],46,52]: 94*it(22)+1*s(75)+9
+  Such that:s(75) =< 3
+
+  with precondition: [V1>=4,V>=4,Out>=4,V+3>=V1,2*V1+11*Out+30>=12*V,11*Out+18>=6*V+4*V1,Out+6*V1>=4*V+6,Out+4*V1>=2*V+10,Out+3*V>=V1+11] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],46,51]: 94*it(22)+1*s(75)+8
+  Such that:s(75) =< 7
+
+  with precondition: [V1>=4,V>=4,3*Out+4>=2*V1,3*Out+2>=2*V,V+3>=V1,V+V1>=9,3*Out+10*V1>=8*V+2,3*Out+14*V1>=8*V+22,2*V1+3*Out+6>=4*V,3*Out+6*V1>=4*V+14,3*Out+4*V1>=2*V+18] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],44,51]: 94*it(22)+4*s(76)+7
+  Such that:aux(101) =< -2*V1-2*V+5*Out+13
+s(76) =< aux(101)
+
+  with precondition: [V1>=2,3*Out+4>=2*V,V+3>=V1,2*Out>=V,2*V+3*V1>=14,3*Out+8*V>=38,9*Out+9>=5*V+V1,6*Out+8*V1>=3*V+40,3*Out+4*V1>=2*V+16,3*Out+4*V+4*V1>=42] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],43,51]: 94*it(22)+1*s(80)+8
+  Such that:s(80) =< -2*V1-2*V+5*Out+13
+
+  with precondition: [V1>=2,3*Out+4>=2*V,V+3>=V1,2*Out>=V,2*V+3*V1>=14,3*Out+8*V>=38,9*Out+9>=5*V+V1,6*Out+8*V1>=3*V+40,3*Out+4*V1>=2*V+16,3*Out+4*V+4*V1>=42] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],42,51]: 94*it(22)+7*s(81)+8
+  Such that:aux(105) =< 5/2*V1+V+Out/2
+s(81) =< aux(105)
+
+  with precondition: [V1>=4,V>=4,Out>=2,Out+2*V1>=12,Out+2*V+6*V1>=40] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],41,52]: 94*it(22)+8*s(88)+9
+  Such that:aux(109) =< -2*V1-2*V+5*Out+13
+s(88) =< aux(109)
+
+  with precondition: [V1>=2,3*Out+4>=2*V,V+3>=V1,2*Out>=V,2*V+3*V1>=14,3*Out+8*V>=38,9*Out+9>=5*V+V1,6*Out+8*V1>=3*V+40,3*Out+4*V1>=2*V+16,3*Out+4*V+4*V1>=42] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],41,51]: 94*it(22)+8*s(88)+8
+  Such that:aux(109) =< 7/4*V1+V/2+5/4*Out
+s(88) =< aux(109)
+
+  with precondition: [V1>=4,V>=4,Out>=2,Out+2*V1>=12,Out+2*V+6*V1>=40] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],40,52]: 94*it(22)+1*s(96)+10
+  Such that:s(96) =< -2*V1-2*V+5*Out
+
+  with precondition: [V1>=2,3*Out>=2*V+5,V+3>=V1,2*Out>=V+6,2*V+3*V1>=14,3*Out+8*V>=47,9*Out>=5*V+V1+18,6*Out+8*V1>=3*V+58,3*Out+4*V1>=2*V+25,3*Out+4*V+4*V1>=51] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],40,51]: 94*it(22)+1*s(96)+9
+  Such that:s(96) =< -2*V1-2*V+5*Out+13
+
+  with precondition: [V1>=2,3*Out+4>=2*V,V+3>=V1,2*Out>=V,2*V+3*V1>=14,3*Out+8*V>=38,9*Out+9>=5*V+V1,6*Out+8*V1>=3*V+40,3*Out+4*V1>=2*V+16,3*Out+4*V+4*V1>=42] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],40,48,51]: 94*it(22)+33*s(41)+1*s(96)+16
+  Such that:aux(110) =< 3
+s(96) =< -2*V1-2*V+5*Out+3
+s(41) =< aux(110)
+
+  with precondition: [V1>=2,3*Out>=2*V+2,V+3>=V1,2*Out>=V+4,2*V+3*V1>=14,3*Out+8*V>=44,9*Out>=5*V+V1+9,6*Out+8*V1>=3*V+52,3*Out+4*V1>=2*V+22,3*Out+4*V+4*V1>=48] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],39,51]: 94*it(22)+2*s(97)+8
+  Such that:aux(111) =< -2*V1-2*V+5*Out+13
+s(97) =< aux(111)
+
+  with precondition: [V1>=2,3*Out+4>=2*V,V+3>=V1,2*Out>=V,2*V+3*V1>=14,3*Out+8*V>=38,9*Out+9>=5*V+V1,6*Out+8*V1>=3*V+40,3*Out+4*V1>=2*V+16,3*Out+4*V+4*V1>=42] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],37,51]: 94*it(22)+3*s(99)+4*s(100)+7
+  Such that:aux(112) =< 3
+aux(113) =< 5/2*V1+V+Out/2
+s(99) =< aux(112)
+s(100) =< aux(113)
+
+  with precondition: [V1>=2,V>=1,Out>=2,Out+2*V1>=10,Out+5*V>=17,2*V+3*V1>=14,Out+2*V1+5*V>=25] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],36,51]: 94*it(22)+1*s(106)+1*s(107)+8
+  Such that:s(106) =< 3
+s(107) =< 5/2*V1+V+Out/2
+
+  with precondition: [V1>=2,V>=1,Out>=2,Out+2*V1>=10,Out+5*V>=17,2*V+3*V1>=14,Out+2*V1+5*V>=25] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],35,51]: 94*it(22)+4*s(108)+1*s(109)+8
+  Such that:aux(115) =< V1+5/2*V+Out/2
+aux(116) =< 5/2*V1+V+Out/2
+aux(115) =< aux(116)
+s(109) =< aux(116)
+s(108) =< aux(115)
+
+  with precondition: [V1>=4,V>=4,V+3>=V1,V1+3>=V,V+V1>=10,Out+V1>=8,Out+2*V>=12,Out+V>=V1+1,V1+2*Out>=V+5,Out+2*V+2*V1>=24] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],34,52]: 94*it(22)+7*s(113)+1*s(116)+9
+  Such that:s(116) =< 3
+aux(119) =< 5/2*V1+V+Out/2
+s(113) =< aux(119)
+
+  with precondition: [V1>=4,Out>=4,V+3>=V1,Out+2*V>=14,Out+6*V1>=34,5*Out+6>=2*V+2*V1,5*Out+34*V1>=2*V+174,Out+4*V+4*V1>=48,Out+4*V+6*V1>=58] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],34,51]: 94*it(22)+7*s(113)+1*s(116)+8
+  Such that:aux(119) =< V1+5/2*V+Out/2
+aux(120) =< 5/2*V1+V+Out/2
+aux(119) =< aux(120)
+s(116) =< aux(120)
+s(113) =< aux(119)
+
+  with precondition: [V1>=4,V>=4,V+3>=V1,V1+3>=V,V+V1>=10,Out+V1>=8,Out+2*V>=12,Out+V>=V1+1,V1+2*Out>=V+5,Out+2*V+2*V1>=24] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],33,52]: 94*it(22)+1*s(121)+10
+  Such that:s(121) =< 5/2*V1+V+Out/2
+
+  with precondition: [V1>=4,Out>=7,V+3>=V1,Out+2*V>=17,Out+6*V1>=37,5*Out>=2*V+2*V1+9,5*Out+34*V1>=2*V+189,Out+4*V+4*V1>=51,Out+4*V+6*V1>=61] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],33,51]: 94*it(22)+1*s(121)+9
+  Such that:s(121) =< 5/2*V1+V+Out/2
+
+  with precondition: [V1>=4,Out>=4,V+3>=V1,Out+2*V>=14,Out+6*V1>=34,5*Out+6>=2*V+2*V1,5*Out+34*V1>=2*V+174,Out+4*V+4*V1>=48,Out+4*V+6*V1>=58] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],33,48,51]: 94*it(22)+33*s(41)+1*s(121)+16
+  Such that:aux(121) =< 3
+s(121) =< 5/2*V1+V+Out/2
+s(41) =< aux(121)
+
+  with precondition: [V1>=4,Out>=6,V+3>=V1,Out+2*V>=16,Out+6*V1>=36,5*Out>=2*V+2*V1+4,5*Out+34*V1>=2*V+184,Out+4*V+4*V1>=50,Out+4*V+6*V1>=60] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],32,52]: 94*it(22)+3*s(122)+9
+  Such that:aux(123) =< 3
+s(122) =< aux(123)
+
+  with precondition: [V1>=4,V>=4,Out>=4,V+3>=V1,2*V1+11*Out+30>=12*V,11*Out+18>=6*V+4*V1,Out+6*V1>=4*V+6,Out+4*V1>=2*V+10,Out+3*V>=V1+11] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],32,51]: 94*it(22)+1*s(122)+2*s(123)+8
+  Such that:s(122) =< 3
+aux(122) =< 5/2*V1+V+Out/2
+s(123) =< aux(122)
+
+  with precondition: [V1>=2,V>=1,Out>=2,Out+2*V1>=10,Out+5*V>=17,2*V+3*V1>=14,Out+2*V1+5*V>=25] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],32,50,51]: 94*it(22)+5*s(38)+1*s(122)+12
+  Such that:aux(124) =< 1
+s(122) =< 3
+s(38) =< aux(124)
+
+  with precondition: [V1>=2,V>=1,2*V+3*V1>=14,5*Out>=2*V+2*V1+4] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],29,51]: 94*it(22)+2*s(125)+8
+  Such that:aux(125) =< V1+V+Out/2
+s(125) =< aux(125)
+
+  with precondition: [V>=4,V+3>=V1,V1+3>=V,2*V1>=V+2,V+V1>=10,Out+2*V>=12,Out+6*V1>=4*V+4,3*V1+4*Out>=2*V+16,Out+V>=V1+1,V1+2*Out>=V+5,Out+2*V+2*V1>=24] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],28,51]: 94*it(22)+4*s(127)+8
+  Such that:aux(128) =< V1+V+Out/2
+s(127) =< aux(128)
+
+  with precondition: [V>=4,V+3>=V1,V1+3>=V,2*V1>=V+2,V+V1>=10,Out+2*V>=12,Out+6*V1>=4*V+4,3*V1+4*Out>=2*V+16,Out+V>=V1+1,V1+2*Out>=V+5,Out+2*V+2*V1>=24] 
+
+* Chain [[22,23,24,25,26,30,31,38,45,49],27,51]: 94*it(22)+2*s(131)+2*s(132)+8
+  Such that:aux(129) =< V1+5/2*V+Out/2
+aux(131) =< 5/2*V1+V+Out/2
+aux(129) =< aux(131)
+s(131) =< aux(129)
+s(132) =< aux(131)
+
+  with precondition: [V>=4,V+3>=V1,V1+3>=V,2*V1>=V+2,V+V1>=10,Out+2*V>=12,Out+6*V1>=4*V+4,3*V1+4*Out>=2*V+16,Out+V>=V1+1,V1+2*Out>=V+5,Out+2*V+2*V1>=24] 
+
+* Chain [52]: 1
+  with precondition: [V1=3,V=Out,V>=0] 
+
+* Chain [51]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+* Chain [50,51]: 3*s(38)+4
+  Such that:aux(89) =< V+1
+s(38) =< aux(89)
+
+  with precondition: [Out=0,V+1=V1,V>=0] 
+
+* Chain [48,51]: 22*s(41)+11*s(47)+7
+  Such that:aux(98) =< V1
+aux(99) =< V
+s(47) =< aux(98)
+s(41) =< aux(99)
+
+  with precondition: [Out=2,V1>=1,V>=1] 
+
+* Chain [47,51]: 1*s(74)+8
+  Such that:s(74) =< V
+
+  with precondition: [V1=4,Out=2,V>=1] 
+
+* Chain [46,52]: 1*s(75)+9
+  Such that:s(75) =< 3
+
+  with precondition: [V1=4,V=4,Out=2] 
+
+* Chain [46,51]: 1*s(75)+8
+  Such that:s(75) =< V
+
+  with precondition: [V1=4,Out=2,V>=1] 
+
+* Chain [46,50,51]: 4*s(38)+12
+  Such that:aux(132) =< 1
+s(38) =< aux(132)
+
+  with precondition: [V1=4,V=2,Out=2] 
+
+* Chain [44,51]: 4*s(76)+7
+  Such that:aux(101) =< V
+s(76) =< aux(101)
+
+  with precondition: [V1=4,Out=2,6>=V,V>=5] 
+
+* Chain [43,51]: 1*s(80)+8
+  Such that:s(80) =< V
+
+  with precondition: [V1=4,Out=2,6>=V,V>=5] 
+
+* Chain [42,51]: 6*s(81)+1*s(84)+8
+  Such that:s(84) =< V1
+aux(104) =< V
+s(81) =< aux(104)
+
+  with precondition: [Out=2,V>=5,V1+2>=V] 
+
+* Chain [41,52]: 8*s(88)+9
+  Such that:aux(109) =< V
+s(88) =< aux(109)
+
+  with precondition: [V1=4,Out=2,6>=V,V>=5] 
+
+* Chain [41,51]: 8*s(88)+8
+  Such that:aux(109) =< V
+s(88) =< aux(109)
+
+  with precondition: [Out=2,V>=5,V1+2>=V] 
+
+* Chain [40,52]: 1*s(96)+10
+  Such that:s(96) =< V
+
+  with precondition: [V1=4,Out=5,6>=V,V>=5] 
+
+* Chain [40,51]: 1*s(96)+9
+  Such that:s(96) =< V
+
+  with precondition: [V1=4,Out=2,6>=V,V>=5] 
+
+* Chain [40,48,51]: 33*s(41)+1*s(96)+16
+  Such that:s(96) =< V
+aux(110) =< 3
+s(41) =< aux(110)
+
+  with precondition: [V1=4,Out=4,6>=V,V>=5] 
+
+* Chain [39,51]: 2*s(97)+8
+  Such that:aux(111) =< V
+s(97) =< aux(111)
+
+  with precondition: [V1=4,Out=2,6>=V,V>=5] 
+
+* Chain [37,51]: 3*s(99)+4*s(100)+7
+  Such that:aux(112) =< 3
+aux(113) =< V1
+s(99) =< aux(112)
+s(100) =< aux(113)
+
+  with precondition: [V=4,Out=2,V1>=2] 
+
+* Chain [36,51]: 1*s(106)+1*s(107)+8
+  Such that:s(106) =< 3
+s(107) =< V1
+
+  with precondition: [V=4,Out=2,V1>=2] 
+
+* Chain [35,51]: 4*s(108)+1*s(109)+8
+  Such that:aux(115) =< V1
+s(109) =< V
+s(108) =< aux(115)
+
+  with precondition: [Out=2,V1>=5,V+3>=V1] 
+
+* Chain [34,52]: 7*s(113)+1*s(116)+9
+  Such that:s(116) =< 3
+aux(119) =< V1
+s(113) =< aux(119)
+
+  with precondition: [V=4,Out=2,7>=V1,V1>=5] 
+
+* Chain [34,51]: 7*s(113)+1*s(116)+8
+  Such that:aux(119) =< V1
+s(116) =< V
+s(113) =< aux(119)
+
+  with precondition: [Out=2,V1>=5,V+3>=V1] 
+
+* Chain [34,50,51]: 4*s(38)+7*s(113)+12
+  Such that:aux(119) =< 5
+aux(133) =< 1
+s(38) =< aux(133)
+s(113) =< aux(119)
+
+  with precondition: [V1=5,V=2,Out=2] 
+
+* Chain [33,52]: 1*s(121)+10
+  Such that:s(121) =< V1
+
+  with precondition: [V=4,Out=5,7>=V1,V1>=5] 
+
+* Chain [33,51]: 1*s(121)+9
+  Such that:s(121) =< V1
+
+  with precondition: [V=4,Out=2,7>=V1,V1>=5] 
+
+* Chain [33,48,51]: 33*s(41)+1*s(121)+16
+  Such that:s(121) =< V1
+aux(121) =< 3
+s(41) =< aux(121)
+
+  with precondition: [V=4,Out=4,7>=V1,V1>=5] 
+
+* Chain [32,52]: 3*s(122)+9
+  Such that:aux(123) =< 3
+s(122) =< aux(123)
+
+  with precondition: [V1=4,V=4,Out=2] 
+
+* Chain [32,51]: 1*s(122)+2*s(123)+8
+  Such that:s(122) =< 3
+aux(122) =< V1
+s(123) =< aux(122)
+
+  with precondition: [V=4,Out=2,V1>=2] 
+
+* Chain [32,50,51]: 5*s(38)+1*s(122)+12
+  Such that:s(122) =< 3
+aux(124) =< 1
+s(38) =< aux(124)
+
+  with precondition: [V1=2,V=4,Out=2] 
+
+* Chain [29,51]: 1*s(125)+1*s(126)+8
+  Such that:s(126) =< V1
+s(125) =< V
+
+  with precondition: [Out=2,V1>=5,V>=5,V+3>=V1,V1+2>=V] 
+
+* Chain [28,51]: 2*s(127)+2*s(128)+8
+  Such that:aux(127) =< V1
+aux(126) =< V
+s(127) =< aux(126)
+s(128) =< aux(127)
+
+  with precondition: [Out=2,V1>=5,V>=5,V+3>=V1,V1+2>=V] 
+
+* Chain [27,51]: 2*s(131)+2*s(132)+8
+  Such that:aux(129) =< V1
+aux(130) =< V
+s(131) =< aux(129)
+s(132) =< aux(130)
+
+  with precondition: [Out=2,V1>=5,V>=5,V+3>=V1,V1+2>=V] 
+
+
+#### Cost of loops [54,55,56,57,59,60,61,62,63] 
+
+ * loop 54:times(V1,V,Out) -> [times(V1',V',Out')] 
+2
+ * loop 55:times(V1,V,Out) -> [times(V1',V',Out')] 
+1*s(288)+11
+  Such that:s(288) =< V1'
+
+ * loop 56:times(V1,V,Out) -> [times(V1',V',Out')] 
+1*s(293)+33*s(294)+17
+  Such that:s(292) =< 3
+s(293) =< V1
+s(294) =< s(292)
+
+ * loop 57:times(V1,V,Out) -> [times(V1',V',Out')] 
+16*s(298)+10
+  Such that:s(297) =< V1'
+s(298) =< s(297)
+
+ * loop 59:times(V1,V,Out) -> [times(V1',V',Out')] 
+1*s(300)+11
+  Such that:s(300) =< 7
+
+ * loop 60:times(V1,V,Out) -> [times(V1',V',Out')] 
+1*s(305)+33*s(306)+17
+  Such that:s(304) =< 3
+s(305) =< 7
+s(306) =< s(304)
+
+ * loop 61:times(V1,V,Out) -> [times(V1',V',Out')] 
+1*s(310)+8*s(312)+10
+  Such that:s(310) =< 3
+s(311) =< 7
+s(312) =< s(311)
+
+ * loop 62:times(V1,V,Out) -> [times(V1',V',Out')] 
+2929*s(345)+77*s(341)+2*s(342)+2*s(343)+9*s(344)+22
+  Such that:s(337) =< 1
+s(338) =< 3
+s(339) =< 7
+s(340) =< V1
+s(341) =< s(338)
+s(342) =< s(339)
+s(343) =< s(340)
+s(344) =< s(337)
+
+ * loop 63:times(V1,V,Out) -> [times(V1',V',Out')] 
+6*s(362)+35*s(366)+43*s(363)+9*s(364)+7*s(365)+13
+  Such that:s(358) =< 3
+s(359) =< 5
+s(360) =< V1'
+s(361) =< 1
+s(362) =< s(358)
+s(363) =< s(360)
+s(364) =< s(361)
+s(365) =< s(359)
+
+#### Cost of phase [54,55,56,57,59,60,61,62,63]:times(V1,V,Out) -> [times(V1',V',Out')] 
+13*it(54)+17*it(56)+83*it(57)+1*s(367)+1*s(368)+149*s(369)+16*s(371)+2*s(373)+1*s(377)+10*s(378)+2964*s(380)+2*s(383)+18*s(384)+43*s(391)+7*s(393)+0
+  Such that:aux(158) =< V1
+aux(163) =< V1+6*V
+aux(164) =< V1+6*V-V1'-6*V'
+aux(165) =< V
+aux(166) =< V-V'
+aux(167) =< 6*V
+aux(168) =< 6*V-6*V'
+it(57) =< aux(163)
+s(368) =< aux(163)
+it(57) =< aux(164)
+s(368) =< aux(164)
+aux(149) =< aux(165)
+it(54) =< aux(165)
+it(56) =< aux(165)
+it(57) =< aux(165)
+aux(149) =< aux(166)
+it(54) =< aux(166)
+it(56) =< aux(166)
+it(57) =< aux(166)
+it(56) =< aux(167)
+it(57) =< aux(167)
+s(367) =< aux(167)
+s(372) =< aux(167)
+it(56) =< aux(168)
+it(57) =< aux(168)
+s(367) =< aux(168)
+s(372) =< aux(168)
+aux(162) =< aux(158)
+s(394) =< aux(149)*5
+s(370) =< aux(149)*3
+s(386) =< it(57)*aux(158)
+s(379) =< aux(149)*7
+s(377) =< aux(149)*3
+s(373) =< aux(149)*7
+s(396) =< it(57)*aux(162)
+s(369) =< s(370)
+s(391) =< s(396)
+s(384) =< aux(149)
+s(393) =< s(394)
+s(378) =< s(379)
+s(383) =< s(386)
+s(371) =< s(372)
+
+#### Cost of loops [58] 
+
+ * loop 58:times(V1,V,Out) -> [times(V1',V',Out')] 
+3*s(401)+5
+  Such that:s(400) =< V1'+1
+s(401) =< s(400)
+
+#### Cost of phase [58]:times(V1,V,Out) -> [times(V1',V',Out')] 
+5*it(58)+3*s(402)+0
+  Such that:aux(171) =< V1+1
+it(58) =< V
+it(58) =< V-V'
+s(403) =< it(58)*aux(171)
+s(402) =< s(403)
+
+#### Cost of phase [58]:times(V1,V,Out) -> [times(V1',V',Out')] 
+5*it(58)+3*s(402)+0
+  Such that:aux(171) =< V1+1
+it(58) =< V
+it(58) =< V-V'
+s(403) =< it(58)*aux(171)
+s(402) =< s(403)
+
+#### Cost of phase [58]:times(V1,V,Out) -> [times(V1',V',Out')] 
+5*it(58)+3*s(402)+0
+  Such that:aux(171) =< V1+1
+it(58) =< V
+it(58) =< V-V'
+s(403) =< it(58)*aux(171)
+s(402) =< s(403)
+
+#### Cost of chains of times(V1,V,Out):
+* Chain [[58],[54,55,56,57,59,60,61,62,63],53]...: 31*it(54)+17*it(56)+83*it(57)+22*it(58)+3058*s(286)+1*s(368)+149*s(369)+2*s(373)+1*s(377)+10*s(378)+2*s(383)+43*s(391)+7*s(393)+3*s(402)+1
+  Such that:aux(158) =< V1
+aux(171) =< V1+1
+aux(163) =< V1+6*V
+aux(169) =< V
+aux(172) =< 6*V
+it(58) =< aux(172)
+it(57) =< aux(163)
+s(368) =< aux(163)
+it(57) =< aux(172)
+s(368) =< aux(172)
+it(54) =< aux(169)
+it(56) =< aux(169)
+it(57) =< aux(169)
+it(56) =< aux(172)
+aux(162) =< aux(158)
+s(394) =< aux(169)*5
+s(370) =< aux(169)*3
+s(386) =< it(57)*aux(158)
+s(379) =< aux(169)*7
+s(377) =< aux(169)*3
+s(373) =< aux(169)*7
+s(396) =< it(57)*aux(162)
+s(369) =< s(370)
+s(391) =< s(396)
+s(393) =< s(394)
+s(378) =< s(379)
+s(383) =< s(386)
+s(403) =< it(58)*aux(171)
+s(402) =< s(403)
+
+  with precondition: [Out=0,V1>=1,V>=3] 
+
+* Chain [[58],64]: 5*it(58)+3*s(402)+1
+  Such that:aux(171) =< V1+1
+it(58) =< V
+s(403) =< it(58)*aux(171)
+s(402) =< s(403)
+
+  with precondition: [Out=0,V1>=0,V>=1] 
+
+* Chain [[58],53]...: 5*it(58)+94*s(286)+3*s(402)+1
+  Such that:aux(171) =< V1+1
+it(58) =< V
+s(403) =< it(58)*aux(171)
+s(402) =< s(403)
+
+  with precondition: [Out=0,V1>=1,V>=2] 
+
+* Chain [[54,55,56,57,59,60,61,62,63],53]...: 31*it(54)+17*it(56)+83*it(57)+3058*s(286)+17*s(367)+1*s(368)+149*s(369)+2*s(373)+1*s(377)+10*s(378)+2*s(383)+43*s(391)+7*s(393)+1
+  Such that:aux(158) =< V1
+aux(163) =< V1+6*V
+aux(169) =< V
+aux(170) =< 6*V
+it(57) =< aux(163)
+s(368) =< aux(163)
+it(57) =< aux(170)
+s(368) =< aux(170)
+it(54) =< aux(169)
+it(56) =< aux(169)
+it(57) =< aux(169)
+it(56) =< aux(170)
+s(367) =< aux(170)
+aux(162) =< aux(158)
+s(394) =< aux(169)*5
+s(370) =< aux(169)*3
+s(386) =< it(57)*aux(158)
+s(379) =< aux(169)*7
+s(377) =< aux(169)*3
+s(373) =< aux(169)*7
+s(396) =< it(57)*aux(162)
+s(369) =< s(370)
+s(391) =< s(396)
+s(393) =< s(394)
+s(378) =< s(379)
+s(383) =< s(386)
+
+  with precondition: [V1>=1,V>=2,Out>=0,V1+2*Out>=3] 
+
+* Chain [64]: 1
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+* Chain [53]...: 94*s(286)+1
+  with precondition: [V1>=1,V>=1] 
+
+
+#### Cost of chains of start(V1,V,V11):
+* Chain [73]...: 67*s(409)+3*s(411)+6398*s(412)+39*s(418)+166*s(419)+2*s(420)+34*s(422)+2*s(428)+4*s(429)+298*s(431)+86*s(432)+14*s(433)+20*s(434)+4*s(435)+3*s(437)+1
+  Such that:aux(173) =< V1
+aux(174) =< V1+1
+aux(175) =< V1+6*V
+aux(176) =< V
+aux(177) =< 6*V
+s(409) =< aux(176)
+s(418) =< aux(177)
+s(419) =< aux(175)
+s(420) =< aux(175)
+s(419) =< aux(177)
+s(420) =< aux(177)
+s(422) =< aux(176)
+s(419) =< aux(176)
+s(422) =< aux(177)
+s(423) =< aux(173)
+s(424) =< aux(176)*5
+s(425) =< aux(176)*3
+s(426) =< s(419)*aux(173)
+s(427) =< aux(176)*7
+s(428) =< aux(176)*3
+s(429) =< aux(176)*7
+s(430) =< s(419)*s(423)
+s(431) =< s(425)
+s(432) =< s(430)
+s(433) =< s(424)
+s(434) =< s(427)
+s(435) =< s(426)
+s(436) =< s(418)*aux(174)
+s(437) =< s(436)
+s(410) =< s(409)*aux(174)
+s(411) =< s(410)
+
+  with precondition: [V1>=1,V>=1] 
+
+* Chain [72]: 52*s(465)+3*s(467)+83*s(472)+36*s(473)+14*s(475)+2929*s(476)+2*s(489)+3*s(501)+16
+  Such that:s(482) =< 7
+s(464) =< V1+1
+s(500) =< V+1
+aux(178) =< 1
+aux(179) =< 3
+aux(180) =< V1
+aux(181) =< V
+s(473) =< aux(180)
+s(465) =< aux(181)
+s(472) =< aux(179)
+s(475) =< aux(178)
+s(489) =< s(482)
+s(466) =< s(465)*s(464)
+s(467) =< s(466)
+s(501) =< s(500)
+
+  with precondition: [V1>=0] 
+
+* Chain [71]: 2
+  with precondition: [V1=2] 
+
+* Chain [70]: 1
+  with precondition: [V1=3,V>=0] 
+
+* Chain [69]: 21
+  with precondition: [V1=4,V=4] 
+
+* Chain [68]: 18*s(506)+33*s(509)+16
+  Such that:s(508) =< 3
+aux(182) =< V
+s(506) =< aux(182)
+s(509) =< s(508)
+
+  with precondition: [V1=4,6>=V,V>=5] 
+
+* Chain [67]: 4*s(513)+7*s(514)+12
+  Such that:s(512) =< 1
+s(511) =< 5
+s(513) =< s(512)
+s(514) =< s(511)
+
+  with precondition: [V1=5,V=2] 
+
+* Chain [66]: 1
+  with precondition: [V=3,V1>=1] 
+
+* Chain [65]: 34*s(515)+10*s(517)+16
+  Such that:aux(183) =< 3
+aux(184) =< V1
+s(515) =< aux(183)
+s(517) =< aux(184)
+
+  with precondition: [V=4,7>=V1,V1>=5] 
+
+
+Closed-form bounds of start(V1,V,V11): 
+-------------------------------------
+* Chain [73]... with precondition: [V1>=1,V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [72] with precondition: [V1>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [71] with precondition: [V1=2] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [70] with precondition: [V1=3,V>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [69] with precondition: [V1=4,V=4] 
+    - Upper bound: 21 
+    - Complexity: constant 
+* Chain [68] with precondition: [V1=4,6>=V,V>=5] 
+    - Upper bound: 18*V+115 
+    - Complexity: n 
+* Chain [67] with precondition: [V1=5,V=2] 
+    - Upper bound: 51 
+    - Complexity: constant 
+* Chain [66] with precondition: [V=3,V1>=1] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [65] with precondition: [V=4,7>=V1,V1>=5] 
+    - Upper bound: 10*V1+118 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V,V11): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 21 ms.
+* Invariants computed in 2660 ms.
+   - Backward Invariants 1782 ms.
+   - Transitive Invariants 527 ms.
+* Refinement performed in 2062 ms.
+* Termination proved in 154 ms.
+* Upper bounds computed in 1303 ms.
+   - Equation cost structures 136 ms.
+   - Phase cost structures 412 ms.
+   - Chain cost structures 525 ms.
+   - Solving cost expressions 5 ms.
+* Total analysis performed in 6263 ms.
+

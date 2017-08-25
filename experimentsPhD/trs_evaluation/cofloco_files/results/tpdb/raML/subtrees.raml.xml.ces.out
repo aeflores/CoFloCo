@@ -1,0 +1,286 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [append/3,fun/3]
+1. non_recursive  : [fun3/6]
+2. recursive [non_tail,multiple] : [fun1/2,fun2/5,subtrees/2]
+3. non_recursive  : [start/5]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into append/3
+1. SCC is completely evaluated into other SCCs
+2. SCC is partially evaluated into subtrees/2
+3. SCC is partially evaluated into start/5
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations append/3 
+* CE 12 is refined into CE [13] 
+* CE 11 is refined into CE [14] 
+
+
+#### Refined cost equations append/3 
+* CE 13: append(V2,V1,Out) = 2+ append(W2,V1,X2)
+     [V2+X2>=Out,Out>=X2+1,V1>=0,V2+X2=Out+W2] 
+* CE 14: append(A,B,B) = 2
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of append/3 
+* CEs [14] --> Loop 6 
+* CEs [13] --> Loop 7 
+
+#### Loops of append/3 
+* Loop 6: append(A,B,B) [B>=0,A=0] 
+* Loop 7: append(V2,V1,Out)->  append(V2',V1,Out')
+                  [V2+Out'>=Out,Out>=Out'+1,V1>=0,V2+Out'=Out+V2'] 
+
+### Ranking functions of CR append(V2,V1,Out) 
+* RF of phase [7]: [V2]
+
+#### Partial ranking functions of CR append(V2,V1,Out) 
+* Partial RF of phase [7]:
+  - RF of loop [7:1]:
+    V2
+
+
+### Resulting Chains:append(V2,V1,Out) 
+* [[7],6]
+* [6]
+
+
+### Merging Chains  append/3 into  External patterns of execution 
+* [[6]] --> 1 
+* [[6,[7]]] --> 2 
+
+
+### Specialization of cost equations subtrees/2 
+* CE 10 is refined into CE [15,16] 
+* CE 9 is refined into CE [17] 
+
+
+#### Refined cost equations subtrees/2 
+* CE 15: subtrees(V2,Out) = 4+ subtrees(W2,X2)+ subtrees(Y2,Z2)+ append(A3,Z2,Z2):1
+     [V2>=W2+Y2+1,Y2>=0,W2>=0,Z2>=0,V2+Z2+1=Out,X2=0,A3=0] 
+* CE 16: subtrees(V2,Out) = 4+ subtrees(W2,X2)+ subtrees(Y2,Z2)+ append(X2,A3,B3):2
+     [V2>=W2+Y2+1,B3>=X2,Y2>=0,W2>=0,X2>=1,B3=X2+Z2,B3=X2+A3,V2+B3+1=Out] 
+* CE 17: subtrees(V2,Out) = 2
+     [Out=0,V2=0] 
+
+### Cost equations --> "Loop" of subtrees/2 
+* CEs [17] --> Loop 8 
+* CEs [16] --> Loop 9 
+* CEs [15] --> Loop 10 
+
+#### Loops of subtrees/2 
+* Loop 8: subtrees(V2,Out) [Out=0,V2=0] 
+* Loop 9: subtrees(V2,Out)->  subtrees(V2',Out')  subtrees(V2'2,Out'2)
+                  [V2>=V2'+V2'2+1,Out>=V2+Out'+1,V2'2>=0,Out'>=1,V2'>=0,V2+Out'+Out'2+1=Out] 
+* Loop 10: subtrees(V2,Out)->  subtrees(V2',Out')  subtrees(V2'2,Out'2)
+                  [V2>=V2'+V2'2+1,Out>=V2+1,V2'2>=0,V2'>=0,V2+Out'2+1=Out,Out'=0] 
+
+### Ranking functions of CR subtrees(V2,Out) 
+* RF of phase [9,10]: [V2]
+
+#### Partial ranking functions of CR subtrees(V2,Out) 
+* Partial RF of phase [9,10]:
+  - RF of loop [9:1,9:2,10:1,10:2]:
+    V2
+
+
+### Resulting Chains:subtrees(V2,Out) 
+* [8]
+* [multiple([9,10],[[8]])]
+
+
+### Merging Chains  subtrees/2 into  External patterns of execution 
+* [[8]] --> 1 
+* [[multiple([9,10],[[8]])]] --> 2 
+
+
+### Specialization of cost equations start/5 
+* CE 2 is refined into CE [18] 
+* CE 3 is refined into CE [19,20,21,22] 
+* CE 4 is refined into CE [23,24,25,26] 
+* CE 5 is refined into CE [27,28] 
+* CE 6 is refined into CE [29,30] 
+* CE 7 is refined into CE [31,32] 
+* CE 8 is refined into CE [33,34] 
+
+
+#### Refined cost equations start/5 
+* CE 18: start(V2,V1,V14,V17,V22) = 1
+     [V2=0] 
+* CE 19: start(V2,V1,V14,V17,V22) = 3+ subtrees(W22,X22):1+ subtrees(Y22,Z22):1+ append(A23,B23,C23):1
+     [V2>=1,C23=0,B23=0,A23=0,Z22=0,Y22=0,X22=0,W22=0] 
+* CE 20: start(V2,V1,V14,V17,V22) = 3+ subtrees(W22,X22):1+ subtrees(Y22,Z22):2+ append(A23,Z22,Z22):1
+     [Z22>=Y22+1,V2>=Y22+1,Y22>=1,A23=0,X22=0,W22=0] 
+* CE 21: start(V2,V1,V14,V17,V22) = 3+ subtrees(W22,X22):2+ subtrees(Y22,Z22):1+ append(X22,A23,X22):2
+     [X22>=W22+1,V2>=W22+1,W22>=1,A23=0,Z22=0,Y22=0] 
+* CE 22: start(V2,V1,V14,V17,V22) = 3+ subtrees(W22,X22):2+ subtrees(Y22,Z22):2+ append(X22,A23,B23):2
+     [B23>=X22+Y22+1,V2>=W22+Y22+1,X22>=W22+1,Y22>=1,W22>=1,B23=X22+A23,B23=X22+Z22] 
+* CE 23: start(V2,V1,V14,V17,V22) = 2+ subtrees(W22,X22):1+ append(Y22,Z22,A23):1
+     [V17>=0,V1>=0,A23=0,Z22=0,Y22=0,X22=0,W22=0,V14=0,V2=0] 
+* CE 24: start(V2,V1,V14,V17,V22) = 2+ subtrees(W22,X22):1+ append(V2,Y22,V2):2
+     [V2>=1,V17>=0,V1>=0,Y22=0,X22=0,W22=0,V14=0] 
+* CE 25: start(V2,V1,V14,V17,V22) = 2+ subtrees(V14,W22):2+ append(X22,W22,W22):1
+     [W22>=V14+1,V14>=1,V17>=0,V1>=0,X22=0,V2=0] 
+* CE 26: start(V2,V1,V14,V17,V22) = 2+ subtrees(V14,W22):2+ append(V2,X22,Y22):2
+     [Y22>=V2+V14+1,V2>=1,V14>=1,V17>=0,V1>=0,Y22=V2+X22,Y22=V2+W22] 
+* CE 27: start(V2,V1,V14,V17,V22) = 1+ append(W22,V1,V1):1
+     [V1>=0,V2>=1,W22=0] 
+* CE 28: start(V2,V1,V14,V17,V22) = 1+ append(W22,X22,Y22):2
+     [Y22>=W22,V2>=W22+1,W22>=1,Y22=W22+X22,Y22=V1+W22] 
+* CE 29: start(V2,V1,V14,V17,V22) = 0+ append(W22,V1,V1):1
+     [V1>=0,W22=0,V2=0] 
+* CE 30: start(V2,V1,V14,V17,V22) = 0+ append(V2,W22,X22):2
+     [X22>=V2,V2>=1,X22=V2+W22,X22=V2+V1] 
+* CE 31: start(V2,V1,V14,V17,V22) = 0+ subtrees(W22,X22):1
+     [X22=0,W22=0,V2=0] 
+* CE 32: start(V2,V1,V14,V17,V22) = 0+ subtrees(V2,W22):2
+     [W22>=V2+1,V2>=1] 
+* CE 33: start(V2,V1,V14,V17,V22) = 1+ append(W22,V2,V2):1
+     [V2>=0,V22>=0,V17>=0,V14>=0,W22=0,V1=0] 
+* CE 34: start(V2,V1,V14,V17,V22) = 1+ append(V1,W22,X22):2
+     [X22>=V1,V1>=1,V22>=0,V17>=0,V14>=0,X22=V1+W22,X22=V2+V1] 
+
+### Cost equations --> "Loop" of start/5 
+* CEs [34] --> Loop 11 
+* CEs [19,20,21,22,24,26,27,28,30,32] --> Loop 12 
+* CEs [33] --> Loop 13 
+* CEs [18,23,25,29,31] --> Loop 14 
+
+#### Loops of start/5 
+* Loop 11: start(V2,V1,V14,V17,V22) [V22>=0,V17>=0,V14>=0,V1>=1,V2>=0] 
+* Loop 12: start(V2,V1,V14,V17,V22) [V2>=1] 
+* Loop 13: start(V2,V1,V14,V17,V22) [V22>=0,V17>=0,V14>=0,V2>=0,V1=0] 
+* Loop 14: start(V2,V1,V14,V17,V22) [V2=0] 
+
+### Ranking functions of CR start(V2,V1,V14,V17,V22) 
+
+#### Partial ranking functions of CR start(V2,V1,V14,V17,V22) 
+
+
+### Resulting Chains:start(V2,V1,V14,V17,V22) 
+* [14]
+* [13]
+* [12]
+* [11]
+
+
+### Merging Chains  start/5 into  External patterns of execution 
+* [[14]] --> 1 
+* [[13]] --> 2 
+* [[11]] --> 3 
+* [[12]] --> 4 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [7] 
+
+ * loop 7:append(V2,V1,Out) -> [append(V2',V1',Out')] 
+2
+#### Cost of phase [7]:append(V2,V1,Out) -> [append(V2',V1',Out')] 
+2*it(7)+0
+  Such that:it(7) =< V2
+it(7) =< V2-V2'
+
+#### Cost of chains of append(V2,V1,Out):
+* Chain [[7],6]: 2*it(7)+2
+  Such that:it(7) =< -V1+Out
+
+  with precondition: [V1+V2=Out,V2>=1,V1>=0] 
+
+* Chain [6]: 2
+  with precondition: [V2=0,V1=Out,V1>=0] 
+
+
+#### Cost of loops [9,10] 
+
+ * loop 9:subtrees(V2,Out) -> [subtrees(V2',Out'),subtrees(V2'2,Out'2)] 
+2*s(2)+6
+ * loop 10:subtrees(V2,Out) -> [subtrees(V2',Out'),subtrees(V2'2,Out'2)] 
+6
+#### Cost of phase [9,10]:subtrees(V2,Out) -> [] 
+12*it(9)+2*it([8])+2*s(3)+0
+  Such that:it([8]) =< V2+1
+aux(1) =< V2
+it(9) =< aux(1)
+
+#### Cost of chains of subtrees(V2,Out):
+* Chain [8]: 2
+  with precondition: [V2=0,Out=0] 
+
+* Chain [multiple([9,10],[[8]])]: 12*it(9)+2*it([8])+2*s(3)+0
+  Such that:it([8]) =< V2+1
+aux(1) =< V2
+it(9) =< aux(1)
+
+  with precondition: [V2>=1,Out>=V2+1] 
+
+
+#### Cost of chains of start(V2,V1,V14,V17,V22):
+* Chain [14]: 2*s(4)+12*s(6)+2*s(7)+6
+  Such that:s(5) =< V14
+s(4) =< V14+1
+s(6) =< s(5)
+
+  with precondition: [V2=0] 
+
+* Chain [13]: 3
+  with precondition: [V1=0,V2>=0,V14>=0,V17>=0,V22>=0] 
+
+* Chain [12]: 74*s(8)+16*s(11)+4*s(17)+2*s(27)+12*s(29)+9
+  Such that:s(28) =< V14
+s(27) =< V14+1
+aux(5) =< V2
+aux(6) =< V2+1
+s(8) =< aux(5)
+s(17) =< aux(6)
+s(29) =< s(28)
+
+  with precondition: [V2>=1] 
+
+* Chain [11]: 2*s(38)+3
+  Such that:s(38) =< V1
+
+  with precondition: [V2>=0,V1>=1,V14>=0,V17>=0,V22>=0] 
+
+
+Closed-form bounds of start(V2,V1,V14,V17,V22): 
+-------------------------------------
+* Chain [14] with precondition: [V2=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [13] with precondition: [V1=0,V2>=0,V14>=0,V17>=0,V22>=0] 
+    - Upper bound: 3 
+    - Complexity: constant 
+* Chain [12] with precondition: [V2>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [11] with precondition: [V2>=0,V1>=1,V14>=0,V17>=0,V22>=0] 
+    - Upper bound: 2*V1+3 
+    - Complexity: n 
+
+### Maximum cost of start(V2,V1,V14,V17,V22): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 74 ms.
+* Invariants computed in 48 ms.
+   - Backward Invariants 16 ms.
+   - Transitive Invariants 13 ms.
+* Refinement performed in 161 ms.
+* Termination proved in 18 ms.
+* Upper bounds computed in 149 ms.
+   - Equation cost structures 75 ms.
+   - Phase cost structures 68 ms.
+   - Chain cost structures 8 ms.
+   - Solving cost expressions 3 ms.
+* Total analysis performed in 514 ms.
+

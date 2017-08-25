@@ -1,0 +1,73 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/raml1_mergesort.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   An implementation of the well known sorting algorithm mergesort.
+ *   This implementation deallocates the input list.  Copy the list before 
+ *   if you want to use the unsorted list later.
+ *
+ *   It is suprising that the function mergesort can be analysed.  The
+ *   type of the function looks like the result of a bug on the first
+ *   view.  But it is correct.  The function mergesort is a nice
+ *   example of a type that might be hard to find without type
+ *   inference.
+ *
+ *   There is also an out commented buggy version of mergesort
+ *   (mergesortBuggy) that does not terminate and consumes an infinite
+ *   ammount of heap-space and time.  Thus our analysis does not work
+ *   for mergesortBuggy.  (Note that it is no general problem for our
+ *   analysis if a function does not terminate.  For example f(x) =
+ *   f(x) consumes no heap-space and can be analysed with the
+ *   heap-space metric.)
+ *)
+
+
+let rec msplit l =
+	match l with
+	| [] -> ([], [])
+	| x1::xs ->
+		match xs with
+		| [] -> ([x1], [])
+		| x2::xs' ->
+			(Raml.tick(1.0); 
+			let (l1, l2) = msplit xs' in
+			(x1::l1, x2::l2));;
+
+let rec merge l1 l2 =
+	match l1 with
+	| [] -> l2
+	| x::xs ->
+		match l2 with
+		| [] -> x::xs
+		| y::ys ->
+			(Raml.tick(1.0); 
+			if ((x:int) < (y:int)) then x::merge xs (y::ys)
+			else y::merge (x::xs) ys);;
+
+let rec mergesortBuggy l =
+	match l with
+	| [] -> []
+	| x1::xs ->
+		let (l1, l2) = msplit l in
+		(Raml.tick(1.0); merge (mergesortBuggy l1) (mergesortBuggy l2));;
+
+let rec mergesort l =
+	match l with
+	| [] -> []
+	| x1::xs ->
+		match xs with
+		| [] -> x1::xs
+		| x2::xs' ->
+			let (l1, l2) = msplit (x1::x2::xs') in
+			(Raml.tick(1.0); merge (mergesort l1) (mergesort l2));;
+
+mergesort [0;4;5;9;7;1;2;8;6;3]

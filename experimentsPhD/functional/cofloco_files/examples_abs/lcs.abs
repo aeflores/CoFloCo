@@ -1,0 +1,87 @@
+/* * * * * * * * * * *
+ Translation to ABS
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/lcs.raml
+ *
+ * Description:
+ *   A standard example of dynamic programming that can be found in
+ *   many textbooks (see e.g. Cormen/Leiserson/Rivest/Stein:
+ *   Introduction to Algorithms) is the computation of the length of
+ *   the longest common subsequence (LCS) of two given lists
+ *   (sequences).  Given two sequences a_1,...,a_n and b_1,...,b_m, one
+ *   successively fills an nxm-matrix (here a list of lists) A such
+ *   that A(i,j) contains the length of the LCS of a_1,...,a_i and
+ *   b_1,...,b_j.  It is the case that
+ *
+ *            { 0                      if i=0 or j=0
+ *   A(i,j) = { A(i-1,j-1) + 1         if i,j > 0 and a_i = b_j 
+ *            { max(A(i,j-1),A(i-1,j)) if i,j > 0 and a_i \= b_j
+ *
+ *   This algorithm can be analyzed in our system and is exemplary for
+ *   similar algorithms that use dynamic programming.
+ */
+
+module Lcs;
+
+def List<Int> firstline(List<Int> l) =
+	case l {
+	 Nil => Nil;
+	 Cons(x,xs) => Cons(0,firstline(xs));
+	 };
+
+def Int rightL(List<Int> l) =
+	case l {
+	 Nil => 0;
+	 Cons(x,xs) =>  x;
+	 };
+
+def Int maxL(Int a,Int b) =
+	if a > b then a else b;
+
+def List<Int> newline(Int y,List<Int> lastline,List<Int> l) =
+	case l {
+	 Nil => Nil;
+	 Cons(x,xs) =>
+		case lastline {
+		 Nil => Nil;
+		 Cons(belowVal,lastlinep) =>
+			let (List<Int> nl) = newline(y,lastlinep, xs) in
+			let (Int rightVal) = rightL(nl) in
+			let (Int diagVal) = rightL(lastlinep) in
+			let (Int elem) =
+				if x == y then diagVal + 1
+				else maxL(belowVal, rightVal)
+				in
+				Cons(elem,nl);
+			};
+	};
+
+def List<List<Int>> lcstable(List<Int> l1,List<Int> l2) =
+	case l1 {
+	 Nil => Cons(firstline(l2),Nil);
+	 Cons(x,xs) =>
+		let (List<List<Int>> m) = lcstable(xs, l2) in
+		case m {
+		 Nil => Nil;
+		 Cons(l,ls) => Cons( newline( x, l, l2),Cons(l,ls));
+		 };
+	};
+
+def Int lcs(List<Int> l1,List<Int> l2) =
+	let (List<List<Int>> m) = lcstable(l1, l2) in
+	case m {
+	 Nil => 0;
+	 Cons(l1,_) =>
+		case l1 {
+		 Nil  => 0;
+		 Cons(len,_) =>  len;
+		 };
+	};
+
+
+
+{}

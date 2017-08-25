@@ -1,0 +1,138 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive [multiple] : [g/2]
+1. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into g/2
+1. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations g/2 
+* CE 4 is refined into CE [5] 
+* CE 3 is refined into CE [6] 
+
+
+#### Refined cost equations g/2 
+* CE 5: g(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 6: g(V,Out) = 1+ g(W,X)+ g(X,Y)+ g(Z,A1)+ g(A1,B1)+ g(W,C1)+ g(C1,D1)+ g(Z,E1)+ g(E1,F1)
+     [Z>=0,W>=0,Y+B1+D1+F1+3=Out,W+Z+1=V] 
+
+### Cost equations --> "Loop" of g/2 
+* CEs [6] --> Loop 4 
+* CEs [5] --> Loop 5 
+
+#### Loops of g/2 
+* Loop 4: g(V,Out)->  g(V',Out')  g(Out',A'2)  g(V'3,Out'3)  g(Out'3,A'4)  g(V',A'5)  g(A'5,A'6)  g(V'3,A'7)  g(A'7,A'8)
+                  [V'3>=0,V'>=0,Out=A'2+A'4+A'6+A'8+3,V'+V'3+1=V] 
+* Loop 5: g(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR g(V,Out) 
+
+#### Partial ranking functions of CR g(V,Out) 
+* Partial RF of phase [4]:
+  - RF of loop [4:1,4:3,4:5,4:7]:
+    V depends on loops [4:2,4:4,4:6,4:8] 
+
+
+### Resulting Chains:g(V,Out) 
+* [multiple([4],[[],[5]])]...
+* [5]
+
+
+### Merging Chains  g/2 into  External patterns of execution 
+* [[5]] --> 1 
+* [[multiple([4],[[],[5]])]] --> 2 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [7,8] 
+
+
+#### Refined cost equations start/1 
+* CE 7: start(V) = 0+ g(V,W):1
+     [V>=0,W=0] 
+* CE 8: start(V) = 0+ g(V,W):2
+     [V>=1] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [8] --> Loop 6 
+* CEs [7] --> Loop 7 
+
+#### Loops of start/1 
+* Loop 6: start(V) [V>=1] 
+* Loop 7: start(V) [V>=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [7]
+* [6]...
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[7]] --> 1 
+* [[6]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [4] 
+
+ * loop 4:g(V,Out) -> [g(V',Out'),g(V'2,Out'2),g(V'3,Out'3),g(V'4,Out'4),g(V'5,Out'5),g(V'6,Out'6),g(V'7,Out'7),g(V'8,Out'8)] 
+1
+#### Cost of phase [4]:g(V,Out) -> [] 
+1*it(4)+0
+#### Cost of chains of g(V,Out):
+* Chain [multiple([4],[[],[5]])]...: 1*it(4)+0
+  with precondition: [V>=1] 
+
+* Chain [5]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of chains of start(V):
+* Chain [7]: 0
+  with precondition: [V>=0] 
+
+* Chain [6]...: 1*s(1)+0
+  with precondition: [V>=1] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [7] with precondition: [V>=0] 
+    - Upper bound: 0 
+    - Complexity: constant 
+* Chain [6]... with precondition: [V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 8 ms.
+* Invariants computed in 42 ms.
+   - Backward Invariants 2 ms.
+   - Transitive Invariants 17 ms.
+* Refinement performed in 64 ms.
+* Termination proved in 16 ms.
+* Upper bounds computed in 61 ms.
+   - Equation cost structures 9 ms.
+   - Phase cost structures 55 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 231 ms.
+

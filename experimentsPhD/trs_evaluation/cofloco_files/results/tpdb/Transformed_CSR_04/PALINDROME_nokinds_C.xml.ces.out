@@ -1,0 +1,917 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [and/3]
+1. recursive  : [fun/3]
+2. recursive  : [isList/2]
+3. recursive  : [isNeList/2]
+4. recursive  : [isNePal/2]
+5. recursive  : [isPal/2]
+6. recursive  : [isQid/2]
+7. non_recursive  : [proper/2]
+8. recursive  : [top/2]
+9. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into and/3
+1. SCC is partially evaluated into fun/3
+2. SCC is partially evaluated into isList/2
+3. SCC is partially evaluated into isNeList/2
+4. SCC is partially evaluated into isNePal/2
+5. SCC is partially evaluated into isPal/2
+6. SCC is partially evaluated into isQid/2
+7. SCC is partially evaluated into proper/2
+8. SCC is partially evaluated into top/2
+9. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations and/3 
+* CE 32 is refined into CE [39] 
+* CE 30 is refined into CE [40] 
+* CE 31 is refined into CE [41] 
+
+
+#### Refined cost equations and/3 
+* CE 39: and(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 40: and(V,V1,Out) = 1+ and(W1,V1,X1)
+     [W1>=0,V1>=0,X1+1=Out,W1+1=V] 
+* CE 41: and(V,V1,Out) = 1+ and(W1,X1,Y1)
+     [X1>=0,W1>=0,Y1+1=Out,X1+1=V1,W1+1=V] 
+
+### Cost equations --> "Loop" of and/3 
+* CEs [40] --> Loop 29 
+* CEs [41] --> Loop 30 
+* CEs [39] --> Loop 31 
+
+#### Loops of and/3 
+* Loop 29: and(V,V1,Out)->  and(V',V1,Out')
+                  [V1>=0,V>=1,Out=Out'+1,V=V'+1] 
+* Loop 30: and(V,V1,Out)->  and(V',V1',Out')
+                  [V1>=1,V>=1,Out=Out'+1,V1=V1'+1,V=V'+1] 
+* Loop 31: and(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR and(V,V1,Out) 
+* RF of phase [29,30]: [V]
+
+#### Partial ranking functions of CR and(V,V1,Out) 
+* Partial RF of phase [29,30]:
+  - RF of loop [29:1,30:1]:
+    V
+  - RF of loop [30:1]:
+    V1
+
+
+### Resulting Chains:and(V,V1,Out) 
+* [[29,30],31]
+* [31]
+
+
+### Merging Chains  and/3 into  External patterns of execution 
+* [[31]] --> 1 
+* [[31,[29,30]]] --> 2 
+
+
+### Specialization of cost equations fun/3 
+* CE 36 is refined into CE [42] 
+* CE 35 is refined into CE [43] 
+* CE 34 is refined into CE [44] 
+* CE 33 is refined into CE [45] 
+
+
+#### Refined cost equations fun/3 
+* CE 42: fun(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 43: fun(V,V1,Out) = 1+ fun(V,W1,X1)
+     [W1>=0,V>=0,X1+1=Out,W1+1=V1] 
+* CE 44: fun(V,V1,Out) = 1+ fun(W1,V1,X1)
+     [W1>=0,V1>=0,X1+1=Out,W1+1=V] 
+* CE 45: fun(V,V1,Out) = 1+ fun(W1,X1,Y1)
+     [X1>=0,W1>=0,Y1+1=Out,X1+1=V1,W1+1=V] 
+
+### Cost equations --> "Loop" of fun/3 
+* CEs [43] --> Loop 32 
+* CEs [44] --> Loop 33 
+* CEs [45] --> Loop 34 
+* CEs [42] --> Loop 35 
+
+#### Loops of fun/3 
+* Loop 32: fun(V,V1,Out)->  fun(V,V1',Out')
+                  [V1>=1,V>=0,Out=Out'+1,V1=V1'+1] 
+* Loop 33: fun(V,V1,Out)->  fun(V',V1,Out')
+                  [V1>=0,V>=1,Out=Out'+1,V=V'+1] 
+* Loop 34: fun(V,V1,Out)->  fun(V',V1',Out')
+                  [V1>=1,V>=1,Out=Out'+1,V1=V1'+1,V=V'+1] 
+* Loop 35: fun(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR fun(V,V1,Out) 
+* RF of phase [32,33,34]: [V+V1]
+
+#### Partial ranking functions of CR fun(V,V1,Out) 
+* Partial RF of phase [32,33,34]:
+  - RF of loop [32:1,34:1]:
+    V1
+  - RF of loop [33:1,34:1]:
+    V
+
+
+### Resulting Chains:fun(V,V1,Out) 
+* [[32,33,34],35]
+* [35]
+
+
+### Merging Chains  fun/3 into  External patterns of execution 
+* [[35]] --> 1 
+* [[35,[32,33,34]]] --> 2 
+
+
+### Specialization of cost equations isList/2 
+* CE 38 is refined into CE [46] 
+* CE 37 is refined into CE [47] 
+
+
+#### Refined cost equations isList/2 
+* CE 46: isList(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 47: isList(V,Out) = 1+ isList(W,X)
+     [W>=0,X+1=Out,W+1=V] 
+
+### Cost equations --> "Loop" of isList/2 
+* CEs [47] --> Loop 36 
+* CEs [46] --> Loop 37 
+
+#### Loops of isList/2 
+* Loop 36: isList(V,Out)->  isList(V',Out')
+                  [V'>=0,Out=Out'+1,V'+1=V] 
+* Loop 37: isList(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR isList(V,Out) 
+* RF of phase [36]: [V]
+
+#### Partial ranking functions of CR isList(V,Out) 
+* Partial RF of phase [36]:
+  - RF of loop [36:1]:
+    V
+
+
+### Resulting Chains:isList(V,Out) 
+* [[36],37]
+* [37]
+
+
+### Merging Chains  isList/2 into  External patterns of execution 
+* [[37]] --> 1 
+* [[37,[36]]] --> 2 
+
+
+### Specialization of cost equations isNeList/2 
+* CE 23 is refined into CE [48] 
+* CE 22 is refined into CE [49] 
+
+
+#### Refined cost equations isNeList/2 
+* CE 48: isNeList(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 49: isNeList(V,Out) = 1+ isNeList(W,X)
+     [W>=0,X+1=Out,W+1=V] 
+
+### Cost equations --> "Loop" of isNeList/2 
+* CEs [49] --> Loop 38 
+* CEs [48] --> Loop 39 
+
+#### Loops of isNeList/2 
+* Loop 38: isNeList(V,Out)->  isNeList(V',Out')
+                  [V'>=0,Out=Out'+1,V'+1=V] 
+* Loop 39: isNeList(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR isNeList(V,Out) 
+* RF of phase [38]: [V]
+
+#### Partial ranking functions of CR isNeList(V,Out) 
+* Partial RF of phase [38]:
+  - RF of loop [38:1]:
+    V
+
+
+### Resulting Chains:isNeList(V,Out) 
+* [[38],39]
+* [39]
+
+
+### Merging Chains  isNeList/2 into  External patterns of execution 
+* [[39]] --> 1 
+* [[39,[38]]] --> 2 
+
+
+### Specialization of cost equations isNePal/2 
+* CE 29 is refined into CE [50] 
+* CE 28 is refined into CE [51] 
+
+
+#### Refined cost equations isNePal/2 
+* CE 50: isNePal(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 51: isNePal(V,Out) = 1+ isNePal(W,X)
+     [W>=0,X+1=Out,W+1=V] 
+
+### Cost equations --> "Loop" of isNePal/2 
+* CEs [51] --> Loop 40 
+* CEs [50] --> Loop 41 
+
+#### Loops of isNePal/2 
+* Loop 40: isNePal(V,Out)->  isNePal(V',Out')
+                  [V'>=0,Out=Out'+1,V'+1=V] 
+* Loop 41: isNePal(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR isNePal(V,Out) 
+* RF of phase [40]: [V]
+
+#### Partial ranking functions of CR isNePal(V,Out) 
+* Partial RF of phase [40]:
+  - RF of loop [40:1]:
+    V
+
+
+### Resulting Chains:isNePal(V,Out) 
+* [[40],41]
+* [41]
+
+
+### Merging Chains  isNePal/2 into  External patterns of execution 
+* [[41]] --> 1 
+* [[41,[40]]] --> 2 
+
+
+### Specialization of cost equations isPal/2 
+* CE 27 is refined into CE [52] 
+* CE 26 is refined into CE [53] 
+
+
+#### Refined cost equations isPal/2 
+* CE 52: isPal(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 53: isPal(V,Out) = 1+ isPal(W,X)
+     [W>=0,X+1=Out,W+1=V] 
+
+### Cost equations --> "Loop" of isPal/2 
+* CEs [53] --> Loop 42 
+* CEs [52] --> Loop 43 
+
+#### Loops of isPal/2 
+* Loop 42: isPal(V,Out)->  isPal(V',Out')
+                  [V'>=0,Out=Out'+1,V'+1=V] 
+* Loop 43: isPal(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR isPal(V,Out) 
+* RF of phase [42]: [V]
+
+#### Partial ranking functions of CR isPal(V,Out) 
+* Partial RF of phase [42]:
+  - RF of loop [42:1]:
+    V
+
+
+### Resulting Chains:isPal(V,Out) 
+* [[42],43]
+* [43]
+
+
+### Merging Chains  isPal/2 into  External patterns of execution 
+* [[43]] --> 1 
+* [[43,[42]]] --> 2 
+
+
+### Specialization of cost equations isQid/2 
+* CE 25 is refined into CE [54] 
+* CE 24 is refined into CE [55] 
+
+
+#### Refined cost equations isQid/2 
+* CE 54: isQid(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 55: isQid(V,Out) = 1+ isQid(W,X)
+     [W>=0,X+1=Out,W+1=V] 
+
+### Cost equations --> "Loop" of isQid/2 
+* CEs [55] --> Loop 44 
+* CEs [54] --> Loop 45 
+
+#### Loops of isQid/2 
+* Loop 44: isQid(V,Out)->  isQid(V',Out')
+                  [V'>=0,Out=Out'+1,V'+1=V] 
+* Loop 45: isQid(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR isQid(V,Out) 
+* RF of phase [44]: [V]
+
+#### Partial ranking functions of CR isQid(V,Out) 
+* Partial RF of phase [44]:
+  - RF of loop [44:1]:
+    V
+
+
+### Resulting Chains:isQid(V,Out) 
+* [[44],45]
+* [45]
+
+
+### Merging Chains  isQid/2 into  External patterns of execution 
+* [[45]] --> 1 
+* [[45,[44]]] --> 2 
+
+
+### Specialization of cost equations proper/2 
+* CE 21 is refined into CE [56] 
+* CE 19 is refined into CE [57] 
+* CE 15 is refined into CE [58] 
+* CE 18 is refined into CE [59] 
+* CE 14 is refined into CE [60] 
+* CE 17 is refined into CE [61] 
+* CE 20 is refined into CE [62] 
+* CE 16 is refined into CE [63] 
+
+
+#### Refined cost equations proper/2 
+* CE 56: proper(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 57: proper(V,Out) = 1
+     [Out=7,V=6] 
+* CE 58: proper(V,Out) = 1
+     [Out=6,V=5] 
+* CE 59: proper(V,Out) = 1
+     [Out=5,V=4] 
+* CE 60: proper(V,Out) = 1
+     [Out=4,V=3] 
+* CE 61: proper(V,Out) = 1
+     [Out=3,V=2] 
+* CE 62: proper(V,Out) = 1
+     [Out=2,V=1] 
+* CE 63: proper(V,Out) = 1
+     [Out=1,V=0] 
+
+### Cost equations --> "Loop" of proper/2 
+* CEs [56] --> Loop 46 
+* CEs [57] --> Loop 47 
+* CEs [58] --> Loop 48 
+* CEs [59] --> Loop 49 
+* CEs [60] --> Loop 50 
+* CEs [61] --> Loop 51 
+* CEs [62] --> Loop 52 
+* CEs [63] --> Loop 53 
+
+#### Loops of proper/2 
+* Loop 46: proper(V,Out) [V>=0,Out=0] 
+* Loop 47: proper(V,Out) [Out=7,V=6] 
+* Loop 48: proper(V,Out) [Out=6,V=5] 
+* Loop 49: proper(V,Out) [Out=5,V=4] 
+* Loop 50: proper(V,Out) [Out=4,V=3] 
+* Loop 51: proper(V,Out) [Out=3,V=2] 
+* Loop 52: proper(V,Out) [Out=2,V=1] 
+* Loop 53: proper(V,Out) [Out=1,V=0] 
+
+### Ranking functions of CR proper(V,Out) 
+
+#### Partial ranking functions of CR proper(V,Out) 
+
+
+### Resulting Chains:proper(V,Out) 
+* [53]
+* [52]
+* [51]
+* [50]
+* [49]
+* [48]
+* [47]
+* [46]
+
+
+### Merging Chains  proper/2 into  External patterns of execution 
+* [[53]] --> 1 
+* [[52]] --> 2 
+* [[51]] --> 3 
+* [[50]] --> 4 
+* [[49]] --> 5 
+* [[48]] --> 6 
+* [[47]] --> 7 
+* [[46]] --> 8 
+
+
+### Specialization of cost equations top/2 
+* CE 13 is refined into CE [64] 
+* CE 11 is refined into CE [65] 
+* CE 12 is refined into CE [66,67,68,69,70,71,72,73] 
+
+
+#### Refined cost equations top/2 
+* CE 64: top(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 65: top(V,Out) = 1+ top(V,Out)
+     [V>=1] 
+* CE 66: top(V,Out) = 1+ proper(W,X):1+ top(Y,Out)
+     [Y=1,X=1,W=0,V=1] 
+* CE 67: top(V,Out) = 1+ proper(W,X):2+ top(Y,Out)
+     [Y=2,X=2,W=1,V=2] 
+* CE 68: top(V,Out) = 1+ proper(W,X):3+ top(Y,Out)
+     [Y=3,X=3,W=2,V=3] 
+* CE 69: top(V,Out) = 1+ proper(W,X):4+ top(Y,Out)
+     [Y=4,X=4,W=3,V=4] 
+* CE 70: top(V,Out) = 1+ proper(W,X):5+ top(Y,Out)
+     [Y=5,X=5,W=4,V=5] 
+* CE 71: top(V,Out) = 1+ proper(W,X):6+ top(Y,Out)
+     [Y=6,X=6,W=5,V=6] 
+* CE 72: top(V,Out) = 1+ proper(W,X):7+ top(Y,Out)
+     [Y=7,X=7,W=6,V=7] 
+* CE 73: top(V,Out) = 1+ proper(W,X):8+ top(Y,Out)
+     [W>=0,W+1=V,Y=0,X=0] 
+
+### Cost equations --> "Loop" of top/2 
+* CEs [73] --> Loop 54 
+* CEs [72] --> Loop 55 
+* CEs [71] --> Loop 56 
+* CEs [70] --> Loop 57 
+* CEs [69] --> Loop 58 
+* CEs [68] --> Loop 59 
+* CEs [67] --> Loop 60 
+* CEs [65,66] --> Loop 61 
+* CEs [64] --> Loop 62 
+
+#### Loops of top/2 
+* Loop 54: top(V,Out)->  top(V',Out)
+                  [V>=1,V'=0] 
+* Loop 55: top(V,Out)->  top(V',Out)
+                  [V'=7,V=7] 
+* Loop 56: top(V,Out)->  top(V',Out)
+                  [V'=6,V=6] 
+* Loop 57: top(V,Out)->  top(V',Out)
+                  [V'=5,V=5] 
+* Loop 58: top(V,Out)->  top(V',Out)
+                  [V'=4,V=4] 
+* Loop 59: top(V,Out)->  top(V',Out)
+                  [V'=3,V=3] 
+* Loop 60: top(V,Out)->  top(V',Out)
+                  [V'=2,V=2] 
+* Loop 61: top(V,Out)->  top(V,Out)
+                  [V>=1] 
+* Loop 62: top(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR top(V,Out) 
+
+#### Partial ranking functions of CR top(V,Out) 
+
+
+### Resulting Chains:top(V,Out) 
+* [[55,56,57,58,59,60,61]]...
+* [[55,56,57,58,59,60,61],62]
+* [[55,56,57,58,59,60,61],54,62]
+* [62]
+* [54,62]
+
+
+### Merging Chains  top/2 into  External patterns of execution 
+* [[62,54],[62],[62,54,[55,56,57,58,59,60,61]],[62,[55,56,57,58,59,60,61]]] --> 1 
+* [[[55,56,57,58,59,60,61]]] --> 2 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [74,75] 
+* CE 3 is refined into CE [76,77,78,79,80,81,82,83] 
+* CE 4 is refined into CE [84,85] 
+* CE 5 is refined into CE [86,87] 
+* CE 6 is refined into CE [88,89] 
+* CE 7 is refined into CE [90,91] 
+* CE 8 is refined into CE [92,93] 
+* CE 9 is refined into CE [94,95] 
+* CE 10 is refined into CE [96,97] 
+
+
+#### Refined cost equations start/2 
+* CE 74: start(V,V1) = 0+ top(V,W1):1
+     [V>=0,W1=0] 
+* CE 75: start(V,V1) = 0+ top(V,W1):2
+     [V>=1] 
+* CE 76: start(V,V1) = 0+ proper(W1,X1):1
+     [X1=1,W1=0,V=0] 
+* CE 77: start(V,V1) = 0+ proper(W1,X1):2
+     [X1=2,W1=1,V=1] 
+* CE 78: start(V,V1) = 0+ proper(W1,X1):3
+     [X1=3,W1=2,V=2] 
+* CE 79: start(V,V1) = 0+ proper(W1,X1):4
+     [X1=4,W1=3,V=3] 
+* CE 80: start(V,V1) = 0+ proper(W1,X1):5
+     [X1=5,W1=4,V=4] 
+* CE 81: start(V,V1) = 0+ proper(W1,X1):6
+     [X1=6,W1=5,V=5] 
+* CE 82: start(V,V1) = 0+ proper(W1,X1):7
+     [X1=7,W1=6,V=6] 
+* CE 83: start(V,V1) = 0+ proper(V,W1):8
+     [V>=0,W1=0] 
+* CE 84: start(V,V1) = 0+ isNeList(V,W1):1
+     [V>=0,W1=0] 
+* CE 85: start(V,V1) = 0+ isNeList(V,W1):2
+     [V>=W1,W1>=1] 
+* CE 86: start(V,V1) = 0+ isQid(V,W1):1
+     [V>=0,W1=0] 
+* CE 87: start(V,V1) = 0+ isQid(V,W1):2
+     [V>=W1,W1>=1] 
+* CE 88: start(V,V1) = 0+ isPal(V,W1):1
+     [V>=0,W1=0] 
+* CE 89: start(V,V1) = 0+ isPal(V,W1):2
+     [V>=W1,W1>=1] 
+* CE 90: start(V,V1) = 0+ isNePal(V,W1):1
+     [V>=0,W1=0] 
+* CE 91: start(V,V1) = 0+ isNePal(V,W1):2
+     [V>=W1,W1>=1] 
+* CE 92: start(V,V1) = 0+ and(V,V1,W1):1
+     [V1>=0,V>=0,W1=0] 
+* CE 93: start(V,V1) = 0+ and(V,V1,W1):2
+     [V>=W1,W1>=1,V1>=0] 
+* CE 94: start(V,V1) = 0+ fun(V,V1,W1):1
+     [V1>=0,V>=0,W1=0] 
+* CE 95: start(V,V1) = 0+ fun(V,V1,W1):2
+     [V+V1>=W1,W1>=1,V1>=0,V>=0] 
+* CE 96: start(V,V1) = 0+ isList(V,W1):1
+     [V>=0,W1=0] 
+* CE 97: start(V,V1) = 0+ isList(V,W1):2
+     [V>=W1,W1>=1] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [82] --> Loop 63 
+* CEs [81] --> Loop 64 
+* CEs [80] --> Loop 65 
+* CEs [79] --> Loop 66 
+* CEs [78] --> Loop 67 
+* CEs [77] --> Loop 68 
+* CEs [74,76,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97] --> Loop 69 
+* CEs [75] --> Loop 70 
+
+#### Loops of start/2 
+* Loop 63: start(V,V1) [V=6] 
+* Loop 64: start(V,V1) [V=5] 
+* Loop 65: start(V,V1) [V=4] 
+* Loop 66: start(V,V1) [V=3] 
+* Loop 67: start(V,V1) [V=2] 
+* Loop 68: start(V,V1) [V=1] 
+* Loop 69: start(V,V1) [V>=0] 
+* Loop 70: start(V,V1) [V>=1] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [70]...
+* [69]
+* [68]
+* [67]
+* [66]
+* [65]
+* [64]
+* [63]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[68],[69]] --> 1 
+* [[67]] --> 2 
+* [[66]] --> 3 
+* [[65]] --> 4 
+* [[64]] --> 5 
+* [[63]] --> 6 
+* [[70]] --> 7 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [29,30] 
+
+ * loop 29:and(V,V1,Out) -> [and(V',V1',Out')] 
+1
+ * loop 30:and(V,V1,Out) -> [and(V',V1',Out')] 
+1
+#### Cost of phase [29,30]:and(V,V1,Out) -> [and(V',V1',Out')] 
+1*it(29)+1*it(30)+0
+  Such that:it(30) =< V1
+it(30) =< V1-V1'
+aux(1) =< V
+aux(2) =< V-V'
+it(29) =< aux(1)
+it(30) =< aux(1)
+it(29) =< aux(2)
+it(30) =< aux(2)
+
+#### Cost of chains of and(V,V1,Out):
+* Chain [[29,30],31]: 1*it(29)+1*it(30)+0
+  Such that:aux(1) =< V
+it(30) =< V1
+aux(2) =< Out
+it(29) =< aux(1)
+it(30) =< aux(1)
+it(29) =< aux(2)
+it(30) =< aux(2)
+
+  with precondition: [V1>=0,Out>=1,V>=Out] 
+
+* Chain [31]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of loops [32,33,34] 
+
+ * loop 32:fun(V,V1,Out) -> [fun(V',V1',Out')] 
+1
+ * loop 33:fun(V,V1,Out) -> [fun(V',V1',Out')] 
+1
+ * loop 34:fun(V,V1,Out) -> [fun(V',V1',Out')] 
+1
+#### Cost of phase [32,33,34]:fun(V,V1,Out) -> [fun(V',V1',Out')] 
+1*it(32)+1*it(33)+1*it(34)+0
+  Such that:aux(3) =< V
+aux(4) =< V+V1
+aux(5) =< V+V1-V'-V1'
+aux(6) =< V-V'
+aux(7) =< V1
+aux(8) =< V1-V1'
+it(33) =< aux(3)
+it(34) =< aux(3)
+it(32) =< aux(4)
+it(33) =< aux(4)
+it(34) =< aux(4)
+it(32) =< aux(5)
+it(33) =< aux(5)
+it(34) =< aux(5)
+it(33) =< aux(6)
+it(34) =< aux(6)
+it(32) =< aux(7)
+it(34) =< aux(7)
+it(32) =< aux(8)
+it(34) =< aux(8)
+
+#### Cost of chains of fun(V,V1,Out):
+* Chain [[32,33,34],35]: 1*it(32)+1*it(33)+1*it(34)+0
+  Such that:aux(9) =< V
+aux(10) =< V+V1
+aux(11) =< V1
+it(33) =< aux(9)
+it(34) =< aux(9)
+it(32) =< aux(10)
+it(33) =< aux(10)
+it(34) =< aux(10)
+it(32) =< aux(11)
+it(34) =< aux(11)
+
+  with precondition: [V>=0,V1>=0,Out>=1,V+V1>=Out] 
+
+* Chain [35]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of loops [36] 
+
+ * loop 36:isList(V,Out) -> [isList(V',Out')] 
+1
+#### Cost of phase [36]:isList(V,Out) -> [isList(V',Out')] 
+1*it(36)+0
+  Such that:it(36) =< V
+it(36) =< V-V'
+
+#### Cost of chains of isList(V,Out):
+* Chain [[36],37]: 1*it(36)+0
+  Such that:it(36) =< Out
+
+  with precondition: [Out>=1,V>=Out] 
+
+* Chain [37]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of loops [38] 
+
+ * loop 38:isNeList(V,Out) -> [isNeList(V',Out')] 
+1
+#### Cost of phase [38]:isNeList(V,Out) -> [isNeList(V',Out')] 
+1*it(38)+0
+  Such that:it(38) =< V
+it(38) =< V-V'
+
+#### Cost of chains of isNeList(V,Out):
+* Chain [[38],39]: 1*it(38)+0
+  Such that:it(38) =< Out
+
+  with precondition: [Out>=1,V>=Out] 
+
+* Chain [39]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of loops [40] 
+
+ * loop 40:isNePal(V,Out) -> [isNePal(V',Out')] 
+1
+#### Cost of phase [40]:isNePal(V,Out) -> [isNePal(V',Out')] 
+1*it(40)+0
+  Such that:it(40) =< V
+it(40) =< V-V'
+
+#### Cost of chains of isNePal(V,Out):
+* Chain [[40],41]: 1*it(40)+0
+  Such that:it(40) =< Out
+
+  with precondition: [Out>=1,V>=Out] 
+
+* Chain [41]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of loops [42] 
+
+ * loop 42:isPal(V,Out) -> [isPal(V',Out')] 
+1
+#### Cost of phase [42]:isPal(V,Out) -> [isPal(V',Out')] 
+1*it(42)+0
+  Such that:it(42) =< V
+it(42) =< V-V'
+
+#### Cost of chains of isPal(V,Out):
+* Chain [[42],43]: 1*it(42)+0
+  Such that:it(42) =< Out
+
+  with precondition: [Out>=1,V>=Out] 
+
+* Chain [43]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of loops [44] 
+
+ * loop 44:isQid(V,Out) -> [isQid(V',Out')] 
+1
+#### Cost of phase [44]:isQid(V,Out) -> [isQid(V',Out')] 
+1*it(44)+0
+  Such that:it(44) =< V
+it(44) =< V-V'
+
+#### Cost of chains of isQid(V,Out):
+* Chain [[44],45]: 1*it(44)+0
+  Such that:it(44) =< Out
+
+  with precondition: [Out>=1,V>=Out] 
+
+* Chain [45]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of chains of proper(V,Out):
+* Chain [53]: 1
+  with precondition: [V=0,Out=1] 
+
+* Chain [52]: 1
+  with precondition: [V=1,Out=2] 
+
+* Chain [51]: 1
+  with precondition: [V=2,Out=3] 
+
+* Chain [50]: 1
+  with precondition: [V=3,Out=4] 
+
+* Chain [49]: 1
+  with precondition: [V=4,Out=5] 
+
+* Chain [48]: 1
+  with precondition: [V=5,Out=6] 
+
+* Chain [47]: 1
+  with precondition: [V=6,Out=7] 
+
+* Chain [46]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of loops [55,56,57,58,59,60,61] 
+
+ * loop 55:top(V,Out) -> [top(V',Out')] 
+2
+ * loop 56:top(V,Out) -> [top(V',Out')] 
+2
+ * loop 57:top(V,Out) -> [top(V',Out')] 
+2
+ * loop 58:top(V,Out) -> [top(V',Out')] 
+2
+ * loop 59:top(V,Out) -> [top(V',Out')] 
+2
+ * loop 60:top(V,Out) -> [top(V',Out')] 
+2
+ * loop 61:top(V,Out) -> [top(V',Out')] 
+2
+#### Cost of phase [55,56,57,58,59,60,61]:top(V,Out) -> [top(V',Out')] 
+14*it(55)+0
+#### Cost of phase [55,56,57,58,59,60,61]:top(V,Out) -> [top(V',Out')] 
+14*it(55)+0
+#### Cost of phase [55,56,57,58,59,60,61]:top(V,Out) -> [top(V',Out')] 
+14*it(55)+0
+#### Cost of chains of top(V,Out):
+* Chain [[55,56,57,58,59,60,61]]...: 14*it(55)+0
+  with precondition: [V>=1] 
+
+* Chain [[55,56,57,58,59,60,61],62]: 14*it(55)+0
+  with precondition: [Out=0,V>=1] 
+
+* Chain [[55,56,57,58,59,60,61],54,62]: 14*it(55)+1
+  with precondition: [Out=0,V>=1] 
+
+* Chain [62]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [54,62]: 1
+  with precondition: [Out=0,V>=1] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [70]...: 14*s(3)+0
+  with precondition: [V>=1] 
+
+* Chain [69]: 1*s(4)+6*s(5)+1*s(10)+1*s(16)+1*s(17)+1*s(18)+1
+  Such that:s(14) =< V+V1
+aux(14) =< V
+aux(15) =< V1
+s(5) =< aux(14)
+s(10) =< aux(15)
+s(16) =< aux(14)
+s(17) =< aux(14)
+s(18) =< s(14)
+s(16) =< s(14)
+s(17) =< s(14)
+s(18) =< aux(15)
+s(17) =< aux(15)
+s(10) =< aux(14)
+
+  with precondition: [V>=0] 
+
+* Chain [68]: 1
+  with precondition: [V=1] 
+
+* Chain [67]: 1
+  with precondition: [V=2] 
+
+* Chain [66]: 1
+  with precondition: [V=3] 
+
+* Chain [65]: 1
+  with precondition: [V=4] 
+
+* Chain [64]: 1
+  with precondition: [V=5] 
+
+* Chain [63]: 1
+  with precondition: [V=6] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [70]... with precondition: [V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [69] with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [68] with precondition: [V=1] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [67] with precondition: [V=2] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [66] with precondition: [V=3] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [65] with precondition: [V=4] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [64] with precondition: [V=5] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [63] with precondition: [V=6] 
+    - Upper bound: 1 
+    - Complexity: constant 
+
+### Maximum cost of start(V,V1): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 18 ms.
+* Invariants computed in 54 ms.
+   - Backward Invariants 24 ms.
+   - Transitive Invariants 13 ms.
+* Refinement performed in 97 ms.
+* Termination proved in 15 ms.
+* Upper bounds computed in 79 ms.
+   - Equation cost structures 29 ms.
+   - Phase cost structures 31 ms.
+   - Chain cost structures 22 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 300 ms.
+

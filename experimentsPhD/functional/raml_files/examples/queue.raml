@@ -1,0 +1,136 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/queue.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   A breadth-first traversal of a tree using a FIFO queue.
+ *
+ *   A nice example that demonstrates the strengths of amortized
+ *   analysis is the analysis of algorithms that uses a FIFO queue or
+ *   just a queue.  A queue is usually implemented as a pair of lists
+ *   that consists of an in-queue and an out-queue: If an element is
+ *   enqueued then it is added to the top of the in-queue.  If an
+ *   element is dequeued then it is removed from the top of the
+ *   out-queue.  If the out-queue is empty then the in-queue is copied
+ *   over to the out-queue.
+ *
+ *   A standard example of the use of a queue is the breadth-first
+ *   traversal of a tree: One puts the tree in the queue and then
+ *   proceeds by dequeing an element, processing its root, and
+ *   enqueueing its children.
+ *
+ *   Here we use a compact representaition of special trees that has the 
+ *   type (int,int,L(int),L(int)).  The size of the tree is quadratic in the
+ *   lengths of the lists.  For example (1,1,[2,3,4,5],[2,3,4,5])
+ *   defines the tree
+ *
+ *              (1,1)
+ *             /     \
+ *          (2,1)     (2,2)
+ *           /       /    \
+ *        (3,1)   (3,2)   (3,3)
+ *         /       /       /   \
+ *      (4,1)   (4,2)   (4,3)  (4,4)
+ *       /       /       /      /   \
+ *    (5,1)   (5,2)   (5,3)  (5,4)  (5,5)
+ *
+ *   See the function children for details.
+ *
+ *   This compact representation of trees leads to a quadratic resource 
+ *   behavior.
+ *)
+
+
+let empty x =
+	([], []);;
+
+let enqueue x queue =
+	let (inq, outq) = queue in
+	(Raml.tick(1.0); (x::inq, outq));;
+
+let rec enqueues l queue =
+	match l with
+	| [] -> queue
+	| x::xs -> (Raml.tick(1.0); enqueues xs (enqueue x queue));;
+
+let rec copyover queue =
+	let (inq, outq) = queue in
+	match inq with
+	| [] -> ([], outq)
+	| x::xs -> (Raml.tick(1.0); copyover (xs, (x::outq)));;
+
+let rec dequeue queue =
+	let (inq, outq) = queue in
+	match outq with
+	| [] ->
+		begin
+		match inq with
+		| [] -> (([], []), [])
+		| x::xs -> (Raml.tick(1.0); dequeue (copyover ((x::xs), [])))
+		end
+	| y::ys -> (Raml.tick(1.0); ((inq, ys), [y]));;
+
+let children c =
+	let (a, b, l1, l2) = c in
+	((a, b),
+	match l1 with
+	| [] ->
+		begin
+		match l2 with
+		| [] -> []
+		| y::ys -> (Raml.tick(1.0); [(y, b, [], ys)])
+		end
+	| x::xs ->
+		begin
+		match l2 with
+		| [] -> []
+		| y::ys -> (Raml.tick(1.0); [(x, b, [], xs); (x, y, xs, ys)])
+		end
+	);;
+
+let rec breadth queue =
+	let (queue', elem) = dequeue queue in
+	match elem with
+	| [] -> []
+	| z::_ ->
+		let (x, ys) = children z in
+		(Raml.tick(1.0); x::(breadth (enqueues ys queue')));;
+
+let startBreadth xs =
+	match xs with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); breadth (enqueue (x, x, xs, xs) (empty ())));;
+
+let rec appendD xs ys =
+	match xs with
+	| [] -> ys
+	| x::xs -> (Raml.tick(1.0); x::appendD xs ys);;
+
+let rec depth d =
+	let (a, b, l1, l2) = d in
+	let (x, zs) = children (a, b, l1, l2) in
+	x::
+	(
+		match zs with
+		| [] -> []
+		| z1::zs ->
+			(Raml.tick(1.0);
+			match zs with
+			| [] -> depth z1
+			| z2::_ -> appendD (depth z1) (depth z2))
+	);;
+
+let startDepth xs =
+	match xs with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); depth (x, x, xs, xs));;
+
+startBreadth [1;2;3;4;5;6;7]

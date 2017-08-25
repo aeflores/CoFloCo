@@ -1,0 +1,334 @@
+Warning: Ignored call to outadd/2 in equation out_mult/2 
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [sum/3]
+1. recursive : [addp/3]
+2. non_recursive : [add/2]
+3. recursive : [mult/2]
+4. non_recursive : [mult3/3]
+6. recursive : [bitToIntp/2]
+7. non_recursive : [bitToInt/1]
+8. recursive : [compare/2]
+9. non_recursive : [diff/3]
+10. non_recursive : [leq/2]
+11. recursive : [out_mult/2]
+12. recursive : [subp/3]
+Warning: the following predicates are never called:[bitToIntp/2,compare/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into addp/3
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into mult/2
+4. SCC is partially evaluated into mult3/3
+6. SCC is partially evaluated into bitToIntp/2
+7. SCC is completely evaluated into other SCCs
+8. SCC is partially evaluated into compare/2
+9. SCC is completely evaluated into other SCCs
+10. SCC is completely evaluated into other SCCs
+11. SCC is completely evaluated into other SCCs
+12. SCC is completely evaluated into other SCCs
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations addp/3 
+* CE 8 is refined into CE [9] 
+* CE 7 is refined into CE [10] 
+* CE 6 is refined into CE [11] 
+
+
+#### Refined cost equations addp/3 
+* CE 9: addp(B1,B2,R) = 2+ addp(C2,D2,E2)
+     [B2>=1,B1>=1,B2=D2+1,B1=C2+1] 
+* CE 10: addp(B1,B2,R) = 1
+     [B1>=1,B2=0] 
+* CE 11: addp(B1,B2,R) = 1
+     [B1=0] 
+
+### Cost equations --> "Loop" of addp/3 
+* CEs [10] --> Loop 8 
+* CEs [11] --> Loop 9 
+* CEs [9] --> Loop 10 
+
+#### Loops of addp/3 
+* Loop 8: addp(B1,B2,R) [B1>=1,B2=0] 
+* Loop 9: addp(B1,B2,R) [B1=0] 
+* Loop 10: addp(B1,B2,R)->  addp(B1',B2',R')
+                  [B2>=1,B1>=1,B2=B2'+1,B1=B1'+1] 
+
+### Ranking functions of CR addp(B1,B2,R) 
+* RF of phase [10]: [B1,B2]
+
+#### Partial ranking functions of CR addp(B1,B2,R) 
+* Partial RF of phase [10]:
+  - RF of loop [10:1]:
+    B1
+    B2
+
+
+### Resulting Chains:addp(B1,B2,R) 
+* [[10],9]
+* [[10],8]
+* [9]
+* [8]
+
+
+### Specialization of cost equations mult/2 
+* CE 5 is refined into CE [12,13,14,15] 
+* CE 4 is refined into CE [16] 
+* CE 3 is refined into CE [17] 
+
+
+#### Refined cost equations mult/2 
+* CE 12: mult(B1,B2) = 2+ mult(C2,B2)+ addp(B2,D2,E2):[[10],9]
+     [B1>=D2,D2>=B2,B2>=1,B1=C2+1,E2=0] 
+* CE 13: mult(B1,B2) = 2+ mult(C2,B2)+ addp(B2,D2,E2):[[10],8]
+     [B2>=D2+1,B1>=D2,D2>=1,B1=C2+1,E2=0] 
+* CE 14: mult(B1,B2) = 2+ mult(C2,D2)+ addp(E2,F2,G2):[9]
+     [B1>=F2,B1>=1,B1=C2+1,D2=0,G2=0,E2=0,B2=0] 
+* CE 15: mult(B1,B2) = 2+ mult(C2,B2)+ addp(B2,D2,E2):[8]
+     [B2>=1,B1>=1,B1=C2+1,E2=0,D2=0] 
+* CE 16: mult(B1,B2) = 1+ mult(C2,B2)
+     [C2>=0,C2+1=B1] 
+* CE 17: mult(B1,B2) = 1
+     [B1=0] 
+
+### Cost equations --> "Loop" of mult/2 
+* CEs [17] --> Loop 11 
+* CEs [12] --> Loop 12 
+* CEs [13] --> Loop 13 
+* CEs [15] --> Loop 14 
+* CEs [16] --> Loop 15 
+* CEs [14] --> Loop 16 
+
+#### Loops of mult/2 
+* Loop 11: mult(B1,B2) [B1=0] 
+* Loop 12: mult(B1,B2)->  mult(B1',B2)
+                  [B1>=B2,B2>=1,B1=B1'+1] 
+* Loop 13: mult(B1,B2)->  mult(B1',B2)
+                  [B2>=2,B1>=1,B1=B1'+1] 
+* Loop 14: mult(B1,B2)->  mult(B1',B2)
+                  [B2>=1,B1>=1,B1=B1'+1] 
+* Loop 15: mult(B1,B2)->  mult(B1',B2)
+                  [B1'>=0,B1'+1=B1] 
+* Loop 16: mult(B1,B2)->  mult(B1',B2')
+                  [B1'>=0,B1'+1=B1,B2'=0,B2=0] 
+
+### Ranking functions of CR mult(B1,B2) 
+* RF of phase [12,13,14,15,16]: [B1]
+
+#### Partial ranking functions of CR mult(B1,B2) 
+* Partial RF of phase [12,13,14,15,16]:
+  - RF of loop [12:1]:
+    B1-B2+1
+  - RF of loop [12:1,13:1,14:1,15:1,16:1]:
+    B1
+
+
+### Resulting Chains:mult(B1,B2) 
+* [[12,13,14,15,16],11]
+* [11]
+
+
+### Specialization of cost equations mult3/3 
+* CE 2 is refined into CE [18,19] 
+
+
+#### Refined cost equations mult3/3 
+* CE 18: mult3(A,B,C) = 1+ mult(A,B):[[12,13,14,15,16],11]+ mult(A,B):[[12,13,14,15,16],11]
+     [A>=1] 
+* CE 19: mult3(A,B,C) = 1+ mult(D,B):[11]+ mult(E,B):[11]
+     [E=0,D=0,A=0] 
+
+### Cost equations --> "Loop" of mult3/3 
+* CEs [18] --> Loop 17 
+* CEs [19] --> Loop 18 
+
+#### Loops of mult3/3 
+* Loop 17: mult3(A,B,C) [A>=1] 
+* Loop 18: mult3(A,B,C) [A=0] 
+
+### Ranking functions of CR mult3(A,B,C) 
+
+#### Partial ranking functions of CR mult3(A,B,C) 
+
+
+### Resulting Chains:mult3(A,B,C) 
+* [18]
+* [17]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [10] 
+
+ * loop 10:addp(B1,B2,R) -> [addp(B1',B2',R')] 
+2
+#### Cost of phase [10]:addp(B1,B2,R) -> [addp(B1',B2',R')] 
+2*it(10)+0
+  Such that:it(10) =< B1
+it(10) =< B1-B1'
+it(10) =< B2
+it(10) =< B2-B2'
+it(10) >= B1-B1'
+it(10) >= B2-B2'
+
+#### Cost of phase [10]:addp(B1,B2,R) -> [addp(B1',B2',R')] 
+2*it(10)+0
+  Such that:it(10) =< B1
+it(10) =< B1-B1'
+it(10) =< B2
+it(10) =< B2-B2'
+it(10) >= B1-B1'
+it(10) >= B2-B2'
+
+#### Cost of chains of addp(B1,B2,R):
+* Chain [[10],9]: 2*it(10)+1
+  Such that:it(10) =< B1
+it(10) >= B1
+
+  with precondition: [B1>=1,B2>=B1] 
+
+* Chain [[10],8]: 2*it(10)+1
+  Such that:it(10) =< B2
+it(10) >= B2
+
+  with precondition: [B2>=1,B1>=B2+1] 
+
+* Chain [9]: 1
+  with precondition: [B1=0] 
+
+* Chain [8]: 1
+  with precondition: [B2=0,B1>=1] 
+
+
+#### Cost of loops [12,13,14,15,16] 
+
+ * loop 12:mult(B1,B2) -> [mult(B1',B2')] 
+2*s(2)+3
+  Such that:s(2) =< B2
+s(2) >= B2
+
+ * loop 13:mult(B1,B2) -> [mult(B1',B2')] 
+2*s(4)+3
+  Such that:s(4) =< B2'-1
+s(4) >= 1
+
+ * loop 14:mult(B1,B2) -> [mult(B1',B2')] 
+3
+ * loop 15:mult(B1,B2) -> [mult(B1',B2')] 
+1
+ * loop 16:mult(B1,B2) -> [mult(B1',B2')] 
+3
+#### Cost of phase [12,13,14,15,16]:mult(B1,B2) -> [mult(B1',B2')] 
+3*it(12)+3*it(13)+3*it(14)+1*it(15)+3*it(16)+2*s(5)+2*s(6)+0
+  Such that:it(12)+it(13)+it(14)+it(15)+it(16) =< B1
+it(12)+it(16) =< B1-B2+1
+it(12)+it(13)+it(14)+it(15)+it(16) =< B1-B2-B1'+B2'
+it(12)+it(13)+it(14)+it(15)+it(16) =< B1-B1'
+aux(2) =< B2
+aux(4) =< aux(2)-1
+s(5) =< it(12)*aux(2)
+s(6) =< it(13)*aux(4)
+it(12)+it(13)+it(14)+it(15)+it(16) >= B1-B2-B1'+B2'
+aux(1) >= B2
+aux(5) >= B1-B1'
+aux(3)+it(12)+it(14)+it(15)+it(16) >= aux(5)
+it(12)+it(13)+it(14)+it(15)+it(16) >= aux(5)
+it(13)+it(14)+it(15)+it(16)+s(5) >= aux(5)
+s(6) >= aux(3)
+s(5) >= it(12)*aux(1)
+
+#### Cost of chains of mult(B1,B2):
+* Chain [[12,13,14,15,16],11]: 3*it(12)+3*it(13)+3*it(14)+1*it(15)+3*it(16)+2*s(5)+2*s(6)+1
+  Such that:it(16)+it(15)+it(14)+it(13)+it(12) =< B1
+it(12)+it(16) =< B1-B2+1
+aux(2) =< B2
+s(5) =< it(12)*aux(2)
+aux(1) >= B2
+aux(6) >= B1
+aux(6) >= aux(6)
+it(12)+it(13)+it(14)+it(15)+it(16) >= aux(6)
+aux(3)+it(12)+it(14)+it(15)+it(16) >= aux(6)
+it(13)+it(14)+it(15)+it(16)+s(5) >= aux(6)
+s(6) >= aux(3)
+s(5) >= it(12)*aux(1)
+
+  with precondition: [B1>=1] 
+
+* Chain [11]: 1
+  with precondition: [B1=0] 
+
+
+#### Cost of chains of mult3(A,B,C):
+* Chain [18]: 3
+  with precondition: [A=0] 
+
+* Chain [17]: 3*s(7)+1*s(8)+3*s(9)+3*s(10)+3*s(11)+2*s(16)+2*s(17)+3*s(18)+1*s(19)+3*s(20)+3*s(21)+3*s(22)+2*s(27)+2*s(28)+3
+  Such that:aux(7) =< A
+aux(8) =< A-B+1
+aux(9) =< B
+s(7)+s(8)+s(9)+s(10)+s(11) =< aux(7)
+s(18)+s(19)+s(20)+s(21)+s(22) =< aux(7)
+s(7)+s(11) =< aux(8)
+s(18)+s(22) =< aux(8)
+s(27) =< s(22)*aux(9)
+s(16) =< s(11)*aux(9)
+aux(10) >= A
+aux(11) >= B
+s(14) >= aux(10)
+s(25) >= aux(10)
+aux(11) >= aux(11)
+s(25) >= s(25)
+s(18)+s(19)+s(20)+s(21)+s(22) >= s(25)
+s(18)+s(19)+s(20)+s(22)+s(26) >= s(25)
+s(18)+s(19)+s(20)+s(21)+s(27) >= s(25)
+s(28) >= s(26)
+s(27) >= s(22)*aux(11)
+s(14) >= s(14)
+s(7)+s(8)+s(9)+s(10)+s(11) >= s(14)
+s(7)+s(8)+s(9)+s(11)+s(15) >= s(14)
+s(7)+s(8)+s(9)+s(10)+s(16) >= s(14)
+s(17) >= s(15)
+s(16) >= s(11)*aux(11)
+
+  with precondition: [A>=1] 
+
+
+Closed-form bounds of mult3(A,B,C): 
+-------------------------------------
+* Chain [18] with precondition: [A=0] 
+    - Lower bound: 3 
+    - Complexity: constant
+ * Chain [17] with precondition: [A>=1] 
+    - Lower bound: 4*A+3 
+    - Complexity: n
+ 
+### Partitioned lower bound of mult3(A,B,C): 
+* 3 
+ if [A=0]
+* 4*A+3 
+ if [A>=1]
+Possible lower bounds : [3,4*A+3]
+Maximum lower bound complexity: n
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 16 ms.
+* Invariants computed in 53 ms.
+   - Backward Invariants 20 ms.
+   - Transitive Invariants 18 ms.
+* Refinement performed in 74 ms.
+* Termination proved in 20 ms.
+* Upper bounds computed in 190 ms.
+   - Equation cost structures 46 ms.
+   - Phase cost structures 88 ms.
+   - Chain cost structures 31 ms.
+   - Solving cost expressions 33 ms.
+* Total analysis performed in 403 ms.
+

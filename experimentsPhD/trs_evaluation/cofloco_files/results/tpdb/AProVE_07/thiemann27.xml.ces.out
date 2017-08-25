@@ -1,0 +1,354 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [le/3]
+1. recursive  : [if/4,int/3]
+2. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into le/3
+1. SCC is partially evaluated into int/3
+2. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations le/3 
+* CE 10 is refined into CE [11] 
+* CE 9 is refined into CE [12] 
+* CE 8 is refined into CE [13] 
+
+
+#### Refined cost equations le/3 
+* CE 11: le(V1,V,Out) = 1+ le(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+* CE 12: le(V1,V,Out) = 1
+     [V1>=1,Out=0,V=0] 
+* CE 13: le(V1,V,Out) = 1
+     [V>=0,Out=1,V1=0] 
+
+### Cost equations --> "Loop" of le/3 
+* CEs [12] --> Loop 8 
+* CEs [13] --> Loop 9 
+* CEs [11] --> Loop 10 
+
+#### Loops of le/3 
+* Loop 8: le(V1,V,Out) [V1>=1,Out=0,V=0] 
+* Loop 9: le(V1,V,Out) [V>=0,Out=1,V1=0] 
+* Loop 10: le(V1,V,Out)->  le(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+
+### Ranking functions of CR le(V1,V,Out) 
+* RF of phase [10]: [V,V1]
+
+#### Partial ranking functions of CR le(V1,V,Out) 
+* Partial RF of phase [10]:
+  - RF of loop [10:1]:
+    V
+    V1
+
+
+### Resulting Chains:le(V1,V,Out) 
+* [[10],9]
+* [[10],8]
+* [9]
+* [8]
+
+
+### Merging Chains  le/3 into  External patterns of execution 
+* [[9]] --> 1 
+* [[8]] --> 2 
+* [[8,[10]]] --> 3 
+* [[9,[10]]] --> 4 
+
+
+### Specialization of cost equations int/3 
+* CE 7 is refined into CE [14,15] 
+* CE 6 is refined into CE [16,17] 
+
+
+#### Refined cost equations int/3 
+* CE 14: int(V1,V,Out) = 2+ le(W1,V,X1):1+ int(Y1,V,Z1)
+     [V>=0,Out=Z1+1,Y1=1,X1=1,W1=0,V1=0] 
+* CE 15: int(V1,V,Out) = 2+ le(V1,V,W1):4+ int(X1,V,Y1)
+     [V>=V1,V1>=1,V1+Y1+1=Out,V1+1=X1,W1=1] 
+* CE 16: int(V1,V,Out) = 2+ le(V1,W1,X1):2
+     [V1>=1,X1=0,W1=0,Out=0,V=0] 
+* CE 17: int(V1,V,Out) = 2+ le(V1,V,W1):3
+     [V1>=V+1,V>=1,W1=0,Out=0] 
+
+### Cost equations --> "Loop" of int/3 
+* CEs [17] --> Loop 11 
+* CEs [16] --> Loop 12 
+* CEs [15] --> Loop 13 
+* CEs [14] --> Loop 14 
+
+#### Loops of int/3 
+* Loop 11: int(V1,V,Out) [V1>=V+1,V>=1,Out=0] 
+* Loop 12: int(V1,V,Out) [V1>=1,Out=0,V=0] 
+* Loop 13: int(V1,V,Out)->  int(V1',V,Out')
+                  [V>=V1,V1>=1,V1+Out'+1=Out,V1+1=V1'] 
+* Loop 14: int(V1,V,Out)->  int(V1',V,Out')
+                  [V>=0,Out=Out'+1,V1'=1,V1=0] 
+
+### Ranking functions of CR int(V1,V,Out) 
+* RF of phase [13]: [-V1+V+1]
+
+#### Partial ranking functions of CR int(V1,V,Out) 
+* Partial RF of phase [13]:
+  - RF of loop [13:1]:
+    -V1+V+1
+
+
+### Resulting Chains:int(V1,V,Out) 
+* [[13],11]
+* [14,[13],11]
+* [14,12]
+* [12]
+* [11]
+
+
+### Merging Chains  int/3 into  External patterns of execution 
+* [[12,14]] --> 1 
+* [[11,[13],14]] --> 2 
+* [[12]] --> 3 
+* [[11]] --> 4 
+* [[11,[13]]] --> 5 
+
+
+### Specialization of cost equations start/3 
+* CE 3 is refined into CE [18,19,20] 
+* CE 2 is refined into CE [21] 
+* CE 4 is refined into CE [22,23,24,25] 
+* CE 5 is refined into CE [26,27,28,29,30] 
+
+
+#### Refined cost equations start/3 
+* CE 18: start(V1,V,V10) = 1+ int(W10,X10,Y10):3
+     [W10>=1,W10=V+1,Y10=0,X10=0,V10=0,V1=1] 
+* CE 19: start(V1,V,V10) = 1+ int(W10,V10,X10):4
+     [W10>=V10+1,V10>=1,W10=V+1,X10=0,V1=1] 
+* CE 20: start(V1,V,V10) = 1+ int(W10,V10,X10):5
+     [X10+2*W10>=3*V10+1,V10>=W10,W10>=1,W10=V+1,V1=1] 
+* CE 21: start(V1,V,V10) = 1
+     [V10>=0,V>=0,V1=0] 
+* CE 22: start(V1,V,V10) = 0+ le(W10,V,X10):1
+     [V>=0,X10=1,W10=0,V1=0] 
+* CE 23: start(V1,V,V10) = 0+ le(V1,W10,X10):2
+     [V1>=1,X10=0,W10=0,V=0] 
+* CE 24: start(V1,V,V10) = 0+ le(V1,V,W10):3
+     [V1>=V+1,V>=1,W10=0] 
+* CE 25: start(V1,V,V10) = 0+ le(V1,V,W10):4
+     [V>=V1,V1>=1,W10=1] 
+* CE 26: start(V1,V,V10) = 0+ int(W10,X10,Y10):1
+     [Y10=1,X10=0,W10=0,V=0,V1=0] 
+* CE 27: start(V1,V,V10) = 0+ int(W10,V,X10):2
+     [X10>=3*V,V>=1,W10=0,V1=0] 
+* CE 28: start(V1,V,V10) = 0+ int(V1,W10,X10):3
+     [V1>=1,X10=0,W10=0,V=0] 
+* CE 29: start(V1,V,V10) = 0+ int(V1,V,W10):4
+     [V1>=V+1,V>=1,W10=0] 
+* CE 30: start(V1,V,V10) = 0+ int(V1,V,W10):5
+     [W10+2*V1>=3*V+1,V>=V1,V1>=1] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [24,29] --> Loop 15 
+* CEs [23,28] --> Loop 16 
+* CEs [19,25,30] --> Loop 17 
+* CEs [20] --> Loop 18 
+* CEs [18] --> Loop 19 
+* CEs [21,22,26,27] --> Loop 20 
+
+#### Loops of start/3 
+* Loop 15: start(V1,V,V10) [V1>=V+1,V>=1] 
+* Loop 16: start(V1,V,V10) [V1>=1,V=0] 
+* Loop 17: start(V1,V,V10) [V>=V1,V1>=1] 
+* Loop 18: start(V1,V,V10) [V10>=V+1,V>=0,V1=1] 
+* Loop 19: start(V1,V,V10) [V>=0,V10=0,V1=1] 
+* Loop 20: start(V1,V,V10) [V>=0,V1=0] 
+
+### Ranking functions of CR start(V1,V,V10) 
+
+#### Partial ranking functions of CR start(V1,V,V10) 
+
+
+### Resulting Chains:start(V1,V,V10) 
+* [20]
+* [19]
+* [18]
+* [17]
+* [16]
+* [15]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[20]] --> 1 
+* [[19]] --> 2 
+* [[18]] --> 3 
+* [[16]] --> 4 
+* [[17]] --> 5 
+* [[15]] --> 6 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [10] 
+
+ * loop 10:le(V1,V,Out) -> [le(V1',V',Out')] 
+1
+#### Cost of phase [10]:le(V1,V,Out) -> [le(V1',V',Out')] 
+1*it(10)+0
+  Such that:it(10) =< V1
+it(10) =< V1-V1'
+it(10) =< V
+it(10) =< V-V'
+
+#### Cost of phase [10]:le(V1,V,Out) -> [le(V1',V',Out')] 
+1*it(10)+0
+  Such that:it(10) =< V1
+it(10) =< V1-V1'
+it(10) =< V
+it(10) =< V-V'
+
+#### Cost of chains of le(V1,V,Out):
+* Chain [[10],9]: 1*it(10)+1
+  Such that:it(10) =< V1
+
+  with precondition: [Out=1,V1>=1,V>=V1] 
+
+* Chain [[10],8]: 1*it(10)+1
+  Such that:it(10) =< V
+
+  with precondition: [Out=0,V>=1,V1>=V+1] 
+
+* Chain [9]: 1
+  with precondition: [V1=0,Out=1,V>=0] 
+
+* Chain [8]: 1
+  with precondition: [V=0,Out=0,V1>=1] 
+
+
+#### Cost of loops [13] 
+
+ * loop 13:int(V1,V,Out) -> [int(V1',V',Out')] 
+1*s(3)+3
+  Such that:s(3) =< V1'
+
+#### Cost of phase [13]:int(V1,V,Out) -> [int(V1',V',Out')] 
+3*it(13)+1*s(4)+0
+  Such that:it(13) =< -V1+V+1
+it(13) =< -V1+V+V1'-V'
+aux(1) =< V+1
+s(4) =< it(13)*aux(1)
+
+#### Cost of chains of int(V1,V,Out):
+* Chain [[13],11]: 3*it(13)+1*s(1)+1*s(4)+3
+  Such that:it(13) =< -V1+V+1
+s(1) =< V
+aux(1) =< V+1
+s(4) =< it(13)*aux(1)
+
+  with precondition: [V1>=1,V>=V1,Out+2*V1>=3*V+1] 
+
+* Chain [14,[13],11]: 4*it(13)+1*s(4)+6
+  Such that:aux(1) =< V+1
+aux(2) =< V
+it(13) =< aux(2)
+s(4) =< it(13)*aux(1)
+
+  with precondition: [V1=0,V>=1,Out>=3*V] 
+
+* Chain [14,12]: 6
+  with precondition: [V1=0,V=0,Out=1] 
+
+* Chain [12]: 3
+  with precondition: [V=0,Out=0,V1>=1] 
+
+* Chain [11]: 1*s(1)+3
+  Such that:s(1) =< V
+
+  with precondition: [Out=0,V>=1,V1>=V+1] 
+
+
+#### Cost of chains of start(V1,V,V10):
+* Chain [20]: 4*s(7)+1*s(8)+6
+  Such that:s(6) =< V
+s(5) =< V+1
+s(7) =< s(6)
+s(8) =< s(7)*s(5)
+
+  with precondition: [V1=0,V>=0] 
+
+* Chain [19]: 4
+  with precondition: [V1=1,V10=0,V>=0] 
+
+* Chain [18]: 3*s(9)+1*s(10)+1*s(12)+4
+  Such that:s(9) =< -V+V10
+s(10) =< V10
+s(11) =< V10+1
+s(12) =< s(9)*s(11)
+
+  with precondition: [V1=1,V>=0,V10>=V+1] 
+
+* Chain [17]: 1*s(13)+1*s(14)+3*s(15)+1*s(16)+1*s(18)+4
+  Such that:s(15) =< -V1+V+1
+s(14) =< V1
+s(16) =< V
+s(17) =< V+1
+s(13) =< V10
+s(18) =< s(15)*s(17)
+
+  with precondition: [V1>=1,V>=V1] 
+
+* Chain [16]: 3
+  with precondition: [V=0,V1>=1] 
+
+* Chain [15]: 2*s(19)+3
+  Such that:aux(3) =< V
+s(19) =< aux(3)
+
+  with precondition: [V>=1,V1>=V+1] 
+
+
+Closed-form bounds of start(V1,V,V10): 
+-------------------------------------
+* Chain [20] with precondition: [V1=0,V>=0] 
+    - Upper bound: 4*V+6+ (V+1)*V 
+    - Complexity: n^2 
+* Chain [19] with precondition: [V1=1,V10=0,V>=0] 
+    - Upper bound: 4 
+    - Complexity: constant 
+* Chain [18] with precondition: [V1=1,V>=0,V10>=V+1] 
+    - Upper bound: V10+4+ (-V+V10)* (V10+1)+ (-3*V+3*V10) 
+    - Complexity: n^2 
+* Chain [17] with precondition: [V1>=1,V>=V1] 
+    - Upper bound: V1+V+4+nat(V10)+ (-V1+V+1)* (V+1)+ (-3*V1+3*V+3) 
+    - Complexity: n^2 
+* Chain [16] with precondition: [V=0,V1>=1] 
+    - Upper bound: 3 
+    - Complexity: constant 
+* Chain [15] with precondition: [V>=1,V1>=V+1] 
+    - Upper bound: 2*V+3 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V,V10): max([max([1,nat(V10)+1+nat(-V+V10)*nat(V10+1)+nat(-V+V10)*3]),max([2*V+3+ (V+1)*V+V,V1+1+nat(V10)+ (V+1)*nat(-V1+V+1)+nat(-V1+V+1)*3])+V])+3 
+Asymptotic class: n^2 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 30 ms.
+* Invariants computed in 70 ms.
+   - Backward Invariants 34 ms.
+   - Transitive Invariants 9 ms.
+* Refinement performed in 124 ms.
+* Termination proved in 12 ms.
+* Upper bounds computed in 144 ms.
+   - Equation cost structures 50 ms.
+   - Phase cost structures 33 ms.
+   - Chain cost structures 30 ms.
+   - Solving cost expressions 6 ms.
+* Total analysis performed in 434 ms.
+

@@ -1,0 +1,141 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [and/4]
+1. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into and/4
+1. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations and/4 
+* CE 4 is refined into CE [5] 
+* CE 3 is refined into CE [6] 
+
+
+#### Refined cost equations and/4 
+* CE 5: and(V,V1,V5,Out) = 0
+     [V5>=0,V1>=0,V>=0,Out=0] 
+* CE 6: and(V,V1,V5,Out) = 1+ and(V1,W5,X5,Out)
+     [V5>=1,V1>=0,V>=2,V+V5=W5+2,V=X5+2] 
+
+### Cost equations --> "Loop" of and/4 
+* CEs [6] --> Loop 4 
+* CEs [5] --> Loop 5 
+
+#### Loops of and/4 
+* Loop 4: and(V,V1,V5,Out)->  and(V1,A',B',Out)
+                  [V5>=1,V1>=0,V>=2,V+V5=A'+2,V=B'+2] 
+* Loop 5: and(V,V1,V5,Out) [V5>=0,V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR and(V,V1,V5,Out) 
+
+#### Partial ranking functions of CR and(V,V1,V5,Out) 
+
+
+### Resulting Chains:and(V,V1,V5,Out) 
+* [[4]]...
+* [[4],5]
+* [5]
+
+
+### Merging Chains  and/4 into  External patterns of execution 
+* [[5],[5,[4]]] --> 1 
+* [[[4]]] --> 2 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [7,8] 
+
+
+#### Refined cost equations start/3 
+* CE 7: start(V,V1,V5) = 0+ and(V,V1,V5,W5):1
+     [V5>=0,V1>=0,V>=0,W5=0] 
+* CE 8: start(V,V1,V5) = 0+ and(V,V1,V5,W5):2
+     [V5>=1,V1>=0,V>=2] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [8] --> Loop 6 
+* CEs [7] --> Loop 7 
+
+#### Loops of start/3 
+* Loop 6: start(V,V1,V5) [V5>=1,V1>=0,V>=2] 
+* Loop 7: start(V,V1,V5) [V5>=0,V1>=0,V>=0] 
+
+### Ranking functions of CR start(V,V1,V5) 
+
+#### Partial ranking functions of CR start(V,V1,V5) 
+
+
+### Resulting Chains:start(V,V1,V5) 
+* [7]
+* [6]...
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[7]] --> 1 
+* [[6]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [4] 
+
+ * loop 4:and(V,V1,V5,Out) -> [and(V',V1',V5',Out')] 
+1
+#### Cost of phase [4]:and(V,V1,V5,Out) -> [and(V',V1',V5',Out')] 
+1*it(4)+0
+#### Cost of phase [4]:and(V,V1,V5,Out) -> [and(V',V1',V5',Out')] 
+1*it(4)+0
+#### Cost of chains of and(V,V1,V5,Out):
+* Chain [[4]]...: 1*it(4)+0
+  with precondition: [V5>=1,V>=2,V1>=0] 
+
+* Chain [[4],5]: 1*it(4)+0
+  with precondition: [Out=0,V>=2,V1>=0,V5>=1] 
+
+* Chain [5]: 0
+  with precondition: [Out=0,V>=0,V1>=0,V5>=0] 
+
+
+#### Cost of chains of start(V,V1,V5):
+* Chain [7]: 1*s(2)+0
+  with precondition: [V>=0,V1>=0,V5>=0] 
+
+* Chain [6]...: 1*s(3)+0
+  with precondition: [V>=2,V1>=0,V5>=1] 
+
+
+Closed-form bounds of start(V,V1,V5): 
+-------------------------------------
+* Chain [7] with precondition: [V>=0,V1>=0,V5>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [6]... with precondition: [V>=2,V1>=0,V5>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V1,V5): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 3 ms.
+* Invariants computed in 7 ms.
+   - Backward Invariants 3 ms.
+   - Transitive Invariants 2 ms.
+* Refinement performed in 12 ms.
+* Termination proved in 2 ms.
+* Upper bounds computed in 9 ms.
+   - Equation cost structures 3 ms.
+   - Phase cost structures 3 ms.
+   - Chain cost structures 2 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 41 ms.
+

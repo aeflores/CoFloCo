@@ -1,0 +1,172 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive : [b/1]
+1. recursive : [a/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into b/1
+1. SCC is partially evaluated into a/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations b/1 
+* CE 5 is refined into CE [6] 
+* CE 4 is refined into CE [7] 
+
+
+#### Refined cost equations b/1 
+* CE 6: b(N) = 2+ b(O)
+     [N>=1,N=O+1] 
+* CE 7: b(N) = 1
+     [N=0] 
+
+### Cost equations --> "Loop" of b/1 
+* CEs [7] --> Loop 5 
+* CEs [6] --> Loop 6 
+
+#### Loops of b/1 
+* Loop 5: b(N) [N=0] 
+* Loop 6: b(N)->  b(N')
+                  [N>=1,N=N'+1] 
+
+### Ranking functions of CR b(N) 
+* RF of phase [6]: [N]
+
+#### Partial ranking functions of CR b(N) 
+* Partial RF of phase [6]:
+  - RF of loop [6:1]:
+    N
+
+
+### Resulting Chains:b(N) 
+* [[6],5]
+
+
+### Specialization of cost equations a/1 
+* CE 3 is refined into CE [8] 
+* CE 2 is refined into CE [9] 
+
+
+#### Refined cost equations a/1 
+* CE 8: a(N) = 4+ b(N):[[6],5]+ a(O)
+     [N>=1,N=O+1] 
+* CE 9: a(N) = 3
+     [N=0] 
+
+### Cost equations --> "Loop" of a/1 
+* CEs [9] --> Loop 7 
+* CEs [8] --> Loop 8 
+
+#### Loops of a/1 
+* Loop 7: a(N) [N=0] 
+* Loop 8: a(N)->  a(N')
+                  [N>=1,N=N'+1] 
+
+### Ranking functions of CR a(N) 
+* RF of phase [8]: [N]
+
+#### Partial ranking functions of CR a(N) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    N
+
+
+### Resulting Chains:a(N) 
+* [[8],7]
+* [7]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6] 
+
+ * loop 6:b(N) -> [b(N')] 
+2
+#### Cost of phase [6]:b(N) -> [b(N')] 
+2*it(6)+0
+  Such that:it(6) =< N
+it(6) =< N-N'
+it(6) >= N-N'
+
+#### Cost of chains of b(N):
+* Chain [[6],5]: 2*it(6)+1
+  Such that:it(6) =< N
+it(6) >= N
+
+  with precondition: [N>=1] 
+
+
+#### Cost of loops [8] 
+
+ * loop 8:a(N) -> [a(N')] 
+2*s(2)+5
+  Such that:s(2) =< N
+s(2) >= N
+
+#### Cost of phase [8]:a(N) -> [a(N')] 
+5*it(8)+2*s(3)+0
+  Such that:it(8) =< N-N'
+aux(4) =< N
+it(8) =< aux(4)
+s(3) =< it(8)*aux(4)
+aux(1) =< it(8)
+aux(2) >= N
+it(8) >= N-N'
+aux(1) >= it(8)
+s(3) >= aux(1)*aux(2)+aux(1)* (1/2)-aux(1)*aux(1)* (1/2)
+
+#### Cost of chains of a(N):
+* Chain [[8],7]: 5*it(8)+2*s(3)+3
+  Such that:aux(5) =< N
+it(8) =< aux(5)
+s(3) =< it(8)*aux(5)
+aux(1) =< it(8)
+aux(6) >= N
+aux(6) >= aux(6)
+it(8) >= aux(6)
+aux(1) >= it(8)
+s(3) >= aux(1)*aux(6)+aux(1)* (1/2)-aux(1)*aux(1)* (1/2)
+
+  with precondition: [N>=1] 
+
+* Chain [7]: 3
+  with precondition: [N=0] 
+
+
+Closed-form bounds of a(N): 
+-------------------------------------
+* Chain [[8],7] with precondition: [N>=1] 
+    - Lower bound: 6*N+3+N*N 
+    - Complexity: n^2
+ * Chain [7] with precondition: [N=0] 
+    - Lower bound: 3 
+    - Complexity: constant
+ 
+### Partitioned lower bound of a(N): 
+* 3 
+ if [N=0]
+* 6*N+3+N*N 
+ if [N>=1]
+Possible lower bounds : [3,6*N+3+N*N]
+Maximum lower bound complexity: n^2
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 13 ms.
+   - Backward Invariants 5 ms.
+   - Transitive Invariants 4 ms.
+* Refinement performed in 15 ms.
+* Termination proved in 7 ms.
+* Upper bounds computed in 43 ms.
+   - Equation cost structures 8 ms.
+   - Phase cost structures 21 ms.
+   - Chain cost structures 12 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 106 ms.
+

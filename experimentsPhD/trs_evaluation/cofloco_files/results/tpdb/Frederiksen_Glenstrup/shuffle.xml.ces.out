@@ -1,0 +1,327 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [append/3]
+1. recursive [non_tail] : [reverse/2]
+2. recursive  : [shuffle/2]
+3. non_recursive  : [goal/2]
+4. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into append/3
+1. SCC is partially evaluated into reverse/2
+2. SCC is partially evaluated into shuffle/2
+3. SCC is completely evaluated into other SCCs
+4. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations append/3 
+* CE 11 is refined into CE [12] 
+* CE 10 is refined into CE [13] 
+
+
+#### Refined cost equations append/3 
+* CE 12: append(A,B,B) = 1
+     [B>=0,A=0] 
+* CE 13: append(V,V5,Out) = 1+ append(W5,V5,X5)
+     [V+X5>=Out,Out>=X5+1,V5>=0,V+X5=Out+W5] 
+
+### Cost equations --> "Loop" of append/3 
+* CEs [13] --> Loop 8 
+* CEs [12] --> Loop 9 
+
+#### Loops of append/3 
+* Loop 8: append(V,V5,Out)->  append(V',V5,Out')
+                  [V+Out'>=Out,Out>=Out'+1,V5>=0,V+Out'=Out+V'] 
+* Loop 9: append(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR append(V,V5,Out) 
+* RF of phase [8]: [V]
+
+#### Partial ranking functions of CR append(V,V5,Out) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    V
+
+
+### Resulting Chains:append(V,V5,Out) 
+* [[8],9]
+* [9]
+
+
+### Merging Chains  append/3 into  External patterns of execution 
+* [[9]] --> 1 
+* [[9,[8]]] --> 2 
+
+
+### Specialization of cost equations reverse/2 
+* CE 9 is refined into CE [14] 
+* CE 8 is refined into CE [15,16] 
+
+
+#### Refined cost equations reverse/2 
+* CE 14: reverse(V,Out) = 1
+     [Out=0,V=0] 
+* CE 15: reverse(V,Out) = 1+ reverse(W,X)+ append(Y,Out,Out):1
+     [V>=Out,Out>=1,Out+W=V,X=0,Y=0] 
+* CE 16: reverse(V,Out) = 1+ reverse(W,X)+ append(X,Y,Out):2
+     [V+X>=Out,Out>=X+1,X>=1,Out+W=V+X,Out=X+Y] 
+
+### Cost equations --> "Loop" of reverse/2 
+* CEs [16] --> Loop 10 
+* CEs [15] --> Loop 11 
+* CEs [14] --> Loop 12 
+
+#### Loops of reverse/2 
+* Loop 10: reverse(V,Out)->  reverse(V',Out')
+                  [Out+V'>=V+1,V>=V'+1,V'>=0,V+Out'=Out+V'] 
+* Loop 11: reverse(V,Out)->  reverse(V',Out')
+                  [V>=Out,Out>=1,V=Out+V',Out'=0] 
+* Loop 12: reverse(V,Out) [Out=0,V=0] 
+
+### Ranking functions of CR reverse(V,Out) 
+* RF of phase [10]: [V]
+
+#### Partial ranking functions of CR reverse(V,Out) 
+* Partial RF of phase [10]:
+  - RF of loop [10:1]:
+    V
+
+
+### Resulting Chains:reverse(V,Out) 
+* [[10],11,12]
+* [12]
+* [11,12]
+
+
+### Merging Chains  reverse/2 into  External patterns of execution 
+* [[12]] --> 1 
+* [[12,11],[12,11,[10]]] --> 2 
+
+
+### Specialization of cost equations shuffle/2 
+* CE 7 is refined into CE [17] 
+* CE 6 is refined into CE [18,19] 
+
+
+#### Refined cost equations shuffle/2 
+* CE 17: shuffle(V,Out) = 1
+     [Out=0,V=0] 
+* CE 18: shuffle(V,Out) = 1+ reverse(W,X):1+ shuffle(Y,Z)
+     [V>=1,V+Z=Out,Y=0,X=0,W=0] 
+* CE 19: shuffle(V,Out) = 1+ reverse(W,W):2+ shuffle(W,X)
+     [V>=W+1,W>=1,Out+W=V+X] 
+
+### Cost equations --> "Loop" of shuffle/2 
+* CEs [19] --> Loop 13 
+* CEs [18] --> Loop 14 
+* CEs [17] --> Loop 15 
+
+#### Loops of shuffle/2 
+* Loop 13: shuffle(V,Out)->  shuffle(V',Out')
+                  [V>=V'+1,V'>=1,V+Out'=Out+V'] 
+* Loop 14: shuffle(V,Out)->  shuffle(V',Out')
+                  [V>=1,V+Out'=Out,V'=0] 
+* Loop 15: shuffle(V,Out) [Out=0,V=0] 
+
+### Ranking functions of CR shuffle(V,Out) 
+* RF of phase [13]: [V-1]
+
+#### Partial ranking functions of CR shuffle(V,Out) 
+* Partial RF of phase [13]:
+  - RF of loop [13:1]:
+    V-1
+
+
+### Resulting Chains:shuffle(V,Out) 
+* [[13],14,15]
+* [15]
+* [14,15]
+
+
+### Merging Chains  shuffle/2 into  External patterns of execution 
+* [[15]] --> 1 
+* [[15,14],[15,14,[13]]] --> 2 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [20,21] 
+* CE 3 is refined into CE [22,23] 
+* CE 4 is refined into CE [24,25] 
+* CE 5 is refined into CE [26,27] 
+
+
+#### Refined cost equations start/2 
+* CE 20: start(V,V5) = 0+ shuffle(W5,X5):1
+     [X5=0,W5=0,V=0] 
+* CE 21: start(V,V5) = 0+ shuffle(V,V):2
+     [V>=1] 
+* CE 22: start(V,V5) = 0+ reverse(W5,X5):1
+     [X5=0,W5=0,V=0] 
+* CE 23: start(V,V5) = 0+ reverse(V,V):2
+     [V>=1] 
+* CE 24: start(V,V5) = 0+ append(W5,V5,V5):1
+     [V5>=0,W5=0,V=0] 
+* CE 25: start(V,V5) = 0+ append(V,W5,X5):2
+     [X5>=V,V>=1,X5=V+W5,X5=V+V5] 
+* CE 26: start(V,V5) = 1+ shuffle(W5,X5):1
+     [X5=0,W5=0,V=0] 
+* CE 27: start(V,V5) = 1+ shuffle(V,V):2
+     [V>=1] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [21,23,25,27] --> Loop 16 
+* CEs [20,22,24,26] --> Loop 17 
+
+#### Loops of start/2 
+* Loop 16: start(V,V5) [V>=1] 
+* Loop 17: start(V,V5) [V=0] 
+
+### Ranking functions of CR start(V,V5) 
+
+#### Partial ranking functions of CR start(V,V5) 
+
+
+### Resulting Chains:start(V,V5) 
+* [17]
+* [16]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[17]] --> 1 
+* [[16]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [8] 
+
+ * loop 8:append(V,V5,Out) -> [append(V',V5',Out')] 
+1
+#### Cost of phase [8]:append(V,V5,Out) -> [append(V',V5',Out')] 
+1*it(8)+0
+  Such that:it(8) =< V
+it(8) =< V-V'
+
+#### Cost of chains of append(V,V5,Out):
+* Chain [[8],9]: 1*it(8)+1
+  Such that:it(8) =< -V5+Out
+
+  with precondition: [V+V5=Out,V>=1,V5>=0] 
+
+* Chain [9]: 1
+  with precondition: [V=0,V5=Out,V5>=0] 
+
+
+#### Cost of loops [10] 
+
+ * loop 10:reverse(V,Out) -> [reverse(V',Out')] 
+1*s(2)+2
+  Such that:s(2) =< V'
+
+#### Cost of phase [10]:reverse(V,Out) -> [reverse(V',Out')] 
+2*it(10)+1*s(3)+0
+  Such that:it(10) =< V-V'
+aux(2) =< V
+it(10) =< aux(2)
+s(3) =< it(10)*aux(2)
+
+#### Cost of chains of reverse(V,Out):
+* Chain [[10],11,12]: 2*it(10)+1*s(3)+3
+  Such that:aux(3) =< Out
+it(10) =< aux(3)
+s(3) =< it(10)*aux(3)
+
+  with precondition: [Out=V,Out>=2] 
+
+* Chain [12]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [11,12]: 3
+  with precondition: [V=Out,V>=1] 
+
+
+#### Cost of loops [13] 
+
+ * loop 13:shuffle(V,Out) -> [shuffle(V',Out')] 
+2*s(11)+1*s(12)+4
+  Such that:s(10) =< V'
+s(11) =< s(10)
+s(12) =< s(11)*s(10)
+
+#### Cost of phase [13]:shuffle(V,Out) -> [shuffle(V',Out')] 
+4*it(13)+2*s(13)+1*s(14)+0
+  Such that:it(13) =< V-V'
+aux(5) =< V
+it(13) =< aux(5)
+aux(4) =< aux(5)
+s(15) =< it(13)*aux(4)
+s(13) =< s(15)
+s(14) =< s(13)*aux(5)
+
+#### Cost of chains of shuffle(V,Out):
+* Chain [[13],14,15]: 4*it(13)+2*s(13)+1*s(14)+3
+  Such that:aux(6) =< Out
+it(13) =< aux(6)
+aux(4) =< aux(6)
+s(15) =< it(13)*aux(4)
+s(13) =< s(15)
+s(14) =< s(13)*aux(6)
+
+  with precondition: [V=Out,V>=2] 
+
+* Chain [15]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [14,15]: 3
+  with precondition: [V=Out,V>=1] 
+
+
+#### Cost of chains of start(V,V5):
+* Chain [17]: 2
+  with precondition: [V=0] 
+
+* Chain [16]: 11*s(23)+4*s(26)+2*s(27)+1*s(30)+4
+  Such that:aux(7) =< V
+s(23) =< aux(7)
+s(24) =< aux(7)
+s(25) =< s(23)*s(24)
+s(26) =< s(25)
+s(27) =< s(26)*aux(7)
+s(30) =< s(23)*aux(7)
+
+  with precondition: [V>=1] 
+
+
+Closed-form bounds of start(V,V5): 
+-------------------------------------
+* Chain [17] with precondition: [V=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [16] with precondition: [V>=1] 
+    - Upper bound: 11*V+4+5*V*V+2*V*V*V 
+    - Complexity: n^3 
+
+### Maximum cost of start(V,V5): 11*V+2+5*V*V+2*V*V*V+2 
+Asymptotic class: n^3 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 18 ms.
+   - Backward Invariants 7 ms.
+   - Transitive Invariants 4 ms.
+* Refinement performed in 30 ms.
+* Termination proved in 3 ms.
+* Upper bounds computed in 35 ms.
+   - Equation cost structures 9 ms.
+   - Phase cost structures 15 ms.
+   - Chain cost structures 6 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 106 ms.
+

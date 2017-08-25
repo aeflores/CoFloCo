@@ -1,0 +1,56 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/square_mult.raml
+ *
+ * Author:
+ *   Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   Squared exponentiation.
+ *   
+ *)
+
+exception Invalid_argument 
+
+type binary = Zero | One
+
+
+let square_mult m k =
+(*computes m^k*)
+  
+  let x = ref m in
+
+  let rec sq_mult k =
+    match k with
+      | [] -> ()
+      | b::bs ->
+        let _ =
+	  let _ = Raml.tick 1.0 in
+	  x := (!x)*(!x)
+	in
+	let _ =
+	  match b with
+	    | Zero -> ()
+	    | One ->
+	      let _ = Raml.tick(1.0) in
+	      x := (!x)*m
+	in
+	sq_mult bs
+  in
+  match k with
+    | [] -> raise Invalid_argument
+    | b::bs ->
+      match b with
+	| Zero -> raise Invalid_argument
+	| One ->
+	  let _ = sq_mult bs in
+	  !x
+
+;;
+
+square_mult 3 [One;Zero;One;One;Zero;Zero]

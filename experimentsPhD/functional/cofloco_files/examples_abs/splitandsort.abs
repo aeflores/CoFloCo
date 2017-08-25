@@ -1,0 +1,83 @@
+/* * * * * * * * * * *
+ Translation to ABS
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/splitandsort.raml
+ *
+ * 
+ * Description:
+ *   Split a list of key value pairs in sublists according to the 
+ *   keys. Then sort the sublists.
+ */
+
+module Splitandsort;
+
+def List<Pair<List<Int>,Int>> insertL(Pair<Int,Int> x,List<Pair<List<Int>,Int>> l) =
+        case x { Pair(valX,keyX)=>
+	case l {
+	Nil => Cons(Pair(Cons(valX,Nil), keyX),Nil);
+	Cons(Pair(vals1,key1),ls) =>
+		if key1 == keyX
+		then
+			Cons(Pair(Cons(valX,vals1), key1),ls)
+		else
+			Cons(Pair(vals1, key1),insertL( x, ls));
+			};
+	};
+			
+
+def List<Pair<List<Int>,Int>> split(List<Pair<Int,Int>> l) =
+	case l {
+	Nil => Nil;
+	Cons(x,xs) =>  insertL(x, split( xs));
+	};
+
+def Pair<List<Int>,List<Int>> splitqs(Pair<Int,List<Int>> q) =
+	case q {  Pair(pivot, l) =>
+	case l {
+	Nil => Pair(Nil, Nil);
+	Cons(x,xs) =>
+	         
+		let (Pair<List<Int>,List<Int>> pair1)  = splitqs(Pair(pivot, xs)) in
+		case pair1 { Pair(ls, rs)=>
+		     if x > pivot
+		     then
+			Pair(ls, Cons(x,rs))
+			else
+			Pair(Cons(x,ls), rs);
+			};
+		};
+	};
+
+def List<A> append<A>(List<A> l,List<A> ys) =
+	case l {
+	Nil => ys;
+	Cons(x,xs) => Cons(x,append(xs,ys));
+	};
+
+def List<Int> quicksort(List<Int> l) =
+	case l {
+	Nil => Nil;
+	Cons(z,zs) =>
+		let (Pair<List<Int>,List<Int>> pair)= splitqs(Pair(z, zs)) in
+		case pair { Pair(xs, ys) =>
+				append(quicksort(xs), Cons(z,quicksort( ys)));
+				};
+		};
+
+
+def List<Pair<List<Int>,Int>> sortAll(List<Pair<List<Int>,Int>> l) =
+	case l {
+	Nil => Nil;
+	Cons(Pair(vals, key),xs) =>
+		Cons(Pair(quicksort(vals),key),sortAll(xs));
+		};
+
+def List<Pair<List<Int>,Int>> splitAndSort(List<Pair<Int,Int>> l) =
+	sortAll(split(l));
+
+
+{}

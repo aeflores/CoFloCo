@@ -1,0 +1,190 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [activate/2,f/2,if/4]
+1. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into f/2
+1. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations f/2 
+* CE 10 is refined into CE [11] 
+* CE 9 is refined into CE [12] 
+* CE 7 is refined into CE [13] 
+* CE 8 is refined into CE [14] 
+
+
+#### Refined cost equations f/2 
+* CE 11: f(V,Out) = 1
+     [V>=0,V+1=Out] 
+* CE 12: f(V,Out) = 2
+     [Out=0,V=1] 
+* CE 13: f(V,Out) = 3
+     [Out=2,V=0] 
+* CE 14: f(V,Out) = 3+ f(W,Out)
+     [W=1,V=0] 
+
+### Cost equations --> "Loop" of f/2 
+* CEs [14] --> Loop 6 
+* CEs [11] --> Loop 7 
+* CEs [12] --> Loop 8 
+* CEs [13] --> Loop 9 
+
+#### Loops of f/2 
+* Loop 6: f(V,Out)->  f(V',Out)
+                  [V'=1,V=0] 
+* Loop 7: f(V,Out) [V>=0,V+1=Out] 
+* Loop 8: f(V,Out) [Out=0,V=1] 
+* Loop 9: f(V,Out) [Out=2,V=0] 
+
+### Ranking functions of CR f(V,Out) 
+
+#### Partial ranking functions of CR f(V,Out) 
+
+
+### Resulting Chains:f(V,Out) 
+* [9]
+* [8]
+* [7]
+* [6,8]
+* [6,7]
+
+
+### Merging Chains  f/2 into  External patterns of execution 
+* [[8,6]] --> 1 
+* [[7,6],[9]] --> 2 
+* [[8]] --> 3 
+* [[7]] --> 4 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [15] 
+* CE 3 is refined into CE [16] 
+* CE 4 is refined into CE [17,18,19,20] 
+* CE 5 is refined into CE [21,22,23,24] 
+* CE 6 is refined into CE [25,26,27,28] 
+
+
+#### Refined cost equations start/3 
+* CE 15: start(V,V1,V2) = 2
+     [V2>=0,V1>=0,V=0] 
+* CE 16: start(V,V1,V2) = 1
+     [V>=0] 
+* CE 17: start(V,V1,V2) = 2+ f(W2,X2):1
+     [V1>=0,X2=0,W2=0,V2=1,V=0] 
+* CE 18: start(V,V1,V2) = 2+ f(W2,X2):2
+     [V1>=0,X2=2,W2=0,V2=1,V=0] 
+* CE 19: start(V,V1,V2) = 2+ f(W2,X2):3
+     [V1>=0,X2=0,W2=1,V2=2,V=0] 
+* CE 20: start(V,V1,V2) = 2+ f(W2,V2):4
+     [V2>=1,V1>=0,V2=W2+1,V=0] 
+* CE 21: start(V,V1,V2) = 1+ f(W2,X2):1
+     [X2=0,W2=0,V=1] 
+* CE 22: start(V,V1,V2) = 1+ f(W2,X2):2
+     [X2=2,W2=0,V=1] 
+* CE 23: start(V,V1,V2) = 1+ f(W2,X2):3
+     [X2=0,W2=1,V=2] 
+* CE 24: start(V,V1,V2) = 1+ f(W2,V):4
+     [V>=1,V=W2+1] 
+* CE 25: start(V,V1,V2) = 0+ f(W2,X2):1
+     [X2=0,W2=0,V=0] 
+* CE 26: start(V,V1,V2) = 0+ f(W2,X2):2
+     [X2=2,W2=0,V=0] 
+* CE 27: start(V,V1,V2) = 0+ f(W2,X2):3
+     [X2=0,W2=1,V=1] 
+* CE 28: start(V,V1,V2) = 0+ f(W2,X2):4
+     [X2>=1,X2=W2+1,X2=V+1] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [23] --> Loop 10 
+* CEs [21,22,27] --> Loop 11 
+* CEs [15,16,17,18,19,20,24,25,26,28] --> Loop 12 
+
+#### Loops of start/3 
+* Loop 10: start(V,V1,V2) [V=2] 
+* Loop 11: start(V,V1,V2) [V=1] 
+* Loop 12: start(V,V1,V2) [V>=0] 
+
+### Ranking functions of CR start(V,V1,V2) 
+
+#### Partial ranking functions of CR start(V,V1,V2) 
+
+
+### Resulting Chains:start(V,V1,V2) 
+* [12]
+* [11]
+* [10]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[11],[12]] --> 1 
+* [[10]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of f(V,Out):
+* Chain [9]: 3
+  with precondition: [V=0,Out=2] 
+
+* Chain [8]: 2
+  with precondition: [V=1,Out=0] 
+
+* Chain [7]: 1
+  with precondition: [V+1=Out,V>=0] 
+
+* Chain [6,8]: 5
+  with precondition: [V=0,Out=0] 
+
+* Chain [6,7]: 4
+  with precondition: [V=0,Out=2] 
+
+
+#### Cost of chains of start(V,V1,V2):
+* Chain [12]: 7
+  with precondition: [V>=0] 
+
+* Chain [11]: 6
+  with precondition: [V=1] 
+
+* Chain [10]: 3
+  with precondition: [V=2] 
+
+
+Closed-form bounds of start(V,V1,V2): 
+-------------------------------------
+* Chain [12] with precondition: [V>=0] 
+    - Upper bound: 7 
+    - Complexity: constant 
+* Chain [11] with precondition: [V=1] 
+    - Upper bound: 6 
+    - Complexity: constant 
+* Chain [10] with precondition: [V=2] 
+    - Upper bound: 3 
+    - Complexity: constant 
+
+### Maximum cost of start(V,V1,V2): 7 
+Asymptotic class: constant 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 32 ms.
+* Invariants computed in 15 ms.
+   - Backward Invariants 8 ms.
+   - Transitive Invariants 0 ms.
+* Refinement performed in 56 ms.
+* Termination proved in 0 ms.
+* Upper bounds computed in 29 ms.
+   - Equation cost structures 19 ms.
+   - Phase cost structures 0 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 166 ms.
+

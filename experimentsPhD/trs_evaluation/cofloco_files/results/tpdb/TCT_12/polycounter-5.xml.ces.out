@@ -1,0 +1,259 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [f/6]
+1. non_recursive  : [start/5]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into f/6
+1. SCC is partially evaluated into start/5
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations f/6 
+* CE 8 is refined into CE [9] 
+* CE 3 is refined into CE [10] 
+* CE 4 is refined into CE [11] 
+* CE 5 is refined into CE [12] 
+* CE 6 is refined into CE [13] 
+* CE 7 is refined into CE [14] 
+
+
+#### Refined cost equations f/6 
+* CE 9: f(V1,V,V2,V8,V6,Out) = 1
+     [Out=0,V6=0,V8=0,V2=0,V=0,V1=0] 
+* CE 10: f(V1,V,V2,V8,V6,Out) = 1+ f(W8,V,V2,V8,V6,Out)
+     [W8>=0,V6>=0,V8>=0,V2>=0,V>=0,W8+1=V1] 
+* CE 11: f(V1,V,V2,V8,V6,Out) = 1+ f(W8,W8,V2,V8,V6,Out)
+     [W8>=0,V6>=0,V8>=0,V2>=0,W8+1=V,V1=0] 
+* CE 12: f(V1,V,V2,V8,V6,Out) = 1+ f(W8,W8,W8,V8,V6,Out)
+     [W8>=0,V6>=0,V8>=0,W8+1=V2,V=0,V1=0] 
+* CE 13: f(V1,V,V2,V8,V6,Out) = 1+ f(W8,W8,W8,W8,V6,Out)
+     [W8>=0,V6>=0,W8+1=V8,V2=0,V=0,V1=0] 
+* CE 14: f(V1,V,V2,V8,V6,Out) = 1+ f(W8,W8,W8,W8,W8,Out)
+     [W8>=0,W8+1=V6,V8=0,V2=0,V=0,V1=0] 
+
+### Cost equations --> "Loop" of f/6 
+* CEs [10] --> Loop 8 
+* CEs [11] --> Loop 9 
+* CEs [12] --> Loop 10 
+* CEs [13] --> Loop 11 
+* CEs [14] --> Loop 12 
+* CEs [9] --> Loop 13 
+
+#### Loops of f/6 
+* Loop 8: f(V1,V,V2,V8,V6,Out)->  f(V1',V,V2,V8,V6,Out)
+                  [V6>=0,V8>=0,V2>=0,V>=0,V1>=1,V1=V1'+1] 
+* Loop 9: f(V1,V,V2,V8,V6,Out)->  f(V1',V',V2,V8,V6,Out)
+                  [V6>=0,V8>=0,V2>=0,V>=1,V=V'+1,V=V1'+1,V1=0] 
+* Loop 10: f(V1,V,V2,V8,V6,Out)->  f(V1',V',V2',V8,V6,Out)
+                  [V6>=0,V8>=0,V2>=1,V2=V2'+1,V2=V'+1,V2=V1'+1,V=0,V1=0] 
+* Loop 11: f(V1,V,V2,V8,V6,Out)->  f(V1',V',V2',V8',V6,Out)
+                  [V6>=0,V8>=1,V8=V8'+1,V8=V2'+1,V8=V'+1,V8=V1'+1,V2=0,V=0,V1=0] 
+* Loop 12: f(V1,V,V2,V8,V6,Out)->  f(V1',V',V2',V8',V6',Out)
+                  [V6>=1,V6=V6'+1,V6=V8'+1,V6=V2'+1,V6=V'+1,V6=V1'+1,V8=0,V2=0,V=0,V1=0] 
+* Loop 13: f(V1,V,V2,V8,V6,Out) [Out=0,V6=0,V8=0,V2=0,V=0,V1=0] 
+
+### Ranking functions of CR f(V1,V,V2,V8,V6,Out) 
+
+#### Partial ranking functions of CR f(V1,V,V2,V8,V6,Out) 
+* Partial RF of phase [8,9,10,11,12]:
+  - RF of loop [8:1]:
+    V1 depends on loops [9:1,10:1,11:1,12:1] 
+  - RF of loop [9:1]:
+    V depends on loops [10:1,11:1,12:1] 
+  - RF of loop [10:1]:
+    V2 depends on loops [11:1,12:1] 
+  - RF of loop [11:1]:
+    V8 depends on loops [12:1] 
+  - RF of loop [12:1]:
+    V6
+
+
+### Resulting Chains:f(V1,V,V2,V8,V6,Out) 
+* [[8,9,10,11,12],13]
+* [13]
+
+
+### Merging Chains  f/6 into  External patterns of execution 
+* [[13]] --> 1 
+* [[13,[8,9,10,11,12]]] --> 2 
+
+
+### Specialization of cost equations start/5 
+* CE 2 is refined into CE [15,16] 
+
+
+#### Refined cost equations start/5 
+* CE 15: start(V1,V,V2,V8,V6) = 0+ f(W8,X8,Y8,Z8,A9,B9):1
+     [B9=0,A9=0,Z8=0,Y8=0,X8=0,W8=0,V6=0,V8=0,V2=0,V=0,V1=0] 
+* CE 16: start(V1,V,V2,V8,V6) = 0+ f(V1,V,V2,V8,V6,W8):2
+     [V1+V+V2+V8+V6>=1,V6>=0,V8>=0,V2>=0,V>=0,V1>=0,W8=0] 
+
+### Cost equations --> "Loop" of start/5 
+* CEs [16] --> Loop 14 
+* CEs [15] --> Loop 15 
+
+#### Loops of start/5 
+* Loop 14: start(V1,V,V2,V8,V6) [V1+V+V2+V8+V6>=1,V6>=0,V8>=0,V2>=0,V>=0,V1>=0] 
+* Loop 15: start(V1,V,V2,V8,V6) [V6=0,V8=0,V2=0,V=0,V1=0] 
+
+### Ranking functions of CR start(V1,V,V2,V8,V6) 
+
+#### Partial ranking functions of CR start(V1,V,V2,V8,V6) 
+
+
+### Resulting Chains:start(V1,V,V2,V8,V6) 
+* [15]
+* [14]
+
+
+### Merging Chains  start/5 into  External patterns of execution 
+* [[15]] --> 1 
+* [[14]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [8,9,10,11,12] 
+
+ * loop 8:f(V1,V,V2,V8,V6,Out) -> [f(V1',V',V2',V8',V6',Out')] 
+1
+ * loop 9:f(V1,V,V2,V8,V6,Out) -> [f(V1',V',V2',V8',V6',Out')] 
+1
+ * loop 10:f(V1,V,V2,V8,V6,Out) -> [f(V1',V',V2',V8',V6',Out')] 
+1
+ * loop 11:f(V1,V,V2,V8,V6,Out) -> [f(V1',V',V2',V8',V6',Out')] 
+1
+ * loop 12:f(V1,V,V2,V8,V6,Out) -> [f(V1',V',V2',V8',V6',Out')] 
+1
+#### Cost of phase [8,9,10,11,12]:f(V1,V,V2,V8,V6,Out) -> [f(V1',V',V2',V8',V6',Out')] 
+1*it(8)+1*it(9)+1*it(10)+1*it(11)+1*it(12)+0
+  Such that:aux(5) =< V1
+aux(10) =< V1-V1'
+aux(14) =< V
+aux(21) =< V+V2+V8+V6
+aux(18) =< V-V'
+aux(25) =< V2
+aux(31) =< V2+V8+V6
+aux(28) =< V2-V2'
+aux(38) =< V8
+aux(43) =< V8+V6
+aux(40) =< V8-V8'
+it(12) =< V6-V6'
+aux(65) =< V6
+it(12) =< aux(65)
+aux(57) =< aux(65)
+aux(47) =< aux(43)
+aux(35) =< aux(31)
+aux(37) =< it(12)*aux(65)
+aux(4) =< it(12)*aux(57)
+it(11) =< aux(37)+aux(38)
+it(11) =< aux(37)+aux(40)
+aux(3) =< it(11)*aux(47)
+aux(23) =< it(11)*aux(43)
+it(10) =< aux(4)+aux(23)+aux(25)
+it(10) =< aux(4)+aux(23)+aux(28)
+aux(2) =< it(10)*aux(35)
+aux(11) =< it(10)*aux(31)
+it(9) =< aux(4)+aux(3)+aux(11)+aux(14)
+it(9) =< aux(4)+aux(3)+aux(11)+aux(18)
+aux(1) =< it(9)*aux(21)
+it(8) =< aux(4)+aux(3)+aux(2)+aux(1)+aux(5)
+it(8) =< aux(4)+aux(3)+aux(2)+aux(1)+aux(10)
+
+#### Cost of chains of f(V1,V,V2,V8,V6,Out):
+* Chain [[8,9,10,11,12],13]: 1*it(8)+1*it(9)+1*it(10)+1*it(11)+1*it(12)+1
+  Such that:aux(21) =< V+V2+V8+V6
+aux(31) =< V2+V8+V6
+aux(43) =< V8+V6
+aux(66) =< V1
+aux(67) =< V
+aux(68) =< V2
+aux(69) =< V8
+aux(70) =< V6
+it(12) =< aux(70)
+aux(57) =< aux(70)
+aux(47) =< aux(43)
+aux(35) =< aux(31)
+aux(37) =< it(12)*aux(70)
+aux(4) =< it(12)*aux(57)
+it(11) =< aux(37)+aux(69)
+aux(3) =< it(11)*aux(47)
+aux(23) =< it(11)*aux(43)
+it(10) =< aux(4)+aux(23)+aux(68)
+aux(2) =< it(10)*aux(35)
+aux(11) =< it(10)*aux(31)
+it(9) =< aux(4)+aux(3)+aux(11)+aux(67)
+aux(1) =< it(9)*aux(21)
+it(8) =< aux(4)+aux(3)+aux(2)+aux(1)+aux(66)
+
+  with precondition: [Out=0,V1>=0,V>=0,V2>=0,V8>=0,V6>=0,V+V1+V2+V6+V8>=1] 
+
+* Chain [13]: 1
+  with precondition: [V1=0,V=0,V2=0,V8=0,V6=0,Out=0] 
+
+
+#### Cost of chains of start(V1,V,V2,V8,V6):
+* Chain [15]: 1
+  with precondition: [V1=0,V=0,V2=0,V8=0,V6=0] 
+
+* Chain [14]: 1*s(9)+1*s(15)+1*s(18)+1*s(21)+1*s(23)+1
+  Such that:s(4) =< V1
+s(5) =< V
+s(1) =< V+V2+V8+V6
+s(6) =< V2
+s(2) =< V2+V8+V6
+s(7) =< V8
+s(3) =< V8+V6
+s(8) =< V6
+s(9) =< s(8)
+s(10) =< s(8)
+s(11) =< s(3)
+s(12) =< s(2)
+s(13) =< s(9)*s(8)
+s(14) =< s(9)*s(10)
+s(15) =< s(13)+s(7)
+s(16) =< s(15)*s(11)
+s(17) =< s(15)*s(3)
+s(18) =< s(14)+s(17)+s(6)
+s(19) =< s(18)*s(12)
+s(20) =< s(18)*s(2)
+s(21) =< s(14)+s(16)+s(20)+s(5)
+s(22) =< s(21)*s(1)
+s(23) =< s(14)+s(16)+s(19)+s(22)+s(4)
+
+  with precondition: [V1>=0,V>=0,V2>=0,V8>=0,V6>=0,V+V1+V2+V6+V8>=1] 
+
+
+Closed-form bounds of start(V1,V,V2,V8,V6): 
+-------------------------------------
+* Chain [15] with precondition: [V1=0,V=0,V2=0,V8=0,V6=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [14] with precondition: [V1>=0,V>=0,V2>=0,V8>=0,V6>=0,V1+V+V2+V8+V6>=1] 
+    - Upper bound: V1+V+V2+V8+V6+1+4*V6*V6+ (3*V8+3*V6)*V8+ (3*V8+3*V6)*V6*V6+ (2*V2+2*V8+2*V6)*V2+ (2*V2+2*V8+2*V6)*V6*V6+ (2*V2+2*V8+2*V6)* (V8+V6)*V8+ (2*V2+2*V8+2*V6)* (V8+V6)*V6*V6+ (V+V2+V8+V6)*V+ (V+V2+V8+V6)*V6*V6+ (V+V2+V8+V6)* (V8+V6)*V8+ (V+V2+V8+V6)* (V8+V6)*V6*V6+ (V+V2+V8+V6)* (V2+V8+V6)*V2+ (V+V2+V8+V6)* (V2+V8+V6)*V6*V6+ (V8+V6)* ((V+V2+V8+V6)* (V2+V8+V6))*V8+ (V8+V6)* ((V+V2+V8+V6)* (V2+V8+V6))*V6*V6 
+    - Complexity: n^5 
+
+### Maximum cost of start(V1,V,V2,V8,V6): V1+V+V2+V8+V6+4*V6*V6+ (3*V8+3*V6)*V8+ (3*V8+3*V6)*V6*V6+ (2*V2+2*V8+2*V6)*V2+ (2*V2+2*V8+2*V6)*V6*V6+ (2*V2+2*V8+2*V6)* (V8+V6)*V8+ (2*V2+2*V8+2*V6)* (V8+V6)*V6*V6+ (V+V2+V8+V6)*V+ (V+V2+V8+V6)*V6*V6+ (V+V2+V8+V6)* (V8+V6)*V8+ (V+V2+V8+V6)* (V8+V6)*V6*V6+ (V+V2+V8+V6)* (V2+V8+V6)*V2+ (V+V2+V8+V6)* (V2+V8+V6)*V6*V6+ (V8+V6)* ((V+V2+V8+V6)* (V2+V8+V6))*V8+ (V8+V6)* ((V+V2+V8+V6)* (V2+V8+V6))*V6*V6+1 
+Asymptotic class: n^5 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 41 ms.
+* Invariants computed in 108 ms.
+   - Backward Invariants 16 ms.
+   - Transitive Invariants 61 ms.
+* Refinement performed in 179 ms.
+* Termination proved in 72 ms.
+* Upper bounds computed in 566 ms.
+   - Equation cost structures 16 ms.
+   - Phase cost structures 468 ms.
+   - Chain cost structures 67 ms.
+   - Solving cost expressions 5 ms.
+* Total analysis performed in 1036 ms.
+

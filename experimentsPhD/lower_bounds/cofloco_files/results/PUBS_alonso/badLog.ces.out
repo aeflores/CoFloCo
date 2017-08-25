@@ -1,0 +1,196 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive : [6_loop/1]
+1. recursive : [2_loop/2]
+2. non_recursive : [amor/atva/BadNews_badLog(I)V/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into 6_loop/1
+1. SCC is partially evaluated into 2_loop/2
+2. SCC is partially evaluated into amor/atva/BadNews_badLog(I)V/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations 6_loop/1 
+* CE 6 is refined into CE [7] 
+* CE 5 is refined into CE [8] 
+
+
+#### Refined cost equations 6_loop/1 
+* CE 7: 6_loop(A) = 3
+     [2*A>=1,1>=A] 
+* CE 8: 6_loop(A) = 8+ 6_loop(B)
+     [2*B+1>=A,A>=2*B,A>=2] 
+
+### Cost equations --> "Loop" of 6_loop/1 
+* CEs [8] --> Loop 6 
+* CEs [7] --> Loop 7 
+
+#### Loops of 6_loop/1 
+* Loop 6: 6_loop(A)->  6_loop(A')
+                  [2*A'+1>=A,A>=2*A',A>=2] 
+* Loop 7: 6_loop(A) [2*A>=1,1>=A] 
+
+### Ranking functions of CR 6_loop(A) 
+* RF of phase [6]: [A-1]
+
+#### Partial ranking functions of CR 6_loop(A) 
+* Partial RF of phase [6]:
+  - RF of loop [6:1]:
+    A-1
+
+
+### Resulting Chains:6_loop(A) 
+* [[6],7]
+
+
+### Specialization of cost equations 2_loop/2 
+* CE 4 is refined into CE [9] 
+* CE 3 is refined into CE [10] 
+
+
+#### Refined cost equations 2_loop/2 
+* CE 9: 2_loop(A,B) = 3
+     [1>=B,1>=A] 
+* CE 10: 2_loop(A,B) = 10+ 6_loop(A):[[6],7]+ 2_loop(C,D)
+     [2*C+1>=A,A>=2*C,A>=2,1>=D,1>=B] 
+
+### Cost equations --> "Loop" of 2_loop/2 
+* CEs [10] --> Loop 8 
+* CEs [9] --> Loop 9 
+
+#### Loops of 2_loop/2 
+* Loop 8: 2_loop(A,B)->  2_loop(A',B')
+                  [2*A'+1>=A,A>=2*A',A>=2,1>=B',1>=B] 
+* Loop 9: 2_loop(A,B) [1>=B,1>=A] 
+
+### Ranking functions of CR 2_loop(A,B) 
+* RF of phase [8]: [A-1]
+
+#### Partial ranking functions of CR 2_loop(A,B) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    A-1
+
+
+### Resulting Chains:2_loop(A,B) 
+* [[8],9]
+* [9]
+
+
+### Specialization of cost equations amor/atva/BadNews_badLog(I)V/1 
+* CE 2 is refined into CE [11,12] 
+
+
+#### Refined cost equations amor/atva/BadNews_badLog(I)V/1 
+* CE 11: amor/atva/BadNews_badLog(I)V(A) = 3+ 2_loop(A,B):[[8],9]
+     [A>=2,B=0] 
+* CE 12: amor/atva/BadNews_badLog(I)V(A) = 3+ 2_loop(A,B):[9]
+     [1>=A,B=0] 
+
+### Cost equations --> "Loop" of amor/atva/BadNews_badLog(I)V/1 
+* CEs [11] --> Loop 10 
+* CEs [12] --> Loop 11 
+
+#### Loops of amor/atva/BadNews_badLog(I)V/1 
+* Loop 10: amor/atva/BadNews_badLog(I)V(A) [A>=2] 
+* Loop 11: amor/atva/BadNews_badLog(I)V(A) [1>=A] 
+
+### Ranking functions of CR amor/atva/BadNews_badLog(I)V(A) 
+
+#### Partial ranking functions of CR amor/atva/BadNews_badLog(I)V(A) 
+
+
+### Resulting Chains:amor/atva/BadNews_badLog(I)V(A) 
+* [11]
+* [10]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6] 
+
+ * loop 6:6_loop(A) -> [6_loop(A')] 
+8
+#### Cost of phase [6]:6_loop(A) -> [6_loop(A')] 
+8*it(6)+0
+  Such that:it(6) =< A-1
+it(6) =< A-A'
+
+#### Cost of chains of 6_loop(A):
+* Chain [[6],7]: 8*it(6)+3
+  Such that:it(6) =< A-1
+
+  with precondition: [A>=2] 
+
+
+#### Cost of loops [8] 
+
+ * loop 8:2_loop(A,B) -> [2_loop(A',B')] 
+8*s(2)+13
+  Such that:s(2) =< A-1
+
+#### Cost of phase [8]:2_loop(A,B) -> [2_loop(A',B')] 
+13*it(8)+8*s(3)+0
+  Such that:it(8) =< A-1
+it(8) =< A-A'
+s(3) =< 2*A-3
+s(3) =< 2*A-2*A'
+
+#### Cost of chains of 2_loop(A,B):
+* Chain [[8],9]: 13*it(8)+8*s(3)+3
+  Such that:it(8) =< A-1
+s(3) =< 2*A-3
+
+  with precondition: [1>=B,A>=2] 
+
+* Chain [9]: 3
+  with precondition: [1>=A,1>=B] 
+
+
+#### Cost of chains of amor/atva/BadNews_badLog(I)V(A):
+* Chain [11]: 6
+  with precondition: [1>=A] 
+
+* Chain [10]: 13*s(4)+8*s(5)+6
+  Such that:s(4) =< A-1
+s(5) =< 2*A-3
+
+  with precondition: [A>=2] 
+
+
+Closed-form bounds of amor/atva/BadNews_badLog(I)V(A): 
+-------------------------------------
+* Chain [11] with precondition: [1>=A] 
+    - Lower bound: 6 
+    - Complexity: constant
+ * Chain [10] with precondition: [A>=2] 
+    - Lower bound: 6 
+    - Complexity: constant
+ 
+### Partitioned lower bound of amor/atva/BadNews_badLog(I)V(A): 
+* 6 
+ if []
+Possible lower bounds : [6]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 7 ms.
+* Invariants computed in 29 ms.
+   - Backward Invariants 12 ms.
+   - Transitive Invariants 8 ms.
+* Refinement performed in 31 ms.
+* Termination proved in 9 ms.
+* Upper bounds computed in 48 ms.
+   - Equation cost structures 13 ms.
+   - Phase cost structures 25 ms.
+   - Chain cost structures 11 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 149 ms.
+

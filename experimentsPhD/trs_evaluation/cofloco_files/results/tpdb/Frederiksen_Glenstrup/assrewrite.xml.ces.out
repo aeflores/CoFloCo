@@ -1,0 +1,509 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive [multiple] : [fun/4,fun1/5,fun2/5,rewrite/2]
+1. non_recursive  : [assrewrite/2]
+2. non_recursive  : [first/2]
+3. non_recursive  : [isOp/2]
+4. non_recursive  : [second/2]
+5. non_recursive  : [start/4]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into rewrite/2
+1. SCC is completely evaluated into other SCCs
+2. SCC is partially evaluated into first/2
+3. SCC is partially evaluated into isOp/2
+4. SCC is partially evaluated into second/2
+5. SCC is partially evaluated into start/4
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations rewrite/2 
+* CE 19 is refined into CE [29] 
+* CE 20 is refined into CE [30] 
+* CE 18 is refined into CE [31] 
+* CE 17 is refined into CE [32] 
+* CE 16 is refined into CE [33] 
+* CE 15 is refined into CE [34] 
+* CE 14 is refined into CE [35] 
+
+
+#### Refined cost equations rewrite/2 
+* CE 29: rewrite(A,A) = 1
+     [A>=1] 
+* CE 30: rewrite(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 31: rewrite(V,Out) = 1+ rewrite(W,X)
+     [V>=W+2,W>=0,Out+W=V+X] 
+* CE 32: rewrite(V,Out) = 1+ rewrite(W,X)
+     [V>=W+2,X>=0,W>=0,Out=0] 
+* CE 33: rewrite(V,Out) = 1+ rewrite(W,X)+ rewrite(Y,Z)+ rewrite(A1,B1)
+     [V>=A1+1,V>=Y+2,V>=W+2,B1>=0,A1>=0,Z>=0,Y>=0,X>=0,W>=0,Out=0] 
+* CE 34: rewrite(V,Out) = 1+ rewrite(W,X)+ rewrite(Y,Z)+ rewrite(A1,B1)+ rewrite(B1,C1)+ rewrite(D1,Out)
+     [V>=A1+1,V>=Y+2,V>=W+2,B1>=0,A1>=0,Z>=0,Y>=0,X>=0,W>=0,X+Z+C1+2=D1] 
+* CE 35: rewrite(V,Out) = 1+ rewrite(W,X)+ rewrite(Y,Z)
+     [V>=Y+2,V>=W+2,Z>=0,Y>=0,X>=0,W>=0,Out=0] 
+
+### Cost equations --> "Loop" of rewrite/2 
+* CEs [35] --> Loop 17 
+* CEs [34] --> Loop 18 
+* CEs [33] --> Loop 19 
+* CEs [31] --> Loop 20 
+* CEs [32] --> Loop 21 
+* CEs [29] --> Loop 22 
+* CEs [30] --> Loop 23 
+
+#### Loops of rewrite/2 
+* Loop 17: rewrite(V,Out)->  rewrite(V',Out')  rewrite(V'2,Out'2)
+                  [V>=V'2+2,V>=V'+2,Out'2>=0,V'2>=0,Out'>=0,V'>=0,Out=0] 
+* Loop 18: rewrite(V,Out)->  rewrite(V',Out')  rewrite(V'2,Out'2)  rewrite(V'3,Out'3)  rewrite(Out'3,A'4)  rewrite(V'5,Out)
+                  [V>=V'3+1,V>=V'2+2,V>=V'+2,Out'3>=0,V'3>=0,Out'2>=0,V'2>=0,Out'>=0,V'>=0,Out'+Out'2+A'4+2=V'5] 
+* Loop 19: rewrite(V,Out)->  rewrite(V',Out')  rewrite(V'2,Out'2)  rewrite(V'3,Out'3)
+                  [V>=V'3+1,V>=V'2+2,V>=V'+2,Out'3>=0,V'3>=0,Out'2>=0,V'2>=0,Out'>=0,V'>=0,Out=0] 
+* Loop 20: rewrite(V,Out)->  rewrite(V',Out')
+                  [V>=V'+2,V'>=0,V+Out'=Out+V'] 
+* Loop 21: rewrite(V,Out)->  rewrite(V',Out')
+                  [V>=V'+2,Out'>=0,V'>=0,Out=0] 
+* Loop 22: rewrite(A,A) [A>=1] 
+* Loop 23: rewrite(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR rewrite(V,Out) 
+
+#### Partial ranking functions of CR rewrite(V,Out) 
+* Partial RF of phase [17,18,19,20,21]:
+  - RF of loop [17:1,17:2,18:1,18:2,18:3,19:1,19:2,19:3,20:1,21:1]:
+    V-1 depends on loops [18:4,18:5] 
+
+
+### Resulting Chains:rewrite(V,Out) 
+* [multiple([17,18,19,20,21],[[],[23],[22]])]...
+* [23]
+* [22]
+
+
+### Merging Chains  rewrite/2 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+* [[multiple([17,18,19,20,21],[[],[23],[22]])]] --> 3 
+
+
+### Specialization of cost equations first/2 
+* CE 27 is refined into CE [36] 
+* CE 26 is refined into CE [37] 
+* CE 28 is refined into CE [38] 
+
+
+#### Refined cost equations first/2 
+* CE 36: first(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 37: first(A,A) = 1
+     [A>=1] 
+* CE 38: first(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of first/2 
+* CEs [36] --> Loop 24 
+* CEs [37] --> Loop 25 
+* CEs [38] --> Loop 26 
+
+#### Loops of first/2 
+* Loop 24: first(V,Out) [V>=Out+1,Out>=0] 
+* Loop 25: first(A,A) [A>=1] 
+* Loop 26: first(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR first(V,Out) 
+
+#### Partial ranking functions of CR first(V,Out) 
+
+
+### Resulting Chains:first(V,Out) 
+* [26]
+* [25]
+* [24]
+
+
+### Merging Chains  first/2 into  External patterns of execution 
+* [[26]] --> 1 
+* [[25]] --> 2 
+* [[24]] --> 3 
+
+
+### Specialization of cost equations isOp/2 
+* CE 24 is refined into CE [39] 
+* CE 23 is refined into CE [40] 
+* CE 25 is refined into CE [41] 
+
+
+#### Refined cost equations isOp/2 
+* CE 39: isOp(V,Out) = 1
+     [V>=1,Out=2] 
+* CE 40: isOp(V,Out) = 1
+     [V>=1,Out=1] 
+* CE 41: isOp(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of isOp/2 
+* CEs [39] --> Loop 27 
+* CEs [40] --> Loop 28 
+* CEs [41] --> Loop 29 
+
+#### Loops of isOp/2 
+* Loop 27: isOp(V,Out) [V>=1,Out=2] 
+* Loop 28: isOp(V,Out) [V>=1,Out=1] 
+* Loop 29: isOp(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR isOp(V,Out) 
+
+#### Partial ranking functions of CR isOp(V,Out) 
+
+
+### Resulting Chains:isOp(V,Out) 
+* [29]
+* [28]
+* [27]
+
+
+### Merging Chains  isOp/2 into  External patterns of execution 
+* [[29]] --> 1 
+* [[28]] --> 2 
+* [[27]] --> 3 
+
+
+### Specialization of cost equations second/2 
+* CE 21 is refined into CE [42] 
+* CE 22 is refined into CE [43] 
+
+
+#### Refined cost equations second/2 
+* CE 42: second(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 43: second(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of second/2 
+* CEs [42] --> Loop 30 
+* CEs [43] --> Loop 31 
+
+#### Loops of second/2 
+* Loop 30: second(V,Out) [V>=Out+1,Out>=0] 
+* Loop 31: second(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR second(V,Out) 
+
+#### Partial ranking functions of CR second(V,Out) 
+
+
+### Resulting Chains:second(V,Out) 
+* [31]
+* [30]
+
+
+### Merging Chains  second/2 into  External patterns of execution 
+* [[31]] --> 1 
+* [[30]] --> 2 
+
+
+### Specialization of cost equations start/4 
+* CE 2 is refined into CE [44,45,46] 
+* CE 3 is refined into CE [47] 
+* CE 4 is refined into CE [48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70] 
+* CE 5 is refined into CE [71,72,73,74,75,76,77,78,79,80,81] 
+* CE 6 is refined into CE [82,83,84,85,86,87,88] 
+* CE 7 is refined into CE [89,90,91] 
+* CE 8 is refined into CE [92,93,94,95,96,97,98] 
+* CE 9 is refined into CE [99,100,101] 
+* CE 10 is refined into CE [102,103] 
+* CE 11 is refined into CE [104,105,106] 
+* CE 12 is refined into CE [107,108,109] 
+* CE 13 is refined into CE [110,111,112] 
+
+
+#### Refined cost equations start/4 
+* CE 44: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1
+     [V16>=W27+1,W27>=0,V19>=0,V>=0,X27=0] 
+* CE 45: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2
+     [V16>=W27+1,W27>=1,V19>=0,V>=0] 
+* CE 46: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):3
+     [V16>=W27+1,X27>=0,W27>=2,V19>=0,V>=0] 
+* CE 47: start(V,V16,V19,V27) = 0
+     [V19>=0,V16>=0,V>=0] 
+* CE 48: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):1+ rewrite(A28,B28):1+ rewrite(C28,D28):1
+     [V>=Y27+1,V16>=W27+1,C28>=2,Y27>=0,W27>=0,C28=V19+2,D28=0,B28=0,A28=0,Z27=0,X27=0] 
+* CE 49: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):1+ rewrite(A28,B28):1+ rewrite(C28,C28):2
+     [V>=Y27+1,V16>=W27+1,C28>=2,Y27>=0,W27>=0,C28=V19+2,B28=0,A28=0,Z27=0,X27=0] 
+* CE 50: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):1+ rewrite(A28,B28):1+ rewrite(C28,D28):3
+     [V>=Y27+1,V16>=W27+1,C28>=2,Y27>=0,W27>=0,C28=V19+2,B28=0,A28=0,Z27=0,X27=0] 
+* CE 51: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2+ rewrite(Y27,Z27):1+ rewrite(A28,B28):1
+     [V>=Y27+1,V16>=W27+1,A28>=2,Y27>=1,W27>=0,A28=V19+2,B28=0,Z27=0,X27=0] 
+* CE 52: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2+ rewrite(Y27,Z27):1+ rewrite(A28,A28):2
+     [V>=Y27+1,V16>=W27+1,A28>=2,Y27>=1,W27>=0,A28=V19+2,Z27=0,X27=0] 
+* CE 53: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2+ rewrite(Y27,Z27):1+ rewrite(A28,B28):3
+     [V>=Y27+1,V16>=W27+1,A28>=2,Y27>=1,W27>=0,A28=V19+2,Z27=0,X27=0] 
+* CE 54: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2+ rewrite(Y27,Y27):2+ rewrite(Z27,A28):1
+     [Z27>=Y27+2,V>=Y27+1,V16>=W27+1,Y27>=1,W27>=0,Z27=V19+Y27+2,A28=0,X27=0] 
+* CE 55: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2+ rewrite(Y27,Y27):2+ rewrite(Z27,Z27):2
+     [Z27>=Y27+2,V>=Y27+1,V16>=W27+1,Y27>=1,W27>=0,Z27=V19+Y27+2,X27=0] 
+* CE 56: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2+ rewrite(Y27,Y27):2+ rewrite(Z27,A28):3
+     [Z27>=Y27+2,V>=Y27+1,V16>=W27+1,Y27>=1,W27>=0,Z27=V19+Y27+2,X27=0] 
+* CE 57: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2+ rewrite(Y27,Z27):3
+     [V>=Y27+1,V16>=W27+1,Y27>=2,W27>=0,V19>=0,V19+Z27+2=A28,X27=0] 
+* CE 58: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):3
+     [V>=Y27+1,V16>=W27+1,Z27>=0,Y27>=2,W27>=0,V19>=0,V19+A28+2=B28,X27=0] 
+* CE 59: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,Y27):1+ rewrite(Z27,A28):1+ rewrite(B28,C28):1
+     [V>=X27+1,B28>=W27+2,V16>=W27+1,X27>=0,W27>=1,B28=V19+W27+2,C28=0,A28=0,Z27=0,Y27=0] 
+* CE 60: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,Y27):1+ rewrite(Z27,A28):1+ rewrite(B28,B28):2
+     [V>=X27+1,B28>=W27+2,V16>=W27+1,X27>=0,W27>=1,B28=V19+W27+2,A28=0,Z27=0,Y27=0] 
+* CE 61: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,Y27):1+ rewrite(Z27,A28):1+ rewrite(B28,C28):3
+     [V>=X27+1,B28>=W27+2,V16>=W27+1,X27>=0,W27>=1,B28=V19+W27+2,A28=0,Z27=0,Y27=0] 
+* CE 62: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,X27):2+ rewrite(X27,Y27):1+ rewrite(Z27,A28):1
+     [V>=X27+1,Z27>=W27+2,V16>=W27+1,X27>=1,W27>=1,Z27=V19+W27+2,A28=0,Y27=0] 
+* CE 63: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,X27):2+ rewrite(X27,Y27):1+ rewrite(Z27,Z27):2
+     [V>=X27+1,Z27>=W27+2,V16>=W27+1,X27>=1,W27>=1,Z27=V19+W27+2,Y27=0] 
+* CE 64: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,X27):2+ rewrite(X27,Y27):1+ rewrite(Z27,A28):3
+     [V>=X27+1,Z27>=W27+2,V16>=W27+1,X27>=1,W27>=1,Z27=V19+W27+2,Y27=0] 
+* CE 65: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,X27):2+ rewrite(X27,X27):2+ rewrite(Y27,Z27):1
+     [Y27>=W27+X27+2,V>=X27+1,V16>=W27+1,X27>=1,W27>=1,Y27=V19+W27+X27+2,Z27=0] 
+* CE 66: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,X27):2+ rewrite(X27,X27):2+ rewrite(Y27,Y27):2
+     [Y27>=W27+X27+2,V>=X27+1,V16>=W27+1,X27>=1,W27>=1,Y27=V19+W27+X27+2] 
+* CE 67: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,X27):2+ rewrite(X27,X27):2+ rewrite(Y27,Z27):3
+     [Y27>=W27+X27+2,V>=X27+1,V16>=W27+1,X27>=1,W27>=1,Y27=V19+W27+X27+2] 
+* CE 68: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,X27):2+ rewrite(X27,Y27):3
+     [V>=X27+1,V16>=W27+1,X27>=2,W27>=1,V19>=0,V19+W27+Y27+2=Z27] 
+* CE 69: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,Y27):3
+     [V>=X27+1,V16>=W27+1,Y27>=0,X27>=2,W27>=1,V19>=0,V19+W27+Z27+2=A28] 
+* CE 70: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):3
+     [V>=Y27+1,V16>=W27+1,Z27>=0,Y27>=0,X27>=0,W27>=2,V19>=0,V19+X27+A28+2=B28] 
+* CE 71: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):1+ rewrite(A28,B28):1
+     [V>=W27+1,A28>=V27+2,W27>=0,V27>=0,V16>=0,A28=V19+V27+2,B28=0,Z27=0,Y27=0,X27=0] 
+* CE 72: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):1+ rewrite(A28,A28):2
+     [V>=W27+1,A28>=V27+2,W27>=0,V27>=0,V16>=0,A28=V19+V27+2,Z27=0,Y27=0,X27=0] 
+* CE 73: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):1+ rewrite(A28,B28):3
+     [V>=W27+1,A28>=V27+2,W27>=0,V27>=0,V16>=0,A28=V19+V27+2,Z27=0,Y27=0,X27=0] 
+* CE 74: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(W27,X27):1+ rewrite(Y27,Z27):1
+     [V>=W27+1,Y27>=V27+2,W27>=1,V27>=0,V16>=0,Y27=V19+V27+2,Z27=0,X27=0] 
+* CE 75: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2
+     [V>=W27+1,Y27>=V27+2,W27>=1,V27>=0,V16>=0,Y27=V19+V27+2,X27=0] 
+* CE 76: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(W27,X27):1+ rewrite(Y27,Z27):3
+     [V>=W27+1,Y27>=V27+2,W27>=1,V27>=0,V16>=0,Y27=V19+V27+2,X27=0] 
+* CE 77: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(W27,W27):2+ rewrite(X27,Y27):1
+     [X27>=V27+W27+2,V>=W27+1,W27>=1,V27>=0,V16>=0,X27=V19+V27+W27+2,Y27=0] 
+* CE 78: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(W27,W27):2+ rewrite(X27,X27):2
+     [X27>=V27+W27+2,V>=W27+1,W27>=1,V27>=0,V16>=0,X27=V19+V27+W27+2] 
+* CE 79: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(W27,W27):2+ rewrite(X27,Y27):3
+     [X27>=V27+W27+2,V>=W27+1,W27>=1,V27>=0,V16>=0,X27=V19+V27+W27+2] 
+* CE 80: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(W27,X27):3
+     [V>=W27+1,W27>=2,V27>=0,V19>=0,V16>=0,V19+V27+X27+2=Y27] 
+* CE 81: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):3
+     [V>=W27+1,X27>=0,W27>=2,V27>=0,V19>=0,V16>=0,V19+V27+Y27+2=Z27] 
+* CE 82: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):1
+     [V>=Y27+1,V16>=W27+1,Y27>=0,W27>=0,V19>=0,Z27=0,X27=0] 
+* CE 83: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Y27):2
+     [V>=Y27+1,V16>=W27+1,Y27>=1,W27>=0,V19>=0,X27=0] 
+* CE 84: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1+ rewrite(Y27,Z27):3
+     [V>=Y27+1,V16>=W27+1,Z27>=0,Y27>=2,W27>=0,V19>=0,X27=0] 
+* CE 85: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,Y27):1
+     [V>=X27+1,V16>=W27+1,X27>=0,W27>=1,V19>=0,Y27=0] 
+* CE 86: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,X27):2
+     [V>=X27+1,V16>=W27+1,X27>=1,W27>=1,V19>=0] 
+* CE 87: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2+ rewrite(X27,Y27):3
+     [V>=X27+1,V16>=W27+1,Y27>=0,X27>=2,W27>=1,V19>=0] 
+* CE 88: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):3
+     [V>=Y27+1,V16>=W27+1,Z27>=0,Y27>=0,X27>=0,W27>=2,V19>=0] 
+* CE 89: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):1
+     [V>=W27+1,W27>=0,V27>=0,V19>=0,V16>=0,X27=0] 
+* CE 90: start(V,V16,V19,V27) = 0+ rewrite(W27,W27):2
+     [V>=W27+1,W27>=1,V27>=0,V19>=0,V16>=0] 
+* CE 91: start(V,V16,V19,V27) = 0+ rewrite(W27,X27):3
+     [V>=W27+1,X27>=0,W27>=2,V27>=0,V19>=0,V16>=0] 
+* CE 92: start(V,V16,V19,V27) = 0+ rewrite(V27,W27):1+ rewrite(X27,Y27):1
+     [X27>=V19+2,V27>=0,V19>=0,V>=0,X27=V16+V19+2,Y27=0,W27=0] 
+* CE 93: start(V,V16,V19,V27) = 0+ rewrite(V27,W27):1+ rewrite(X27,X27):2
+     [X27>=V19+2,V27>=0,V19>=0,V>=0,X27=V16+V19+2,W27=0] 
+* CE 94: start(V,V16,V19,V27) = 0+ rewrite(V27,W27):1+ rewrite(X27,Y27):3
+     [X27>=V19+2,V27>=0,V19>=0,V>=0,X27=V16+V19+2,W27=0] 
+* CE 95: start(V,V16,V19,V27) = 0+ rewrite(V27,V27):2+ rewrite(W27,X27):1
+     [W27>=V19+V27+2,V27>=1,V19>=0,V>=0,W27=V16+V19+V27+2,X27=0] 
+* CE 96: start(V,V16,V19,V27) = 0+ rewrite(V27,V27):2+ rewrite(W27,W27):2
+     [W27>=V19+V27+2,V27>=1,V19>=0,V>=0,W27=V16+V19+V27+2] 
+* CE 97: start(V,V16,V19,V27) = 0+ rewrite(V27,V27):2+ rewrite(W27,X27):3
+     [W27>=V19+V27+2,V27>=1,V19>=0,V>=0,W27=V16+V19+V27+2] 
+* CE 98: start(V,V16,V19,V27) = 0+ rewrite(V27,W27):3
+     [V27>=2,V19>=0,V16>=0,V>=0,V16+V19+W27+2=X27] 
+* CE 99: start(V,V16,V19,V27) = 0+ rewrite(V,W27):1
+     [V>=0,W27=0] 
+* CE 100: start(V,V16,V19,V27) = 0+ rewrite(V,V):2
+     [V>=1] 
+* CE 101: start(V,V16,V19,V27) = 0+ rewrite(V,W27):3
+     [V>=2] 
+* CE 102: start(V,V16,V19,V27) = 0+ second(V,W27):1
+     [V>=0,W27=0] 
+* CE 103: start(V,V16,V19,V27) = 0+ second(V,W27):2
+     [V>=W27+1,W27>=0] 
+* CE 104: start(V,V16,V19,V27) = 0+ isOp(V,W27):1
+     [V>=0,W27=0] 
+* CE 105: start(V,V16,V19,V27) = 0+ isOp(V,W27):2
+     [V>=1,W27=1] 
+* CE 106: start(V,V16,V19,V27) = 0+ isOp(V,W27):3
+     [V>=1,W27=2] 
+* CE 107: start(V,V16,V19,V27) = 0+ first(V,W27):1
+     [V>=0,W27=0] 
+* CE 108: start(V,V16,V19,V27) = 0+ first(V,V):2
+     [V>=1] 
+* CE 109: start(V,V16,V19,V27) = 0+ first(V,W27):3
+     [V>=W27+1,W27>=0] 
+* CE 110: start(V,V16,V19,V27) = 1+ rewrite(V,W27):1
+     [V>=0,W27=0] 
+* CE 111: start(V,V16,V19,V27) = 1+ rewrite(V,V):2
+     [V>=1] 
+* CE 112: start(V,V16,V19,V27) = 1+ rewrite(V,W27):3
+     [V>=2] 
+
+### Cost equations --> "Loop" of start/4 
+* CEs [101,112] --> Loop 32 
+* CEs [50,53,56,57,58,61,64,67,68,69,84,87] --> Loop 33 
+* CEs [46,70,88] --> Loop 34 
+* CEs [73,76,79,80,81,91,94,97,98] --> Loop 35 
+* CEs [44,45,47,48,49,51,52,54,55,59,60,62,63,65,66,71,72,74,75,77,78,82,83,85,86,89,90,92,93,95,96,99,100,102,103,104,105,106,107,108,109,110,111] --> Loop 36 
+
+#### Loops of start/4 
+* Loop 32: start(V,V16,V19,V27) [V>=2] 
+* Loop 33: start(V,V16,V19,V27) [V19>=0,V16>=1,V>=1] 
+* Loop 34: start(V,V16,V19,V27) [V19>=0,V16>=3,V>=0] 
+* Loop 35: start(V,V16,V19,V27) [V27>=0,V19>=0,V16>=0,V>=0] 
+* Loop 36: start(V,V16,V19,V27) [V>=0] 
+
+### Ranking functions of CR start(V,V16,V19,V27) 
+
+#### Partial ranking functions of CR start(V,V16,V19,V27) 
+
+
+### Resulting Chains:start(V,V16,V19,V27) 
+* [36]
+* [35]...
+* [34]...
+* [33]...
+* [32]...
+
+
+### Merging Chains  start/4 into  External patterns of execution 
+* [[36]] --> 1 
+* [[35]] --> 2 
+* [[34]] --> 3 
+* [[33]] --> 4 
+* [[32]] --> 5 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [17,18,19,20,21] 
+
+ * loop 17:rewrite(V,Out) -> [rewrite(V',Out'),rewrite(V'2,Out'2)] 
+1
+ * loop 18:rewrite(V,Out) -> [rewrite(V',Out'),rewrite(V'2,Out'2),rewrite(V'3,Out'3),rewrite(V'4,Out'4),rewrite(V'5,Out'5)] 
+1
+ * loop 19:rewrite(V,Out) -> [rewrite(V',Out'),rewrite(V'2,Out'2),rewrite(V'3,Out'3)] 
+1
+ * loop 20:rewrite(V,Out) -> [rewrite(V',Out')] 
+1
+ * loop 21:rewrite(V,Out) -> [rewrite(V',Out')] 
+1
+#### Cost of phase [17,18,19,20,21]:rewrite(V,Out) -> [] 
+5*it(17)+1*it([22])+0
+#### Cost of chains of rewrite(V,Out):
+* Chain [multiple([17,18,19,20,21],[[],[23],[22]])]...: 5*it(17)+1*it([22])+0
+  with precondition: [V>=2] 
+
+* Chain [23]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [22]: 1
+  with precondition: [V=Out,V>=1] 
+
+
+#### Cost of chains of first(V,Out):
+* Chain [26]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [25]: 1
+  with precondition: [V=Out,V>=1] 
+
+* Chain [24]: 1
+  with precondition: [Out>=0,V>=Out+1] 
+
+
+#### Cost of chains of isOp(V,Out):
+* Chain [29]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [28]: 1
+  with precondition: [Out=1,V>=1] 
+
+* Chain [27]: 1
+  with precondition: [Out=2,V>=1] 
+
+
+#### Cost of chains of second(V,Out):
+* Chain [31]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [30]: 1
+  with precondition: [Out>=0,V>=Out+1] 
+
+
+#### Cost of chains of start(V,V16,V19,V27):
+* Chain [36]: 4
+  with precondition: [V>=0] 
+
+* Chain [35]...: 1*aux(3)+0
+  with precondition: [V>=0,V16>=0,V19>=0,V27>=0] 
+
+* Chain [34]...: 1*aux(4)+0
+  with precondition: [V>=0,V16>=3,V19>=0] 
+
+* Chain [33]...: 1*aux(5)+0
+  with precondition: [V>=1,V16>=1,V19>=0] 
+
+* Chain [32]...: 1*aux(6)+0
+  with precondition: [V>=2] 
+
+
+Closed-form bounds of start(V,V16,V19,V27): 
+-------------------------------------
+* Chain [36] with precondition: [V>=0] 
+    - Upper bound: 4 
+    - Complexity: constant 
+* Chain [35]... with precondition: [V>=0,V16>=0,V19>=0,V27>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [34]... with precondition: [V>=0,V16>=3,V19>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [33]... with precondition: [V>=1,V16>=1,V19>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [32]... with precondition: [V>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V16,V19,V27): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 40 ms.
+* Invariants computed in 22 ms.
+   - Backward Invariants 3 ms.
+   - Transitive Invariants 7 ms.
+* Refinement performed in 165 ms.
+* Termination proved in 8 ms.
+* Upper bounds computed in 83 ms.
+   - Equation cost structures 54 ms.
+   - Phase cost structures 29 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 353 ms.
+

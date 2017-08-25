@@ -1,0 +1,459 @@
+
+Preprocessing Cost Relations
+=====================================
+1. SCC does not have a single cut point : [fun1/3,fun/3]  
+ Merged into fun1fun/3
+
+#### Computed strongly connected components 
+0. recursive  : [from/2]
+2. non_recursive  : [pi/2]
+3. recursive  : [plus/3]
+4. recursive [non_tail] : [times/3]
+5. non_recursive  : [square/2]
+6. non_recursive  : [start/2]
+1. recursive  : [fun1fun/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into from/2
+2. SCC is partially evaluated into pi/2
+3. SCC is partially evaluated into plus/3
+4. SCC is partially evaluated into times/3
+5. SCC is completely evaluated into other SCCs
+6. SCC is partially evaluated into start/2
+1. SCC is partially evaluated into fun1fun/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations from/2 
+* CE 8 is refined into CE [18] 
+
+
+#### Refined cost equations from/2 
+* CE 18: from(V,Out) = 1+ from(W,X)
+     [V>=0,V+X+1=Out,V+1=W] 
+
+### Cost equations --> "Loop" of from/2 
+* CEs [18] --> Loop 11 
+
+#### Loops of from/2 
+* Loop 11: from(V,Out)->  from(V',Out')
+                  [V>=0,V+Out'+1=Out,V+1=V'] 
+
+### Ranking functions of CR from(V,Out) 
+
+#### Partial ranking functions of CR from(V,Out) 
+
+Warning: no base case found for predicate
+
+### Resulting Chains:from(V,Out) 
+* [[11]]...
+
+
+### Merging Chains  from/2 into  External patterns of execution 
+* [[[11]]] --> 1 
+
+
+### Specialization of cost equations fun1fun/3 
+* CE 9 is refined into CE [19] 
+* CE 12 is refined into CE [20] 
+* CE 10 is refined into CE [21] 
+* CE 11 is refined into CE [22] 
+
+
+#### Refined cost equations fun1fun/3 
+* CE 19: fun1fun(A,B,C) = 1
+     [B>=0,C=0,A=0] 
+* CE 20: fun1fun(A,B,C) = 0
+     [B>=0,A>=0,C=0] 
+* CE 21: fun1fun(A,B,C) = 1+ fun1fun(A,B,C)
+     [B>=1,A>=1] 
+* CE 22: fun1fun(A,B,C) = 1+ fun1fun(D,E,F)
+     [B+F>=C+E,C>=F+2,E>=0,D>=0,D+1=A] 
+
+### Cost equations --> "Loop" of fun1fun/3 
+* CEs [21] --> Loop 12 
+* CEs [22] --> Loop 13 
+* CEs [19,20] --> Loop 14 
+
+#### Loops of fun1fun/3 
+* Loop 12: fun1fun(A,B,C)->  fun1fun(A,B,C)
+                  [B>=1,A>=1] 
+* Loop 13: fun1fun(A,B,C)->  fun1fun(A',B',C')
+                  [B+C'>=C+B',C>=C'+2,B'>=0,A>=1,A=A'+1] 
+* Loop 14: fun1fun(A,B,C) [B>=0,A>=0,C=0] 
+
+### Ranking functions of CR fun1fun(A,B,C) 
+
+#### Partial ranking functions of CR fun1fun(A,B,C) 
+* Partial RF of phase [12,13]:
+  - RF of loop [13:1]:
+    A
+    B/2-1/2
+
+
+### Resulting Chains:fun1fun(A,B,C) 
+* [[12,13]]...
+* [[12,13],14]
+* [14]
+
+
+### Merging Chains  fun1fun/3 into  External patterns of execution 
+* [[14]] --> 1 
+* [[14,[12,13]]] --> 2 
+* [[[12,13]]] --> 3 
+
+
+### Specialization of cost equations pi/2 
+* CE 13 is refined into CE [23] 
+
+
+#### Refined cost equations pi/2 
+* CE 23: pi(V,Out) = 1+ from(W,X):1
+     [V>=0,W=0] 
+
+### Cost equations --> "Loop" of pi/2 
+* CEs [23] --> Loop 15 
+
+#### Loops of pi/2 
+* Loop 15: pi(V,Out) [V>=0] 
+
+### Ranking functions of CR pi(V,Out) 
+
+#### Partial ranking functions of CR pi(V,Out) 
+
+Warning: no base case found for predicate
+
+### Resulting Chains:pi(V,Out) 
+* [15]...
+
+
+### Merging Chains  pi/2 into  External patterns of execution 
+* [[15]] --> 1 
+
+
+### Specialization of cost equations plus/3 
+* CE 15 is refined into CE [24] 
+* CE 14 is refined into CE [25] 
+
+
+#### Refined cost equations plus/3 
+* CE 24: plus(V,V1,Out) = 1+ plus(W1,V1,X1)
+     [W1>=0,V1>=0,X1+1=Out,W1+1=V] 
+* CE 25: plus(A,B,B) = 1
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of plus/3 
+* CEs [25] --> Loop 16 
+* CEs [24] --> Loop 17 
+
+#### Loops of plus/3 
+* Loop 16: plus(A,B,B) [B>=0,A=0] 
+* Loop 17: plus(V,V1,Out)->  plus(V',V1,Out')
+                  [V'>=0,V1>=0,Out=Out'+1,V'+1=V] 
+
+### Ranking functions of CR plus(V,V1,Out) 
+* RF of phase [17]: [V]
+
+#### Partial ranking functions of CR plus(V,V1,Out) 
+* Partial RF of phase [17]:
+  - RF of loop [17:1]:
+    V
+
+
+### Resulting Chains:plus(V,V1,Out) 
+* [[17],16]
+* [16]
+
+
+### Merging Chains  plus/3 into  External patterns of execution 
+* [[16]] --> 1 
+* [[16,[17]]] --> 2 
+
+
+### Specialization of cost equations times/3 
+* CE 17 is refined into CE [26,27] 
+* CE 16 is refined into CE [28] 
+
+
+#### Refined cost equations times/3 
+* CE 26: times(V,V1,Out) = 1+ times(W1,X1,Out)+ plus(Y1,Out,Out):1
+     [W1>=0,Out>=0,W1+1=V,X1=0,Y1=0,V1=0] 
+* CE 27: times(V,V1,Out) = 1+ times(W1,V1,X1)+ plus(V1,Y1,Out):2
+     [Out>=V1,W1>=0,V1>=1,Out=V1+X1,Out=V1+Y1,W1+1=V] 
+* CE 28: times(V,V1,Out) = 1
+     [V1>=0,Out=0,V=0] 
+
+### Cost equations --> "Loop" of times/3 
+* CEs [28] --> Loop 18 
+* CEs [27] --> Loop 19 
+* CEs [26] --> Loop 20 
+
+#### Loops of times/3 
+* Loop 18: times(V,V1,Out) [V1>=0,Out=0,V=0] 
+* Loop 19: times(V,V1,Out)->  times(V',V1,Out')
+                  [Out>=V1,V1>=1,V>=1,V1+Out'=Out,V=V'+1] 
+* Loop 20: times(V,V1,Out)->  times(V',V1',Out)
+                  [Out>=0,V>=1,V=V'+1,V1'=0,V1=0] 
+
+### Ranking functions of CR times(V,V1,Out) 
+* RF of phase [19]: [V]
+* RF of phase [20]: [V]
+
+#### Partial ranking functions of CR times(V,V1,Out) 
+* Partial RF of phase [19]:
+  - RF of loop [19:1]:
+    V
+* Partial RF of phase [20]:
+  - RF of loop [20:1]:
+    V
+
+
+### Resulting Chains:times(V,V1,Out) 
+* [[20],18]
+* [[19],18]
+* [18]
+
+
+### Merging Chains  times/3 into  External patterns of execution 
+* [[18]] --> 1 
+* [[18,[20]]] --> 2 
+* [[18,[19]]] --> 3 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [29] 
+* CE 3 is refined into CE [30,31,32] 
+* CE 4 is refined into CE [33] 
+* CE 5 is refined into CE [34,35] 
+* CE 6 is refined into CE [36,37,38] 
+* CE 7 is refined into CE [39,40] 
+
+
+#### Refined cost equations start/2 
+* CE 29: start(V,V1) = 0+ from(V,W1):1
+     [V>=0] 
+* CE 30: start(V,V1) = 0+ fun1fun(V,V1,W1):1
+     [V1>=0,V>=0,W1=0] 
+* CE 31: start(V,V1) = 0+ fun1fun(V,V1,W1):2
+     [2*V1>=W1+2,V1>=W1,W1>=0,V>=1] 
+* CE 32: start(V,V1) = 0+ fun1fun(V,V1,W1):3
+     [V1>=1,V>=1] 
+* CE 33: start(V,V1) = 0+ pi(V,W1):1
+     [V>=0] 
+* CE 34: start(V,V1) = 0+ plus(W1,V1,V1):1
+     [V1>=0,W1=0,V=0] 
+* CE 35: start(V,V1) = 0+ plus(V,W1,X1):2
+     [X1>=V,V>=1,X1=V+W1,X1=V+V1] 
+* CE 36: start(V,V1) = 0+ times(W1,V1,X1):1
+     [V1>=0,X1=0,W1=0,V=0] 
+* CE 37: start(V,V1) = 0+ times(V,W1,X1):2
+     [V>=1,X1=0,W1=0,V1=0] 
+* CE 38: start(V,V1) = 0+ times(V,V1,W1):3
+     [W1+1>=V+V1,V1>=1,V>=1] 
+* CE 39: start(V,V1) = 1+ times(W1,X1,Y1):1
+     [Y1=0,X1=0,W1=0,V=0] 
+* CE 40: start(V,V1) = 1+ times(V,V,W1):3
+     [W1+1>=2*V,V>=1] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [40] --> Loop 21 
+* CEs [30,31,35,37,38] --> Loop 22 
+* CEs [34,36,39] --> Loop 23 
+* CEs [29,32,33] --> Loop 24 
+
+#### Loops of start/2 
+* Loop 21: start(V,V1) [V>=1] 
+* Loop 22: start(V,V1) [V1>=0,V>=0] 
+* Loop 23: start(V,V1) [V=0] 
+* Loop 24: start(V,V1) [V>=0] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [24]...
+* [23]
+* [22]
+* [21]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+* [[21]] --> 3 
+* [[24]] --> 4 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [11] 
+
+ * loop 11:from(V,Out) -> [from(V',Out')] 
+1
+#### Cost of phase [11]:from(V,Out) -> [from(V',Out')] 
+1*it(11)+0
+#### Cost of chains of from(V,Out):
+* Chain [[11]]...: 1*it(11)+0
+  with precondition: [V>=0] 
+
+
+#### Cost of loops [12,13] 
+
+ * loop 12:fun1fun(A,B,C) -> [fun1fun(A',B',C')] 
+1
+ * loop 13:fun1fun(A,B,C) -> [fun1fun(A',B',C')] 
+1
+#### Cost of phase [12,13]:fun1fun(A,B,C) -> [fun1fun(A',B',C')] 
+1*it(12)+1*it(13)+0
+  Such that:it(13) =< A
+it(13) =< A-A'
+it(13) =< B/2
+it(13) =< B/2-B'/2
+
+#### Cost of phase [12,13]:fun1fun(A,B,C) -> [fun1fun(A',B',C')] 
+1*it(12)+1*it(13)+0
+  Such that:it(13) =< A
+it(13) =< A-A'
+it(13) =< B/2
+it(13) =< B/2-B'/2
+
+#### Cost of chains of fun1fun(A,B,C):
+* Chain [[12,13]]...: 1*it(12)+1*it(13)+0
+  Such that:it(13) =< A
+
+  with precondition: [B>=1,A>=1] 
+
+* Chain [[12,13],14]: 1*it(12)+1*it(13)+1
+  Such that:it(13) =< A
+
+  with precondition: [A>=1,C>=0,B>=C,2*B>=C+2] 
+
+* Chain [14]: 1
+  with precondition: [C=0,A>=0,B>=0] 
+
+
+#### Cost of chains of pi(V,Out):
+* Chain [15]...: 1*s(1)+1
+  with precondition: [V>=0] 
+
+
+#### Cost of loops [17] 
+
+ * loop 17:plus(V,V1,Out) -> [plus(V',V1',Out')] 
+1
+#### Cost of phase [17]:plus(V,V1,Out) -> [plus(V',V1',Out')] 
+1*it(17)+0
+  Such that:it(17) =< V
+it(17) =< V-V'
+
+#### Cost of chains of plus(V,V1,Out):
+* Chain [[17],16]: 1*it(17)+1
+  Such that:it(17) =< -V1+Out
+
+  with precondition: [V+V1=Out,V>=1,V1>=0] 
+
+* Chain [16]: 1
+  with precondition: [V=0,V1=Out,V1>=0] 
+
+
+#### Cost of loops [20] 
+
+ * loop 20:times(V,V1,Out) -> [times(V',V1',Out')] 
+2
+#### Cost of phase [20]:times(V,V1,Out) -> [times(V',V1',Out')] 
+2*it(20)+0
+  Such that:it(20) =< V
+it(20) =< V-V'
+
+#### Cost of loops [19] 
+
+ * loop 19:times(V,V1,Out) -> [times(V',V1',Out')] 
+1*s(3)+2
+  Such that:s(3) =< V1'
+
+#### Cost of phase [19]:times(V,V1,Out) -> [times(V',V1',Out')] 
+2*it(19)+1*s(4)+0
+  Such that:it(19) =< V
+it(19) =< V-V'
+aux(1) =< V1
+s(4) =< it(19)*aux(1)
+
+#### Cost of chains of times(V,V1,Out):
+* Chain [[20],18]: 2*it(20)+1
+  Such that:it(20) =< V
+
+  with precondition: [V1=0,Out=0,V>=1] 
+
+* Chain [[19],18]: 2*it(19)+1*s(4)+1
+  Such that:it(19) =< V
+aux(1) =< V1
+s(4) =< it(19)*aux(1)
+
+  with precondition: [V>=1,V1>=1,Out+1>=V+V1] 
+
+* Chain [18]: 1
+  with precondition: [V=0,Out=0,V1>=0] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [24]...: 3*s(5)+1*s(6)+1
+  Such that:s(6) =< V
+
+  with precondition: [V>=0] 
+
+* Chain [23]: 2
+  with precondition: [V=0] 
+
+* Chain [22]: 6*s(9)+1*s(10)+1*s(15)+1
+  Such that:s(14) =< V1
+aux(2) =< V
+s(9) =< aux(2)
+s(15) =< s(9)*s(14)
+
+  with precondition: [V>=0,V1>=0] 
+
+* Chain [21]: 2*s(16)+1*s(18)+2
+  Such that:aux(3) =< V
+s(16) =< aux(3)
+s(18) =< s(16)*aux(3)
+
+  with precondition: [V>=1] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [24]... with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [23] with precondition: [V=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [22] with precondition: [V>=0,V1>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [21] with precondition: [V>=1] 
+    - Upper bound: 2*V+2+V*V 
+    - Complexity: n^2 
+
+### Maximum cost of start(V,V1): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 14 ms.
+* Invariants computed in 40 ms.
+   - Backward Invariants 19 ms.
+   - Transitive Invariants 13 ms.
+* Refinement performed in 71 ms.
+* Termination proved in 11 ms.
+* Upper bounds computed in 152 ms.
+   - Equation cost structures 48 ms.
+   - Phase cost structures 55 ms.
+   - Chain cost structures 54 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 316 ms.
+

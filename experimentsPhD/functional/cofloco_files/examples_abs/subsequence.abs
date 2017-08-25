@@ -1,0 +1,99 @@
+/* * * * * * * * * * *
+ Translation to abs
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/subsequence.raml
+ *
+ * 
+ * Description:
+ *   A standard example of dynamic programming that can be found in
+ *   many textbooks (see e.g. Cormen/Leiserson/Rivest/Stein:
+ *   Introduction to Algorithms) is the computation of the length of
+ *   the longest common subsequence (LCS) of two given lists
+ *   (sequences).  Given two sequences a_1,...,a_n and b_1,...,b_m, one
+ *   successively fills an nxm-matrix (here a list of lists) A such
+ *   that A(i,j) contains the length of the LCS of a_1,...,a_i and
+ *   b_1,...,b_j.  It is the case that
+ *
+ *            { 0                      if i=0 or j=0
+ *   A(i,j) = { A(i-1,j-1) + 1         if i,j > 0 and a_i = b_j 
+ *            { max(A(i,j-1),A(i-1,j)) if i,j > 0 and a_i \= b_j
+ *
+ *   This algorithm can be analyzed in our system and is exemplary for
+ *   similar algorithms that use dynamic programming.
+ */
+
+
+module Subsequence;
+
+// Returns the first line of zeros 
+
+def List<Int> firstline(List<Int> l)=
+    case l {
+    Nil=> Nil;
+    Cons(x,xs) => Cons(0,firstline(xs));
+    };
+
+
+/* computes a new line according to the recursive definition above
+ * y is the element of the second list
+ * lastline the the previously computed line in the matrix
+ * l contains elements of the first list */
+def Int max_raml(Int a,Int b)= if a>b then a else b;
+def Int head_or_zero(List<Int> l)=
+    case l {
+    	Cons(x,_) => x;
+        Nil=> 0;
+       
+    };
+
+def List<Int> newline(Int y,List<Int> lastline,List<Int> l)=
+    case l {
+         Nil=> Nil;
+        Cons(x,xs) => 
+	case lastline {
+	     Nil=> Nil;
+             Cons(belowVal,lastlinep) => 
+	     	let (List<Int> nl)=newline(y,lastlinep,xs) in
+		let (Int rightVal)=head_or_zero(nl) in
+		let (Int diagVal)=head_or_zero(lastlinep) in
+		let (Int elem)= if x==y then diagVal+1
+		    	 	else max_raml(belowVal,rightVal) in
+		     Cons(elem,nl);
+		     };
+		     };
+
+
+def List<List<Int>> lcstable(List<Int> l1,List<Int> l2)=
+    case l1 {
+     Nil=> Cons(firstline(l2),Nil);
+     Cons(x,xs) => 
+       let (List<List<Int>> m)=lcstable(xs,l2) in
+       case m {
+         Nil=> Nil;
+	 Cons(l,ls) => Cons(newline(x,l,l2),Cons(l,ls));
+	 };
+     };
+
+
+def  Int lcs(List<Int> l1,List<Int> l2)=
+     let (List<List<Int>> m)=lcstable(l1,l2) in
+     case m {
+       Nil => 0;
+       Cons(l1,_)=> 
+         case l1 {
+	      Nil => 0;
+              Cons(len,_)=> len;
+	      };
+	};
+
+
+
+{}
+
+
+
+

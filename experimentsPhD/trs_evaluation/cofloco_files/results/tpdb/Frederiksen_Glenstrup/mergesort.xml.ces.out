@@ -1,0 +1,919 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [lteq/3]
+1. recursive  : [fun/4,merge/3]
+2. recursive [non_tail,multiple] : [mergesort/2,splitmerge/4]
+3. non_recursive  : [goal/2]
+4. non_recursive  : [notEmpty/2]
+5. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into lteq/3
+1. SCC is partially evaluated into merge/3
+2. SCC is partially evaluated into splitmerge/4
+3. SCC is completely evaluated into other SCCs
+4. SCC is partially evaluated into notEmpty/2
+5. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations lteq/3 
+* CE 45 is refined into CE [46] 
+* CE 44 is refined into CE [47] 
+* CE 43 is refined into CE [48] 
+* CE 42 is refined into CE [49] 
+
+
+#### Refined cost equations lteq/3 
+* CE 46: lteq(V,V5,Out) = 0
+     [V5>=0,V>=0,Out=0] 
+* CE 47: lteq(V,V5,Out) = 0
+     [V>=1,Out=1,V5=0] 
+* CE 48: lteq(V,V5,Out) = 0
+     [V5>=0,Out=2,V=0] 
+* CE 49: lteq(V,V5,Out) = 0+ lteq(W5,X5,Out)
+     [X5>=0,W5>=0,X5+1=V5,W5+1=V] 
+
+### Cost equations --> "Loop" of lteq/3 
+* CEs [49] --> Loop 23 
+* CEs [46] --> Loop 24 
+* CEs [47] --> Loop 25 
+* CEs [48] --> Loop 26 
+
+#### Loops of lteq/3 
+* Loop 23: lteq(V,V5,Out)->  lteq(V',V5',Out)
+                  [V5'>=0,V'>=0,V5'+1=V5,V'+1=V] 
+* Loop 24: lteq(V,V5,Out) [V5>=0,V>=0,Out=0] 
+* Loop 25: lteq(V,V5,Out) [V>=1,Out=1,V5=0] 
+* Loop 26: lteq(V,V5,Out) [V5>=0,Out=2,V=0] 
+
+### Ranking functions of CR lteq(V,V5,Out) 
+* RF of phase [23]: [V,V5]
+
+#### Partial ranking functions of CR lteq(V,V5,Out) 
+* Partial RF of phase [23]:
+  - RF of loop [23:1]:
+    V
+    V5
+
+
+### Resulting Chains:lteq(V,V5,Out) 
+* [[23],26]
+* [[23],25]
+* [[23],24]
+* [26]
+* [25]
+* [24]
+
+
+### Merging Chains  lteq/3 into  External patterns of execution 
+* [[26]] --> 1 
+* [[25]] --> 2 
+* [[24],[24,[23]]] --> 3 
+* [[25,[23]]] --> 4 
+* [[26,[23]]] --> 5 
+
+
+### Specialization of cost equations merge/3 
+* CE 15 is refined into CE [50,51,52,53,54] 
+* CE 20 is refined into CE [55] 
+* CE 18 is refined into CE [56] 
+* CE 19 is refined into CE [57] 
+* CE 16 is refined into CE [58,59] 
+* CE 17 is refined into CE [60,61] 
+
+
+#### Refined cost equations merge/3 
+* CE 50: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):1
+     [V5>=X5+1,X5>=0,V>=1,Y5=2,W5=0,Out=0] 
+* CE 51: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):2
+     [V>=W5+1,W5>=1,V5>=1,Y5=1,X5=0,Out=0] 
+* CE 52: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):3
+     [V5>=X5+1,V>=W5+1,X5>=0,W5>=0,Y5=0,Out=0] 
+* CE 53: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):4
+     [W5>=X5+1,V5>=X5+1,V>=W5+1,X5>=1,Y5=1,Out=0] 
+* CE 54: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):5
+     [V5>=X5+1,X5>=W5,V>=W5+1,W5>=1,Y5=2,Out=0] 
+* CE 55: merge(V,V5,Out) = 0
+     [V5>=0,V>=0,Out=0] 
+* CE 56: merge(A,B,A) = 1
+     [A>=1,B=0] 
+* CE 57: merge(A,B,B) = 1
+     [B>=0,A=0] 
+* CE 58: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):1+ merge(Z5,V5,A6)
+     [V>=Z5+1,V5>=X5+1,Z5>=0,X5>=0,Out+Z5=V+A6,Y5=2,W5=0] 
+* CE 59: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):5+ merge(Z5,V5,A6)
+     [V>=Z5+1,V5>=X5+1,X5>=W5,V>=W5+1,Z5>=0,W5>=1,Out+Z5=V+A6,Y5=2] 
+* CE 60: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):2+ merge(V,Z5,A6)
+     [V5>=Z5+1,V>=W5+1,Z5>=0,W5>=1,Out+Z5=V5+A6,Y5=1,X5=0] 
+* CE 61: merge(V,V5,Out) = 1+ lteq(W5,X5,Y5):4+ merge(V,Z5,A6)
+     [V5>=Z5+1,W5>=X5+1,V5>=X5+1,V>=W5+1,Z5>=0,X5>=1,Out+Z5=V5+A6,Y5=1] 
+
+### Cost equations --> "Loop" of merge/3 
+* CEs [58,59] --> Loop 27 
+* CEs [60,61] --> Loop 28 
+* CEs [50,51,52,53,54,55] --> Loop 29 
+* CEs [56] --> Loop 30 
+* CEs [57] --> Loop 31 
+
+#### Loops of merge/3 
+* Loop 27: merge(V,V5,Out)->  merge(V',V5,Out')
+                  [V>=V'+1,V'>=0,V5>=1,V+Out'=Out+V'] 
+* Loop 28: merge(V,V5,Out)->  merge(V,V5',Out')
+                  [V5>=V5'+1,V5'>=0,V>=2,V5+Out'=Out+V5'] 
+* Loop 29: merge(V,V5,Out) [V5>=0,V>=0,Out=0] 
+* Loop 30: merge(A,B,A) [A>=1,B=0] 
+* Loop 31: merge(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR merge(V,V5,Out) 
+* RF of phase [27,28]: [V+V5-1,V+2*V5-2]
+
+#### Partial ranking functions of CR merge(V,V5,Out) 
+* Partial RF of phase [27,28]:
+  - RF of loop [27:1]:
+    V
+  - RF of loop [28:1]:
+    V5
+
+
+### Resulting Chains:merge(V,V5,Out) 
+* [[27,28],31]
+* [[27,28],30]
+* [[27,28],29]
+* [31]
+* [30]
+* [29]
+
+
+### Merging Chains  merge/3 into  External patterns of execution 
+* [[31]] --> 1 
+* [[30]] --> 2 
+* [[29]] --> 3 
+* [[30,[27,28]],[31,[27,28]]] --> 4 
+* [[29,[27,28]]] --> 5 
+
+
+### Specialization of cost equations splitmerge/4 
+* CE 38 is refined into CE [62] 
+* CE 28 is refined into CE [63,64] 
+* CE 36 is refined into CE [65,66] 
+* CE 27 is refined into CE [67,68,69] 
+* CE 29 is refined into CE [70,71] 
+* CE 31 is refined into CE [72,73] 
+* CE 32 is refined into CE [74,75] 
+* CE 33 is refined into CE [76,77] 
+* CE 35 is refined into CE [78,79] 
+* CE 37 is refined into CE [80,81] 
+* CE 21 is refined into CE [82] 
+* CE 23 is refined into CE [83,84,85,86] 
+* CE 24 is refined into CE [87,88,89] 
+* CE 25 is refined into CE [90,91,92] 
+* CE 26 is refined into CE [93,94,95,96] 
+* CE 30 is refined into CE [97,98] 
+* CE 34 is refined into CE [99,100] 
+* CE 22 is refined into CE [101,102,103,104,105] 
+
+
+#### Refined cost equations splitmerge/4 
+* CE 62: splitmerge(V,V5,V13,Out) = 0
+     [V13>=0,V5>=0,V>=0,Out=0] 
+* CE 63: splitmerge(A,B,C,B) = 3+ merge(B,D,B):2
+     [B>=1,D=0,C=0,A=0] 
+* CE 64: splitmerge(V,V5,V13,Out) = 3+ merge(V5,W13,X13):3
+     [V5>=1,X13=0,W13=0,Out=0,V13=0,V=0] 
+* CE 65: splitmerge(V,V5,V13,Out) = 2+ merge(W13,X13,Y13):1
+     [V5>=0,Y13=0,X13=0,W13=0,Out=0,V13=0,V=0] 
+* CE 66: splitmerge(V,V5,V13,Out) = 2+ merge(W13,X13,Y13):3
+     [V5>=0,Y13=0,X13=0,W13=0,Out=0,V13=0,V=0] 
+* CE 67: splitmerge(V,V5,V13,Out) = 3+ merge(V5,V13,W13):3
+     [V13>=1,V5>=1,W13=0,Out=0,V=0] 
+* CE 68: splitmerge(V,V5,V13,Out) = 3+ merge(V5,W13,Out):4
+     [Out>=V5+1,V5>=1,Out=V5+W13,Out=V5+V13,V=0] 
+* CE 69: splitmerge(V,V5,V13,Out) = 3+ merge(V5,V13,Out):5
+     [V5+V13>=Out+1,Out>=1,V13>=1,V5>=1,V=0] 
+* CE 70: splitmerge(A,B,C,B) = 2+ merge(B,D,B):2
+     [B>=1,C>=0,D=0,A=0] 
+* CE 71: splitmerge(V,V5,V13,Out) = 2+ merge(V5,W13,X13):3
+     [V5>=1,V13>=0,X13=0,W13=0,Out=0,V=0] 
+* CE 72: splitmerge(A,B,C,C) = 3+ merge(D,C,C):1
+     [C>=1,D=0,B=0,A=0] 
+* CE 73: splitmerge(V,V5,V13,Out) = 3+ merge(W13,V13,X13):3
+     [V13>=1,X13=0,W13=0,Out=0,V5=0,V=0] 
+* CE 74: splitmerge(V,V5,V13,Out) = 3+ merge(W13,X13,Y13):1
+     [Y13=0,X13=0,W13=0,Out=0,V13=0,V5=0,V=0] 
+* CE 75: splitmerge(V,V5,V13,Out) = 3+ merge(W13,X13,Y13):3
+     [Y13=0,X13=0,W13=0,Out=0,V13=0,V5=0,V=0] 
+* CE 76: splitmerge(V,V5,V13,Out) = 2+ merge(W13,X13,Y13):1
+     [V13>=0,Y13=0,X13=0,W13=0,Out=0,V5=0,V=0] 
+* CE 77: splitmerge(V,V5,V13,Out) = 2+ merge(W13,X13,Y13):3
+     [V13>=0,Y13=0,X13=0,W13=0,Out=0,V5=0,V=0] 
+* CE 78: splitmerge(A,B,C,C) = 2+ merge(D,C,C):1
+     [C>=1,B>=0,D=0,A=0] 
+* CE 79: splitmerge(V,V5,V13,Out) = 2+ merge(W13,V13,X13):3
+     [V13>=1,V5>=0,X13=0,W13=0,Out=0,V=0] 
+* CE 80: splitmerge(V,V5,V13,Out) = 1+ merge(W13,X13,Y13):1
+     [V13>=0,V5>=0,Y13=0,X13=0,W13=0,Out=0,V=0] 
+* CE 81: splitmerge(V,V5,V13,Out) = 1+ merge(W13,X13,Y13):3
+     [V13>=0,V5>=0,Y13=0,X13=0,W13=0,Out=0,V=0] 
+* CE 82: splitmerge(V,V5,V13,Out) = 1+ splitmerge(W13,X13,V5,Out)
+     [V+V13>=X13,X13>=V13+1,V13>=0,V5>=0,V+V13=W13+X13] 
+* CE 83: splitmerge(A,B,C,C) = 3+ splitmerge(B,D,E,F)+ merge(G,C,C):1
+     [C>=1,B>=2,F=0,E=0,D=0,G=0,A=0] 
+* CE 84: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ merge(Y13,V13,Z13):3
+     [V13>=1,Y13>=0,V5>=2,X13=0,W13=0,Z13=0,Out=0,V=0] 
+* CE 85: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ merge(Y13,Z13,Out):4
+     [Out>=Y13+1,Y13>=1,V5>=2,Out=Y13+Z13,Out=V13+Y13,X13=0,W13=0,V=0] 
+* CE 86: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ merge(Y13,V13,Out):5
+     [V13+Y13>=Out+1,Out>=1,V13>=1,Y13>=1,V5>=2,X13=0,W13=0,V=0] 
+* CE 87: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ merge(Z13,A14,B14):1
+     [V5>=2,Y13=0,X13=0,W13=0,B14=0,A14=0,Z13=0,Out=0,V13=0,V=0] 
+* CE 88: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Out)+ merge(Out,Y13,Out):2
+     [Out>=1,V5>=2,X13=0,W13=0,Y13=0,V13=0,V=0] 
+* CE 89: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ merge(Y13,Z13,A14):3
+     [Y13>=0,V5>=2,X13=0,W13=0,A14=0,Z13=0,Out=0,V13=0,V=0] 
+* CE 90: splitmerge(V,V5,V13,Out) = 2+ splitmerge(V5,W13,X13,Y13)+ merge(Z13,A14,B14):1
+     [V13>=0,V5>=2,Y13=0,X13=0,W13=0,B14=0,A14=0,Z13=0,Out=0,V=0] 
+* CE 91: splitmerge(V,V5,V13,Out) = 2+ splitmerge(V5,W13,X13,Out)+ merge(Out,Y13,Out):2
+     [Out>=1,V13>=0,V5>=2,X13=0,W13=0,Y13=0,V=0] 
+* CE 92: splitmerge(V,V5,V13,Out) = 2+ splitmerge(V5,W13,X13,Y13)+ merge(Y13,Z13,A14):3
+     [Y13>=0,V13>=0,V5>=2,X13=0,W13=0,A14=0,Z13=0,Out=0,V=0] 
+* CE 93: splitmerge(A,B,C,B) = 3+ splitmerge(C,D,E,F)+ merge(B,G,B):2
+     [B>=1,C>=2,F=0,E=0,D=0,G=0,A=0] 
+* CE 94: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V13,W13,X13,Y13)+ merge(V5,Y13,Z13):3
+     [Y13>=0,V5>=1,V13>=2,X13=0,W13=0,Z13=0,Out=0,V=0] 
+* CE 95: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V13,W13,X13,Y13)+ merge(V5,Z13,Out):4
+     [Out>=V5+1,V5>=1,V13>=2,Out=V5+Y13,Out=V5+Z13,X13=0,W13=0,V=0] 
+* CE 96: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V13,W13,X13,Y13)+ merge(V5,Y13,Out):5
+     [V5+Y13>=Out+1,Out>=1,Y13>=1,V5>=1,V13>=2,X13=0,W13=0,V=0] 
+* CE 97: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V13,W13,X13,Out)+ merge(Y13,Out,Out):1
+     [Out>=0,V13>=2,X13=0,W13=0,Y13=0,V5=0,V=0] 
+* CE 98: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V13,W13,X13,Y13)+ merge(Z13,Y13,A14):3
+     [Y13>=0,V13>=2,X13=0,W13=0,A14=0,Z13=0,Out=0,V5=0,V=0] 
+* CE 99: splitmerge(V,V5,V13,Out) = 2+ splitmerge(V13,W13,X13,Out)+ merge(Y13,Out,Out):1
+     [Out>=0,V13>=2,V5>=0,X13=0,W13=0,Y13=0,V=0] 
+* CE 100: splitmerge(V,V5,V13,Out) = 2+ splitmerge(V13,W13,X13,Y13)+ merge(Z13,Y13,A14):3
+     [Y13>=0,V13>=2,V5>=0,X13=0,W13=0,A14=0,Z13=0,Out=0,V=0] 
+* CE 101: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ splitmerge(V13,Z13,A14,Out)+ merge(B14,Out,Out):1
+     [Out>=0,V13>=2,V5>=2,A14=0,Z13=0,Y13=0,X13=0,W13=0,B14=0,V=0] 
+* CE 102: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Out)+ splitmerge(V13,Y13,Z13,A14)+ merge(Out,B14,Out):2
+     [Out>=1,V13>=2,V5>=2,A14=0,Z13=0,Y13=0,X13=0,W13=0,B14=0,V=0] 
+* CE 103: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ splitmerge(V13,Z13,A14,B14)+ merge(Y13,B14,C14):3
+     [B14>=0,Y13>=0,V13>=2,V5>=2,A14=0,Z13=0,X13=0,W13=0,C14=0,Out=0,V=0] 
+* CE 104: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ splitmerge(V13,Z13,A14,B14)+ merge(Y13,C14,Out):4
+     [Out>=Y13+1,Y13>=1,V13>=2,V5>=2,Out=Y13+B14,Out=Y13+C14,A14=0,Z13=0,X13=0,W13=0,V=0] 
+* CE 105: splitmerge(V,V5,V13,Out) = 3+ splitmerge(V5,W13,X13,Y13)+ splitmerge(V13,Z13,A14,B14)+ merge(Y13,B14,Out):5
+     [Y13+B14>=Out+1,Out>=1,B14>=1,Y13>=1,V13>=2,V5>=2,A14=0,Z13=0,X13=0,W13=0,V=0] 
+
+### Cost equations --> "Loop" of splitmerge/4 
+* CEs [105] --> Loop 32 
+* CEs [104] --> Loop 33 
+* CEs [102] --> Loop 34 
+* CEs [101] --> Loop 35 
+* CEs [103] --> Loop 36 
+* CEs [82] --> Loop 37 
+* CEs [96] --> Loop 38 
+* CEs [95] --> Loop 39 
+* CEs [86] --> Loop 40 
+* CEs [85] --> Loop 41 
+* CEs [83] --> Loop 42 
+* CEs [93] --> Loop 43 
+* CEs [90] --> Loop 44 
+* CEs [88,91] --> Loop 45 
+* CEs [84,87,89,92] --> Loop 46 
+* CEs [97,99] --> Loop 47 
+* CEs [94,98,100] --> Loop 48 
+* CEs [69] --> Loop 49 
+* CEs [68] --> Loop 50 
+* CEs [63,70] --> Loop 51 
+* CEs [64,65,66] --> Loop 52 
+* CEs [72,78] --> Loop 53 
+* CEs [62,67,71,73,74,75,76,77,79,80,81] --> Loop 54 
+
+#### Loops of splitmerge/4 
+* Loop 32: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',C')  splitmerge(V13,A'2,B'2,C'2)
+                  [C'+C'2>=Out+1,C'2>=1,C'>=1,Out>=1,V13>=2,V5>=2,B'2=0,A'2=0,B'=0,A'=0,V=0] 
+* Loop 33: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',C')  splitmerge(V13,A'2,B'2,C'2)
+                  [Out>=C'+1,C'>=1,V13>=2,V5>=2,C'+C'2=Out,B'2=0,A'2=0,B'=0,A'=0,V=0] 
+* Loop 34: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',Out)  splitmerge(V13,A'2,B'2,C'2)
+                  [Out>=1,V13>=2,V5>=2,C'2=0,B'2=0,A'2=0,B'=0,A'=0,V=0] 
+* Loop 35: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',C')  splitmerge(V13,A'2,B'2,Out)
+                  [Out>=0,V13>=2,V5>=2,B'2=0,A'2=0,C'=0,B'=0,A'=0,V=0] 
+* Loop 36: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',C')  splitmerge(V13,A'2,B'2,C'2)
+                  [C'2>=0,C'>=0,V13>=2,V5>=2,B'2=0,A'2=0,B'=0,A'=0,Out=0,V=0] 
+* Loop 37: splitmerge(V,V5,V13,Out)->  splitmerge(A',B',V5,Out)
+                  [V>=A'+1,A'>=0,V13>=0,V5>=0,A'+B'=V+V13] 
+* Loop 38: splitmerge(V,V5,V13,Out)->  splitmerge(V13,A',B',C')
+                  [V5+C'>=Out+1,C'>=1,Out>=1,V13>=2,V5>=1,B'=0,A'=0,V=0] 
+* Loop 39: splitmerge(V,V5,V13,Out)->  splitmerge(V13,A',B',C')
+                  [Out>=V5+1,V13>=2,V5>=1,V5+C'=Out,B'=0,A'=0,V=0] 
+* Loop 40: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',C')
+                  [V13+C'>=Out+1,C'>=1,Out>=1,V13>=1,V5>=2,B'=0,A'=0,V=0] 
+* Loop 41: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',C')
+                  [Out>=V13+1,V13>=1,V5>=2,V13+C'=Out,B'=0,A'=0,V=0] 
+* Loop 42: splitmerge(A,B,C,C)->  splitmerge(B,A',B',C')
+                  [C>=1,B>=2,C'=0,B'=0,A'=0,A=0] 
+* Loop 43: splitmerge(A,B,C,B)->  splitmerge(C,A',B',C')
+                  [C>=2,B>=1,C'=0,B'=0,A'=0,A=0] 
+* Loop 44: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',C')
+                  [V13>=0,V5>=2,C'=0,B'=0,A'=0,Out=0,V=0] 
+* Loop 45: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',Out)
+                  [Out>=1,V13>=0,V5>=2,B'=0,A'=0,V=0] 
+* Loop 46: splitmerge(V,V5,V13,Out)->  splitmerge(V5,A',B',C')
+                  [C'>=0,V13>=0,V5>=2,B'=0,A'=0,Out=0,V=0] 
+* Loop 47: splitmerge(V,V5,V13,Out)->  splitmerge(V13,A',B',Out)
+                  [Out>=0,V13>=2,V5>=0,B'=0,A'=0,V=0] 
+* Loop 48: splitmerge(V,V5,V13,Out)->  splitmerge(V13,A',B',C')
+                  [C'>=0,V13>=2,V5>=0,B'=0,A'=0,Out=0,V=0] 
+* Loop 49: splitmerge(V,V5,V13,Out) [V5+V13>=Out+1,Out>=1,V13>=1,V5>=1,V=0] 
+* Loop 50: splitmerge(V,V5,V13,Out) [V13>=1,V5>=1,V5+V13=Out,V=0] 
+* Loop 51: splitmerge(A,B,C,B) [C>=0,B>=1,A=0] 
+* Loop 52: splitmerge(V,V5,V13,Out) [V5>=0,Out=0,V13=0,V=0] 
+* Loop 53: splitmerge(A,B,C,C) [C>=1,B>=0,A=0] 
+* Loop 54: splitmerge(V,V5,V13,Out) [V13>=0,V5>=0,V>=0,Out=0] 
+
+### Ranking functions of CR splitmerge(V,V5,V13,Out) 
+
+#### Partial ranking functions of CR splitmerge(V,V5,V13,Out) 
+* Partial RF of phase [32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]:
+  - RF of loop [32:1,32:2,33:1,33:2,34:1,34:2,35:1,35:2,36:1,36:2,44:1,45:1,46:1]:
+    V5-1 depends on loops [37:1] 
+  - RF of loop [32:1,32:2,33:1,33:2,34:1,34:2,35:1,35:2,36:1,36:2,44:1,45:1,46:1,47:1,48:1]:
+    -V+1 depends on loops [37:1] 
+  - RF of loop [32:1,32:2,33:1,33:2,34:1,34:2,35:1,35:2,36:1,36:2,47:1,48:1]:
+    V13-1 depends on loops [37:1] 
+  - RF of loop [37:1]:
+    V depends on loops [32:1,32:2,33:1,33:2,34:1,34:2,35:1,35:2,36:1,36:2,38:1,39:1,40:1,41:1,42:1,43:1,44:1,45:1,46:1,47:1,48:1] 
+  - RF of loop [38:1,39:1,40:1,41:1,42:1,43:1]:
+    -V/2+1/2 depends on loops [37:1] 
+  - RF of loop [38:1,39:1,43:1]:
+    V5 depends on loops [37:1] 
+    V13/2-1/2 depends on loops [37:1] 
+  - RF of loop [40:1,41:1,42:1]:
+    V5/2-1/2 depends on loops [37:1] 
+    V13 depends on loops [37:1] 
+
+
+### Resulting Chains:splitmerge(V,V5,V13,Out) 
+* [multiple([32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48],[[],[54],[53],[52],[51],[50],[49]])]...
+* [54]
+* [53]
+* [52]
+* [51]
+* [50]
+* [49]
+
+
+### Merging Chains  splitmerge/4 into  External patterns of execution 
+* [[52],[54]] --> 1 
+* [[51]] --> 2 
+* [[53]] --> 3 
+* [[50]] --> 4 
+* [[49]] --> 5 
+* [[multiple([32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48],[[],[54],[53],[52],[51],[50],[49]])]] --> 6 
+
+
+### Specialization of cost equations notEmpty/2 
+* CE 39 is refined into CE [106] 
+* CE 41 is refined into CE [107] 
+* CE 40 is refined into CE [108] 
+
+
+#### Refined cost equations notEmpty/2 
+* CE 106: notEmpty(V,Out) = 1
+     [V>=1,Out=2] 
+* CE 107: notEmpty(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 108: notEmpty(V,Out) = 1
+     [Out=1,V=0] 
+
+### Cost equations --> "Loop" of notEmpty/2 
+* CEs [106] --> Loop 55 
+* CEs [107] --> Loop 56 
+* CEs [108] --> Loop 57 
+
+#### Loops of notEmpty/2 
+* Loop 55: notEmpty(V,Out) [V>=1,Out=2] 
+* Loop 56: notEmpty(V,Out) [V>=0,Out=0] 
+* Loop 57: notEmpty(V,Out) [Out=1,V=0] 
+
+### Ranking functions of CR notEmpty(V,Out) 
+
+#### Partial ranking functions of CR notEmpty(V,Out) 
+
+
+### Resulting Chains:notEmpty(V,Out) 
+* [57]
+* [56]
+* [55]
+
+
+### Merging Chains  notEmpty/2 into  External patterns of execution 
+* [[57]] --> 1 
+* [[56]] --> 2 
+* [[55]] --> 3 
+
+
+### Specialization of cost equations start/3 
+* CE 3 is refined into CE [109,110,111,112,113] 
+* CE 4 is refined into CE [114,115,116,117,118] 
+* CE 2 is refined into CE [119] 
+* CE 5 is refined into CE [120,121] 
+* CE 6 is refined into CE [122] 
+* CE 7 is refined into CE [123] 
+* CE 8 is refined into CE [124,125,126,127,128] 
+* CE 9 is refined into CE [129,130,131,132,133,134] 
+* CE 10 is refined into CE [135,136,137] 
+* CE 11 is refined into CE [138,139] 
+* CE 12 is refined into CE [140] 
+* CE 13 is refined into CE [141] 
+* CE 14 is refined into CE [142,143,144,145,146] 
+
+
+#### Refined cost equations start/3 
+* CE 109: start(V,V5,V13) = 0+ merge(W13,V13,V13):1
+     [V13>=0,V5>=1,W13=0,V=2] 
+* CE 110: start(V,V5,V13) = 0+ merge(W13,X13,W13):2
+     [V5>=W13+1,W13>=1,X13=0,V13=0,V=2] 
+* CE 111: start(V,V5,V13) = 0+ merge(W13,V13,X13):3
+     [V5>=W13+1,V13>=0,W13>=0,X13=0,V=2] 
+* CE 112: start(V,V5,V13) = 0+ merge(W13,X13,Y13):4
+     [Y13>=W13+1,V5>=W13+1,W13>=1,Y13=W13+X13,Y13=V13+W13,V=2] 
+* CE 113: start(V,V5,V13) = 0+ merge(W13,V13,X13):5
+     [V13+W13>=X13+1,V5>=W13+1,X13>=1,V13>=1,W13>=1,V=2] 
+* CE 114: start(V,V5,V13) = 0+ merge(W13,X13,X13):1
+     [V13>=X13+1,X13>=0,W13=0,V5=0,V=1] 
+* CE 115: start(V,V5,V13) = 0+ merge(V5,W13,V5):2
+     [V5>=1,V13>=1,W13=0,V=1] 
+* CE 116: start(V,V5,V13) = 0+ merge(V5,W13,X13):3
+     [V13>=W13+1,W13>=0,V5>=0,X13=0,V=1] 
+* CE 117: start(V,V5,V13) = 0+ merge(V5,W13,X13):4
+     [V5+V13>=X13+1,X13>=V5+1,V5>=1,X13=V5+W13,V=1] 
+* CE 118: start(V,V5,V13) = 0+ merge(V5,W13,X13):5
+     [V5+W13>=X13+1,V13>=W13+1,X13>=1,W13>=1,V5>=1,V=1] 
+* CE 119: start(V,V5,V13) = 0
+     [V>=0] 
+* CE 120: start(V,V5,V13) = 1+ splitmerge(V,W13,X13,Y13):1
+     [V>=2,Y13=0,X13=0,W13=0] 
+* CE 121: start(V,V5,V13) = 1+ splitmerge(V,W13,X13,Y13):6
+     [V>=2,X13=0,W13=0] 
+* CE 122: start(V,V5,V13) = 1
+     [V>=0] 
+* CE 123: start(V,V5,V13) = 1
+     [V=0] 
+* CE 124: start(V,V5,V13) = 0+ merge(W13,V5,V5):1
+     [V5>=0,W13=0,V=0] 
+* CE 125: start(V,V5,V13) = 0+ merge(V,W13,V):2
+     [V>=1,W13=0,V5=0] 
+* CE 126: start(V,V5,V13) = 0+ merge(V,V5,W13):3
+     [V5>=0,V>=0,W13=0] 
+* CE 127: start(V,V5,V13) = 0+ merge(V,W13,X13):4
+     [X13>=V+1,V>=1,X13=V+W13,X13=V+V5] 
+* CE 128: start(V,V5,V13) = 0+ merge(V,V5,W13):5
+     [V+V5>=W13+1,W13>=1,V5>=1,V>=1] 
+* CE 129: start(V,V5,V13) = 0+ splitmerge(V,V5,V13,W13):1
+     [V13>=0,V5>=0,V>=0,W13=0] 
+* CE 130: start(V,V5,V13) = 0+ splitmerge(W13,V5,V13,V5):2
+     [V5>=1,V13>=0,W13=0,V=0] 
+* CE 131: start(V,V5,V13) = 0+ splitmerge(W13,V5,V13,V13):3
+     [V13>=1,V5>=0,W13=0,V=0] 
+* CE 132: start(V,V5,V13) = 0+ splitmerge(W13,V5,X13,Y13):4
+     [Y13>=V5+1,V5>=1,Y13=V5+X13,Y13=V5+V13,W13=0,V=0] 
+* CE 133: start(V,V5,V13) = 0+ splitmerge(W13,V5,V13,X13):5
+     [V5+V13>=X13+1,X13>=1,V13>=1,V5>=1,W13=0,V=0] 
+* CE 134: start(V,V5,V13) = 0+ splitmerge(V,V5,V13,W13):6
+     [V5+V13+2*V>=2,V13>=0,V5>=0,V>=0] 
+* CE 135: start(V,V5,V13) = 0+ notEmpty(W13,X13):1
+     [X13=1,W13=0,V=0] 
+* CE 136: start(V,V5,V13) = 0+ notEmpty(V,W13):2
+     [V>=0,W13=0] 
+* CE 137: start(V,V5,V13) = 0+ notEmpty(V,W13):3
+     [V>=1,W13=2] 
+* CE 138: start(V,V5,V13) = 2+ splitmerge(V,W13,X13,Y13):1
+     [V>=2,Y13=0,X13=0,W13=0] 
+* CE 139: start(V,V5,V13) = 2+ splitmerge(V,W13,X13,Y13):6
+     [V>=2,X13=0,W13=0] 
+* CE 140: start(V,V5,V13) = 2
+     [V>=1] 
+* CE 141: start(V,V5,V13) = 2
+     [V=0] 
+* CE 142: start(V,V5,V13) = 0+ lteq(W13,V5,X13):1
+     [V5>=0,X13=2,W13=0,V=0] 
+* CE 143: start(V,V5,V13) = 0+ lteq(V,W13,X13):2
+     [V>=1,X13=1,W13=0,V5=0] 
+* CE 144: start(V,V5,V13) = 0+ lteq(V,V5,W13):3
+     [V5>=0,V>=0,W13=0] 
+* CE 145: start(V,V5,V13) = 0+ lteq(V,V5,W13):4
+     [V>=V5+1,V5>=1,W13=1] 
+* CE 146: start(V,V5,V13) = 0+ lteq(V,V5,W13):5
+     [V5>=V,V>=1,W13=2] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [125,143] --> Loop 58 
+* CEs [109,110,111,112,113] --> Loop 59 
+* CEs [114,115,116,117,118] --> Loop 60 
+* CEs [119,120,122,123,124,126,127,128,129,130,131,132,133,135,136,137,138,140,141,142,144,145,146] --> Loop 61 
+* CEs [121,139] --> Loop 62 
+* CEs [134] --> Loop 63 
+
+#### Loops of start/3 
+* Loop 58: start(V,V5,V13) [V>=1,V5=0] 
+* Loop 59: start(V,V5,V13) [V13>=0,V5>=1,V=2] 
+* Loop 60: start(V,V5,V13) [V13>=1,V5>=0,V=1] 
+* Loop 61: start(V,V5,V13) [V>=0] 
+* Loop 62: start(V,V5,V13) [V>=2] 
+* Loop 63: start(V,V5,V13) [V5+V13+2*V>=2,V13>=0,V5>=0,V>=0] 
+
+### Ranking functions of CR start(V,V5,V13) 
+
+#### Partial ranking functions of CR start(V,V5,V13) 
+
+
+### Resulting Chains:start(V,V5,V13) 
+* [63]...
+* [62]...
+* [61]
+* [60]
+* [59]
+* [58]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[60],[61]] --> 1 
+* [[59]] --> 2 
+* [[58]] --> 3 
+* [[63]] --> 4 
+* [[62]] --> 5 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [23] 
+
+ * loop 23:lteq(V,V5,Out) -> [lteq(V',V5',Out')] 
+0
+#### Cost of phase [23]:lteq(V,V5,Out) -> [lteq(V',V5',Out')] 
+0
+#### Cost of phase [23]:lteq(V,V5,Out) -> [lteq(V',V5',Out')] 
+0
+#### Cost of phase [23]:lteq(V,V5,Out) -> [lteq(V',V5',Out')] 
+0
+#### Cost of chains of lteq(V,V5,Out):
+* Chain [[23],26]: 0
+  with precondition: [Out=2,V>=1,V5>=V] 
+
+* Chain [[23],25]: 0
+  with precondition: [Out=1,V5>=1,V>=V5+1] 
+
+* Chain [[23],24]: 0
+  with precondition: [Out=0,V>=1,V5>=1] 
+
+* Chain [26]: 0
+  with precondition: [V=0,Out=2,V5>=0] 
+
+* Chain [25]: 0
+  with precondition: [V5=0,Out=1,V>=1] 
+
+* Chain [24]: 0
+  with precondition: [Out=0,V>=0,V5>=0] 
+
+
+#### Cost of loops [27,28] 
+
+ * loop 27:merge(V,V5,Out) -> [merge(V',V5',Out')] 
+1
+ * loop 28:merge(V,V5,Out) -> [merge(V',V5',Out')] 
+1
+#### Cost of phase [27,28]:merge(V,V5,Out) -> [merge(V',V5',Out')] 
+1*it(27)+1*it(28)+0
+  Such that:it(27) =< V
+it(27) =< V-V'
+it(28) =< V5
+it(28) =< V5-V5'
+aux(1) =< V+V5
+aux(2) =< V+V5-V'-V5'
+aux(3) =< V+2*V5
+aux(4) =< V+2*V5-V'-2*V5'
+it(27) =< aux(1)
+it(28) =< aux(1)
+it(27) =< aux(2)
+it(28) =< aux(2)
+it(27) =< aux(3)
+it(28) =< aux(3)
+it(27) =< aux(4)
+it(28) =< aux(4)
+
+#### Cost of phase [27,28]:merge(V,V5,Out) -> [merge(V',V5',Out')] 
+1*it(27)+1*it(28)+0
+  Such that:it(27) =< V
+it(27) =< V-V'
+it(28) =< V5
+it(28) =< V5-V5'
+aux(1) =< V+V5
+aux(2) =< V+V5-V'-V5'
+aux(3) =< V+2*V5
+aux(4) =< V+2*V5-V'-2*V5'
+it(27) =< aux(1)
+it(28) =< aux(1)
+it(27) =< aux(2)
+it(28) =< aux(2)
+it(27) =< aux(3)
+it(28) =< aux(3)
+it(27) =< aux(4)
+it(28) =< aux(4)
+
+#### Cost of phase [27,28]:merge(V,V5,Out) -> [merge(V',V5',Out')] 
+1*it(27)+1*it(28)+0
+  Such that:it(27) =< V
+it(27) =< V-V'
+it(28) =< V5
+it(28) =< V5-V5'
+aux(1) =< V+V5
+aux(2) =< V+V5-V'-V5'
+aux(3) =< V+2*V5
+aux(4) =< V+2*V5-V'-2*V5'
+it(27) =< aux(1)
+it(28) =< aux(1)
+it(27) =< aux(2)
+it(28) =< aux(2)
+it(27) =< aux(3)
+it(28) =< aux(3)
+it(27) =< aux(4)
+it(28) =< aux(4)
+
+#### Cost of chains of merge(V,V5,Out):
+* Chain [[27,28],31]: 1*it(27)+1*it(28)+1
+  Such that:it(28) =< -V+Out
+it(27) =< V
+aux(5) =< -V+2*Out
+aux(6) =< Out
+it(27) =< aux(6)
+it(28) =< aux(6)
+it(27) =< aux(5)
+it(28) =< aux(5)
+
+  with precondition: [V+V5=Out,V>=1,V5>=1] 
+
+* Chain [[27,28],30]: 1*it(27)+1*it(28)+1
+  Such that:it(28) =< -V+Out
+it(27) =< V
+aux(7) =< -V+2*Out
+aux(8) =< Out
+it(27) =< aux(8)
+it(28) =< aux(8)
+it(27) =< aux(7)
+it(28) =< aux(7)
+
+  with precondition: [V+V5=Out,V>=2,V5>=1] 
+
+* Chain [[27,28],29]: 2*it(27)+1
+  Such that:aux(1) =< V+V5
+aux(3) =< V+2*V5
+aux(9) =< Out
+aux(10) =< 2*Out
+it(27) =< aux(9)
+it(27) =< aux(10)
+it(27) =< aux(1)
+it(27) =< aux(3)
+
+  with precondition: [V>=1,V5>=1,Out>=1,V+V5>=Out+1] 
+
+* Chain [31]: 1
+  with precondition: [V=0,V5=Out,V5>=0] 
+
+* Chain [30]: 1
+  with precondition: [V5=0,V=Out,V>=1] 
+
+* Chain [29]: 1
+  with precondition: [Out=0,V>=0,V5>=0] 
+
+
+#### Cost of loops [32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48] 
+
+ * loop 32:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out'),splitmerge(V'2,V5'2,V13'2,Out'2)] 
+2*s(25)+4
+ * loop 33:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out'),splitmerge(V'2,V5'2,V13'2,Out'2)] 
+2*s(32)+2*s(33)+4
+ * loop 34:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out'),splitmerge(V'2,V5'2,V13'2,Out'2)] 
+4
+ * loop 35:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out'),splitmerge(V'2,V5'2,V13'2,Out'2)] 
+4
+ * loop 36:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out'),splitmerge(V'2,V5'2,V13'2,Out'2)] 
+4
+ * loop 37:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+1
+ * loop 38:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+2*s(39)+4
+ * loop 39:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+2*s(48)+2*s(47)+4
+  Such that:s(46) =< V5
+s(47) =< s(46)
+
+ * loop 40:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+2*s(54)+4
+ * loop 41:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+2*s(62)+2*s(63)+4
+  Such that:s(61) =< V13
+s(62) =< s(61)
+
+ * loop 42:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+4
+ * loop 43:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+4
+ * loop 44:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+3
+ * loop 45:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+4
+ * loop 46:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+4
+ * loop 47:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+4
+ * loop 48:splitmerge(V,V5,V13,Out) -> [splitmerge(V',V5',V13',Out')] 
+4
+#### Cost of phase [32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]:splitmerge(V,V5,V13,Out) -> [] 
+98*it(32)+4*it([54])+2*s(69)+2*s(72)+2*s(75)+2*s(76)+2*s(81)+0
+  Such that:aux(96) =< V+V5+V13
+it([54]) =< aux(96)
+
+#### Cost of chains of splitmerge(V,V5,V13,Out):
+* Chain [multiple([32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48],[[],[54],[53],[52],[51],[50],[49]])]...: 98*it(32)+4*it([54])+2*s(69)+2*s(72)+2*s(75)+2*s(76)+2*s(81)+0
+  Such that:aux(96) =< V+V5+V13
+it([54]) =< aux(96)
+
+  with precondition: [V5+V13+2*V>=2,V>=0,V13>=0,V5>=0] 
+
+* Chain [54]: 4
+  with precondition: [Out=0,V>=0,V5>=0,V13>=0] 
+
+* Chain [53]: 4
+  with precondition: [V=0,V13=Out,V5>=0,V13>=1] 
+
+* Chain [52]: 4
+  with precondition: [V=0,V13=0,Out=0,V5>=0] 
+
+* Chain [51]: 4
+  with precondition: [V=0,V5=Out,V5>=1,V13>=0] 
+
+* Chain [50]: 2*s(13)+2*s(14)+4
+  Such that:s(11) =< V5
+s(12) =< V5+V13
+s(10) =< V5+2*V13
+s(9) =< V13
+s(13) =< s(9)
+s(14) =< s(11)
+s(14) =< s(12)
+s(13) =< s(12)
+s(14) =< s(10)
+s(13) =< s(10)
+
+  with precondition: [V=0,V5+V13=Out,V5>=1,V13>=1] 
+
+* Chain [49]: 2*s(19)+4
+  Such that:s(16) =< V5+2*V13
+s(18) =< 2*V5+2*V13
+aux(15) =< V5+V13
+s(19) =< aux(15)
+s(19) =< s(18)
+s(19) =< s(16)
+
+  with precondition: [V=0,V5>=1,V13>=1,Out>=1,V5+V13>=Out+1] 
+
+
+#### Cost of chains of notEmpty(V,Out):
+* Chain [57]: 1
+  with precondition: [V=0,Out=1] 
+
+* Chain [56]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [55]: 1
+  with precondition: [Out=2,V>=1] 
+
+
+#### Cost of chains of start(V,V5,V13):
+* Chain [63]...: 4*s(86)+108*s(87)+0
+  Such that:s(85) =< V+V5+V13
+s(86) =< s(85)
+
+  with precondition: [V>=0,V5>=0,V13>=0,V5+V13+2*V>=2] 
+
+* Chain [62]...: 8*s(94)+216*s(95)+2
+  Such that:aux(101) =< V
+s(94) =< aux(101)
+
+  with precondition: [V>=2] 
+
+* Chain [61]: 2*s(113)+2*s(114)+2*s(119)+2*s(124)+2*s(125)+2*s(129)+6
+  Such that:s(111) =< V
+s(118) =< 2*V+2*V5
+s(127) =< 2*V5+2*V13
+s(123) =< V13
+aux(103) =< V+V5
+aux(104) =< V+2*V5
+aux(105) =< V5
+aux(106) =< V5+V13
+aux(107) =< V5+2*V13
+s(113) =< aux(105)
+s(114) =< s(111)
+s(114) =< aux(103)
+s(113) =< aux(103)
+s(114) =< aux(104)
+s(113) =< aux(104)
+s(119) =< aux(103)
+s(119) =< s(118)
+s(119) =< aux(104)
+s(124) =< s(123)
+s(125) =< aux(105)
+s(125) =< aux(106)
+s(124) =< aux(106)
+s(125) =< aux(107)
+s(124) =< aux(107)
+s(129) =< aux(106)
+s(129) =< s(127)
+s(129) =< aux(107)
+
+  with precondition: [V>=0] 
+
+* Chain [60]: 2*s(134)+2*s(135)+2*s(140)+1
+  Such that:s(132) =< V5
+s(139) =< 2*V5+2*V13
+s(130) =< V13
+aux(109) =< V5+V13
+aux(110) =< V5+2*V13
+s(134) =< s(130)
+s(135) =< s(132)
+s(135) =< aux(109)
+s(134) =< aux(109)
+s(135) =< aux(110)
+s(134) =< aux(110)
+s(140) =< aux(109)
+s(140) =< s(139)
+s(140) =< aux(110)
+
+  with precondition: [V=1,V5>=0,V13>=1] 
+
+* Chain [59]: 2*s(145)+2*s(146)+2*s(151)+1
+  Such that:s(143) =< V5
+s(150) =< 2*V5+2*V13
+s(141) =< V13
+aux(112) =< V5+V13
+aux(113) =< V5+2*V13
+s(145) =< s(141)
+s(146) =< s(143)
+s(146) =< aux(112)
+s(145) =< aux(112)
+s(146) =< aux(113)
+s(145) =< aux(113)
+s(151) =< aux(112)
+s(151) =< s(150)
+s(151) =< aux(113)
+
+  with precondition: [V=2,V5>=1,V13>=0] 
+
+* Chain [58]: 1
+  with precondition: [V5=0,V>=1] 
+
+
+Closed-form bounds of start(V,V5,V13): 
+-------------------------------------
+* Chain [63]... with precondition: [V>=0,V5>=0,V13>=0,V5+V13+2*V>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [62]... with precondition: [V>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [61] with precondition: [V>=0] 
+    - Upper bound: 2*V+6+nat(V5)*4+nat(V13)*2+nat(V+V5)*2+nat(V5+V13)*2 
+    - Complexity: n 
+* Chain [60] with precondition: [V=1,V5>=0,V13>=1] 
+    - Upper bound: 4*V5+4*V13+1 
+    - Complexity: n 
+* Chain [59] with precondition: [V=2,V5>=1,V13>=0] 
+    - Upper bound: 4*V5+4*V13+1 
+    - Complexity: n 
+* Chain [58] with precondition: [V5=0,V>=1] 
+    - Upper bound: 1 
+    - Complexity: constant 
+
+### Maximum cost of start(V,V5,V13): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 231 ms.
+* Invariants computed in 320 ms.
+   - Backward Invariants 68 ms.
+   - Transitive Invariants 136 ms.
+* Refinement performed in 846 ms.
+* Termination proved in 301 ms.
+* Upper bounds computed in 674 ms.
+   - Equation cost structures 229 ms.
+   - Phase cost structures 444 ms.
+   - Chain cost structures 110 ms.
+   - Solving cost expressions 4 ms.
+* Total analysis performed in 2516 ms.
+

@@ -1,0 +1,243 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [lookup/3]
+1. recursive  : [intlookup/3]
+2. non_recursive  : [run/3]
+3. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into lookup/3
+1. SCC is partially evaluated into intlookup/3
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations lookup/3 
+* CE 7 is refined into CE [9] 
+* CE 6 is refined into CE [10] 
+* CE 5 is refined into CE [11] 
+
+
+#### Refined cost equations lookup/3 
+* CE 9: lookup(V2,V,Out) = 0
+     [V>=0,V2>=0,Out=0] 
+* CE 10: lookup(V2,V,Out) = 1
+     [V>=Out+1,Out>=0,V2=0] 
+* CE 11: lookup(V2,V,Out) = 1+ lookup(W2,X2,Out)
+     [V>=X2+1,V2>=W2+1,X2>=0,W2>=0] 
+
+### Cost equations --> "Loop" of lookup/3 
+* CEs [11] --> Loop 6 
+* CEs [9] --> Loop 7 
+* CEs [10] --> Loop 8 
+
+#### Loops of lookup/3 
+* Loop 6: lookup(V2,V,Out)->  lookup(V2',V',Out)
+                  [V>=V'+1,V2>=V2'+1,V'>=0,V2'>=0] 
+* Loop 7: lookup(V2,V,Out) [V>=0,V2>=0,Out=0] 
+* Loop 8: lookup(V2,V,Out) [V>=Out+1,Out>=0,V2=0] 
+
+### Ranking functions of CR lookup(V2,V,Out) 
+* RF of phase [6]: [V,V2]
+
+#### Partial ranking functions of CR lookup(V2,V,Out) 
+* Partial RF of phase [6]:
+  - RF of loop [6:1]:
+    V
+    V2
+
+
+### Resulting Chains:lookup(V2,V,Out) 
+* [[6],8]
+* [[6],7]
+* [8]
+* [7]
+
+
+### Merging Chains  lookup/3 into  External patterns of execution 
+* [[8]] --> 1 
+* [[7],[7,[6]]] --> 2 
+* [[8,[6]]] --> 3 
+
+
+### Specialization of cost equations intlookup/3 
+* CE 8 is refined into CE [12,13,14] 
+
+
+#### Refined cost equations intlookup/3 
+* CE 12: intlookup(V2,V,Out) = 1+ lookup(W2,V,X2):1+ intlookup(X2,V,Out)
+     [V>=X2+1,X2>=0,W2=0,V2=0] 
+* CE 13: intlookup(V2,V,Out) = 1+ lookup(V2,V,W2):2+ intlookup(X2,V,Out)
+     [V>=0,V2>=0,X2=0,W2=0] 
+* CE 14: intlookup(V2,V,Out) = 1+ lookup(V2,V,W2):3+ intlookup(W2,V,Out)
+     [V>=W2+2,W2>=0,V2>=1] 
+
+### Cost equations --> "Loop" of intlookup/3 
+* CEs [14] --> Loop 9 
+* CEs [13] --> Loop 10 
+* CEs [12] --> Loop 11 
+
+#### Loops of intlookup/3 
+* Loop 9: intlookup(V2,V,Out)->  intlookup(V2',V,Out)
+                  [V>=V2'+2,V2'>=0,V2>=1] 
+* Loop 10: intlookup(V2,V,Out)->  intlookup(V2',V,Out)
+                  [V>=0,V2>=0,V2'=0] 
+* Loop 11: intlookup(V2,V,Out)->  intlookup(V2',V,Out)
+                  [V>=V2'+1,V2'>=0,V2=0] 
+
+### Ranking functions of CR intlookup(V2,V,Out) 
+
+#### Partial ranking functions of CR intlookup(V2,V,Out) 
+
+Warning: no base case found for predicate
+
+### Resulting Chains:intlookup(V2,V,Out) 
+* [[9,10,11]]...
+
+
+### Merging Chains  intlookup/3 into  External patterns of execution 
+* [[[9,10,11]]] --> 1 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [15,16,17] 
+* CE 3 is refined into CE [18] 
+* CE 4 is refined into CE [19] 
+
+
+#### Refined cost equations start/2 
+* CE 15: start(V2,V) = 0+ lookup(W2,V,X2):1
+     [V>=X2+1,X2>=0,W2=0,V2=0] 
+* CE 16: start(V2,V) = 0+ lookup(V2,V,W2):2
+     [V>=0,V2>=0,W2=0] 
+* CE 17: start(V2,V) = 0+ lookup(V2,V,W2):3
+     [V>=W2+2,W2>=0,V2>=1] 
+* CE 18: start(V2,V) = 1+ intlookup(V2,V,W2):1
+     [V>=0,V2>=0] 
+* CE 19: start(V2,V) = 0+ intlookup(V2,V,W2):1
+     [V>=0,V2>=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [18,19] --> Loop 12 
+* CEs [15,16,17] --> Loop 13 
+
+#### Loops of start/2 
+* Loop 12: start(V2,V) [V>=0,V2>=0] 
+* Loop 13: start(V2,V) [V>=0,V2>=0] 
+
+### Ranking functions of CR start(V2,V) 
+
+#### Partial ranking functions of CR start(V2,V) 
+
+
+### Resulting Chains:start(V2,V) 
+* [13]
+* [12]...
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[13]] --> 1 
+* [[12]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6] 
+
+ * loop 6:lookup(V2,V,Out) -> [lookup(V2',V',Out')] 
+1
+#### Cost of phase [6]:lookup(V2,V,Out) -> [lookup(V2',V',Out')] 
+1*it(6)+0
+  Such that:it(6) =< V2
+it(6) =< V2-V2'
+it(6) =< V
+it(6) =< V-V'
+
+#### Cost of phase [6]:lookup(V2,V,Out) -> [lookup(V2',V',Out')] 
+1*it(6)+0
+  Such that:it(6) =< V2
+it(6) =< V2-V2'
+it(6) =< V
+it(6) =< V-V'
+
+#### Cost of chains of lookup(V2,V,Out):
+* Chain [[6],8]: 1*it(6)+1
+  Such that:it(6) =< V2
+
+  with precondition: [V2>=1,Out>=0,V>=Out+2] 
+
+* Chain [[6],7]: 1*it(6)+0
+  Such that:it(6) =< V
+
+  with precondition: [Out=0,V2>=1,V>=1] 
+
+* Chain [8]: 1
+  with precondition: [V2=0,Out>=0,V>=Out+1] 
+
+* Chain [7]: 0
+  with precondition: [Out=0,V2>=0,V>=0] 
+
+
+#### Cost of loops [9,10,11] 
+
+ * loop 9:intlookup(V2,V,Out) -> [intlookup(V2',V',Out')] 
+1*s(3)+2
+  Such that:s(3) =< V2
+
+ * loop 10:intlookup(V2,V,Out) -> [intlookup(V2',V',Out')] 
+1*s(5)+1
+  Such that:s(5) =< V'
+
+ * loop 11:intlookup(V2,V,Out) -> [intlookup(V2',V',Out')] 
+2
+#### Cost of phase [9,10,11]:intlookup(V2,V,Out) -> [intlookup(V2',V',Out')] 
+5*it(9)+1*s(6)+1*s(7)+0
+#### Cost of chains of intlookup(V2,V,Out):
+* Chain [[9,10,11]]...: 7*it(9)+0
+  with precondition: [V2>=0,V>=0] 
+
+
+#### Cost of chains of start(V2,V):
+* Chain [13]: 1*s(8)+1*s(9)+1
+  Such that:s(9) =< V2
+s(8) =< V
+
+  with precondition: [V2>=0,V>=0] 
+
+* Chain [12]...: 1*aux(3)+0
+  with precondition: [V2>=0,V>=0] 
+
+
+Closed-form bounds of start(V2,V): 
+-------------------------------------
+* Chain [13] with precondition: [V2>=0,V>=0] 
+    - Upper bound: V2+V+1 
+    - Complexity: n 
+* Chain [12]... with precondition: [V2>=0,V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V2,V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 13 ms.
+   - Backward Invariants 5 ms.
+   - Transitive Invariants 3 ms.
+* Refinement performed in 23 ms.
+* Termination proved in 4 ms.
+* Upper bounds computed in 27 ms.
+   - Equation cost structures 8 ms.
+   - Phase cost structures 15 ms.
+   - Chain cost structures 6 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 84 ms.
+

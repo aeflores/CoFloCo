@@ -1,0 +1,137 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive : [ack/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into ack/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations ack/2 
+* CE 5 is refined into CE [6] 
+* CE 4 is refined into CE [7] 
+* CE 2 is refined into CE [8] 
+* CE 3 is refined into CE [9] 
+
+
+#### Refined cost equations ack/2 
+* CE 6: ack(A,B) = 0
+     [A>=0,B=0] 
+* CE 7: ack(A,B) = 0
+     [B>=0,A=0] 
+* CE 8: ack(A,B) = 9+ ack(C,D)
+     [B>=1,A>=1,A=C+1] 
+* CE 9: ack(A,B) = 9+ ack(A,C)
+     [B>=1,A>=1,B=C+1] 
+
+### Cost equations --> "Loop" of ack/2 
+* CEs [8] --> Loop 5 
+* CEs [9] --> Loop 6 
+* CEs [6] --> Loop 7 
+* CEs [7] --> Loop 8 
+
+#### Loops of ack/2 
+* Loop 5: ack(A,B)->  ack(A',B')
+                  [B>=1,A>=1,A=A'+1] 
+* Loop 6: ack(A,B)->  ack(A,B')
+                  [B>=1,A>=1,B=B'+1] 
+* Loop 7: ack(A,B) [A>=0,B=0] 
+* Loop 8: ack(A,B) [B>=0,A=0] 
+
+### Ranking functions of CR ack(A,B) 
+
+#### Partial ranking functions of CR ack(A,B) 
+* Partial RF of phase [5,6]:
+  - RF of loop [5:1]:
+    A
+  - RF of loop [6:1]:
+    B depends on loops [5:1] 
+
+
+### Resulting Chains:ack(A,B) 
+* [[5,6],8]
+* [[5,6],7]
+* [8]
+* [7]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5,6] 
+
+ * loop 5:ack(A,B) -> [ack(A',B')] 
+9
+ * loop 6:ack(A,B) -> [ack(A',B')] 
+9
+#### Cost of phase [5,6]:ack(A,B) -> [ack(A',B')] 
+9*it(5)+9*it(6)+0
+  Such that:it(5) =< A
+it(5) =< A-A'
+it(5) >= A-A'
+
+#### Cost of phase [5,6]:ack(A,B) -> [ack(A',B')] 
+9*it(5)+9*it(6)+0
+  Such that:it(5) =< A
+it(5) =< A-A'
+it(5) >= A-A'
+
+#### Cost of chains of ack(A,B):
+* Chain [[5,6],8]: 9*it(5)+9*it(6)+0
+  Such that:it(5) =< A
+it(5) >= A
+
+  with precondition: [A>=1,B>=1] 
+
+* Chain [[5,6],7]: 9*it(5)+9*it(6)+0
+  Such that:it(5) =< A
+
+  with precondition: [A>=1,B>=1] 
+
+* Chain [8]: 0
+  with precondition: [A=0,B>=0] 
+
+* Chain [7]: 0
+  with precondition: [B=0,A>=0] 
+
+
+Closed-form bounds of ack(A,B): 
+-------------------------------------
+* Chain [[5,6],8] with precondition: [A>=1,B>=1] 
+    - Lower bound: 9*A 
+    - Complexity: n
+ * Chain [[5,6],7] with precondition: [A>=1,B>=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [8] with precondition: [A=0,B>=0] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [7] with precondition: [B=0,A>=0] 
+    - Lower bound: 0 
+    - Complexity: constant
+ 
+### Partitioned lower bound of ack(A,B): 
+* 0 
+ if [A>=0,B>=0]
+Possible lower bounds : [0]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 6 ms.
+* Invariants computed in 20 ms.
+   - Backward Invariants 10 ms.
+   - Transitive Invariants 5 ms.
+* Refinement performed in 23 ms.
+* Termination proved in 7 ms.
+* Upper bounds computed in 43 ms.
+   - Equation cost structures 7 ms.
+   - Phase cost structures 16 ms.
+   - Chain cost structures 12 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 125 ms.
+

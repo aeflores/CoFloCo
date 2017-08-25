@@ -1,0 +1,534 @@
+
+Preprocessing Cost Relations
+=====================================
+2. SCC does not have a single cut point : [if/6,fibo/2]  
+ Merged into iffibo/6
+
+#### Computed strongly connected components 
+0. recursive  : [sum/3]
+1. recursive  : [lt/3]
+3. non_recursive  : [start/5]
+2. recursive [non_tail,multiple] : [fib/2,iffibo/6]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into sum/3
+1. SCC is partially evaluated into lt/3
+3. SCC is partially evaluated into start/5
+2. SCC is partially evaluated into iffibo/6
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations sum/3 
+* CE 23 is refined into CE [24] 
+* CE 21 is refined into CE [25] 
+* CE 22 is refined into CE [26] 
+
+
+#### Refined cost equations sum/3 
+* CE 24: sum(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 25: sum(A,B,A) = 1
+     [A>=0,B=0] 
+* CE 26: sum(V1,V,Out) = 1+ sum(V1,W1,X1)
+     [W1>=0,V1>=0,X1+1=Out,W1+1=V] 
+
+### Cost equations --> "Loop" of sum/3 
+* CEs [26] --> Loop 17 
+* CEs [24] --> Loop 18 
+* CEs [25] --> Loop 19 
+
+#### Loops of sum/3 
+* Loop 17: sum(V1,V,Out)->  sum(V1,V',Out')
+                  [V'>=0,V1>=0,Out=Out'+1,V'+1=V] 
+* Loop 18: sum(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 19: sum(A,B,A) [A>=0,B=0] 
+
+### Ranking functions of CR sum(V1,V,Out) 
+* RF of phase [17]: [V]
+
+#### Partial ranking functions of CR sum(V1,V,Out) 
+* Partial RF of phase [17]:
+  - RF of loop [17:1]:
+    V
+
+
+### Resulting Chains:sum(V1,V,Out) 
+* [[17],19]
+* [[17],18]
+* [19]
+* [18]
+
+
+### Merging Chains  sum/3 into  External patterns of execution 
+* [[19]] --> 1 
+* [[18]] --> 2 
+* [[19,[17]]] --> 3 
+* [[18,[17]]] --> 4 
+
+
+### Specialization of cost equations lt/3 
+* CE 20 is refined into CE [27] 
+* CE 18 is refined into CE [28] 
+* CE 17 is refined into CE [29] 
+* CE 19 is refined into CE [30] 
+
+
+#### Refined cost equations lt/3 
+* CE 27: lt(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 28: lt(V1,V,Out) = 1
+     [V1>=0,Out=1,V=0] 
+* CE 29: lt(V1,V,Out) = 1
+     [V>=1,Out=2,V1=0] 
+* CE 30: lt(V1,V,Out) = 1+ lt(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+
+### Cost equations --> "Loop" of lt/3 
+* CEs [30] --> Loop 20 
+* CEs [27] --> Loop 21 
+* CEs [28] --> Loop 22 
+* CEs [29] --> Loop 23 
+
+#### Loops of lt/3 
+* Loop 20: lt(V1,V,Out)->  lt(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+* Loop 21: lt(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 22: lt(V1,V,Out) [V1>=0,Out=1,V=0] 
+* Loop 23: lt(V1,V,Out) [V>=1,Out=2,V1=0] 
+
+### Ranking functions of CR lt(V1,V,Out) 
+* RF of phase [20]: [V,V1]
+
+#### Partial ranking functions of CR lt(V1,V,Out) 
+* Partial RF of phase [20]:
+  - RF of loop [20:1]:
+    V
+    V1
+
+
+### Resulting Chains:lt(V1,V,Out) 
+* [[20],23]
+* [[20],22]
+* [[20],21]
+* [23]
+* [22]
+* [21]
+
+
+### Merging Chains  lt/3 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+* [[21],[21,[20]]] --> 3 
+* [[22,[20]]] --> 4 
+* [[23,[20]]] --> 5 
+
+
+### Specialization of cost equations iffibo/6 
+* CE 11 is refined into CE [31] 
+* CE 9 is refined into CE [32] 
+* CE 12 is refined into CE [33] 
+* CE 10 is refined into CE [34] 
+* CE 15 is refined into CE [35] 
+* CE 16 is refined into CE [36,37,38,39] 
+* CE 14 is refined into CE [40,41,42,43] 
+* CE 13 is refined into CE [44,45,46] 
+
+
+#### Refined cost equations iffibo/6 
+* CE 31: iffibo(A,B,C,D,E,F) = 2
+     [F=1,A=1] 
+* CE 32: iffibo(A,B,C,D,E,F) = 1
+     [F=0,A=1] 
+* CE 33: iffibo(A,B,C,D,E,F) = 2
+     [F=1,A=0] 
+* CE 34: iffibo(A,B,C,D,E,F) = 1
+     [F=0,A=0] 
+* CE 35: iffibo(A,B,C,D,E,F) = 0
+     [A>=0,F=0] 
+* CE 36: iffibo(A,B,C,D,E,F) = 1+ iffibo(G,H,I,J,K,F)+ iffibo(L,M,N,O,P,Q)+ sum(F,R,F):1
+     [L>=0,F>=0,L+1=G,L+2=A,Q=0,R=0] 
+* CE 37: iffibo(A,B,C,D,E,F) = 1+ iffibo(G,H,I,J,K,L)+ iffibo(M,N,O,P,Q,R)+ sum(L,R,S):2
+     [M>=0,R>=0,L>=0,M+1=G,M+2=A,S=0,F=0] 
+* CE 38: iffibo(A,B,C,D,E,F) = 1+ iffibo(G,H,I,J,K,L)+ iffibo(M,N,O,P,Q,R)+ sum(L,S,F):3
+     [F>=L+1,M>=0,L>=0,F=L+R,F=L+S,M+1=G,M+2=A] 
+* CE 39: iffibo(A,B,C,D,E,F) = 1+ iffibo(G,H,I,J,K,L)+ iffibo(M,N,O,P,Q,R)+ sum(L,R,F):4
+     [R>=F,M>=0,F>=1,L>=0,M+1=G,M+2=A] 
+* CE 40: iffibo(A,B,C,D,E,F) = 1+ iffibo(D,G,H,I,J,F)+ iffibo(E,K,L,M,N,O)+ sum(F,P,F):1
+     [F>=0,E>=0,D>=0,C>=2,B>=0,O=0,P=0,A=1] 
+* CE 41: iffibo(A,B,C,D,E,F) = 1+ iffibo(D,G,H,I,J,K)+ iffibo(E,L,M,N,O,P)+ sum(K,P,Q):2
+     [P>=0,K>=0,E>=0,D>=0,C>=2,B>=0,Q=0,F=0,A=1] 
+* CE 42: iffibo(A,B,C,D,E,F) = 1+ iffibo(D,G,H,I,J,K)+ iffibo(E,L,M,N,O,P)+ sum(K,Q,F):3
+     [F>=K+1,K>=0,E>=0,D>=0,C>=2,B>=0,F=K+P,F=K+Q,A=1] 
+* CE 43: iffibo(A,B,C,D,E,F) = 1+ iffibo(D,G,H,I,J,K)+ iffibo(E,L,M,N,O,P)+ sum(K,P,F):4
+     [P>=F,F>=1,K>=0,E>=0,D>=0,C>=2,B>=0,A=1] 
+* CE 44: iffibo(A,B,C,D,E,F) = 1+ lt(G,C,H):3+ iffibo(I,G,C,E,J,F)
+     [C>=2,G>=1,E>=0,D>=0,G=J+1,G=B+1,I=0,H=0,A=2] 
+* CE 45: iffibo(A,B,C,D,E,F) = 1+ lt(G,C,H):4+ iffibo(I,G,C,E,J,F)
+     [G>=C,C>=2,E>=0,D>=0,G=J+1,G=B+1,I=1,H=1,A=2] 
+* CE 46: iffibo(A,B,C,D,E,F) = 1+ lt(G,C,H):5+ iffibo(I,G,C,E,J,F)
+     [C>=G+1,G>=1,E>=0,D>=0,G=J+1,G=B+1,I=2,H=2,A=2] 
+
+### Cost equations --> "Loop" of iffibo/6 
+* CEs [46] --> Loop 24 
+* CEs [45] --> Loop 25 
+* CEs [44] --> Loop 26 
+* CEs [39] --> Loop 27 
+* CEs [38] --> Loop 28 
+* CEs [36] --> Loop 29 
+* CEs [37] --> Loop 30 
+* CEs [43] --> Loop 31 
+* CEs [42] --> Loop 32 
+* CEs [40] --> Loop 33 
+* CEs [41] --> Loop 34 
+* CEs [31] --> Loop 35 
+* CEs [32] --> Loop 36 
+* CEs [33] --> Loop 37 
+* CEs [34,35] --> Loop 38 
+
+#### Loops of iffibo/6 
+* Loop 24: iffibo(A,B,C,D,E,F)->  iffibo(A',B',C,E,B,F)
+                  [C>=B+2,E>=0,D>=0,B>=0,B+1=B',A'=2,A=2] 
+* Loop 25: iffibo(A,B,C,D,E,F)->  iffibo(A',B',C,E,B,F)
+                  [B+1>=C,E>=0,D>=0,C>=2,B+1=B',A'=1,A=2] 
+* Loop 26: iffibo(A,B,C,D,E,F)->  iffibo(A',B',C,E,B,F)
+                  [E>=0,D>=0,C>=2,B>=0,B+1=B',A'=0,A=2] 
+* Loop 27: iffibo(A,B,C,D,E,F)->  iffibo(A',B',C',D',E',F')  iffibo(A'2,B'2,C'2,D'2,E'2,F'2)
+                  [F'2>=F,F'>=0,F>=1,A>=2,A=A'2+2,A=A'+1] 
+* Loop 28: iffibo(A,B,C,D,E,F)->  iffibo(A',B',C',D',E',F')  iffibo(A'2,B'2,C'2,D'2,E'2,F'2)
+                  [F>=F'+1,F'>=0,A>=2,F=F'+F'2,A=A'2+2,A=A'+1] 
+* Loop 29: iffibo(A,B,C,D,E,F)->  iffibo(A',B',C',D',E',F)  iffibo(A'2,B'2,C'2,D'2,E'2,F'2)
+                  [F>=0,A>=2,A=A'2+2,A=A'+1,F'2=0] 
+* Loop 30: iffibo(A,B,C,D,E,F)->  iffibo(A',B',C',D',E',F')  iffibo(A'2,B'2,C'2,D'2,E'2,F'2)
+                  [F'2>=0,F'>=0,A>=2,A=A'2+2,A=A'+1,F=0] 
+* Loop 31: iffibo(A,B,C,D,E,F)->  iffibo(D,A',B',C',D',E')  iffibo(E,A'2,B'2,C'2,D'2,E'2)
+                  [E'2>=F,E'>=0,F>=1,E>=0,D>=0,C>=2,B>=0,A=1] 
+* Loop 32: iffibo(A,B,C,D,E,F)->  iffibo(D,A',B',C',D',E')  iffibo(E,A'2,B'2,C'2,D'2,E'2)
+                  [F>=E'+1,E'>=0,E>=0,D>=0,C>=2,B>=0,F=E'+E'2,A=1] 
+* Loop 33: iffibo(A,B,C,D,E,F)->  iffibo(D,A',B',C',D',F)  iffibo(E,A'2,B'2,C'2,D'2,E'2)
+                  [F>=0,E>=0,D>=0,C>=2,B>=0,E'2=0,A=1] 
+* Loop 34: iffibo(A,B,C,D,E,F)->  iffibo(D,A',B',C',D',E')  iffibo(E,A'2,B'2,C'2,D'2,E'2)
+                  [E'2>=0,E'>=0,E>=0,D>=0,C>=2,B>=0,F=0,A=1] 
+* Loop 35: iffibo(A,B,C,D,E,F) [F=1,A=1] 
+* Loop 36: iffibo(A,B,C,D,E,F) [F=0,A=1] 
+* Loop 37: iffibo(A,B,C,D,E,F) [F=1,A=0] 
+* Loop 38: iffibo(A,B,C,D,E,F) [A>=0,F=0] 
+
+### Ranking functions of CR iffibo(A,B,C,D,E,F) 
+
+#### Partial ranking functions of CR iffibo(A,B,C,D,E,F) 
+* Partial RF of phase [24,25,27,28,29,30,31,32,33,34]:
+  - RF of loop [24:1]:
+    -B+C-1 depends on loops [27:1,27:2,28:1,28:2,29:1,29:2,30:1,30:2,31:1,31:2,32:1,32:2,33:1,33:2,34:1,34:2] 
+  - RF of loop [25:1,27:1,27:2,28:1,28:2,29:1,29:2,30:1,30:2]:
+    A-1 depends on loops [31:1,31:2,32:1,32:2,33:1,33:2,34:1,34:2] 
+
+
+### Resulting Chains:iffibo(A,B,C,D,E,F) 
+* [multiple([24,25,27,28,29,30,31,32,33,34],[[],[38],[37],[36],[35],[26,38],[26,37]])]...
+* [38]
+* [37]
+* [36]
+* [35]
+* [26,38]
+* [26,37]
+
+
+### Merging Chains  iffibo/6 into  External patterns of execution 
+* [[37]] --> 1 
+* [[36],[38]] --> 2 
+* [[35]] --> 3 
+* [[38,26]] --> 4 
+* [[37,26]] --> 5 
+* [[multiple([24,25,27,28,29,30,31,32,33,34],[[],[38],[37],[36],[35],[26,38],[26,37]])]] --> 6 
+
+
+### Specialization of cost equations start/5 
+* CE 4 is refined into CE [47] 
+* CE 2 is refined into CE [48] 
+* CE 3 is refined into CE [49,50,51,52] 
+* CE 5 is refined into CE [53] 
+* CE 6 is refined into CE [54,55,56,57,58] 
+* CE 7 is refined into CE [59,60,61,62,63,64] 
+* CE 8 is refined into CE [65,66,67,68] 
+
+
+#### Refined cost equations start/5 
+* CE 47: start(V1,V,V8,V14,V13) = 1
+     [V1=1] 
+* CE 48: start(V1,V,V8,V14,V13) = 0
+     [V1>=0] 
+* CE 49: start(V1,V,V8,V14,V13) = 1+ iffibo(W14,X14,V1,Y14,Z14,A15):2
+     [V1>=2,A15=0,Z14=0,Y14=0,X14=0,W14=2] 
+* CE 50: start(V1,V,V8,V14,V13) = 1+ iffibo(W14,X14,V1,Y14,Z14,A15):4
+     [V1>=2,A15=0,Z14=0,Y14=0,X14=0,W14=2] 
+* CE 51: start(V1,V,V8,V14,V13) = 1+ iffibo(W14,X14,V1,Y14,Z14,A15):5
+     [V1>=2,A15=1,Z14=0,Y14=0,X14=0,W14=2] 
+* CE 52: start(V1,V,V8,V14,V13) = 1+ iffibo(W14,X14,V1,Y14,Z14,A15):6
+     [V1>=2,Z14=0,Y14=0,X14=0,W14=2] 
+* CE 53: start(V1,V,V8,V14,V13) = 1
+     [V1=0] 
+* CE 54: start(V1,V,V8,V14,V13) = 0+ lt(W14,V,X14):1
+     [V>=1,X14=2,W14=0,V1=0] 
+* CE 55: start(V1,V,V8,V14,V13) = 0+ lt(V1,W14,X14):2
+     [V1>=0,X14=1,W14=0,V=0] 
+* CE 56: start(V1,V,V8,V14,V13) = 0+ lt(V1,V,W14):3
+     [V>=0,V1>=0,W14=0] 
+* CE 57: start(V1,V,V8,V14,V13) = 0+ lt(V1,V,W14):4
+     [V1>=V,V>=1,W14=1] 
+* CE 58: start(V1,V,V8,V14,V13) = 0+ lt(V1,V,W14):5
+     [V>=V1+1,V1>=1,W14=2] 
+* CE 59: start(V1,V,V8,V14,V13) = 0+ iffibo(W14,X14,Y14,Z14,A15,B15):1
+     [B15=1,W14=0,V1=0] 
+* CE 60: start(V1,V,V8,V14,V13) = 0+ iffibo(V1,W14,X14,Y14,Z14,A15):2
+     [V1>=0,A15=0] 
+* CE 61: start(V1,V,V8,V14,V13) = 0+ iffibo(W14,X14,Y14,Z14,A15,B15):3
+     [B15=1,W14=1,V1=1] 
+* CE 62: start(V1,V,V8,V14,V13) = 0+ iffibo(W14,X14,Y14,Z14,A15,B15):4
+     [A15>=0,Z14>=0,Y14>=2,X14>=0,B15=0,W14=2,V1=2] 
+* CE 63: start(V1,V,V8,V14,V13) = 0+ iffibo(W14,X14,Y14,Z14,A15,B15):5
+     [A15>=0,Z14>=0,Y14>=2,X14>=0,B15=1,W14=2,V1=2] 
+* CE 64: start(V1,V,V8,V14,V13) = 0+ iffibo(V1,W14,X14,Y14,Z14,A15):6
+     [V1>=1] 
+* CE 65: start(V1,V,V8,V14,V13) = 0+ sum(V1,W14,V1):1
+     [V1>=0,W14=0,V=0] 
+* CE 66: start(V1,V,V8,V14,V13) = 0+ sum(V1,V,W14):2
+     [V>=0,V1>=0,W14=0] 
+* CE 67: start(V1,V,V8,V14,V13) = 0+ sum(V1,W14,X14):3
+     [X14>=V1+1,V1>=0,X14=V1+W14,X14=V1+V] 
+* CE 68: start(V1,V,V8,V14,V13) = 0+ sum(V1,V,W14):4
+     [V>=W14,W14>=1,V1>=0] 
+
+### Cost equations --> "Loop" of start/5 
+* CEs [55,65] --> Loop 39 
+* CEs [62,63] --> Loop 40 
+* CEs [47,61] --> Loop 41 
+* CEs [48,49,50,51,53,54,56,57,58,59,60,66,67,68] --> Loop 42 
+* CEs [52,64] --> Loop 43 
+
+#### Loops of start/5 
+* Loop 39: start(V1,V,V8,V14,V13) [V1>=0,V=0] 
+* Loop 40: start(V1,V,V8,V14,V13) [V1=2] 
+* Loop 41: start(V1,V,V8,V14,V13) [V1=1] 
+* Loop 42: start(V1,V,V8,V14,V13) [V1>=0] 
+* Loop 43: start(V1,V,V8,V14,V13) [V1>=1] 
+
+### Ranking functions of CR start(V1,V,V8,V14,V13) 
+
+#### Partial ranking functions of CR start(V1,V,V8,V14,V13) 
+
+
+### Resulting Chains:start(V1,V,V8,V14,V13) 
+* [43]...
+* [42]
+* [41]
+* [40]
+* [39]
+
+
+### Merging Chains  start/5 into  External patterns of execution 
+* [[41],[42]] --> 1 
+* [[40]] --> 2 
+* [[39]] --> 3 
+* [[43]] --> 4 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [17] 
+
+ * loop 17:sum(V1,V,Out) -> [sum(V1',V',Out')] 
+1
+#### Cost of phase [17]:sum(V1,V,Out) -> [sum(V1',V',Out')] 
+1*it(17)+0
+  Such that:it(17) =< V
+it(17) =< V-V'
+
+#### Cost of phase [17]:sum(V1,V,Out) -> [sum(V1',V',Out')] 
+1*it(17)+0
+  Such that:it(17) =< V
+it(17) =< V-V'
+
+#### Cost of chains of sum(V1,V,Out):
+* Chain [[17],19]: 1*it(17)+1
+  Such that:it(17) =< V
+
+  with precondition: [V+V1=Out,V1>=0,V>=1] 
+
+* Chain [[17],18]: 1*it(17)+0
+  Such that:it(17) =< Out
+
+  with precondition: [V1>=0,Out>=1,V>=Out] 
+
+* Chain [19]: 1
+  with precondition: [V=0,V1=Out,V1>=0] 
+
+* Chain [18]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [20] 
+
+ * loop 20:lt(V1,V,Out) -> [lt(V1',V',Out')] 
+1
+#### Cost of phase [20]:lt(V1,V,Out) -> [lt(V1',V',Out')] 
+1*it(20)+0
+  Such that:it(20) =< V1
+it(20) =< V1-V1'
+it(20) =< V
+it(20) =< V-V'
+
+#### Cost of phase [20]:lt(V1,V,Out) -> [lt(V1',V',Out')] 
+1*it(20)+0
+  Such that:it(20) =< V1
+it(20) =< V1-V1'
+it(20) =< V
+it(20) =< V-V'
+
+#### Cost of phase [20]:lt(V1,V,Out) -> [lt(V1',V',Out')] 
+1*it(20)+0
+  Such that:it(20) =< V1
+it(20) =< V1-V1'
+it(20) =< V
+it(20) =< V-V'
+
+#### Cost of chains of lt(V1,V,Out):
+* Chain [[20],23]: 1*it(20)+1
+  Such that:it(20) =< V1
+
+  with precondition: [Out=2,V1>=1,V>=V1+1] 
+
+* Chain [[20],22]: 1*it(20)+1
+  Such that:it(20) =< V
+
+  with precondition: [Out=1,V>=1,V1>=V] 
+
+* Chain [[20],21]: 1*it(20)+0
+  Such that:it(20) =< V
+
+  with precondition: [Out=0,V1>=1,V>=1] 
+
+* Chain [23]: 1
+  with precondition: [V1=0,Out=2,V>=1] 
+
+* Chain [22]: 1
+  with precondition: [V=0,Out=1,V1>=0] 
+
+* Chain [21]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [24,25,27,28,29,30,31,32,33,34] 
+
+ * loop 24:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F')] 
+1*s(4)+2
+  Such that:s(4) =< E'+1
+
+ * loop 25:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F')] 
+1*s(6)+2
+  Such that:s(6) =< C
+
+ * loop 27:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F'),iffibo(A'2,B'2,C'2,D'2,E'2,F'2)] 
+1*s(8)+1
+ * loop 28:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F'),iffibo(A'2,B'2,C'2,D'2,E'2,F'2)] 
+1*s(10)+2
+ * loop 29:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F'),iffibo(A'2,B'2,C'2,D'2,E'2,F'2)] 
+2
+ * loop 30:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F'),iffibo(A'2,B'2,C'2,D'2,E'2,F'2)] 
+1
+ * loop 31:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F'),iffibo(A'2,B'2,C'2,D'2,E'2,F'2)] 
+1*s(12)+1
+ * loop 32:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F'),iffibo(A'2,B'2,C'2,D'2,E'2,F'2)] 
+1*s(14)+2
+ * loop 33:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F'),iffibo(A'2,B'2,C'2,D'2,E'2,F'2)] 
+2
+ * loop 34:iffibo(A,B,C,D,E,F) -> [iffibo(A',B',C',D',E',F'),iffibo(A'2,B'2,C'2,D'2,E'2,F'2)] 
+1
+#### Cost of phase [24,25,27,28,29,30,31,32,33,34]:iffibo(A,B,C,D,E,F) -> [] 
+18*it(24)+7*it(25)+6*it([35])+1*s(15)+1*s(16)+2*s(21)+0
+#### Cost of chains of iffibo(A,B,C,D,E,F):
+* Chain [multiple([24,25,27,28,29,30,31,32,33,34],[[],[38],[37],[36],[35],[26,38],[26,37]])]...: 18*it(24)+7*it(25)+6*it([35])+1*s(15)+1*s(16)+2*s(21)+0
+  with precondition: [A>=1] 
+
+* Chain [38]: 1
+  with precondition: [F=0,A>=0] 
+
+* Chain [37]: 2
+  with precondition: [A=0,F=1] 
+
+* Chain [36]: 1
+  with precondition: [A=1,F=0] 
+
+* Chain [35]: 2
+  with precondition: [A=1,F=1] 
+
+* Chain [26,38]: 1*s(2)+2
+  Such that:s(2) =< C
+
+  with precondition: [A=2,F=0,B>=0,C>=2,D>=0,E>=0] 
+
+* Chain [26,37]: 1*s(2)+3
+  Such that:s(2) =< C
+
+  with precondition: [A=2,F=1,B>=0,C>=2,D>=0,E>=0] 
+
+
+#### Cost of chains of start(V1,V,V8,V14,V13):
+* Chain [43]...: 1*aux(40)+0
+  with precondition: [V1>=1] 
+
+* Chain [42]: 3*s(35)+4*s(37)+4
+  Such that:aux(41) =< V1
+aux(42) =< V
+s(35) =< aux(41)
+s(37) =< aux(42)
+
+  with precondition: [V1>=0] 
+
+* Chain [41]: 2
+  with precondition: [V1=1] 
+
+* Chain [40]: 1*aux(43)+0
+  with precondition: [V1=2] 
+
+* Chain [39]: 1
+  with precondition: [V=0,V1>=0] 
+
+
+Closed-form bounds of start(V1,V,V8,V14,V13): 
+-------------------------------------
+* Chain [43]... with precondition: [V1>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [42] with precondition: [V1>=0] 
+    - Upper bound: 3*V1+4+nat(V)*4 
+    - Complexity: n 
+* Chain [41] with precondition: [V1=1] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [40] with precondition: [V1=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [39] with precondition: [V=0,V1>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+
+### Maximum cost of start(V1,V,V8,V14,V13): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 70 ms.
+* Invariants computed in 256 ms.
+   - Backward Invariants 51 ms.
+   - Transitive Invariants 94 ms.
+* Refinement performed in 395 ms.
+* Termination proved in 99 ms.
+* Upper bounds computed in 1165 ms.
+   - Equation cost structures 105 ms.
+   - Phase cost structures 1040 ms.
+   - Chain cost structures 42 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 2092 ms.
+

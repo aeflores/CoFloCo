@@ -1,0 +1,134 @@
+/* * * * * * * * * * *
+  Translation to ABS 
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/echolon_form.raml
+ *
+ * 
+ * Description:
+ *   Bring a matrix into echolon form.
+ */
+
+module Echelon_form;
+
+def Int sizeL<A>(List<A> l)=
+    case l {
+    Nil => 0;
+    Cons(x,xs) => 1+sizeL(xs);
+    };
+
+def A get_elem<A>(List<A> l,Int i)=
+    case l {
+ //   Nil => 
+      Cons(x,xs) => if i==0 then x
+      		 else get_elem(xs,i-1);
+		 };
+
+def Pair<A,A> get_2elems<A>(List<A> l1,List<A> l2,Int i)=
+    case l1 {
+ //   Nil => 
+      Cons(x1,x1s) =>
+      		    case l2 {
+ 		    //   Nil => 
+      		    Cons(x2,x2s) =>
+		    	if i==0 then Pair(x1,x2)
+			else get_2elems(x1s,x2s,i-1);
+			};
+	};
+
+
+def  List<Rat> subtract_row_helper(List<Rat> r1 ,List<Rat> r2,Rat q)=
+       case r1 {
+       Nil =>  Nil;
+       Cons(v1,v1s) =>
+      		    case r2 {
+ 		    Nil => Nil;
+      		    Cons(v2,v2s) => Cons(v2- v1*q, subtract_row_helper(v1s,v2s,q));
+		    };
+	};
+
+def  List<Rat> subtract_row(List<Rat> r1 ,List<Rat> r2,Int i)=
+     let (Pair<Rat,Rat> pair)= get_2elems(r1,r2,i) in
+     case pair { Pair(f1,f2)=> subtract_row_helper(r1,r2,f2/f1);};
+     
+def List<List<Rat>> subtract_helper(List<List<Rat>> m,List<Rat> row, Int i)=
+    case m {
+     Nil => Nil;
+     Cons(r,rs)=> Cons(subtract_row(row,r,i),subtract_helper(rs,row,i));
+     };
+
+def  List<A> concat<A>(List<A> l1,List<A> l2) =
+	case l1 {
+	 Nil => l2;
+	 Cons(x,xs) => Cons(x,concat(xs,l2));	 
+	};
+
+def List<A> tl<A>(List<A> l, Int i)=
+    if i==0 then l
+    else
+      case l {
+        //Nil => exception;
+	 Cons(x,xs) => tl(xs,i-1);	
+	 }; 
+
+def List<A> hd_helper<A>(List<A> l, Int i,List<A> acc)=
+    if i==0 then acc
+    else
+      case l {
+        //Nil => exception;
+	 Cons
+(x,xs) => hd_helper(xs,i-1,Cons(x,acc));	
+	 }; 
+
+def List<A> reverse_helper<A>(List<A> l,List<A> acc) = 
+   case l { 
+      Nil => acc ; 
+      Cons(x, xs) => reverse_helper(xs,Cons(x,acc)) ; 
+   };
+def List<A> reverseL<A>(List<A> l) = reverse_helper(l,Nil);
+
+def List<A> hd<A>(List<A> l, Int i)=
+    reverseL(hd_helper(l,i,Nil));
+
+
+def Pair<List<A>,List<A>> split_helper<A>(List<A> l,Int i,Int j,List<A> hd)=
+    if i==j then Pair(reverseL(hd),l)
+    else 
+       case l {
+         //Nil => exception ; 
+         Cons(x, xs) => split_helper(xs,i,j+1,Cons(x,hd));
+	 };
+
+def Pair<List<A>,List<A>> split<A>(List<A> l,Int i)=
+    split_helper(l,i,0,Nil);
+
+
+
+def List<List<Rat>> subtract(List<List<Rat>> m,Int i)=
+    let (List<Rat> row)=get_elem(m,i) in
+    let (Pair<List<List<Rat>>,List<List<Rat>>> pair)=split(m,i+1) in
+    case pair { Pair(head,tail) => concat(head,subtract_helper(tail,row,i));};
+
+def List<List<Rat>> echelon_helper(List<List<Rat>> m, Int i,List<List<Rat>> sizem)=
+    case sizem {
+    Nil => Nil;
+    Cons(r,rs) => echelon_helper(subtract(m,i),i+1,rs);
+    };    
+
+def List<List<Rat>> echelon_form(List<List<Rat>> m)=
+   echelon_helper(m,0,m);
+
+def List<List<Rat>> echelon_helper_old(List<List<Rat>> m, Int i)=
+    if i>=sizeL(m) then m
+    else echelon_helper_old(subtract(m,i),i+1);
+
+def List<List<Rat>> echelon_form_old(List<List<Rat>> m)=
+   echelon_helper_old(m,0);
+
+
+ 
+
+
+{}

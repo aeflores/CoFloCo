@@ -1,0 +1,361 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [mapconsapp/4]
+1. recursive  : [revapp/3]
+2. recursive [non_tail,multiple] : [permute/2,select/4]
+3. non_recursive  : [goal/2]
+4. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into mapconsapp/4
+1. SCC is partially evaluated into revapp/3
+2. SCC is partially evaluated into select/4
+3. SCC is completely evaluated into other SCCs
+4. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations mapconsapp/4 
+* CE 16 is refined into CE [17] 
+* CE 15 is refined into CE [18] 
+
+
+#### Refined cost equations mapconsapp/4 
+* CE 17: mapconsapp(A,B,C,C) = 1
+     [C>=0,A>=0,B=0] 
+* CE 18: mapconsapp(V2,V1,V3,Out) = 1+ mapconsapp(V2,W3,V3,X3)
+     [V1>=W3+1,W3>=0,V3>=0,V2>=0,Out+W3=V2+V1+X3+1] 
+
+### Cost equations --> "Loop" of mapconsapp/4 
+* CEs [18] --> Loop 12 
+* CEs [17] --> Loop 13 
+
+#### Loops of mapconsapp/4 
+* Loop 12: mapconsapp(V2,V1,V3,Out)->  mapconsapp(V2,V1',V3,Out')
+                  [V1>=V1'+1,V1'>=0,V3>=0,V2>=0,V2+V1+Out'+1=Out+V1'] 
+* Loop 13: mapconsapp(A,B,C,C) [C>=0,A>=0,B=0] 
+
+### Ranking functions of CR mapconsapp(V2,V1,V3,Out) 
+* RF of phase [12]: [V1]
+
+#### Partial ranking functions of CR mapconsapp(V2,V1,V3,Out) 
+* Partial RF of phase [12]:
+  - RF of loop [12:1]:
+    V1
+
+
+### Resulting Chains:mapconsapp(V2,V1,V3,Out) 
+* [[12],13]
+* [13]
+
+
+### Merging Chains  mapconsapp/4 into  External patterns of execution 
+* [[13]] --> 1 
+* [[13,[12]]] --> 2 
+
+
+### Specialization of cost equations revapp/3 
+* CE 14 is refined into CE [19] 
+* CE 13 is refined into CE [20] 
+
+
+#### Refined cost equations revapp/3 
+* CE 19: revapp(A,B,B) = 1
+     [B>=0,A=0] 
+* CE 20: revapp(V2,V1,Out) = 1+ revapp(W2,X2,Out)
+     [V2+V1>=X2,X2>=V1+1,V1>=0,V2+V1=W2+X2] 
+
+### Cost equations --> "Loop" of revapp/3 
+* CEs [20] --> Loop 14 
+* CEs [19] --> Loop 15 
+
+#### Loops of revapp/3 
+* Loop 14: revapp(V2,V1,Out)->  revapp(V2',V1',Out)
+                  [V2+V1>=V1',V1'>=V1+1,V1>=0,V2+V1=V2'+V1'] 
+* Loop 15: revapp(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR revapp(V2,V1,Out) 
+* RF of phase [14]: [V2]
+
+#### Partial ranking functions of CR revapp(V2,V1,Out) 
+* Partial RF of phase [14]:
+  - RF of loop [14:1]:
+    V2
+
+
+### Resulting Chains:revapp(V2,V1,Out) 
+* [[14],15]
+* [15]
+
+
+### Merging Chains  revapp/3 into  External patterns of execution 
+* [[15]] --> 1 
+* [[15,[14]]] --> 2 
+
+
+### Specialization of cost equations select/4 
+* CE 12 is refined into CE [21,22,23,24] 
+* CE 10 is discarded (unfeasible) 
+* CE 11 is refined into CE [25,26] 
+* CE 9 is refined into CE [27] 
+
+
+#### Refined cost equations select/4 
+* CE 21: select(V2,V1,V3,Out) = 2+ revapp(W3,V3,V3):1+ select(X3,Y3,Z3,A4)+ select(B4,C4,D4,Out)+ mapconsapp(V2,E4,Out,Out):1
+     [V3>=D4+1,V3>=Z3+1,D4>=0,Z3>=0,Out>=0,V2>=0,V3=B4+D4+1,V3=X3+Z3+1,V2+1=C4,A4=0,Y3=0,E4=0,W3=0,V1=0] 
+* CE 22: select(V2,V1,V3,Out) = 2+ revapp(W3,V3,V3):1+ select(X3,Y3,Z3,A4)+ select(B4,C4,D4,E4)+ mapconsapp(V2,A4,E4,Out):2
+     [Out>=V2+A4+E4+1,V3>=D4+1,V3>=Z3+1,D4>=0,Z3>=0,E4>=0,A4>=1,V2>=0,V3=B4+D4+1,V3=X3+Z3+1,V2+1=C4,Y3=0,W3=0,V1=0] 
+* CE 23: select(V2,V1,V3,Out) = 2+ revapp(V1,W3,X3):2+ select(Y3,Z3,A4,B4)+ select(C4,D4,E4,Out)+ mapconsapp(V2,F4,Out,Out):1
+     [X3>=V1+E4+1,X3>=A4+1,E4>=0,A4>=0,Out>=0,V2>=0,V1>=1,X3=V1+C4+E4+1,V2+V1+1=D4,X3=Y3+A4+1,X3=V1+W3,X3=V1+V3,B4=0,Z3=0,F4=0] 
+* CE 24: select(V2,V1,V3,Out) = 2+ revapp(V1,W3,X3):2+ select(Y3,Z3,A4,B4)+ select(C4,D4,E4,F4)+ mapconsapp(V2,B4,F4,Out):2
+     [Out>=V2+B4+F4+1,X3>=V1+E4+1,X3>=A4+1,E4>=0,A4>=0,F4>=0,B4>=1,V2>=0,V1>=1,X3=V1+C4+E4+1,V2+V1+1=D4,X3=Y3+A4+1,X3=V1+W3,X3=V1+V3,Z3=0] 
+* CE 25: select(V2,V1,V3,Out) = 2+ revapp(V1,W3,V1):2+ select(X3,Y3,Z3,A4)+ mapconsapp(V2,B4,C4,D4):1
+     [V1>=Z3+1,Z3>=0,V2>=0,V1=X3+Z3+1,A4=0,Y3=0,D4=0,C4=0,B4=0,W3=0,Out=0,V3=0] 
+* CE 26: select(V2,V1,V3,Out) = 2+ revapp(V1,W3,V1):2+ select(X3,Y3,Z3,A4)+ mapconsapp(V2,A4,B4,Out):2
+     [Out>=V2+A4+1,V1>=Z3+1,Z3>=0,A4>=1,V2>=0,V1=X3+Z3+1,Y3=0,B4=0,W3=0,V3=0] 
+* CE 27: select(V2,V1,V3,Out) = 2+ revapp(W3,X3,Y3):1+ mapconsapp(V2,Z3,A4,Out):2
+     [Out>=V2+2,V2>=0,A4=0,Z3=1,Y3=0,X3=0,W3=0,V3=0,V1=0] 
+
+### Cost equations --> "Loop" of select/4 
+* CEs [27] --> Loop 16 
+* CEs [26] --> Loop 17 
+* CEs [25] --> Loop 18 
+* CEs [24] --> Loop 19 
+* CEs [23] --> Loop 20 
+* CEs [22] --> Loop 21 
+* CEs [21] --> Loop 22 
+
+#### Loops of select/4 
+* Loop 16: select(V2,V1,V3,Out) [Out>=V2+2,V2>=0,V3=0,V1=0] 
+* Loop 17: select(V2,V1,V3,Out)->  select(V2',V1',V3',Out')
+                  [Out>=V2+Out'+1,V1>=V2'+1,Out'>=1,V2'>=0,V2>=0,V2'+V3'+1=V1,V1'=0,V3=0] 
+* Loop 18: select(V2,V1,V3,Out)->  select(V2',V1',V3',Out')
+                  [V1>=V2'+1,V2'>=0,V2>=0,V2'+V3'+1=V1,Out'=0,V1'=0,Out=0,V3=0] 
+* Loop 19: select(V2,V1,V3,Out)->  select(V2',V1',V3',Out')  select(V2'2,V1'2,V3'2,Out'2)
+                  [Out>=V2+Out'+Out'2+1,V1+V3>=V2'+1,V3>=V2'2+1,Out'2>=0,V2'2>=0,Out'>=1,V2'>=0,V1>=1,V2>=0,V1+V3=V2'+V3'+1,V2+V1+1=V1'2,V3=V2'2+V3'2+1,V1'=0] 
+* Loop 20: select(V2,V1,V3,Out)->  select(V2',V1',V3',Out')  select(V2'2,V1'2,V3'2,Out)
+                  [V1+V3>=V2'+1,V3>=V2'2+1,V2'2>=0,V2'>=0,Out>=0,V1>=1,V2>=0,V1+V3=V2'+V3'+1,V2+V1+1=V1'2,V3=V2'2+V3'2+1,Out'=0,V1'=0] 
+* Loop 21: select(V2,V1,V3,Out)->  select(V2',V1',V3',Out')  select(V2'2,V1'2,V3'2,Out'2)
+                  [Out>=V2+Out'+Out'2+1,V3>=V2'2+1,V3>=V2'+1,Out'2>=0,V2'2>=0,Out'>=1,V2'>=0,V2>=0,V2'2+V3'2+1=V3,V2'+V3'+1=V3,V2+1=V1'2,V1'=0,V1=0] 
+* Loop 22: select(V2,V1,V3,Out)->  select(V2',V1',V3',Out')  select(V2'2,V1'2,V3'2,Out)
+                  [V3>=V2'2+1,V3>=V2'+1,V2'2>=0,V2'>=0,Out>=0,V2>=0,V2'2+V3'2+1=V3,V2'+V3'+1=V3,V2+1=V1'2,Out'=0,V1'=0,V1=0] 
+
+### Ranking functions of CR select(V2,V1,V3,Out) 
+
+#### Partial ranking functions of CR select(V2,V1,V3,Out) 
+* Partial RF of phase [17,18,19,20,21,22]:
+  - RF of loop [17:1,18:1]:
+    V1+V3 depends on loops [19:2,20:2,21:2,22:2] 
+    V2+V1 depends on loops [19:1,19:2,20:1,20:2,21:1,21:2,22:1,22:2] 
+    V2+V1+V3
+  - RF of loop [17:1,18:1,19:1,20:1]:
+    V1 depends on loops [19:2,20:2,21:2,22:2] 
+  - RF of loop [19:1,20:1]:
+    V1+V3-1 depends on loops [19:2,20:2,21:2,22:2] 
+    V2+V1+V3-1
+  - RF of loop [19:2,20:2,21:1,21:2,22:1,22:2]:
+    V2+V3 depends on loops [17:1,18:1,19:1,20:1] 
+    V3 depends on loops [17:1,18:1,19:1,20:1] 
+  - RF of loop [21:2,22:2]:
+    -V1+1 depends on loops [17:1,18:1,19:1,20:1] 
+
+
+### Resulting Chains:select(V2,V1,V3,Out) 
+* [16]
+* [multiple([17,18,19,20,21,22],[[16]])]
+
+
+### Merging Chains  select/4 into  External patterns of execution 
+* [[16]] --> 1 
+* [[multiple([17,18,19,20,21,22],[[16]])]] --> 2 
+
+
+### Specialization of cost equations start/3 
+* CE 3 is refined into CE [28,29] 
+* CE 8 is refined into CE [30,31] 
+* CE 4 is refined into CE [32,33] 
+* CE 5 is refined into CE [34,35] 
+* CE 6 is refined into CE [36,37] 
+* CE 2 is refined into CE [38] 
+* CE 7 is refined into CE [39] 
+
+
+#### Refined cost equations start/3 
+* CE 28: start(V2,V1,V3) = 1+ select(W3,X3,Y3,Z3):1
+     [Z3>=W3+2,W3>=0,W3+1=V2,Y3=0,X3=0] 
+* CE 29: start(V2,V1,V3) = 1+ select(W3,X3,Y3,Z3):2
+     [Z3>=2*Y3+W3+4,Y3>=1,W3>=0,W3+Y3+1=V2,X3=0] 
+* CE 30: start(V2,V1,V3) = 2+ select(W3,X3,Y3,Z3):1
+     [Z3>=W3+2,W3>=0,W3+1=V2,Y3=0,X3=0] 
+* CE 31: start(V2,V1,V3) = 2+ select(W3,X3,Y3,Z3):2
+     [Z3>=2*Y3+W3+4,Y3>=1,W3>=0,W3+Y3+1=V2,X3=0] 
+* CE 32: start(V2,V1,V3) = 0+ select(V2,W3,X3,Y3):1
+     [Y3>=V2+2,V2>=0,X3=0,W3=0,V3=0,V1=0] 
+* CE 33: start(V2,V1,V3) = 0+ select(V2,V1,V3,W3):2
+     [V1+W3>=2*V3+V2+4,W3>=2*V3+V2+V1+2,V1+V3>=1,V3>=0,V1>=0,V2>=0] 
+* CE 34: start(V2,V1,V3) = 0+ revapp(W3,V1,V1):1
+     [V1>=0,W3=0,V2=0] 
+* CE 35: start(V2,V1,V3) = 0+ revapp(V2,W3,X3):2
+     [X3>=V2,V2>=1,X3=V2+W3,X3=V2+V1] 
+* CE 36: start(V2,V1,V3) = 0+ mapconsapp(V2,W3,V3,V3):1
+     [V3>=0,V2>=0,W3=0,V1=0] 
+* CE 37: start(V2,V1,V3) = 0+ mapconsapp(V2,V1,V3,W3):2
+     [W3>=V2+V1+V3+1,V3>=0,V1>=1,V2>=0] 
+* CE 38: start(V2,V1,V3) = 1
+     [V2=0] 
+* CE 39: start(V2,V1,V3) = 2
+     [V2=0] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [28,29,30,31,35] --> Loop 23 
+* CEs [33,37] --> Loop 24 
+* CEs [32,36] --> Loop 25 
+* CEs [34,38,39] --> Loop 26 
+
+#### Loops of start/3 
+* Loop 23: start(V2,V1,V3) [V2>=1] 
+* Loop 24: start(V2,V1,V3) [V1+V3>=1,V3>=0,V1>=0,V2>=0] 
+* Loop 25: start(V2,V1,V3) [V3>=0,V2>=0,V1=0] 
+* Loop 26: start(V2,V1,V3) [V2=0] 
+
+### Ranking functions of CR start(V2,V1,V3) 
+
+#### Partial ranking functions of CR start(V2,V1,V3) 
+
+
+### Resulting Chains:start(V2,V1,V3) 
+* [26]
+* [25]
+* [24]
+* [23]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[26]] --> 1 
+* [[25]] --> 2 
+* [[24]] --> 3 
+* [[23]] --> 4 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [12] 
+
+ * loop 12:mapconsapp(V2,V1,V3,Out) -> [mapconsapp(V2',V1',V3',Out')] 
+1
+#### Cost of phase [12]:mapconsapp(V2,V1,V3,Out) -> [mapconsapp(V2',V1',V3',Out')] 
+1*it(12)+0
+  Such that:it(12) =< V1
+it(12) =< V1-V1'
+
+#### Cost of chains of mapconsapp(V2,V1,V3,Out):
+* Chain [[12],13]: 1*it(12)+1
+  Such that:it(12) =< V1
+
+  with precondition: [V2>=0,V1>=1,V3>=0,Out>=V1+V2+V3+1] 
+
+* Chain [13]: 1
+  with precondition: [V1=0,V3=Out,V2>=0,V3>=0] 
+
+
+#### Cost of loops [14] 
+
+ * loop 14:revapp(V2,V1,Out) -> [revapp(V2',V1',Out')] 
+1
+#### Cost of phase [14]:revapp(V2,V1,Out) -> [revapp(V2',V1',Out')] 
+1*it(14)+0
+  Such that:it(14) =< V2
+it(14) =< V2-V2'
+
+#### Cost of chains of revapp(V2,V1,Out):
+* Chain [[14],15]: 1*it(14)+1
+  Such that:it(14) =< -V1+Out
+
+  with precondition: [V1+V2=Out,V2>=1,V1>=0] 
+
+* Chain [15]: 1
+  with precondition: [V2=0,V1=Out,V1>=0] 
+
+
+#### Cost of loops [17,19,21] 
+
+ * loop 17:select(V2,V1,V3,Out) -> [select(V2',V1',V3',Out')] 
+1*s(4)+1*s(5)+4
+  Such that:s(4) =< V1
+
+ * loop 19:select(V2,V1,V3,Out) -> [select(V2',V1',V3',Out'),select(V2'2,V1'2,V3'2,Out'2)] 
+1*s(8)+1*s(9)+4
+  Such that:s(8) =< V2'+V3'-V2'2-V3'2
+
+ * loop 21:select(V2,V1,V3,Out) -> [select(V2',V1',V3',Out'),select(V2'2,V1'2,V3'2,Out'2)] 
+1*s(11)+4
+#### Cost of phase [17,18,19,20,21,22]:select(V2,V1,V3,Out) -> [] 
+21*it(17)+1*s(14)+0
+#### Cost of chains of select(V2,V1,V3,Out):
+* Chain [16]: 1*s(1)+4
+  Such that:s(1) =< 1
+
+  with precondition: [V1=0,V3=0,V2>=0,Out>=V2+2] 
+
+* Chain [multiple([17,18,19,20,21,22],[[16]])]: 21*it(17)+1*s(14)+0
+  with precondition: [V2>=0,V1>=0,V3>=0,V1+V3>=1,Out>=2*V3+V1+V2+2,Out+V1>=2*V3+V2+4] 
+
+
+#### Cost of chains of start(V2,V1,V3):
+* Chain [26]: 2
+  with precondition: [V2=0] 
+
+* Chain [25]: 5
+  with precondition: [V1=0,V2>=0,V3>=0] 
+
+* Chain [24]: 22*s(19)+1*s(21)+1
+  Such that:s(21) =< V1
+
+  with precondition: [V2>=0,V1>=0,V3>=0,V1+V3>=1] 
+
+* Chain [23]: 2*s(22)+44*s(23)+1*s(28)+6
+  Such that:s(28) =< V2
+aux(71) =< 1
+s(22) =< aux(71)
+
+  with precondition: [V2>=1] 
+
+
+Closed-form bounds of start(V2,V1,V3): 
+-------------------------------------
+* Chain [26] with precondition: [V2=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [25] with precondition: [V1=0,V2>=0,V3>=0] 
+    - Upper bound: 5 
+    - Complexity: constant 
+* Chain [24] with precondition: [V2>=0,V1>=0,V3>=0,V1+V3>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [23] with precondition: [V2>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V2,V1,V3): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 23 ms.
+* Invariants computed in 59 ms.
+   - Backward Invariants 14 ms.
+   - Transitive Invariants 24 ms.
+* Refinement performed in 105 ms.
+* Termination proved in 62 ms.
+* Upper bounds computed in 233 ms.
+   - Equation cost structures 26 ms.
+   - Phase cost structures 214 ms.
+   - Chain cost structures 6 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 511 ms.
+

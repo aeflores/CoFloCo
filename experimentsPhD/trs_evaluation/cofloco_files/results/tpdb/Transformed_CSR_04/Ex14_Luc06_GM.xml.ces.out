@@ -1,0 +1,336 @@
+
+Preprocessing Cost Relations
+=====================================
+1. SCC does not have a single cut point : [mark/2,fun/2]  
+ Merged into markfun/2
+
+#### Computed strongly connected components 
+0. non_recursive  : [fun3/1]
+2. non_recursive  : [start/2]
+1. recursive [multiple] : [fun1/3,fun2/3,markfun/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into fun3/1
+2. SCC is partially evaluated into start/2
+1. SCC is partially evaluated into markfun/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations fun3/1 
+* CE 8 is refined into CE [21] 
+* CE 9 is refined into CE [22] 
+
+
+#### Refined cost equations fun3/1 
+* CE 21: fun3(Out) = 1
+     [Out=1] 
+* CE 22: fun3(Out) = 1
+     [Out=0] 
+
+### Cost equations --> "Loop" of fun3/1 
+* CEs [21] --> Loop 15 
+* CEs [22] --> Loop 16 
+
+#### Loops of fun3/1 
+* Loop 15: fun3(Out) [Out=1] 
+* Loop 16: fun3(Out) [Out=0] 
+
+### Ranking functions of CR fun3(Out) 
+
+#### Partial ranking functions of CR fun3(Out) 
+
+
+### Resulting Chains:fun3(Out) 
+* [16]
+* [15]
+
+
+### Merging Chains  fun3/1 into  External patterns of execution 
+* [[16]] --> 1 
+* [[15]] --> 2 
+
+
+### Specialization of cost equations markfun/2 
+* CE 20 is refined into CE [23] 
+* CE 19 is refined into CE [24] 
+* CE 18 is refined into CE [25,26] 
+* CE 16 is refined into CE [27,28] 
+* CE 17 is refined into CE [29] 
+* CE 12 is refined into CE [30,31] 
+* CE 13 is refined into CE [32,33] 
+* CE 10 is refined into CE [34] 
+* CE 11 is refined into CE [35] 
+* CE 14 is refined into CE [36] 
+* CE 15 is refined into CE [37] 
+
+
+#### Refined cost equations markfun/2 
+* CE 23: markfun(A,B) = 1
+     [A>=0,A+1=B] 
+* CE 24: markfun(A,B) = 1
+     [B=1,A=1] 
+* CE 25: markfun(A,B) = 1+ fun3(C):1
+     [C=0,B=0,A=0] 
+* CE 26: markfun(A,B) = 1+ fun3(C):2
+     [C=1,B=1,A=0] 
+* CE 27: markfun(A,B) = 2+ markfun(C,D)+ fun3(E):1+ markfun(F,B)
+     [D>=0,C>=0,C+D+1=A,F=0,E=0] 
+* CE 28: markfun(A,B) = 2+ markfun(C,D)+ fun3(E):2+ markfun(F,B)
+     [D>=0,C>=0,C+D+1=A,F=1,E=1] 
+* CE 29: markfun(A,B) = 1+ markfun(C,D)+ markfun(D,B)
+     [C>=0,C+1=A] 
+* CE 30: markfun(A,B) = 3+ markfun(C,D)+ fun3(E):1+ markfun(F,B)
+     [A>=2,A=C+2,F=0,D=0,E=0] 
+* CE 31: markfun(A,B) = 3+ markfun(C,D)+ fun3(E):2+ markfun(F,B)
+     [A>=2,A=C+2,F=1,D=0,E=1] 
+* CE 32: markfun(A,B) = 3+ markfun(C,D)+ fun3(E):1+ markfun(F,B)
+     [F=0,D=0,C=1,E=0,A=1] 
+* CE 33: markfun(A,B) = 3+ markfun(C,D)+ fun3(E):2+ markfun(F,B)
+     [F=1,D=0,C=1,E=1,A=1] 
+* CE 34: markfun(A,B) = 2+ markfun(C,D)
+     [B+C>=A,A>=C+1,C>=0,B+C=A+D] 
+* CE 35: markfun(A,B) = 2+ markfun(A,C)
+     [C>=0,A>=0,A+C+1=B] 
+* CE 36: markfun(A,B) = 3+ markfun(C,D)
+     [A>=C+1,C>=0,B+C=A+1,D=0] 
+* CE 37: markfun(A,B) = 3+ markfun(A,C)
+     [A>=0,A+2=B,C=0] 
+
+### Cost equations --> "Loop" of markfun/2 
+* CEs [34] --> Loop 17 
+* CEs [35] --> Loop 18 
+* CEs [36] --> Loop 19 
+* CEs [37] --> Loop 20 
+* CEs [29] --> Loop 21 
+* CEs [28] --> Loop 22 
+* CEs [27] --> Loop 23 
+* CEs [31] --> Loop 24 
+* CEs [30] --> Loop 25 
+* CEs [33] --> Loop 26 
+* CEs [32] --> Loop 27 
+* CEs [24] --> Loop 28 
+* CEs [23,26] --> Loop 29 
+* CEs [25] --> Loop 30 
+
+#### Loops of markfun/2 
+* Loop 17: markfun(A,B)->  markfun(A',B')
+                  [B+A'>=A,A>=A'+1,A'>=0,A+B'=B+A'] 
+* Loop 18: markfun(A,B)->  markfun(A,A')
+                  [B>=A+1,A>=0,A+A'+1=B] 
+* Loop 19: markfun(A,B)->  markfun(A',B')
+                  [A+1>=B,B>=2,B+A'=A+1,B'=0] 
+* Loop 20: markfun(A,B)->  markfun(A,A')
+                  [A>=0,A+2=B,A'=0] 
+* Loop 21: markfun(A,B)->  markfun(A',B')  markfun(B',B)
+                  [A>=1,A=A'+1] 
+* Loop 22: markfun(A,B)->  markfun(A',B')  markfun(A'2,B)
+                  [A>=A'+1,A'>=0,A'+B'+1=A,A'2=1] 
+* Loop 23: markfun(A,B)->  markfun(A',B')  markfun(A'2,B)
+                  [A>=A'+1,A'>=0,A'+B'+1=A,A'2=0] 
+* Loop 24: markfun(A,B)->  markfun(A',B')  markfun(A'2,B)
+                  [A>=2,A=A'+2,A'2=1,B'=0] 
+* Loop 25: markfun(A,B)->  markfun(A',B')  markfun(A'2,B)
+                  [A>=2,A=A'+2,A'2=0,B'=0] 
+* Loop 26: markfun(A,B)->  markfun(A',B')  markfun(A'2,B)
+                  [A'2=1,B'=0,A'=1,A=1] 
+* Loop 27: markfun(A,B)->  markfun(A',B')  markfun(A'2,B)
+                  [A'2=0,B'=0,A'=1,A=1] 
+* Loop 28: markfun(A,B) [B=1,A=1] 
+* Loop 29: markfun(A,B) [A>=0,A+1=B] 
+* Loop 30: markfun(A,B) [B=0,A=0] 
+
+### Ranking functions of CR markfun(A,B) 
+
+#### Partial ranking functions of CR markfun(A,B) 
+* Partial RF of phase [17,18,19,20,21,22,23,24,25,26,27]:
+  - RF of loop [17:1,19:1,21:1,22:1,23:1,23:2,27:2]:
+    A depends on loops [21:2] 
+  - RF of loop [24:1,24:2,25:1,25:2]:
+    A-1 depends on loops [21:2] 
+
+
+### Resulting Chains:markfun(A,B) 
+* [multiple([17,18,19,20,21,22,23,24,25,26,27],[[],[30],[29],[28]])]...
+* [30]
+* [29]
+* [28]
+
+
+### Merging Chains  markfun/2 into  External patterns of execution 
+* [[30]] --> 1 
+* [[28]] --> 2 
+* [[29]] --> 3 
+* [[multiple([17,18,19,20,21,22,23,24,25,26,27],[[],[30],[29],[28]])]] --> 4 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [38] 
+* CE 3 is refined into CE [39,40,41,42,43,44] 
+* CE 4 is refined into CE [45] 
+* CE 5 is refined into CE [46,47,48,49,50,51] 
+* CE 6 is refined into CE [52,53,54,55] 
+* CE 7 is refined into CE [56,57] 
+
+
+#### Refined cost equations start/2 
+* CE 38: start(V,V1) = 1
+     [V1>=0,V>=0] 
+* CE 39: start(V,V1) = 2+ fun3(W1):1+ markfun(X1,Y1):1
+     [Y1=0,X1=0,W1=0,V1=1,V=0] 
+* CE 40: start(V,V1) = 2+ fun3(W1):1+ markfun(X1,Y1):3
+     [Y1=1,X1=0,W1=0,V1=1,V=0] 
+* CE 41: start(V,V1) = 2+ fun3(W1):1+ markfun(X1,Y1):4
+     [X1=0,W1=0,V1=1,V=0] 
+* CE 42: start(V,V1) = 2+ fun3(W1):2+ markfun(X1,Y1):2
+     [Y1=1,X1=1,W1=1,V1=1,V=0] 
+* CE 43: start(V,V1) = 2+ fun3(W1):2+ markfun(X1,Y1):3
+     [Y1=2,X1=1,W1=1,V1=1,V=0] 
+* CE 44: start(V,V1) = 2+ fun3(W1):2+ markfun(X1,Y1):4
+     [X1=1,W1=1,V1=1,V=0] 
+* CE 45: start(V,V1) = 2
+     [V1>=0,V=0] 
+* CE 46: start(A,A) = 1+ fun3(B):1+ markfun(C,D):1
+     [A>=0,D=0,C=0,B=0] 
+* CE 47: start(A,A) = 1+ fun3(B):1+ markfun(C,D):3
+     [A>=0,D=1,C=0,B=0] 
+* CE 48: start(A,A) = 1+ fun3(B):1+ markfun(C,D):4
+     [A>=0,C=0,B=0] 
+* CE 49: start(A,A) = 1+ fun3(B):2+ markfun(C,D):2
+     [A>=0,D=1,C=1,B=1] 
+* CE 50: start(A,A) = 1+ fun3(B):2+ markfun(C,D):3
+     [A>=0,D=2,C=1,B=1] 
+* CE 51: start(A,A) = 1+ fun3(B):2+ markfun(C,D):4
+     [A>=0,C=1,B=1] 
+* CE 52: start(V,V1) = 0+ markfun(W1,X1):1
+     [X1=0,W1=0,V=0] 
+* CE 53: start(V,V1) = 0+ markfun(W1,X1):2
+     [X1=1,W1=1,V=1] 
+* CE 54: start(V,V1) = 0+ markfun(W1,X1):3
+     [X1>=1,X1=W1+1,X1=V+1] 
+* CE 55: start(V,V1) = 0+ markfun(V,W1):4
+     [V>=0] 
+* CE 56: start(V,V1) = 0+ fun3(W1):1
+     [W1=0] 
+* CE 57: start(V,V1) = 0+ fun3(W1):2
+     [W1=1] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [38,39,40,42,43,45,46,47,49,50,52,53,54,56,57] --> Loop 31 
+* CEs [48,51] --> Loop 32 
+* CEs [41,44,55] --> Loop 33 
+
+#### Loops of start/2 
+* Loop 31: start(V,V1) [] 
+* Loop 32: start(A,A) [A>=0] 
+* Loop 33: start(V,V1) [V>=0] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [33]...
+* [32]...
+* [31]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[31]] --> 1 
+* [[32]] --> 2 
+* [[33]] --> 3 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of fun3(Out):
+* Chain [16]: 1
+  with precondition: [Out=0] 
+
+* Chain [15]: 1
+  with precondition: [Out=1] 
+
+
+#### Cost of loops [17,18,19,20,21,22,23,24,25,26,27] 
+
+ * loop 17:markfun(A,B) -> [markfun(A',B')] 
+2
+ * loop 18:markfun(A,B) -> [markfun(A',B')] 
+2
+ * loop 19:markfun(A,B) -> [markfun(A',B')] 
+3
+ * loop 20:markfun(A,B) -> [markfun(A',B')] 
+3
+ * loop 21:markfun(A,B) -> [markfun(A',B'),markfun(A'2,B'2)] 
+1
+ * loop 22:markfun(A,B) -> [markfun(A',B'),markfun(A'2,B'2)] 
+3
+ * loop 23:markfun(A,B) -> [markfun(A',B'),markfun(A'2,B'2)] 
+3
+ * loop 24:markfun(A,B) -> [markfun(A',B'),markfun(A'2,B'2)] 
+4
+ * loop 25:markfun(A,B) -> [markfun(A',B'),markfun(A'2,B'2)] 
+4
+ * loop 26:markfun(A,B) -> [markfun(A',B'),markfun(A'2,B'2)] 
+4
+ * loop 27:markfun(A,B) -> [markfun(A',B'),markfun(A'2,B'2)] 
+4
+#### Cost of phase [17,18,19,20,21,22,23,24,25,26,27]:markfun(A,B) -> [] 
+5*it(17)+10*it(18)+7*it(22)+12*it(23)+4*it([29])+0
+#### Cost of chains of markfun(A,B):
+* Chain [multiple([17,18,19,20,21,22,23,24,25,26,27],[[],[30],[29],[28]])]...: 5*it(17)+10*it(18)+7*it(22)+12*it(23)+4*it([29])+0
+  with precondition: [A>=0] 
+
+* Chain [30]: 2
+  with precondition: [A=0,B=0] 
+
+* Chain [29]: 2
+  with precondition: [A+1=B,A>=0] 
+
+* Chain [28]: 1
+  with precondition: [A=1,B=1] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [33]...: 1*aux(14)+0
+  with precondition: [V>=0] 
+
+* Chain [32]...: 1*aux(15)+0
+  with precondition: [V=V1,V>=0] 
+
+* Chain [31]: 5
+  with precondition: [] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [33]... with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [32]... with precondition: [V=V1,V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [31] with precondition: [] 
+    - Upper bound: 5 
+    - Complexity: constant 
+
+### Maximum cost of start(V,V1): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 61 ms.
+* Invariants computed in 60 ms.
+   - Backward Invariants 4 ms.
+   - Transitive Invariants 20 ms.
+* Refinement performed in 213 ms.
+* Termination proved in 47 ms.
+* Upper bounds computed in 194 ms.
+   - Equation cost structures 48 ms.
+   - Phase cost structures 160 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 641 ms.
+

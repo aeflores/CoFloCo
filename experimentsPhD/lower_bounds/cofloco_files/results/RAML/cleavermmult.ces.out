@@ -1,0 +1,637 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive : [lineMult/3]
+1. recursive : [computeLine/4]
+2. recursive : [matrixMult/4]
+4. recursive : [size_lineMult/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into lineMult/3
+1. SCC is partially evaluated into computeLine/4
+2. SCC is partially evaluated into matrixMult/4
+4. SCC is completely evaluated into other SCCs
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations lineMult/3 
+* CE 8 is refined into CE [10] 
+* CE 9 is refined into CE [11] 
+* CE 7 is refined into CE [12] 
+
+
+#### Refined cost equations lineMult/3 
+* CE 10: lineMult(A,L1,L2) = 1+ lineMult(A,M2,N2)
+     [L1>=1,L1=M2+1,N2=0,L2=0] 
+* CE 11: lineMult(A,L1,L2) = 1+ lineMult(A,M2,N2)
+     [L1>=1,L1=M2+1,N2+1=0,L2=0] 
+* CE 12: lineMult(A,L1,L2) = 1
+     [L2+1>=0,0>=L2,L1=0] 
+
+### Cost equations --> "Loop" of lineMult/3 
+* CEs [12] --> Loop 9 
+* CEs [10] --> Loop 10 
+* CEs [11] --> Loop 11 
+
+#### Loops of lineMult/3 
+* Loop 9: lineMult(A,L1,L2) [L2+1>=0,0>=L2,L1=0] 
+* Loop 10: lineMult(A,L1,L2)->  lineMult(A,L1',L2')
+                  [L1>=1,L1=L1'+1,L2'=0,L2=0] 
+* Loop 11: lineMult(A,L1,L2)->  lineMult(A,L1',L2')
+                  [L1>=1,L1=L1'+1,L2'+1=0,L2=0] 
+
+### Ranking functions of CR lineMult(A,L1,L2) 
+* RF of phase [10]: [L1]
+
+#### Partial ranking functions of CR lineMult(A,L1,L2) 
+* Partial RF of phase [10]:
+  - RF of loop [10:1]:
+    L1
+
+
+### Resulting Chains:lineMult(A,L1,L2) 
+* [[10],11,9]
+* [[10],9]
+* [11,9]
+* [9]
+
+
+### Specialization of cost equations computeLine/4 
+* CE 6 is refined into CE [13,14,15,16] 
+* CE 5 is refined into CE [17] 
+* CE 4 is refined into CE [18] 
+
+
+#### Refined cost equations computeLine/4 
+* CE 13: computeLine(L,Mr,Mc,Acc) = 1+ lineMult(M,Mc,N):[[10],11,9]+ computeLine(O,P,Mc,Q)
+     [Mc>=2,Mr>=1,L>=1,Mr=P+1,L=O+1,Q=0,N=0,Acc=0] 
+* CE 14: computeLine(L,Mr,Mc,Acc) = 1+ lineMult(M,Mc,N):[[10],9]+ computeLine(O,P,Mc,Q)
+     [Mc>=1,Mr>=1,L>=1,Mr=P+1,L=O+1,Q=0,N=0,Acc=0] 
+* CE 15: computeLine(L,Mr,Mc,Acc) = 1+ lineMult(M,N,O):[11,9]+ computeLine(P,Q,R,S)
+     [Mr>=1,L>=1,Mr=Q+1,L=P+1,S=0,R=1,O=0,N=1,Acc=0,Mc=1] 
+* CE 16: computeLine(L,Mr,Mc,Acc) = 1+ lineMult(M,N,O):[9]+ computeLine(P,Q,R,S)
+     [Mr>=1,L>=1,Mr=Q+1,L=P+1,S=0,R=0,O=0,N=0,Acc=0,Mc=0] 
+* CE 17: computeLine(L,Mr,Mc,Acc) = 1
+     [L>=1,Acc=0,Mr=0] 
+* CE 18: computeLine(L,Mr,Mc,Acc) = 1
+     [Acc=0,L=0] 
+
+### Cost equations --> "Loop" of computeLine/4 
+* CEs [17] --> Loop 12 
+* CEs [18] --> Loop 13 
+* CEs [13] --> Loop 14 
+* CEs [14] --> Loop 15 
+* CEs [15] --> Loop 16 
+* CEs [16] --> Loop 17 
+
+#### Loops of computeLine/4 
+* Loop 12: computeLine(L,Mr,Mc,Acc) [L>=1,Acc=0,Mr=0] 
+* Loop 13: computeLine(L,Mr,Mc,Acc) [Acc=0,L=0] 
+* Loop 14: computeLine(L,Mr,Mc,Acc)->  computeLine(L',Mr',Mc,Acc')
+                  [Mc>=2,Mr>=1,L>=1,Mr=Mr'+1,L=L'+1,Acc'=0,Acc=0] 
+* Loop 15: computeLine(L,Mr,Mc,Acc)->  computeLine(L',Mr',Mc,Acc')
+                  [Mc>=1,Mr>=1,L>=1,Mr=Mr'+1,L=L'+1,Acc'=0,Acc=0] 
+* Loop 16: computeLine(L,Mr,Mc,Acc)->  computeLine(L',Mr',Mc',Acc')
+                  [Mr>=1,L>=1,Mr=Mr'+1,L=L'+1,Acc'=0,Mc'=1,Acc=0,Mc=1] 
+* Loop 17: computeLine(L,Mr,Mc,Acc)->  computeLine(L',Mr',Mc',Acc')
+                  [Mr>=1,L>=1,Mr=Mr'+1,L=L'+1,Acc'=0,Mc'=0,Acc=0,Mc=0] 
+
+### Ranking functions of CR computeLine(L,Mr,Mc,Acc) 
+* RF of phase [14,15,16]: [Mr,L]
+* RF of phase [17]: [Mr,L]
+
+#### Partial ranking functions of CR computeLine(L,Mr,Mc,Acc) 
+* Partial RF of phase [14,15,16]:
+  - RF of loop [14:1,15:1,16:1]:
+    Mr
+    L
+* Partial RF of phase [17]:
+  - RF of loop [17:1]:
+    Mr
+    L
+
+
+### Resulting Chains:computeLine(L,Mr,Mc,Acc) 
+* [[17],13]
+* [[17],12]
+* [[14,15,16],13]
+* [[14,15,16],12]
+* [13]
+* [12]
+
+
+### Specialization of cost equations matrixMult/4 
+* CE 3 is refined into CE [19,20,21,22,23,24] 
+* CE 2 is refined into CE [25] 
+
+
+#### Refined cost equations matrixMult/4 
+* CE 19: matrixMult(L1r,L1c,L2r,L2c) = 1+ computeLine(L1c,L2r,B,C):[[17],13]+ matrixMult(D,L1c,L2r,E)
+     [L2r>=L1c,L1c>=1,L1r>=1,L1r=D+1,E=0,C=0,B=0,L2c=0] 
+* CE 20: matrixMult(L1r,L1c,L2r,L2c) = 1+ computeLine(L1c,L2r,B,C):[[17],12]+ matrixMult(D,L1c,L2r,E)
+     [L1c>=L2r+1,L2r>=1,L1r>=1,L1r=D+1,E=0,C=0,B=0,L2c=0] 
+* CE 21: matrixMult(L1r,L1c,L2r,L2c) = 1+ computeLine(L1c,L2r,L2c,B):[[14,15,16],13]+ matrixMult(C,L1c,L2r,L2c)
+     [L2r>=L1c,L2c>=1,L1c>=1,L1r>=1,L1r=C+1,B=0] 
+* CE 22: matrixMult(L1r,L1c,L2r,L2c) = 1+ computeLine(L1c,L2r,L2c,B):[[14,15,16],12]+ matrixMult(C,L1c,L2r,L2c)
+     [L1c>=L2r+1,L2c>=1,L2r>=1,L1r>=1,L1r=C+1,B=0] 
+* CE 23: matrixMult(L1r,L1c,L2r,L2c) = 1+ computeLine(B,L2r,L2c,C):[13]+ matrixMult(D,E,L2r,L2c)
+     [L1r>=1,L1r=D+1,E=0,C=0,B=0,L1c=0] 
+* CE 24: matrixMult(L1r,L1c,L2r,L2c) = 1+ computeLine(L1c,B,L2c,C):[12]+ matrixMult(D,L1c,E,L2c)
+     [L1c>=1,L1r>=1,L1r=D+1,E=0,C=0,B=0,L2r=0] 
+* CE 25: matrixMult(L1r,L1c,L2r,L2c) = 1
+     [L1r=0] 
+
+### Cost equations --> "Loop" of matrixMult/4 
+* CEs [25] --> Loop 18 
+* CEs [22] --> Loop 19 
+* CEs [21] --> Loop 20 
+* CEs [20] --> Loop 21 
+* CEs [19] --> Loop 22 
+* CEs [24] --> Loop 23 
+* CEs [23] --> Loop 24 
+
+#### Loops of matrixMult/4 
+* Loop 18: matrixMult(L1r,L1c,L2r,L2c) [L1r=0] 
+* Loop 19: matrixMult(L1r,L1c,L2r,L2c)->  matrixMult(L1r',L1c,L2r,L2c)
+                  [L1c>=L2r+1,L2c>=1,L2r>=1,L1r>=1,L1r=L1r'+1] 
+* Loop 20: matrixMult(L1r,L1c,L2r,L2c)->  matrixMult(L1r',L1c,L2r,L2c)
+                  [L2r>=L1c,L2c>=1,L1c>=1,L1r>=1,L1r=L1r'+1] 
+* Loop 21: matrixMult(L1r,L1c,L2r,L2c)->  matrixMult(L1r',L1c,L2r,L2c')
+                  [L1c>=L2r+1,L2r>=1,L1r>=1,L1r=L1r'+1,L2c'=0,L2c=0] 
+* Loop 22: matrixMult(L1r,L1c,L2r,L2c)->  matrixMult(L1r',L1c,L2r,L2c')
+                  [L2r>=L1c,L1c>=1,L1r>=1,L1r=L1r'+1,L2c'=0,L2c=0] 
+* Loop 23: matrixMult(L1r,L1c,L2r,L2c)->  matrixMult(L1r',L1c,L2r',L2c)
+                  [L1c>=1,L1r>=1,L1r=L1r'+1,L2r'=0,L2r=0] 
+* Loop 24: matrixMult(L1r,L1c,L2r,L2c)->  matrixMult(L1r',L1c',L2r,L2c)
+                  [L1r>=1,L1r=L1r'+1,L1c'=0,L1c=0] 
+
+### Ranking functions of CR matrixMult(L1r,L1c,L2r,L2c) 
+* RF of phase [19]: [L1r]
+* RF of phase [20]: [L1r]
+* RF of phase [21]: [L1r]
+* RF of phase [22]: [L1r]
+* RF of phase [23]: [L1r]
+* RF of phase [24]: [L1r]
+
+#### Partial ranking functions of CR matrixMult(L1r,L1c,L2r,L2c) 
+* Partial RF of phase [19]:
+  - RF of loop [19:1]:
+    L1r
+* Partial RF of phase [20]:
+  - RF of loop [20:1]:
+    L1r
+* Partial RF of phase [21]:
+  - RF of loop [21:1]:
+    L1r
+* Partial RF of phase [22]:
+  - RF of loop [22:1]:
+    L1r
+* Partial RF of phase [23]:
+  - RF of loop [23:1]:
+    L1r
+* Partial RF of phase [24]:
+  - RF of loop [24:1]:
+    L1r
+
+
+### Resulting Chains:matrixMult(L1r,L1c,L2r,L2c) 
+* [[24],18]
+* [[23],18]
+* [[22],18]
+* [[21],18]
+* [[20],18]
+* [[19],18]
+* [18]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [10] 
+
+ * loop 10:lineMult(A,L1,L2) -> [lineMult(A',L1',L2')] 
+1
+#### Cost of phase [10]:lineMult(A,L1,L2) -> [lineMult(A',L1',L2')] 
+1*it(10)+0
+  Such that:it(10) =< L1
+it(10) =< L1-L1'
+it(10) >= L1-L1'
+
+#### Cost of phase [10]:lineMult(A,L1,L2) -> [lineMult(A',L1',L2')] 
+1*it(10)+0
+  Such that:it(10) =< L1
+it(10) =< L1-L1'
+it(10) >= L1-L1'
+
+#### Cost of chains of lineMult(A,L1,L2):
+* Chain [[10],11,9]: 1*it(10)+2
+  Such that:it(10) =< L1-1
+it(10) >= L1-1
+
+  with precondition: [L2=0,L1>=2] 
+
+* Chain [[10],9]: 1*it(10)+1
+  Such that:it(10) =< L1
+it(10) >= L1
+
+  with precondition: [L2=0,L1>=1] 
+
+* Chain [11,9]: 2
+  with precondition: [L1=1,L2=0] 
+
+* Chain [9]: 1
+  with precondition: [L1=0,0>=L2,L2+1>=0] 
+
+
+#### Cost of loops [17] 
+
+ * loop 17:computeLine(L,Mr,Mc,Acc) -> [computeLine(L',Mr',Mc',Acc')] 
+2
+#### Cost of phase [17]:computeLine(L,Mr,Mc,Acc) -> [computeLine(L',Mr',Mc',Acc')] 
+2*it(17)+0
+  Such that:it(17) =< L
+it(17) =< L-L'
+it(17) =< Mr
+it(17) =< Mr-Mr'
+it(17) >= L-L'
+it(17) >= Mr-Mr'
+
+#### Cost of phase [17]:computeLine(L,Mr,Mc,Acc) -> [computeLine(L',Mr',Mc',Acc')] 
+2*it(17)+0
+  Such that:it(17) =< L
+it(17) =< L-L'
+it(17) =< Mr
+it(17) =< Mr-Mr'
+it(17) >= L-L'
+it(17) >= Mr-Mr'
+
+#### Cost of loops [14,15,16] 
+
+ * loop 14:computeLine(L,Mr,Mc,Acc) -> [computeLine(L',Mr',Mc',Acc')] 
+1*s(2)+3
+  Such that:s(2) =< Mc'-1
+s(2) >= Mc'-1
+
+ * loop 15:computeLine(L,Mr,Mc,Acc) -> [computeLine(L',Mr',Mc',Acc')] 
+1*s(4)+2
+  Such that:s(4) =< Mc'
+s(4) >= Mc'
+
+ * loop 16:computeLine(L,Mr,Mc,Acc) -> [computeLine(L',Mr',Mc',Acc')] 
+3
+#### Cost of phase [14,15,16]:computeLine(L,Mr,Mc,Acc) -> [computeLine(L',Mr',Mc',Acc')] 
+3*it(14)+2*it(15)+3*it(16)+1*s(5)+1*s(6)+0
+  Such that:it(14)+it(15)+it(16) =< L
+it(14)+it(15)+it(16) =< L-L'
+it(14)+it(15)+it(16) =< Mr
+it(14)+it(15)+it(16) =< Mr-Mr'
+aux(2) =< Mc-1
+aux(4) =< aux(2)+1
+s(5) =< it(14)*aux(2)
+s(6) =< it(15)*aux(4)
+it(14)+it(15)+it(16) >= Mr-Mr'
+aux(1) >= Mc-1
+aux(5) >= L-L'
+it(14)+it(15)+it(16) >= aux(5)
+it(14)+it(16)+s(6) >= aux(5)
+it(15)+it(16)+s(5) >= aux(5)
+aux(3) >= aux(1)+1
+s(5) >= it(14)*aux(1)
+s(6) >= it(15)*aux(3)
+
+#### Cost of phase [14,15,16]:computeLine(L,Mr,Mc,Acc) -> [computeLine(L',Mr',Mc',Acc')] 
+3*it(14)+2*it(15)+3*it(16)+1*s(5)+1*s(6)+0
+  Such that:it(14)+it(15)+it(16) =< L
+it(14)+it(15)+it(16) =< L-L'
+it(14)+it(15)+it(16) =< Mr
+it(14)+it(15)+it(16) =< Mr-Mr'
+aux(2) =< Mc-1
+aux(4) =< aux(2)+1
+s(5) =< it(14)*aux(2)
+s(6) =< it(15)*aux(4)
+it(14)+it(15)+it(16) >= Mr-Mr'
+aux(1) >= Mc-1
+aux(5) >= L-L'
+it(14)+it(15)+it(16) >= aux(5)
+it(14)+it(16)+s(6) >= aux(5)
+it(15)+it(16)+s(5) >= aux(5)
+aux(3) >= aux(1)+1
+s(5) >= it(14)*aux(1)
+s(6) >= it(15)*aux(3)
+
+#### Cost of chains of computeLine(L,Mr,Mc,Acc):
+* Chain [[17],13]: 2*it(17)+1
+  Such that:it(17) =< L
+it(17) >= L
+
+  with precondition: [Mc=0,Acc=0,L>=1,Mr>=L] 
+
+* Chain [[17],12]: 2*it(17)+1
+  Such that:it(17) =< Mr
+it(17) >= Mr
+
+  with precondition: [Mc=0,Acc=0,Mr>=1,L>=Mr+1] 
+
+* Chain [[14,15,16],13]: 3*it(14)+2*it(15)+3*it(16)+1*s(5)+1*s(6)+1
+  Such that:it(16)+it(15)+it(14) =< L
+aux(1) >= Mc-1
+aux(6) >= L
+aux(6) >= aux(6)
+it(14)+it(15)+it(16) >= aux(6)
+it(14)+it(16)+s(6) >= aux(6)
+it(15)+it(16)+s(5) >= aux(6)
+aux(3) >= aux(1)+1
+s(5) >= it(14)*aux(1)
+s(6) >= it(15)*aux(3)
+
+  with precondition: [Acc=0,L>=1,Mc>=1,Mr>=L] 
+
+* Chain [[14,15,16],12]: 3*it(14)+2*it(15)+3*it(16)+1*s(5)+1*s(6)+1
+  Such that:it(16)+it(15)+it(14) =< Mr
+aux(1) >= Mc-1
+aux(7) >= Mr
+aux(7) >= aux(7)
+it(14)+it(15)+it(16) >= aux(7)
+it(14)+it(16)+s(6) >= aux(7)
+it(15)+it(16)+s(5) >= aux(7)
+aux(3) >= aux(1)+1
+s(5) >= it(14)*aux(1)
+s(6) >= it(15)*aux(3)
+
+  with precondition: [Acc=0,Mr>=1,Mc>=1,L>=Mr+1] 
+
+* Chain [13]: 1
+  with precondition: [L=0,Acc=0] 
+
+* Chain [12]: 1
+  with precondition: [Mr=0,Acc=0,L>=1] 
+
+
+#### Cost of loops [24] 
+
+ * loop 24:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2
+#### Cost of phase [24]:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2*it(24)+0
+  Such that:it(24) =< L1r
+it(24) =< L1r-L1r'
+it(24) >= L1r-L1r'
+
+#### Cost of loops [23] 
+
+ * loop 23:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2
+#### Cost of phase [23]:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2*it(23)+0
+  Such that:it(23) =< L1r
+it(23) =< L1r-L1r'
+it(23) >= L1r-L1r'
+
+#### Cost of loops [22] 
+
+ * loop 22:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2*s(8)+2
+  Such that:s(8) =< L1c'
+s(8) >= L1c'
+
+#### Cost of phase [22]:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2*it(22)+2*s(9)+0
+  Such that:it(22) =< L1r
+it(22) =< L1r-L1r'
+aux(9) =< L1c
+s(9) =< it(22)*aux(9)
+aux(8) >= L1c
+aux(10) >= L1r-L1r'
+it(22) >= aux(10)
+s(9) >= aux(10)
+s(9) >= it(22)*aux(8)
+
+#### Cost of loops [21] 
+
+ * loop 21:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2*s(11)+2
+  Such that:s(11) =< L2r'
+s(11) >= L2r'
+
+#### Cost of phase [21]:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2*it(21)+2*s(12)+0
+  Such that:it(21) =< L1r
+it(21) =< L1r-L1r'
+aux(12) =< L2r
+s(12) =< it(21)*aux(12)
+aux(11) >= L2r
+aux(13) >= L1r-L1r'
+it(21) >= aux(13)
+s(12) >= aux(13)
+s(12) >= it(21)*aux(11)
+
+#### Cost of loops [20] 
+
+ * loop 20:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+3*s(23)+2*s(22)+3*s(21)+1*s(26)+1*s(27)+2
+  Such that:s(21)+s(22)+s(23) =< L1c'
+s(24) >= L2c-1
+s(25) >= L1c'
+s(25) >= s(25)
+s(21)+s(22)+s(23) >= s(25)
+s(21)+s(23)+s(26) >= s(25)
+s(22)+s(23)+s(27) >= s(25)
+s(28) >= s(24)+1
+s(27) >= s(21)*s(24)
+s(26) >= s(22)*s(28)
+
+#### Cost of phase [20]:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2*it(20)+3*s(29)+2*s(30)+3*s(31)+1*s(32)+1*s(33)+0
+  Such that:it(20) =< L1r
+it(20) =< L1r-L1r'
+aux(15) =< L1c
+s(29)+s(30)+s(31) =< it(20)*aux(15)
+aux(14) >= L1c
+s(24) >= L2c-1
+aux(16) >= L1r-L1r'
+it(20) >= aux(16)
+s(34) >= aux(16)
+s(34) >= it(20)*aux(14)
+s(34) >= s(34)
+s(29)+s(30)+s(31) >= s(34)
+s(29)+s(31)+s(32) >= s(34)
+s(29)+s(30)+s(33) >= s(34)
+s(28) >= s(24)+1
+s(33) >= s(31)*s(24)
+s(32) >= s(30)*s(28)
+
+#### Cost of loops [19] 
+
+ * loop 19:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+3*s(45)+2*s(44)+3*s(43)+1*s(48)+1*s(49)+2
+  Such that:s(43)+s(44)+s(45) =< L2r
+s(46) >= L2c-1
+s(47) >= L2r'
+s(47) >= s(47)
+s(43)+s(44)+s(45) >= s(47)
+s(43)+s(45)+s(48) >= s(47)
+s(44)+s(45)+s(49) >= s(47)
+s(50) >= s(46)+1
+s(49) >= s(43)*s(46)
+s(48) >= s(44)*s(50)
+
+#### Cost of phase [19]:matrixMult(L1r,L1c,L2r,L2c) -> [matrixMult(L1r',L1c',L2r',L2c')] 
+2*it(19)+3*s(51)+2*s(52)+3*s(53)+1*s(54)+1*s(55)+0
+  Such that:it(19) =< L1r
+it(19) =< L1r-L1r'
+aux(18) =< L2r
+s(51)+s(52)+s(53) =< it(19)*aux(18)
+aux(17) >= L2r
+s(46) >= L2c-1
+aux(19) >= L1r-L1r'
+it(19) >= aux(19)
+s(56) >= aux(19)
+s(56) >= it(19)*aux(17)
+s(56) >= s(56)
+s(51)+s(52)+s(53) >= s(56)
+s(51)+s(53)+s(54) >= s(56)
+s(51)+s(52)+s(55) >= s(56)
+s(50) >= s(46)+1
+s(55) >= s(53)*s(46)
+s(54) >= s(52)*s(50)
+
+#### Cost of chains of matrixMult(L1r,L1c,L2r,L2c):
+* Chain [[24],18]: 2*it(24)+1
+  Such that:it(24) =< L1r
+it(24) >= L1r
+
+  with precondition: [L1c=0,L1r>=1] 
+
+* Chain [[23],18]: 2*it(23)+1
+  Such that:it(23) =< L1r
+it(23) >= L1r
+
+  with precondition: [L2r=0,L1r>=1,L1c>=1] 
+
+* Chain [[22],18]: 2*it(22)+2*s(9)+1
+  Such that:it(22) =< L1r
+aux(9) =< L1c
+s(9) =< it(22)*aux(9)
+aux(10) >= L1r
+aux(8) >= L1c
+it(22) >= aux(10)
+s(9) >= aux(10)
+s(9) >= it(22)*aux(8)
+
+  with precondition: [L2c=0,L1r>=1,L1c>=1,L2r>=L1c] 
+
+* Chain [[21],18]: 2*it(21)+2*s(12)+1
+  Such that:it(21) =< L1r
+aux(12) =< L2r
+s(12) =< it(21)*aux(12)
+aux(13) >= L1r
+aux(11) >= L2r
+it(21) >= aux(13)
+s(12) >= aux(13)
+s(12) >= it(21)*aux(11)
+
+  with precondition: [L2c=0,L1r>=1,L2r>=1,L1c>=L2r+1] 
+
+* Chain [[20],18]: 2*it(20)+3*s(29)+2*s(30)+3*s(31)+1*s(32)+1*s(33)+1
+  Such that:it(20) =< L1r
+aux(15) =< L1c
+s(29)+s(30)+s(31) =< it(20)*aux(15)
+aux(16) >= L1r
+aux(14) >= L1c
+s(24) >= L2c-1
+it(20) >= aux(16)
+s(34) >= aux(16)
+s(34) >= it(20)*aux(14)
+s(34) >= s(34)
+s(29)+s(30)+s(31) >= s(34)
+s(29)+s(31)+s(32) >= s(34)
+s(29)+s(30)+s(33) >= s(34)
+s(28) >= s(24)+1
+s(33) >= s(31)*s(24)
+s(32) >= s(30)*s(28)
+
+  with precondition: [L1r>=1,L1c>=1,L2c>=1,L2r>=L1c] 
+
+* Chain [[19],18]: 2*it(19)+3*s(51)+2*s(52)+3*s(53)+1*s(54)+1*s(55)+1
+  Such that:it(19) =< L1r
+aux(18) =< L2r
+s(51)+s(52)+s(53) =< it(19)*aux(18)
+aux(19) >= L1r
+aux(17) >= L2r
+s(46) >= L2c-1
+it(19) >= aux(19)
+s(56) >= aux(19)
+s(56) >= it(19)*aux(17)
+s(56) >= s(56)
+s(51)+s(52)+s(53) >= s(56)
+s(51)+s(53)+s(54) >= s(56)
+s(51)+s(52)+s(55) >= s(56)
+s(50) >= s(46)+1
+s(55) >= s(53)*s(46)
+s(54) >= s(52)*s(50)
+
+  with precondition: [L1r>=1,L2r>=1,L2c>=1,L1c>=L2r+1] 
+
+* Chain [18]: 1
+  with precondition: [L1r=0] 
+
+
+Closed-form bounds of matrixMult(L1r,L1c,L2r,L2c): 
+-------------------------------------
+* Chain [[24],18] with precondition: [L1c=0,L1r>=1] 
+    - Lower bound: 2*L1r+1 
+    - Complexity: n
+ * Chain [[23],18] with precondition: [L2r=0,L1r>=1,L1c>=1] 
+    - Lower bound: 2*L1r+1 
+    - Complexity: n
+ * Chain [[22],18] with precondition: [L2c=0,L1r>=1,L1c>=1,L2r>=L1c] 
+    - Lower bound: 2*L1r+1+2*L1c*L1r 
+    - Complexity: n^2
+ * Chain [[21],18] with precondition: [L2c=0,L1r>=1,L2r>=1,L1c>=L2r+1] 
+    - Lower bound: 2*L1r+1+2*L2r*L1r 
+    - Complexity: n^2
+ * Chain [[20],18] with precondition: [L1r>=1,L1c>=1,L2c>=1,L2r>=L1c] 
+    - Lower bound: 2*L1r+1+3*L1c*L1r 
+    - Complexity: n^2
+ * Chain [[19],18] with precondition: [L1r>=1,L2r>=1,L2c>=1,L1c>=L2r+1] 
+    - Lower bound: 2*L1r+1+3*L2r*L1r 
+    - Complexity: n^2
+ * Chain [18] with precondition: [L1r=0] 
+    - Lower bound: 1 
+    - Complexity: constant
+ 
+### Partitioned lower bound of matrixMult(L1r,L1c,L2r,L2c): 
+* 1 
+ if [L1r=0]
+* 2*L1r+1 
+ if [L2r=0,L1r>=1,L1c>=1]
+ or [L1c=0,L1r>=1]
+* 2*L1r+1+2*L1c*L1r 
+ if [L2c=0,L1r>=1,L1c>=1,L2r>=L1c]
+* 2*L1r+1+2*L2r*L1r 
+ if [L2c=0,L1r>=1,L2r>=1,L1c>=L2r+1]
+* 2*L1r+1+3*L1c*L1r 
+ if [L1r>=1,L1c>=1,L2c>=1,L2r>=L1c]
+* 2*L1r+1+3*L2r*L1r 
+ if [L1r>=1,L2r>=1,L2c>=1,L1c>=L2r+1]
+Possible lower bounds : [1,2*L1r+1,2*L1r+1+2*L1c*L1r,2*L1r+1+2*L2r*L1r,2*L1r+1+3*L1c*L1r,2*L1r+1+3*L2r*L1r]
+Maximum lower bound complexity: n^2
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 18 ms.
+* Invariants computed in 202 ms.
+   - Backward Invariants 93 ms.
+   - Transitive Invariants 53 ms.
+* Refinement performed in 205 ms.
+* Termination proved in 71 ms.
+* Upper bounds computed in 538 ms.
+   - Equation cost structures 72 ms.
+   - Phase cost structures 326 ms.
+   - Chain cost structures 132 ms.
+   - Solving cost expressions 18 ms.
+* Total analysis performed in 1087 ms.
+

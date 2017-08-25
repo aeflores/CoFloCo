@@ -1,0 +1,354 @@
+/* Translation to ABS of
+ * File:
+ *   examples/workingwithlists.raml
+ *
+ * 
+ * Description:
+ *   The first section ("Working with Lists") from the OCaml tutorial
+ *   "99 Problems (solved) in OCaml": 
+ *     https://ocaml.org/learn/tutorials/99problems.html
+ *   
+ */
+module Workingwithlists;
+
+def  Maybe<A> last<A>(List<A> l) =
+	case l {
+	 Nil => Nothing;
+	 Cons(x,xs) =>  case xs {
+	 	         Nil =>Just(x);
+                         Cons(_,_) => last(xs);
+			 };
+	};
+
+def  Maybe<Pair<A,A>> last_two<A>(List<A> l) =
+	case l {
+	 Nil => Nothing;
+	 Cons(x,xs) =>  case xs {
+	 	         Nil => Nothing;
+                         Cons(y,ys) =>	case ys {
+	 	         	    Nil => Just(Pair(x,y));
+                         	    Cons(_,_) => last_two(xs);
+			 	    };
+			 };
+	};
+
+
+def  Maybe<A> at<A>(Int k,List<A> l) =
+	case l {
+	 Nil => Nothing;
+	 Cons(h,t) => if k==0 then Just(h)
+                      else at(k-1,t);
+	};
+
+
+
+def Int aux_length<A>(List<A> list,Int n) = 
+   case list { 
+      Nil => n ; 
+      Cons(_, t) => aux_length(t,n+1) ; 
+   };
+def Int lengthL<A>(List<A> list) = aux_length(list,0);
+
+
+def List<A> aux_rev<A>(List<A> acc,List<A> l) = 
+   case l { 
+      Nil => acc ; 
+      Cons(h, t) => aux_rev(Cons(h,acc),t) ; 
+   };
+def List<A> rev<A>(List<A> l) = aux_rev(Nil,l);
+
+def  Bool eq_lists(List<Int> l1,List<Int> l2) =
+	case l1 {
+	 Nil => case l2{
+ 	     	Nil => True;
+		Cons(_,_) => False;
+		};
+	 Cons(x1,x1s) =>
+	 	case l2{
+ 	     	Nil => False;
+		Cons(x2,x2s) => x1==x2 && eq_lists(x1s,x2s);
+		}; 
+	};
+
+def Bool is_palindrome(List<Int> list)= eq_lists(list,rev(list));
+
+
+def List<Int> compress(List<Int> l)=
+    case l {
+       Nil=> Nil;
+       Cons(x,xs) => case xs {
+       	     Nil=> Cons(x,Nil);
+       	     Cons(y,ys) => if x==y then compress(Cons(y,ys)) 
+	     		   else Cons(x,compress(Cons(y,ys)));
+	   
+	     };
+       };
+
+// auxiliar function
+def List<List<Int>> pack_aux(List<Int> current,List<List<Int>> acc,List<Int> l)=
+    case l {
+       Nil=> Nil;
+       Cons(a,t) => case t {
+       	     Nil=> Cons(Cons(a,current),acc);
+       	     Cons(b,_) => if a==b then pack_aux(Cons(a,current),acc,t) 
+	     		   else pack_aux(Nil,Cons(Cons(a,current),acc),t);
+	   
+	     };
+       };
+def List<List<Int>> pack(List<Int> list)= pack_aux(Nil,Nil,list);
+
+// auxiliar function
+def List<Pair<Int,Int>> encode_aux(Int count,List<Pair<Int,Int>> acc,List<Int> l)=
+    case l {
+       Nil=> Nil;
+       Cons(a,t) => case t {
+       	     Nil=> Cons(Pair(count+1,a),acc);
+       	     Cons(b,_) => if a==b then encode_aux(count+1,acc,t) 
+	     		   else encode_aux(0,Cons(Pair(count+1,a),acc),t);
+	   
+	     };
+       };
+
+def List<Pair<Int,Int>> encode(List<Int> list)= encode_aux(0,Nil,list);
+
+
+def List<A> duplicate<A>(List<A> list) = 
+   case list { 
+      Nil => Nil ; 
+      Cons(h, t) => Cons(h,Cons(h,duplicate(t))); 
+   };
+
+
+
+def List<A> prepend<A>(Int n,List<A> acc,A x)=
+    if n==0 then acc 
+    else prepend(n-1,Cons(x,acc),x);
+
+// auxiliar function
+def List<A> replicate_aux<A>(List<A> acc,List<A> list,Int n) = 
+   case list { 
+      Nil => acc ; 
+      Cons(h, t) => replicate_aux(prepend(n,acc,h),t,n); 
+   };
+
+def List<A> replicate<A>(List<A> list,Int n)=replicate_aux(Nil,rev(list),n);
+
+// auxiliar function
+def List<A> drop_aux<A>(Int n,Int i,List<A> l)=
+    case l {
+     Nil => Nil;
+     Cons(h,t) => if i==n then drop_aux(n,1,t)
+     	       	  else Cons(h,drop_aux(n,i+1,t));
+     };
+def List<A> drop<A>(List<A> list,Int n)= drop_aux(n,1,list);
+
+
+// auxiliar function
+def Pair<List<A>,List<A>> split_aux<A>(Int i,List<A> acc,List<A> l)=
+    case l {
+     Nil => Pair(rev(acc),Nil);
+     Cons(h,t) => if i==0 then Pair(rev(acc),l)
+     	       	  else split_aux(i-1,Cons(h,acc),t);
+     };
+def Pair<List<A>,List<A>> split<A>(List<A> list,Int n)= split_aux(n,Nil,list);
+
+
+// auxiliar function
+def List<A> take_slice<A>(Int n, List<A> l)=
+    case l{
+    Nil => Nil;
+    Cons(h,t) => if n==0 then Nil
+    	      	 else Cons(h,take_slice(n-1,t));
+		 };
+// auxiliar function
+def List<A> drop_slice<A>(Int n, List<A> l)=
+    case l{
+    Nil => Nil;
+    Cons(h,t) => if n==0 then l
+    	      	 else drop_slice(n-1,t);
+		 };
+ 
+def List<A> slice<A>(List<A> list,Int b,Int e)= take_slice(e-b+1,drop_slice(b-1,list));
+ 
+
+
+def  List<A> concat<A>(List<A> l1,List<A> l2) =
+	case l1 {
+	 Nil => l2;
+	 Cons(x,xs) => Cons(x,concat(xs,l2));	 
+	};
+
+def List<A> rotate<A>(List<A> list,Int n) =
+     let (Int len)=lengthL(list) in
+     let (Int n2)= if len==0 then 0 else (n % len+len) % len in
+     if n2==0 then list
+     else let (Pair<List<A>,List<A>> pair)= split(list,n) in
+           case pair{
+	    Pair(a,b) => concat(b,a);
+	    };
+
+
+def List<A> removeAt<A>(Int n,List<A> l) =
+    case l {
+    Nil => Nil;
+    Cons(h,t) => if n==1 then t 
+    	      	 else Cons(h,removeAt(n-1,t));
+    };	 
+
+def List<A> insertAt<A>(A x,Int n,List<A> l) =
+    case l {
+    Nil => Nil;
+    Cons(h,t) => if n==1 then Cons(x,Cons(h,t)) 
+    	      	 else Cons(h,insertAt(x,n-1,t));
+    };	 
+
+def List<Int> minusminus_aux(Int a,Int b)=
+    if a>b then Nil else Cons(a,minusminus_aux(a+1,b));
+
+def List<Int> minusminus(Int a,Int b)=
+    if a>b then rev(minusminus_aux(b,a)) 
+    else minusminus_aux(a,b);
+
+def Int randomL(Int n)= 1337 % n;
+
+def Int minL(Int m,Int n)= 
+    if(m<n) then m
+    else n;
+
+def Pair<Int,List<Int>> rand_select_extract(List<Int> acc,Int n,List<Int> l)=
+   case l {
+    Nil => Pair(0,Nil);
+    Cons(h,t) => if n==0 then Pair(h,concat(acc,t))
+    	         else rand_select_extract(Cons(h,acc),n-1,t);
+		 };
+def Pair<Int,List<Int>> rand_select_extract_rand(List<Int> list,Int len)=
+    rand_select_extract(Nil,randomL(len),list);
+
+def List<Int> rand_select_aux(Int n,List<Int> acc,List<Int> list,Int len)=
+    if n==0 then acc
+    else
+       let (Pair<Int,List<Int>>  pair)=rand_select_extract_rand(list,len) in
+       case pair {
+         Pair(picked,rest) => rand_select_aux(n-1,Cons(picked,acc),rest,len-1);
+	 };
+
+def List<Int> rand_select(List<Int> list,Int n)=
+    let (Int len)=lengthL(list) in
+    rand_select_aux(minL(n,len),Nil,list,len);
+
+def List<Int> lotto_select(Int n,Int m)= rand_select(minusminus(1,m),n);
+
+/*
+//this one was commented out
+let extract k list = 
+
+  let rec aux k acc emit = function
+    | [] -> acc
+    | h :: t -> 
+      if k = 1 then aux k (emit [h] acc) emit t else 
+	let new_emit x = emit (h :: x) in
+	aux k (aux (k-1) acc new_emit t) emit t
+  in
+
+  let emit x acc = x :: acc in
+
+  aux k [] emit list 
+;;
+
+*/
+
+
+def B snd_raml<A,B>(Pair<A,B> x)=
+    case x {
+     Pair(a,b) => b;
+     };
+
+def A fst_raml<A,B>(Pair<A,B> x)=
+    case x {
+     Pair(a,b) => a;
+     };
+
+/*
+// Higher order
+let rec map f l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); (f x)::map f xs);;
+
+*/
+
+
+/*
+
+(*
+let group list sizes = 
+
+  let initial = map (fun size -> size, []) sizes in
+
+  (* The core of the function. Prepend accepts a list of groups, each with 
+     the number of items that should be added, and prepends the item to every
+     group that can support it, thus turning [1,a ; 2,b ; 0,c] into 
+     [ [0,x::a ; 2,b ; 0,c ] ; [1,a ; 1,x::b ; 0,c] ; [ 1,a ; 2,b ; 0,c ]]
+     Again, in the prolog language (for which these questions are intended),
+     this function is a whole lot simpler.
+  *) 
+  let prepend p list = 
+    let emit l acc = l :: acc in
+    let rec aux emit acc = function
+      | [] -> emit [] acc
+      | (n,l) as h :: t -> 
+	let acc = if n > 0 then emit ((n-1, p::l) :: t) acc else acc in 
+	aux (fun l acc -> emit (h :: l) acc) acc t 
+    in    
+    aux emit [] list
+  in
+
+  let rec aux = function
+    | [] -> [ initial ]
+    | h :: t -> concat (map (prepend h) (aux t))
+  in
+
+  let all = aux list in 
+
+  (* Don't forget to eliminate all group sets that have non-full groups *)
+  let complete = List.filter (List.for_all (fun (x,_) -> x = 0)) all in
+
+  map (map snd) complete
+;;
+*)
+
+*/
+
+
+
+/*
+//higher order
+
+let rec insert cmp e = function
+  | [] -> [e]
+  | h :: t -> (Raml.tick(1.0); if cmp e h <= 0 then e :: h :: t else h :: insert cmp e t)
+;;
+
+let rec sort cmp = function
+  | [] -> []
+  | h :: t -> (Raml.tick(1.0); insert cmp h (sort cmp t))
+;;	     
+
+(* Sorting according to length : prepend length, sort, remove length *)
+
+let compare x y =
+	(Raml.tick(1.0);
+	if (x = y) then 0
+	else if ((x:int) < (y:int)) then -1
+	else 1);;
+
+let length_sort lists = 
+  let lists = map (fun list -> lengthL list, list) lists in
+  let lists = sort (fun a b -> compare (fst a) (fst b)) lists in
+  map snd lists
+;;
+
+*/
+
+
+{}

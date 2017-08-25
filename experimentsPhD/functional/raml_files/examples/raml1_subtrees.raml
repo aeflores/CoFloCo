@@ -1,0 +1,40 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   tests/subtrees.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   Compute the list of subtrees of a tree.
+ *   
+ *)
+
+
+
+let rec append l1 l2 =
+	match l1 with
+	| [] -> l2
+	| x::xs -> (Raml.tick(1.0); x::append xs l2);;
+
+type tree =
+	  Leaf
+	| Node of int * tree * tree;;
+
+let rec subtrees t =
+	match t with
+	| Leaf -> []
+	| Node(x, t1, t2) ->
+		let l1 = subtrees t1 in
+		let l2 = subtrees t2 in
+		(Raml.tick(1.0); Node(x, t1, t2)::append l1 l2);;
+
+let t =
+  Node (1, Node (2, Node(3,Leaf,Leaf), Leaf), Node (4,Leaf,Leaf))
+in
+subtrees (Node (0,t,t))

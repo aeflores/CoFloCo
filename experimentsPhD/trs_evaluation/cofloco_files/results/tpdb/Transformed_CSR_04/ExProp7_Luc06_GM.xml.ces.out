@@ -1,0 +1,217 @@
+
+Preprocessing Cost Relations
+=====================================
+0. SCC does not have a single cut point : [fun/2,mark/2]  
+ Merged into funmark/2
+
+#### Computed strongly connected components 
+1. non_recursive  : [start/1]
+0. recursive [multiple] : [fun1/2,funmark/2]
+
+#### Obtained direct recursion through partial evaluation 
+1. SCC is partially evaluated into start/1
+0. SCC is partially evaluated into funmark/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations funmark/2 
+* CE 5 is refined into CE [14] 
+* CE 13 is refined into CE [15] 
+* CE 6 is refined into CE [16] 
+* CE 10 is refined into CE [17] 
+* CE 9 is refined into CE [18] 
+* CE 12 is refined into CE [19] 
+* CE 7 is refined into CE [20] 
+* CE 8 is refined into CE [21] 
+* CE 11 is refined into CE [22] 
+
+
+#### Refined cost equations funmark/2 
+* CE 14: funmark(A,B) = 2+ funmark(C,D)
+     [D>=0,C>=0,D+1=B,C+1=A] 
+* CE 15: funmark(A,B) = 1+ funmark(C,D)
+     [A+D>=B,B>=D+1,A+D=B+C] 
+* CE 16: funmark(A,B) = 2+ funmark(C,B)
+     [C=2,A=1] 
+* CE 17: funmark(A,B) = 1
+     [A>=0,A+1=B] 
+* CE 18: funmark(A,B) = 1
+     [B=3,A=0] 
+* CE 19: funmark(A,B) = 1
+     [B=0,A=0] 
+* CE 20: funmark(A,B) = 2+ funmark(C,D)+ funmark(E,B)
+     [E>=0,C>=0,E+1=D,C+1=A] 
+* CE 21: funmark(A,B) = 2+ funmark(C,D)+ funmark(D,B)
+     [C=0,A=1] 
+* CE 22: funmark(A,B) = 1+ funmark(C,D)+ funmark(D,B)
+     [C>=0,C+1=A] 
+
+### Cost equations --> "Loop" of funmark/2 
+* CEs [20] --> Loop 9 
+* CEs [21,22] --> Loop 10 
+* CEs [17] --> Loop 11 
+* CEs [18] --> Loop 12 
+* CEs [19] --> Loop 13 
+* CEs [14,15] --> Loop 14 
+* CEs [16] --> Loop 15 
+
+#### Loops of funmark/2 
+* Loop 9: funmark(A,B)->  funmark(A',B')  funmark(A'2,B)
+                  [B'>=1,A>=1,B'=A'2+1,A=A'+1] 
+* Loop 10: funmark(A,B)->  funmark(A',B')  funmark(B',B)
+                  [A'>=0,A'+1=A] 
+* Loop 11: funmark(A,B) [A>=0,A+1=B] 
+* Loop 12: funmark(A,B) [B=3,A=0] 
+* Loop 13: funmark(A,B) [B=0,A=0] 
+* Loop 14: funmark(A,B)->  funmark(A',B')
+                  [A>=A'+1,A'>=0,B+A'=A+B'] 
+* Loop 15: funmark(A,B)->  funmark(A',B)
+                  [A'=2,A=1] 
+
+### Ranking functions of CR funmark(A,B) 
+
+#### Partial ranking functions of CR funmark(A,B) 
+* Partial RF of phase [9,10,14,15]:
+  - RF of loop [9:1,10:1,14:1]:
+    A depends on loops [9:2,10:2,15:1] 
+  - RF of loop [15:1]:
+    -A+2 depends on loops [9:1,9:2,10:1,10:2,14:1] 
+
+
+### Resulting Chains:funmark(A,B) 
+* [multiple([9,10,14,15],[[],[13],[12],[11]])]...
+* [13]
+* [12]
+* [11]
+
+
+### Merging Chains  funmark/2 into  External patterns of execution 
+* [[13]] --> 1 
+* [[12]] --> 2 
+* [[11]] --> 3 
+* [[multiple([9,10,14,15],[[],[13],[12],[11]])]] --> 4 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [23] 
+* CE 3 is refined into CE [24,25,26,27] 
+* CE 4 is refined into CE [28,29,30,31] 
+
+
+#### Refined cost equations start/1 
+* CE 23: start(V) = 1
+     [V>=0] 
+* CE 24: start(V) = 1+ funmark(W,X):1
+     [X=0,W=0,V=1] 
+* CE 25: start(V) = 1+ funmark(W,X):2
+     [X=3,W=0,V=1] 
+* CE 26: start(V) = 1+ funmark(W,V):3
+     [V>=1,V=W+1] 
+* CE 27: start(V) = 1+ funmark(W,X):4
+     [W>=1,W+1=V] 
+* CE 28: start(V) = 0+ funmark(W,X):1
+     [X=0,W=0,V=0] 
+* CE 29: start(V) = 0+ funmark(W,X):2
+     [X=3,W=0,V=0] 
+* CE 30: start(V) = 0+ funmark(W,X):3
+     [X>=1,X=W+1,X=V+1] 
+* CE 31: start(V) = 0+ funmark(V,W):4
+     [V>=1] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [27,31] --> Loop 16 
+* CEs [24,25] --> Loop 17 
+* CEs [23,26,28,29,30] --> Loop 18 
+
+#### Loops of start/1 
+* Loop 16: start(V) [V>=1] 
+* Loop 17: start(V) [V=1] 
+* Loop 18: start(V) [V>=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [18]
+* [17]
+* [16]...
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[17],[18]] --> 1 
+* [[16]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [9,10,14,15] 
+
+ * loop 9:funmark(A,B) -> [funmark(A',B'),funmark(A'2,B'2)] 
+2
+ * loop 10:funmark(A,B) -> [funmark(A',B'),funmark(A'2,B'2)] 
+2
+ * loop 14:funmark(A,B) -> [funmark(A',B')] 
+2
+ * loop 15:funmark(A,B) -> [funmark(A',B')] 
+2
+#### Cost of phase [9,10,14,15]:funmark(A,B) -> [] 
+8*it(9)+3*it([11])+0
+#### Cost of chains of funmark(A,B):
+* Chain [multiple([9,10,14,15],[[],[13],[12],[11]])]...: 8*it(9)+3*it([11])+0
+  with precondition: [A>=1] 
+
+* Chain [13]: 1
+  with precondition: [A=0,B=0] 
+
+* Chain [12]: 1
+  with precondition: [A=0,B=3] 
+
+* Chain [11]: 1
+  with precondition: [A+1=B,A>=0] 
+
+
+#### Cost of chains of start(V):
+* Chain [18]: 2
+  with precondition: [V>=0] 
+
+* Chain [17]: 2
+  with precondition: [V=1] 
+
+* Chain [16]...: 1*aux(33)+0
+  with precondition: [V>=1] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [18] with precondition: [V>=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [17] with precondition: [V=1] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [16]... with precondition: [V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 31 ms.
+* Invariants computed in 26 ms.
+   - Backward Invariants 4 ms.
+   - Transitive Invariants 7 ms.
+* Refinement performed in 91 ms.
+* Termination proved in 16 ms.
+* Upper bounds computed in 185 ms.
+   - Equation cost structures 21 ms.
+   - Phase cost structures 169 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 394 ms.
+

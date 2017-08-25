@@ -1,0 +1,636 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [app/3]
+1. non_recursive  : [head/2]
+2. recursive [non_tail] : [reverse/2]
+3. non_recursive  : [null/2]
+4. non_recursive  : [tail/2]
+5. recursive  : [if/5,shuff/3]
+6. non_recursive  : [shuffle/2]
+7. non_recursive  : [start/4]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into app/3
+1. SCC is partially evaluated into head/2
+2. SCC is partially evaluated into reverse/2
+3. SCC is partially evaluated into null/2
+4. SCC is partially evaluated into tail/2
+5. SCC is partially evaluated into shuff/3
+6. SCC is completely evaluated into other SCCs
+7. SCC is partially evaluated into start/4
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations app/3 
+* CE 22 is refined into CE [23] 
+* CE 21 is refined into CE [24] 
+
+
+#### Refined cost equations app/3 
+* CE 23: app(V,V7,Out) = 1+ app(W7,V7,X7)
+     [V+X7>=Out,Out>=X7+1,V7>=0,V+X7=Out+W7] 
+* CE 24: app(A,B,B) = 1
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of app/3 
+* CEs [24] --> Loop 15 
+* CEs [23] --> Loop 16 
+
+#### Loops of app/3 
+* Loop 15: app(A,B,B) [B>=0,A=0] 
+* Loop 16: app(V,V7,Out)->  app(V',V7,Out')
+                  [V+Out'>=Out,Out>=Out'+1,V7>=0,V+Out'=Out+V'] 
+
+### Ranking functions of CR app(V,V7,Out) 
+* RF of phase [16]: [V]
+
+#### Partial ranking functions of CR app(V,V7,Out) 
+* Partial RF of phase [16]:
+  - RF of loop [16:1]:
+    V
+
+
+### Resulting Chains:app(V,V7,Out) 
+* [[16],15]
+* [15]
+
+
+### Merging Chains  app/3 into  External patterns of execution 
+* [[15]] --> 1 
+* [[15,[16]]] --> 2 
+
+
+### Specialization of cost equations head/2 
+* CE 19 is refined into CE [25] 
+* CE 20 is refined into CE [26] 
+
+
+#### Refined cost equations head/2 
+* CE 25: head(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 26: head(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of head/2 
+* CEs [25] --> Loop 17 
+* CEs [26] --> Loop 18 
+
+#### Loops of head/2 
+* Loop 17: head(V,Out) [V>=Out+1,Out>=0] 
+* Loop 18: head(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR head(V,Out) 
+
+#### Partial ranking functions of CR head(V,Out) 
+
+
+### Resulting Chains:head(V,Out) 
+* [18]
+* [17]
+
+
+### Merging Chains  head/2 into  External patterns of execution 
+* [[18]] --> 1 
+* [[17]] --> 2 
+
+
+### Specialization of cost equations reverse/2 
+* CE 14 is refined into CE [27,28] 
+* CE 13 is refined into CE [29] 
+
+
+#### Refined cost equations reverse/2 
+* CE 27: reverse(V,Out) = 1+ reverse(W,X)+ app(Y,Out,Out):1
+     [W>=0,Out>=1,Out+W=V,X=0,Y=0] 
+* CE 28: reverse(V,Out) = 1+ reverse(W,X)+ app(X,Y,Out):2
+     [Out>=X+1,W>=0,X>=1,Out+W=V+X,Out=X+Y] 
+* CE 29: reverse(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of reverse/2 
+* CEs [29] --> Loop 19 
+* CEs [28] --> Loop 20 
+* CEs [27] --> Loop 21 
+
+#### Loops of reverse/2 
+* Loop 19: reverse(V,Out) [Out=0,V=0] 
+* Loop 20: reverse(V,Out)->  reverse(V',Out')
+                  [Out+V'>=V+1,V>=V'+1,V'>=0,V+Out'=Out+V'] 
+* Loop 21: reverse(V,Out)->  reverse(V',Out')
+                  [V>=Out,Out>=1,Out+V'=V,Out'=0] 
+
+### Ranking functions of CR reverse(V,Out) 
+* RF of phase [20]: [V]
+
+#### Partial ranking functions of CR reverse(V,Out) 
+* Partial RF of phase [20]:
+  - RF of loop [20:1]:
+    V
+
+
+### Resulting Chains:reverse(V,Out) 
+* [[20],21,19]
+* [21,19]
+* [19]
+
+
+### Merging Chains  reverse/2 into  External patterns of execution 
+* [[19]] --> 1 
+* [[19,21],[19,21,[20]]] --> 2 
+
+
+### Specialization of cost equations null/2 
+* CE 18 is refined into CE [30] 
+* CE 17 is refined into CE [31] 
+
+
+#### Refined cost equations null/2 
+* CE 30: null(V,Out) = 1
+     [V>=1,Out=0] 
+* CE 31: null(V,Out) = 1
+     [Out=1,V=0] 
+
+### Cost equations --> "Loop" of null/2 
+* CEs [30] --> Loop 22 
+* CEs [31] --> Loop 23 
+
+#### Loops of null/2 
+* Loop 22: null(V,Out) [V>=1,Out=0] 
+* Loop 23: null(V,Out) [Out=1,V=0] 
+
+### Ranking functions of CR null(V,Out) 
+
+#### Partial ranking functions of CR null(V,Out) 
+
+
+### Resulting Chains:null(V,Out) 
+* [23]
+* [22]
+
+
+### Merging Chains  null/2 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+
+
+### Specialization of cost equations tail/2 
+* CE 11 is refined into CE [32] 
+* CE 12 is refined into CE [33] 
+
+
+#### Refined cost equations tail/2 
+* CE 32: tail(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 33: tail(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of tail/2 
+* CEs [32] --> Loop 24 
+* CEs [33] --> Loop 25 
+
+#### Loops of tail/2 
+* Loop 24: tail(V,Out) [V>=Out+1,Out>=0] 
+* Loop 25: tail(V,Out) [Out=0,V=0] 
+
+### Ranking functions of CR tail(V,Out) 
+
+#### Partial ranking functions of CR tail(V,Out) 
+
+
+### Resulting Chains:tail(V,Out) 
+* [25]
+* [24]
+
+
+### Merging Chains  tail/2 into  External patterns of execution 
+* [[25]] --> 1 
+* [[24]] --> 2 
+
+
+### Specialization of cost equations shuff/3 
+* CE 16 is refined into CE [34,35] 
+* CE 15 is refined into CE [36,37,38,39,40,41,42,43] 
+
+
+#### Refined cost equations shuff/3 
+* CE 34: shuff(V,V7,Out) = 2+ null(W7,X7):1+ head(Y7,Z7):1+ app(A8,B8,C8):1
+     [C8=1,B8=1,A8=0,Z7=0,Y7=0,X7=1,W7=0,Out=0,V7=0,V=0] 
+* CE 35: shuff(V,V7,Out) = 2+ null(W7,X7):1+ head(Y7,Z7):1+ app(A8,B8,C8):2
+     [C8>=2,C8=A8+1,C8=Out+1,C8=V7+1,B8=1,Z7=0,Y7=0,X7=1,W7=0,V=0] 
+* CE 36: shuff(V,V7,Out) = 2+ null(V,W7):2+ head(V,X7):1+ app(Y7,Z7,A8):1+ tail(V,B8):2+ reverse(C8,D8):1+ shuff(E8,F8,Out)
+     [V>=1,F8=1,E8=0,D8=0,C8=0,B8=0,A8=1,Z7=1,Y7=0,X7=0,W7=0,V7=0] 
+* CE 37: shuff(V,V7,Out) = 2+ null(V,W7):2+ head(V,X7):1+ app(Y7,Z7,A8):1+ tail(V,B8):2+ reverse(B8,B8):2+ shuff(B8,C8,Out)
+     [V>=B8+1,B8>=1,C8=1,A8=1,Z7=1,Y7=0,X7=0,W7=0,V7=0] 
+* CE 38: shuff(V,V7,Out) = 2+ null(V,W7):2+ head(V,X7):1+ app(Y7,Z7,A8):2+ tail(V,B8):2+ reverse(C8,D8):1+ shuff(E8,A8,Out)
+     [V>=1,A8>=2,A8=Y7+1,A8=V7+1,E8=0,D8=0,C8=0,B8=0,Z7=1,X7=0,W7=0] 
+* CE 39: shuff(V,V7,Out) = 2+ null(V,W7):2+ head(V,X7):1+ app(Y7,Z7,A8):2+ tail(V,B8):2+ reverse(B8,B8):2+ shuff(B8,A8,Out)
+     [V>=B8+1,B8>=1,A8>=2,A8=Y7+1,A8=V7+1,Z7=1,X7=0,W7=0] 
+* CE 40: shuff(V,V7,Out) = 2+ null(V,W7):2+ head(V,X7):2+ app(Y7,Z7,Z7):1+ tail(V,A8):2+ reverse(B8,C8):1+ shuff(D8,Z7,Out)
+     [V>=Z7,Z7>=1,Z7=X7+1,D8=0,C8=0,B8=0,A8=0,Y7=0,W7=0,V7=0] 
+* CE 41: shuff(V,V7,Out) = 2+ null(V,W7):2+ head(V,X7):2+ app(Y7,Z7,Z7):1+ tail(V,A8):2+ reverse(A8,A8):2+ shuff(A8,Z7,Out)
+     [V>=A8+1,V>=Z7,A8>=1,Z7>=1,Z7=X7+1,Y7=0,W7=0,V7=0] 
+* CE 42: shuff(V,V7,Out) = 2+ null(V,W7):2+ head(V,X7):2+ app(V7,Y7,Z7):2+ tail(V,A8):2+ reverse(B8,C8):1+ shuff(D8,Z7,Out)
+     [V+V7>=Z7,Z7>=V7+1,V7>=1,Z7=V7+Y7,Z7=V7+X7+1,D8=0,C8=0,B8=0,A8=0,W7=0] 
+* CE 43: shuff(V,V7,Out) = 2+ null(V,W7):2+ head(V,X7):2+ app(V7,Y7,Z7):2+ tail(V,A8):2+ reverse(A8,A8):2+ shuff(A8,Z7,Out)
+     [V+V7>=Z7,V>=A8+1,Z7>=V7+1,A8>=1,V7>=1,Z7=V7+Y7,Z7=V7+X7+1,W7=0] 
+
+### Cost equations --> "Loop" of shuff/3 
+* CEs [39,43] --> Loop 26 
+* CEs [38,42] --> Loop 27 
+* CEs [37,41] --> Loop 28 
+* CEs [36,40] --> Loop 29 
+* CEs [35] --> Loop 30 
+* CEs [34] --> Loop 31 
+
+#### Loops of shuff/3 
+* Loop 26: shuff(V,V7,Out)->  shuff(V',V7',Out)
+                  [V+V7>=V7',V>=V'+1,V7'>=V7+1,V'>=1,V7>=1] 
+* Loop 27: shuff(V,V7,Out)->  shuff(V',V7',Out)
+                  [V+V7>=V7',V7'>=V7+1,V7>=1,V'=0] 
+* Loop 28: shuff(V,V7,Out)->  shuff(V',V7',Out)
+                  [V>=V7',V>=V'+1,V7'>=1,V'>=1,V7=0] 
+* Loop 29: shuff(V,V7,Out)->  shuff(V',V7',Out)
+                  [V>=V7',V7'>=1,V'=0,V7=0] 
+* Loop 30: shuff(A,B,B) [B>=1,A=0] 
+* Loop 31: shuff(V,V7,Out) [Out=0,V7=0,V=0] 
+
+### Ranking functions of CR shuff(V,V7,Out) 
+* RF of phase [26]: [V-1]
+
+#### Partial ranking functions of CR shuff(V,V7,Out) 
+* Partial RF of phase [26]:
+  - RF of loop [26:1]:
+    V-1
+
+
+### Resulting Chains:shuff(V,V7,Out) 
+* [[26],27,30]
+* [31]
+* [30]
+* [29,30]
+* [28,[26],27,30]
+* [28,27,30]
+* [27,30]
+
+
+### Merging Chains  shuff/3 into  External patterns of execution 
+* [[31]] --> 1 
+* [[30]] --> 2 
+* [[30,27,28]] --> 3 
+* [[30,27,[26],28]] --> 4 
+* [[30,29]] --> 5 
+* [[30,27,[26]]] --> 6 
+* [[30,27]] --> 7 
+
+
+### Specialization of cost equations start/4 
+* CE 3 is refined into CE [44] 
+* CE 2 is refined into CE [45,46,47,48,49,50,51,52,53] 
+* CE 4 is refined into CE [54,55] 
+* CE 5 is refined into CE [56,57] 
+* CE 6 is refined into CE [58,59] 
+* CE 7 is refined into CE [60,61] 
+* CE 8 is refined into CE [62,63] 
+* CE 9 is refined into CE [64,65,66,67] 
+* CE 10 is refined into CE [68,69,70,71,72,73,74] 
+
+
+#### Refined cost equations start/4 
+* CE 44: start(V,V7,V21,V19) = 1
+     [V19>=0,V21>=0,V7>=0,V=1] 
+* CE 45: start(V,V7,V21,V19) = 1+ tail(W21,X21):1+ reverse(Y21,Z21):1+ shuff(A22,B22,C22):1
+     [V21>=0,C22=0,B22=0,A22=0,Z21=0,Y21=0,X21=0,W21=0,V19=0,V7=0,V=0] 
+* CE 46: start(V,V7,V21,V19) = 1+ tail(W21,X21):1+ reverse(Y21,Z21):1+ shuff(A22,V19,V19):2
+     [V19>=1,V21>=0,A22=0,Z21=0,Y21=0,X21=0,W21=0,V7=0,V=0] 
+* CE 47: start(V,V7,V21,V19) = 1+ tail(V7,W21):2+ reverse(X21,Y21):1+ shuff(Z21,A22,B22):1
+     [V7>=1,V21>=0,B22=0,A22=0,Z21=0,Y21=0,X21=0,W21=0,V19=0,V=0] 
+* CE 48: start(V,V7,V21,V19) = 1+ tail(V7,W21):2+ reverse(X21,Y21):1+ shuff(Z21,V19,V19):2
+     [V19>=1,V7>=1,V21>=0,Z21=0,Y21=0,X21=0,W21=0,V=0] 
+* CE 49: start(V,V7,V21,V19) = 1+ tail(V7,W21):2+ reverse(W21,W21):2+ shuff(W21,X21,Y21):3
+     [2*W21>=Y21+1,V7>=W21+1,Y21>=2,W21>=2,V21>=0,X21=0,V19=0,V=0] 
+* CE 50: start(V,V7,V21,V19) = 1+ tail(V7,W21):2+ reverse(W21,W21):2+ shuff(W21,X21,Y21):4
+     [V7>=W21+1,Y21>=3,W21>=3,V21>=0,X21=0,V19=0,V=0] 
+* CE 51: start(V,V7,V21,V19) = 1+ tail(V7,W21):2+ reverse(W21,W21):2+ shuff(W21,X21,Y21):5
+     [W21>=Y21,V7>=W21+1,Y21>=1,V21>=0,X21=0,V19=0,V=0] 
+* CE 52: start(V,V7,V21,V19) = 1+ tail(V7,W21):2+ reverse(W21,W21):2+ shuff(W21,V19,X21):6
+     [X21>=V19+2,V7>=W21+1,V19>=1,W21>=2,V21>=0,V=0] 
+* CE 53: start(V,V7,V21,V19) = 1+ tail(V7,W21):2+ reverse(W21,W21):2+ shuff(W21,V19,X21):7
+     [V19+W21>=X21,X21>=V19+1,V7>=W21+1,V19>=1,V21>=0,V=0] 
+* CE 54: start(V,V7,V21,V19) = 0+ null(W21,X21):1
+     [X21=1,W21=0,V=0] 
+* CE 55: start(V,V7,V21,V19) = 0+ null(V,W21):2
+     [V>=1,W21=0] 
+* CE 56: start(V,V7,V21,V19) = 0+ tail(W21,X21):1
+     [X21=0,W21=0,V=0] 
+* CE 57: start(V,V7,V21,V19) = 0+ tail(V,W21):2
+     [V>=W21+1,W21>=0] 
+* CE 58: start(V,V7,V21,V19) = 0+ head(V,W21):1
+     [V>=0,W21=0] 
+* CE 59: start(V,V7,V21,V19) = 0+ head(V,W21):2
+     [V>=W21+1,W21>=0] 
+* CE 60: start(V,V7,V21,V19) = 0+ app(W21,V7,V7):1
+     [V7>=0,W21=0,V=0] 
+* CE 61: start(V,V7,V21,V19) = 0+ app(V,W21,X21):2
+     [X21>=V,V>=1,X21=V+W21,X21=V+V7] 
+* CE 62: start(V,V7,V21,V19) = 0+ reverse(W21,X21):1
+     [X21=0,W21=0,V=0] 
+* CE 63: start(V,V7,V21,V19) = 0+ reverse(V,V):2
+     [V>=1] 
+* CE 64: start(V,V7,V21,V19) = 1+ shuff(W21,X21,Y21):1
+     [Y21=0,X21=0,W21=0,V=0] 
+* CE 65: start(V,V7,V21,V19) = 1+ shuff(V,W21,X21):3
+     [2*V>=X21+1,X21>=2,V>=2,W21=0] 
+* CE 66: start(V,V7,V21,V19) = 1+ shuff(V,W21,X21):4
+     [X21>=3,V>=3,W21=0] 
+* CE 67: start(V,V7,V21,V19) = 1+ shuff(V,W21,X21):5
+     [V>=X21,X21>=1,W21=0] 
+* CE 68: start(V,V7,V21,V19) = 0+ shuff(W21,X21,Y21):1
+     [Y21=0,X21=0,W21=0,V7=0,V=0] 
+* CE 69: start(V,V7,V21,V19) = 0+ shuff(W21,V7,V7):2
+     [V7>=1,W21=0,V=0] 
+* CE 70: start(V,V7,V21,V19) = 0+ shuff(V,W21,X21):3
+     [2*V>=X21+1,X21>=2,V>=2,W21=0,V7=0] 
+* CE 71: start(V,V7,V21,V19) = 0+ shuff(V,W21,X21):4
+     [X21>=3,V>=3,W21=0,V7=0] 
+* CE 72: start(V,V7,V21,V19) = 0+ shuff(V,W21,X21):5
+     [V>=X21,X21>=1,W21=0,V7=0] 
+* CE 73: start(V,V7,V21,V19) = 0+ shuff(V,V7,W21):6
+     [W21>=V7+2,V7>=1,V>=2] 
+* CE 74: start(V,V7,V21,V19) = 0+ shuff(V,V7,W21):7
+     [V+V7>=W21,W21>=V7+1,V7>=1] 
+
+### Cost equations --> "Loop" of start/4 
+* CEs [70,71,72] --> Loop 32 
+* CEs [44] --> Loop 33 
+* CEs [45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,73,74] --> Loop 34 
+
+#### Loops of start/4 
+* Loop 32: start(V,V7,V21,V19) [V>=1,V7=0] 
+* Loop 33: start(V,V7,V21,V19) [V19>=0,V21>=0,V7>=0,V=1] 
+* Loop 34: start(V,V7,V21,V19) [V>=0] 
+
+### Ranking functions of CR start(V,V7,V21,V19) 
+
+#### Partial ranking functions of CR start(V,V7,V21,V19) 
+
+
+### Resulting Chains:start(V,V7,V21,V19) 
+* [34]
+* [33]
+* [32]
+
+
+### Merging Chains  start/4 into  External patterns of execution 
+* [[33],[34]] --> 1 
+* [[32]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [16] 
+
+ * loop 16:app(V,V7,Out) -> [app(V',V7',Out')] 
+1
+#### Cost of phase [16]:app(V,V7,Out) -> [app(V',V7',Out')] 
+1*it(16)+0
+  Such that:it(16) =< V
+it(16) =< V-V'
+
+#### Cost of chains of app(V,V7,Out):
+* Chain [[16],15]: 1*it(16)+1
+  Such that:it(16) =< -V7+Out
+
+  with precondition: [V+V7=Out,V>=1,V7>=0] 
+
+* Chain [15]: 1
+  with precondition: [V=0,V7=Out,V7>=0] 
+
+
+#### Cost of chains of head(V,Out):
+* Chain [18]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [17]: 1
+  with precondition: [Out>=0,V>=Out+1] 
+
+
+#### Cost of loops [20] 
+
+ * loop 20:reverse(V,Out) -> [reverse(V',Out')] 
+1*s(2)+2
+  Such that:s(2) =< V'
+
+#### Cost of phase [20]:reverse(V,Out) -> [reverse(V',Out')] 
+2*it(20)+1*s(3)+0
+  Such that:it(20) =< V-V'
+aux(2) =< V
+it(20) =< aux(2)
+s(3) =< it(20)*aux(2)
+
+#### Cost of chains of reverse(V,Out):
+* Chain [[20],21,19]: 2*it(20)+1*s(3)+3
+  Such that:aux(3) =< Out
+it(20) =< aux(3)
+s(3) =< it(20)*aux(3)
+
+  with precondition: [Out=V,Out>=2] 
+
+* Chain [21,19]: 3
+  with precondition: [V=Out,V>=1] 
+
+* Chain [19]: 1
+  with precondition: [V=0,Out=0] 
+
+
+#### Cost of chains of null(V,Out):
+* Chain [23]: 1
+  with precondition: [V=0,Out=1] 
+
+* Chain [22]: 1
+  with precondition: [Out=0,V>=1] 
+
+
+#### Cost of chains of tail(V,Out):
+* Chain [25]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [24]: 1
+  with precondition: [Out>=0,V>=Out+1] 
+
+
+#### Cost of loops [26] 
+
+ * loop 26:shuff(V,V7,Out) -> [shuff(V',V7',Out')] 
+1*s(19)+4*s(21)+2*s(22)+1*s(18)+9
+  Such that:s(18) =< V7
+s(19) =< V7'
+s(20) =< V'
+s(21) =< s(20)
+s(22) =< s(21)*s(20)
+
+#### Cost of phase [26]:shuff(V,V7,Out) -> [shuff(V',V7',Out')] 
+9*it(26)+1*s(23)+4*s(24)+2*s(25)+1*s(26)+0
+  Such that:aux(11) =< V+V7
+it(26) =< V-V'
+aux(15) =< V
+it(26) =< aux(15)
+aux(9) =< aux(15)
+aux(14) =< it(26)*aux(9)
+aux(10) =< aux(11)+aux(14)
+s(23) =< it(26)*aux(10)
+s(24) =< aux(14)
+s(25) =< s(24)*aux(15)
+
+#### Cost of chains of shuff(V,V7,Out):
+* Chain [[26],27,30]: 9*it(26)+3*s(7)+1*s(23)+4*s(24)+2*s(25)+1*s(26)+11
+  Such that:aux(11) =< V+V7
+aux(16) =< V
+aux(17) =< Out
+it(26) =< aux(16)
+s(7) =< aux(17)
+aux(9) =< aux(16)
+aux(14) =< it(26)*aux(9)
+aux(10) =< aux(11)+aux(14)
+s(23) =< it(26)*aux(10)
+s(24) =< aux(14)
+s(25) =< s(24)*aux(16)
+
+  with precondition: [V>=2,V7>=1,Out>=V7+2] 
+
+* Chain [31]: 4
+  with precondition: [V=0,V7=0,Out=0] 
+
+* Chain [30]: 1*s(7)+4
+  Such that:s(7) =< V7
+
+  with precondition: [V=0,V7=Out,V7>=1] 
+
+* Chain [29,30]: 1*s(7)+11
+  Such that:s(7) =< Out
+
+  with precondition: [V7=0,Out>=1,V>=Out] 
+
+* Chain [28,[26],27,30]: 13*it(26)+3*s(7)+1*s(23)+4*s(24)+2*s(25)+1*s(26)+2*s(30)+20
+  Such that:aux(11) =< 2*V
+aux(17) =< Out
+aux(19) =< V
+it(26) =< aux(19)
+s(7) =< aux(17)
+aux(9) =< aux(19)
+aux(14) =< it(26)*aux(9)
+aux(10) =< aux(11)+aux(14)
+s(23) =< it(26)*aux(10)
+s(24) =< aux(14)
+s(25) =< s(24)*aux(19)
+s(30) =< it(26)*aux(19)
+
+  with precondition: [V7=0,V>=3,Out>=3] 
+
+* Chain [28,27,30]: 2*s(7)+5*s(9)+2*s(30)+20
+  Such that:aux(4) =< Out
+aux(20) =< V
+s(9) =< aux(20)
+s(7) =< aux(4)
+s(30) =< s(9)*aux(20)
+
+  with precondition: [V7=0,V>=2,Out>=2,2*V>=Out+1] 
+
+* Chain [27,30]: 2*s(7)+1*s(9)+11
+  Such that:s(9) =< V7
+aux(4) =< Out
+s(7) =< aux(4)
+
+  with precondition: [V7>=1,Out>=V7+1,V+V7>=Out] 
+
+
+#### Cost of chains of start(V,V7,V21,V19):
+* Chain [34]: 3*s(34)+40*s(37)+9*s(38)+2*s(42)+16*s(51)+1*s(55)+8*s(56)+4*s(57)+1*s(75)+2*s(84)+31*s(85)+5*s(88)+2*s(92)+1*s(102)+8*s(103)+4*s(104)+1*s(117)+2*s(123)+25
+  Such that:aux(25) =< V
+aux(26) =< V+V7
+aux(27) =< 2*V
+aux(28) =< V7
+aux(29) =< V7+V19
+aux(30) =< 2*V7
+aux(31) =< V19
+s(85) =< aux(25)
+s(37) =< aux(28)
+s(34) =< aux(31)
+s(88) =< s(85)*aux(25)
+s(92) =< aux(27)
+s(99) =< aux(25)
+s(100) =< s(85)*s(99)
+s(101) =< aux(27)+s(100)
+s(102) =< s(85)*s(101)
+s(103) =< s(100)
+s(104) =< s(103)*aux(25)
+s(116) =< aux(26)+s(100)
+s(117) =< s(85)*s(116)
+s(123) =< aux(26)
+s(38) =< s(37)*aux(28)
+s(84) =< aux(29)
+s(52) =< aux(28)
+s(53) =< s(37)*s(52)
+s(74) =< aux(29)+s(53)
+s(75) =< s(37)*s(74)
+s(56) =< s(53)
+s(57) =< s(56)*aux(28)
+s(42) =< aux(30)
+s(54) =< aux(30)+s(53)
+s(55) =< s(37)*s(54)
+
+  with precondition: [V>=0] 
+
+* Chain [33]: 1
+  with precondition: [V=1,V7>=0,V21>=0,V19>=0] 
+
+* Chain [32]: 19*s(126)+2*s(127)+4*s(128)+4*s(133)+1*s(137)+4*s(138)+2*s(139)+20
+  Such that:aux(32) =< V
+aux(33) =< 2*V
+s(126) =< aux(32)
+s(127) =< aux(33)
+s(128) =< s(126)*aux(32)
+s(134) =< aux(32)
+s(135) =< s(126)*s(134)
+s(136) =< aux(33)+s(135)
+s(137) =< s(126)*s(136)
+s(138) =< s(135)
+s(139) =< s(138)*aux(32)
+
+  with precondition: [V7=0,V>=1] 
+
+
+Closed-form bounds of start(V,V7,V21,V19): 
+-------------------------------------
+* Chain [34] with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [33] with precondition: [V=1,V7>=0,V21>=0,V19>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [32] with precondition: [V7=0,V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V7,V21,V19): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 18 ms.
+* Invariants computed in 32 ms.
+   - Backward Invariants 13 ms.
+   - Transitive Invariants 4 ms.
+* Refinement performed in 111 ms.
+* Termination proved in 6 ms.
+* Upper bounds computed in 133 ms.
+   - Equation cost structures 66 ms.
+   - Phase cost structures 37 ms.
+   - Chain cost structures 9 ms.
+   - Solving cost expressions 4 ms.
+* Total analysis performed in 328 ms.
+

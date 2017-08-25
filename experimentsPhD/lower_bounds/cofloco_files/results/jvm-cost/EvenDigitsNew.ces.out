@@ -1,0 +1,247 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [6/4]
+1. non_recursive : [15_normal/4]
+2. non_recursive : [2_loop_nexit/3]
+3. non_recursive : [12/3]
+4. non_recursive : [17_normal/3]
+5. non_recursive : [9_loop_nexit/2]
+6. recursive : [10/2,18/3,9_loop/2]
+7. non_recursive : [9/2]
+8. non_recursive : [pubs/EvenDigits_divByTwo(I)I/1]
+9. recursive : [14_normal/5,16/5,2_loop/3,3/3]
+10. non_recursive : [2/3]
+11. non_recursive : [evenDigits/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is completely evaluated into other SCCs
+4. SCC is completely evaluated into other SCCs
+5. SCC is completely evaluated into other SCCs
+6. SCC is partially evaluated into 9_loop/2
+7. SCC is completely evaluated into other SCCs
+8. SCC is completely evaluated into other SCCs
+9. SCC is partially evaluated into 2_loop/3
+10. SCC is completely evaluated into other SCCs
+11. SCC is partially evaluated into evenDigits/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations 9_loop/2 
+* CE 6 is refined into CE [7] 
+* CE 5 is refined into CE [8] 
+
+
+#### Refined cost equations 9_loop/2 
+* CE 7: 9_loop(A,B) = 7+ 9_loop(C,D)
+     [2*C+1>=A,A>=2*C,B>=0,A>=1,B+1=D] 
+* CE 8: 9_loop(A,B) = 2
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of 9_loop/2 
+* CEs [8] --> Loop 6 
+* CEs [7] --> Loop 7 
+
+#### Loops of 9_loop/2 
+* Loop 6: 9_loop(A,B) [B>=0,A=0] 
+* Loop 7: 9_loop(A,B)->  9_loop(A',B')
+                  [2*A'+1>=A,A>=2*A',B>=0,A>=1,B+1=B'] 
+
+### Ranking functions of CR 9_loop(A,B) 
+* RF of phase [7]: [2*A-1]
+
+#### Partial ranking functions of CR 9_loop(A,B) 
+* Partial RF of phase [7]:
+  - RF of loop [7:1]:
+    2*A-1
+
+
+### Resulting Chains:9_loop(A,B) 
+* [[7],6]
+* [6]
+
+
+### Specialization of cost equations 2_loop/3 
+* CE 4 is refined into CE [9,10] 
+* CE 3 is refined into CE [11] 
+
+
+#### Refined cost equations 2_loop/3 
+* CE 9: 2_loop(A,B,C) = 14+ 9_loop(C,D):[[7],6]+ 2_loop(A,E,F)
+     [A>=C+1,C>=1,C+1=F,D=0] 
+* CE 10: 2_loop(A,B,C) = 14+ 9_loop(D,E):[6]+ 2_loop(A,F,G)
+     [A>=1,G=1,E=0,D=0,C=0] 
+* CE 11: 2_loop(A,B,C) = 3
+     [C>=A,C>=0] 
+
+### Cost equations --> "Loop" of 2_loop/3 
+* CEs [11] --> Loop 8 
+* CEs [9] --> Loop 9 
+* CEs [10] --> Loop 10 
+
+#### Loops of 2_loop/3 
+* Loop 8: 2_loop(A,B,C) [C>=A,C>=0] 
+* Loop 9: 2_loop(A,B,C)->  2_loop(A,B',C')
+                  [A>=C+1,C>=1,C+1=C'] 
+* Loop 10: 2_loop(A,B,C)->  2_loop(A,B',C')
+                  [A>=1,C'=1,C=0] 
+
+### Ranking functions of CR 2_loop(A,B,C) 
+* RF of phase [9]: [A-C]
+
+#### Partial ranking functions of CR 2_loop(A,B,C) 
+* Partial RF of phase [9]:
+  - RF of loop [9:1]:
+    A-C
+
+
+### Resulting Chains:2_loop(A,B,C) 
+* [10,[9],8]
+* [10,8]
+* [8]
+
+
+### Specialization of cost equations evenDigits/1 
+* CE 2 is refined into CE [12,13,14] 
+
+
+#### Refined cost equations evenDigits/1 
+* CE 12: evenDigits(A) = 7+ 2_loop(A,B,C):[10,[9],8]
+     [A>=2,C=0,B=0] 
+* CE 13: evenDigits(A) = 7+ 2_loop(B,C,D):[10,8]
+     [D=0,C=0,B=1,A=1] 
+* CE 14: evenDigits(A) = 7+ 2_loop(A,B,C):[8]
+     [0>=A,C=0,B=0] 
+
+### Cost equations --> "Loop" of evenDigits/1 
+* CEs [12] --> Loop 11 
+* CEs [14] --> Loop 12 
+* CEs [13] --> Loop 13 
+
+#### Loops of evenDigits/1 
+* Loop 11: evenDigits(A) [A>=2] 
+* Loop 12: evenDigits(A) [0>=A] 
+* Loop 13: evenDigits(A) [A=1] 
+
+### Ranking functions of CR evenDigits(A) 
+
+#### Partial ranking functions of CR evenDigits(A) 
+
+
+### Resulting Chains:evenDigits(A) 
+* [13]
+* [12]
+* [11]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [7] 
+
+ * loop 7:9_loop(A,B) -> [9_loop(A',B')] 
+7
+#### Cost of phase [7]:9_loop(A,B) -> [9_loop(A',B')] 
+7*it(7)+0
+  Such that:it(7) =< 2*A-1
+it(7) =< 2*A-2*A'
+
+#### Cost of chains of 9_loop(A,B):
+* Chain [[7],6]: 7*it(7)+2
+  Such that:it(7) =< 2*A-1
+
+  with precondition: [A>=1,B>=0] 
+
+* Chain [6]: 2
+  with precondition: [A=0,B>=0] 
+
+
+#### Cost of loops [9] 
+
+ * loop 9:2_loop(A,B,C) -> [2_loop(A',B',C')] 
+7*s(2)+16
+  Such that:s(2) =< 2*C'-3
+
+#### Cost of phase [9]:2_loop(A,B,C) -> [2_loop(A',B',C')] 
+16*it(9)+7*s(3)+0
+  Such that:it(9) =< A-C
+it(9) =< A-C-A'+C'
+aux(1) =< 2*A-3
+s(3) =< it(9)*aux(1)
+it(9) >= A-C-A'+C'
+
+#### Cost of chains of 2_loop(A,B,C):
+* Chain [10,[9],8]: 16*it(9)+7*s(3)+19
+  Such that:it(9) =< A-1
+aux(1) =< 2*A-3
+s(3) =< it(9)*aux(1)
+it(9) >= A-1
+
+  with precondition: [B=0,C=0,A>=2] 
+
+* Chain [10,8]: 19
+  with precondition: [A=1,B=0,C=0] 
+
+* Chain [8]: 3
+  with precondition: [C>=0,C>=A] 
+
+
+#### Cost of chains of evenDigits(A):
+* Chain [13]: 26
+  with precondition: [A=1] 
+
+* Chain [12]: 10
+  with precondition: [0>=A] 
+
+* Chain [11]: 16*s(4)+7*s(6)+26
+  Such that:s(4) =< A-1
+s(5) =< 2*A-3
+s(6) =< s(4)*s(5)
+s(4) >= A-1
+
+  with precondition: [A>=2] 
+
+
+Closed-form bounds of evenDigits(A): 
+-------------------------------------
+* Chain [13] with precondition: [A=1] 
+    - Lower bound: 26 
+    - Complexity: constant
+ * Chain [12] with precondition: [0>=A] 
+    - Lower bound: 10 
+    - Complexity: constant
+ * Chain [11] with precondition: [A>=2] 
+    - Lower bound: 16*A+10 
+    - Complexity: n
+ 
+### Partitioned lower bound of evenDigits(A): 
+* 10 
+ if [0>=A]
+* 26 
+ if [A=1]
+* 16*A+10 
+ if [A>=2]
+Possible lower bounds : [10,26,16*A+10]
+Maximum lower bound complexity: n
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 38 ms.
+* Invariants computed in 48 ms.
+   - Backward Invariants 19 ms.
+   - Transitive Invariants 9 ms.
+* Refinement performed in 51 ms.
+* Termination proved in 10 ms.
+* Upper bounds computed in 75 ms.
+   - Equation cost structures 16 ms.
+   - Phase cost structures 31 ms.
+   - Chain cost structures 16 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 276 ms.
+

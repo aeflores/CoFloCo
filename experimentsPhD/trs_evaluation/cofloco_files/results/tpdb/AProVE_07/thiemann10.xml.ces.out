@@ -1,0 +1,751 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [half/2]
+1. recursive  : [lastbit/2]
+2. non_recursive  : [zero/2]
+3. recursive  : [conviter/3,if/4]
+4. non_recursive  : [conv/2]
+5. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into half/2
+1. SCC is partially evaluated into lastbit/2
+2. SCC is partially evaluated into zero/2
+3. SCC is partially evaluated into conviter/3
+4. SCC is completely evaluated into other SCCs
+5. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations half/2 
+* CE 11 is refined into CE [19] 
+* CE 10 is refined into CE [20] 
+* CE 9 is refined into CE [21] 
+
+
+#### Refined cost equations half/2 
+* CE 19: half(V,Out) = 1+ half(W,X)
+     [W>=0,X+1=Out,W+2=V] 
+* CE 20: half(V,Out) = 1
+     [Out=0,V=1] 
+* CE 21: half(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of half/2 
+* CEs [20] --> Loop 13 
+* CEs [21] --> Loop 14 
+* CEs [19] --> Loop 15 
+
+#### Loops of half/2 
+* Loop 13: half(V,Out) [Out=0,V=1] 
+* Loop 14: half(V,Out) [Out=0,V=0] 
+* Loop 15: half(V,Out)->  half(V',Out')
+                  [V'>=0,Out=Out'+1,V'+2=V] 
+
+### Ranking functions of CR half(V,Out) 
+* RF of phase [15]: [V-1]
+
+#### Partial ranking functions of CR half(V,Out) 
+* Partial RF of phase [15]:
+  - RF of loop [15:1]:
+    V-1
+
+
+### Resulting Chains:half(V,Out) 
+* [[15],14]
+* [[15],13]
+* [14]
+* [13]
+
+
+### Merging Chains  half/2 into  External patterns of execution 
+* [[14]] --> 1 
+* [[13]] --> 2 
+* [[14,[15]]] --> 3 
+* [[13,[15]]] --> 4 
+
+
+### Specialization of cost equations lastbit/2 
+* CE 14 is refined into CE [22] 
+* CE 13 is refined into CE [23] 
+* CE 12 is refined into CE [24] 
+
+
+#### Refined cost equations lastbit/2 
+* CE 22: lastbit(V,Out) = 1+ lastbit(W,Out)
+     [W>=0,W+2=V] 
+* CE 23: lastbit(V,Out) = 1
+     [Out=1,V=1] 
+* CE 24: lastbit(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of lastbit/2 
+* CEs [23] --> Loop 16 
+* CEs [24] --> Loop 17 
+* CEs [22] --> Loop 18 
+
+#### Loops of lastbit/2 
+* Loop 16: lastbit(V,Out) [Out=1,V=1] 
+* Loop 17: lastbit(V,Out) [Out=0,V=0] 
+* Loop 18: lastbit(V,Out)->  lastbit(V',Out)
+                  [V'>=0,V'+2=V] 
+
+### Ranking functions of CR lastbit(V,Out) 
+* RF of phase [18]: [V-1]
+
+#### Partial ranking functions of CR lastbit(V,Out) 
+* Partial RF of phase [18]:
+  - RF of loop [18:1]:
+    V-1
+
+
+### Resulting Chains:lastbit(V,Out) 
+* [[18],17]
+* [[18],16]
+* [17]
+* [16]
+
+
+### Merging Chains  lastbit/2 into  External patterns of execution 
+* [[17]] --> 1 
+* [[16]] --> 2 
+* [[17,[18]]] --> 3 
+* [[16,[18]]] --> 4 
+
+
+### Specialization of cost equations zero/2 
+* CE 18 is refined into CE [25] 
+* CE 17 is refined into CE [26] 
+
+
+#### Refined cost equations zero/2 
+* CE 25: zero(V,Out) = 1
+     [V>=1,Out=0] 
+* CE 26: zero(V,Out) = 1
+     [Out=1,V=0] 
+
+### Cost equations --> "Loop" of zero/2 
+* CEs [25] --> Loop 19 
+* CEs [26] --> Loop 20 
+
+#### Loops of zero/2 
+* Loop 19: zero(V,Out) [V>=1,Out=0] 
+* Loop 20: zero(V,Out) [Out=1,V=0] 
+
+### Ranking functions of CR zero(V,Out) 
+
+#### Partial ranking functions of CR zero(V,Out) 
+
+
+### Resulting Chains:zero(V,Out) 
+* [20]
+* [19]
+
+
+### Merging Chains  zero/2 into  External patterns of execution 
+* [[20]] --> 1 
+* [[19]] --> 2 
+
+
+### Specialization of cost equations conviter/3 
+* CE 16 is refined into CE [27] 
+* CE 15 is refined into CE [28,29,30,31,32] 
+
+
+#### Refined cost equations conviter/3 
+* CE 27: conviter(A,B,B) = 2+ zero(C,D):1
+     [B>=0,D=1,C=0,A=0] 
+* CE 28: conviter(V,V5,Out) = 2+ zero(W5,X5):2+ half(Y5,Z5):2+ lastbit(A6,B6):2+ conviter(C6,D6,Out)
+     [V5>=0,V5+2=D6,C6=0,B6=1,A6=1,Z5=0,Y5=1,X5=0,W5=1,V=1] 
+* CE 29: conviter(V,V5,Out) = 2+ zero(V,W5):2+ half(V,X5):3+ lastbit(V,Y5):3+ conviter(Z5,A6,Out)
+     [V>=2,V5>=0,V5+1=A6,V=2*Z5,V=2*X5,Y5=0,W5=0] 
+* CE 30: conviter(V,V5,Out) = 2+ zero(V,W5):2+ half(V,X5):3+ lastbit(V,Y5):4+ conviter(Z5,A6,Out)
+     [V>=3,V5>=0,V5+2=A6,V=2*Z5,V=2*X5,Y5=1,W5=0] 
+* CE 31: conviter(V,V5,Out) = 2+ zero(V,W5):2+ half(V,X5):4+ lastbit(V,Y5):3+ conviter(Z5,A6,Out)
+     [V>=3,V5>=0,V5+1=A6,V=2*Z5+1,V=2*X5+1,Y5=0,W5=0] 
+* CE 32: conviter(V,V5,Out) = 2+ zero(V,W5):2+ half(V,X5):4+ lastbit(V,Y5):4+ conviter(Z5,A6,Out)
+     [V>=3,V5>=0,V5+2=A6,V=2*Z5+1,V=2*X5+1,Y5=1,W5=0] 
+
+### Cost equations --> "Loop" of conviter/3 
+* CEs [31] --> Loop 21 
+* CEs [32] --> Loop 22 
+* CEs [29] --> Loop 23 
+* CEs [30] --> Loop 24 
+* CEs [28] --> Loop 25 
+* CEs [27] --> Loop 26 
+
+#### Loops of conviter/3 
+* Loop 21: conviter(V,V5,Out)->  conviter(V',V5',Out)
+                  [V5>=0,V>=3,V5+1=V5',V=2*V'+1] 
+* Loop 22: conviter(V,V5,Out)->  conviter(V',V5',Out)
+                  [V5>=0,V>=3,V5+2=V5',V=2*V'+1] 
+* Loop 23: conviter(V,V5,Out)->  conviter(V',V5',Out)
+                  [V5>=0,V>=2,V5+1=V5',V=2*V'] 
+* Loop 24: conviter(V,V5,Out)->  conviter(V',V5',Out)
+                  [V5>=0,V>=3,V5+2=V5',V=2*V'] 
+* Loop 25: conviter(V,V5,Out)->  conviter(V',V5',Out)
+                  [V5>=0,V5+2=V5',V'=0,V=1] 
+* Loop 26: conviter(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR conviter(V,V5,Out) 
+* RF of phase [21,22,23,24]: [V-1,2*V+V5-3]
+
+#### Partial ranking functions of CR conviter(V,V5,Out) 
+* Partial RF of phase [21,22,23,24]:
+  - RF of loop [21:1,22:1]:
+    V/2-1
+  - RF of loop [23:1]:
+    V-1
+  - RF of loop [24:1]:
+    2/3*V-5/3
+
+
+### Resulting Chains:conviter(V,V5,Out) 
+* [[21,22,23,24],25,26]
+* [26]
+* [25,26]
+
+
+### Merging Chains  conviter/3 into  External patterns of execution 
+* [[26]] --> 1 
+* [[26,25]] --> 2 
+* [[26,25,[21,22,23,24]]] --> 3 
+
+
+### Specialization of cost equations start/3 
+* CE 3 is refined into CE [33] 
+* CE 2 is refined into CE [34,35,36,37,38,39,40,41,42] 
+* CE 4 is refined into CE [43,44,45,46] 
+* CE 5 is refined into CE [47,48,49,50] 
+* CE 6 is refined into CE [51,52] 
+* CE 7 is refined into CE [53,54,55] 
+* CE 8 is refined into CE [56,57,58] 
+
+
+#### Refined cost equations start/3 
+* CE 33: start(V,V5,V8) = 1
+     [V8>=0,V5>=0,V=1] 
+* CE 34: start(V,V5,V8) = 1+ half(W8,X8):1+ lastbit(Y8,Z8):1+ conviter(A9,B9,B9):1
+     [B9>=1,B9=V8+1,A9=0,Z8=0,Y8=0,X8=0,W8=0,V5=0,V=0] 
+* CE 35: start(V,V5,V8) = 1+ half(W8,X8):2+ lastbit(Y8,Z8):2+ conviter(A9,B9,B9):1
+     [B9>=2,B9=V8+2,A9=0,Z8=1,Y8=1,X8=0,W8=1,V5=1,V=0] 
+* CE 36: start(V,V5,V8) = 1+ half(W8,X8):3+ lastbit(Y8,Z8):3+ conviter(A9,B9,C9):2
+     [C9>=3,C9=B9+2,C9=V8+3,A9=1,Z8=0,Y8=2,X8=1,W8=2,V5=2,V=0] 
+* CE 37: start(V,V5,V8) = 1+ half(W8,X8):3+ lastbit(Y8,Z8):3+ conviter(X8,A9,B9):3
+     [X8+A9+1>=B9,X8+2*A9+6>=2*B9,B9>=A9+3,A9>=1,2*X8=Y8,2*X8=W8,A9=V8+1,2*X8=V5,Z8=0,V=0] 
+* CE 38: start(V,V5,V8) = 1+ half(W8,X8):3+ lastbit(Y8,Z8):4+ conviter(X8,A9,B9):3
+     [X8+A9+1>=B9,X8+2*A9+6>=2*B9,B9>=A9+3,A9>=2,2*X8=Y8,2*X8=W8,A9=V8+2,2*X8=V5,Z8=1,V=0] 
+* CE 39: start(V,V5,V8) = 1+ half(W8,X8):4+ lastbit(Y8,Z8):3+ conviter(A9,B9,C9):2
+     [C9>=3,C9=B9+2,C9=V8+3,A9=1,Z8=0,Y8=3,X8=1,W8=3,V5=3,V=0] 
+* CE 40: start(V,V5,V8) = 1+ half(W8,X8):4+ lastbit(Y8,Z8):3+ conviter(X8,A9,B9):3
+     [X8+A9+1>=B9,X8+2*A9+6>=2*B9,B9>=A9+3,A9>=1,2*X8+1=Y8,2*X8+1=W8,A9=V8+1,2*X8+1=V5,Z8=0,V=0] 
+* CE 41: start(V,V5,V8) = 1+ half(W8,X8):4+ lastbit(Y8,Z8):4+ conviter(A9,B9,C9):2
+     [C9>=4,C9=B9+2,C9=V8+4,A9=1,Z8=1,Y8=3,X8=1,W8=3,V5=3,V=0] 
+* CE 42: start(V,V5,V8) = 1+ half(W8,X8):4+ lastbit(Y8,Z8):4+ conviter(X8,A9,B9):3
+     [X8+A9+1>=B9,X8+2*A9+6>=2*B9,B9>=A9+3,A9>=2,2*X8+1=Y8,2*X8+1=W8,A9=V8+2,2*X8+1=V5,Z8=1,V=0] 
+* CE 43: start(V,V5,V8) = 0+ half(W8,X8):1
+     [X8=0,W8=0,V=0] 
+* CE 44: start(V,V5,V8) = 0+ half(W8,X8):2
+     [X8=0,W8=1,V=1] 
+* CE 45: start(V,V5,V8) = 0+ half(W8,X8):3
+     [X8>=1,2*X8=W8,2*X8=V] 
+* CE 46: start(V,V5,V8) = 0+ half(W8,X8):4
+     [X8>=1,2*X8+1=W8,2*X8+1=V] 
+* CE 47: start(V,V5,V8) = 0+ lastbit(W8,X8):1
+     [X8=0,W8=0,V=0] 
+* CE 48: start(V,V5,V8) = 0+ lastbit(W8,X8):2
+     [X8=1,W8=1,V=1] 
+* CE 49: start(V,V5,V8) = 0+ lastbit(V,W8):3
+     [V>=2,W8=0] 
+* CE 50: start(V,V5,V8) = 0+ lastbit(V,W8):4
+     [V>=3,W8=1] 
+* CE 51: start(V,V5,V8) = 0+ zero(W8,X8):1
+     [X8=1,W8=0,V=0] 
+* CE 52: start(V,V5,V8) = 0+ zero(V,W8):2
+     [V>=1,W8=0] 
+* CE 53: start(V,V5,V8) = 1+ conviter(W8,X8,Y8):1
+     [Y8=1,X8=1,W8=0,V=0] 
+* CE 54: start(V,V5,V8) = 1+ conviter(W8,X8,Y8):2
+     [Y8=3,X8=1,W8=1,V=1] 
+* CE 55: start(V,V5,V8) = 1+ conviter(V,W8,X8):3
+     [V+2>=X8,V+8>=2*X8,X8>=4,W8=1] 
+* CE 56: start(V,V5,V8) = 0+ conviter(W8,V5,V5):1
+     [V5>=0,W8=0,V=0] 
+* CE 57: start(V,V5,V8) = 0+ conviter(W8,X8,Y8):2
+     [Y8>=2,Y8=X8+2,Y8=V5+2,W8=1,V=1] 
+* CE 58: start(V,V5,V8) = 0+ conviter(V,V5,W8):3
+     [V+V5+1>=W8,V+2*V5+6>=2*W8,W8>=V5+3,V5>=0] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [33,44,45,46,48,49,50,52,54,55,57,58] --> Loop 27 
+* CEs [34,35,36,37,38,39,40,41,42,43,47,51,53,56] --> Loop 28 
+
+#### Loops of start/3 
+* Loop 27: start(V,V5,V8) [V>=1] 
+* Loop 28: start(V,V5,V8) [V=0] 
+
+### Ranking functions of CR start(V,V5,V8) 
+
+#### Partial ranking functions of CR start(V,V5,V8) 
+
+
+### Resulting Chains:start(V,V5,V8) 
+* [28]
+* [27]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[28]] --> 1 
+* [[27]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [15] 
+
+ * loop 15:half(V,Out) -> [half(V',Out')] 
+1
+#### Cost of phase [15]:half(V,Out) -> [half(V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V
+it(15) =< V-V'
+
+#### Cost of phase [15]:half(V,Out) -> [half(V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V
+it(15) =< V-V'
+
+#### Cost of chains of half(V,Out):
+* Chain [[15],14]: 1*it(15)+1
+  Such that:it(15) =< 2*Out
+
+  with precondition: [V=2*Out,V>=2] 
+
+* Chain [[15],13]: 1*it(15)+1
+  Such that:it(15) =< 2*Out
+
+  with precondition: [V=2*Out+1,V>=3] 
+
+* Chain [14]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [13]: 1
+  with precondition: [V=1,Out=0] 
+
+
+#### Cost of loops [18] 
+
+ * loop 18:lastbit(V,Out) -> [lastbit(V',Out')] 
+1
+#### Cost of phase [18]:lastbit(V,Out) -> [lastbit(V',Out')] 
+1*it(18)+0
+  Such that:it(18) =< V
+it(18) =< V-V'
+
+#### Cost of phase [18]:lastbit(V,Out) -> [lastbit(V',Out')] 
+1*it(18)+0
+  Such that:it(18) =< V
+it(18) =< V-V'
+
+#### Cost of chains of lastbit(V,Out):
+* Chain [[18],17]: 1*it(18)+1
+  Such that:it(18) =< V
+
+  with precondition: [Out=0,V>=2] 
+
+* Chain [[18],16]: 1*it(18)+1
+  Such that:it(18) =< V
+
+  with precondition: [Out=1,V>=3] 
+
+* Chain [17]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [16]: 1
+  with precondition: [V=1,Out=1] 
+
+
+#### Cost of chains of zero(V,Out):
+* Chain [20]: 1
+  with precondition: [V=0,Out=1] 
+
+* Chain [19]: 1
+  with precondition: [Out=0,V>=1] 
+
+
+#### Cost of loops [21,22,23,24] 
+
+ * loop 21:conviter(V,V5,Out) -> [conviter(V',V5',Out')] 
+1*s(3)+1*s(4)+5
+  Such that:s(3) =< 2*V'
+s(4) =< 2*V'+1
+
+ * loop 22:conviter(V,V5,Out) -> [conviter(V',V5',Out')] 
+1*s(7)+1*s(8)+5
+  Such that:s(7) =< 2*V'
+s(8) =< 2*V'+1
+
+ * loop 23:conviter(V,V5,Out) -> [conviter(V',V5',Out')] 
+2*s(12)+5
+  Such that:s(11) =< 2*V'
+s(12) =< s(11)
+
+ * loop 24:conviter(V,V5,Out) -> [conviter(V',V5',Out')] 
+2*s(16)+5
+  Such that:s(15) =< 2*V'
+s(16) =< s(15)
+
+#### Cost of phase [21,22,23,24]:conviter(V,V5,Out) -> [conviter(V',V5',Out')] 
+5*it(21)+5*it(22)+5*it(23)+5*it(24)+2*s(17)+2*s(18)+4*s(21)+0
+  Such that:it(24) =< 2/3*V
+it(24) =< 2/3*V-2/3*V'
+aux(3) =< V
+aux(4) =< V-V'
+aux(5) =< 2*V
+aux(6) =< 2*V+V5
+aux(7) =< 2*V+V5-2*V'-V5'
+aux(8) =< 2*V-2*V'
+aux(9) =< 3*V+6
+aux(10) =< 3*V-3*V'
+aux(11) =< 4*V+8
+aux(12) =< 4*V-4*V'
+aux(13) =< V/2
+aux(14) =< V/2-V'/2
+it(21) =< aux(3)
+it(22) =< aux(3)
+it(23) =< aux(3)
+it(24) =< aux(3)
+it(21) =< aux(4)
+it(22) =< aux(4)
+it(23) =< aux(4)
+it(24) =< aux(4)
+it(24) =< aux(5)
+s(22) =< aux(5)
+it(21) =< aux(6)
+it(22) =< aux(6)
+it(23) =< aux(6)
+it(24) =< aux(6)
+it(21) =< aux(7)
+it(22) =< aux(7)
+it(23) =< aux(7)
+it(24) =< aux(7)
+it(24) =< aux(8)
+s(22) =< aux(8)
+it(22) =< aux(9)
+it(23) =< aux(9)
+it(24) =< aux(9)
+s(18) =< aux(9)
+it(22) =< aux(10)
+it(23) =< aux(10)
+it(24) =< aux(10)
+s(18) =< aux(10)
+it(22) =< aux(11)
+it(23) =< aux(11)
+it(24) =< aux(11)
+s(17) =< aux(11)
+it(22) =< aux(12)
+it(23) =< aux(12)
+it(24) =< aux(12)
+s(17) =< aux(12)
+it(21) =< aux(13)
+it(22) =< aux(13)
+it(21) =< aux(14)
+it(22) =< aux(14)
+s(21) =< s(22)
+
+#### Cost of chains of conviter(V,V5,Out):
+* Chain [[21,22,23,24],25,26]: 5*it(21)+5*it(22)+5*it(23)+5*it(24)+2*s(17)+2*s(18)+4*s(21)+8
+  Such that:aux(6) =< 2*V+V5
+aux(7) =< 2*V+V5-Out
+aux(10) =< 3*V
+aux(9) =< 3*V+6
+aux(12) =< 4*V
+aux(11) =< 4*V+8
+it(24) =< 2/3*V
+aux(15) =< V
+aux(16) =< 2*V
+aux(17) =< V/2
+it(21) =< aux(15)
+it(22) =< aux(15)
+it(23) =< aux(15)
+it(24) =< aux(15)
+it(24) =< aux(16)
+it(21) =< aux(6)
+it(22) =< aux(6)
+it(23) =< aux(6)
+it(24) =< aux(6)
+it(21) =< aux(7)
+it(22) =< aux(7)
+it(23) =< aux(7)
+it(24) =< aux(7)
+it(22) =< aux(9)
+it(23) =< aux(9)
+it(24) =< aux(9)
+s(18) =< aux(9)
+it(22) =< aux(10)
+it(23) =< aux(10)
+it(24) =< aux(10)
+s(18) =< aux(10)
+it(22) =< aux(11)
+it(23) =< aux(11)
+it(24) =< aux(11)
+s(17) =< aux(11)
+it(22) =< aux(12)
+it(23) =< aux(12)
+it(24) =< aux(12)
+s(17) =< aux(12)
+it(21) =< aux(17)
+it(22) =< aux(17)
+s(21) =< aux(16)
+
+  with precondition: [V5>=0,Out>=V5+3,V+2*V5+6>=2*Out,V+V5+1>=Out] 
+
+* Chain [26]: 3
+  with precondition: [V=0,V5=Out,V5>=0] 
+
+* Chain [25,26]: 8
+  with precondition: [V=1,Out=V5+2,Out>=2] 
+
+
+#### Cost of chains of start(V,V5,V8):
+* Chain [28]: 4*s(25)+24*s(27)+5*s(35)+10*s(39)+5*s(40)+5*s(41)+4*s(42)+4*s(43)+5*s(53)+5*s(57)+5*s(58)+5*s(59)+2*s(64)+5*s(73)+5*s(77)+5*s(78)+5*s(79)+4*s(80)+4*s(81)+5*s(93)+5*s(98)+5*s(99)+11
+  Such that:s(67) =< V5+V8
+s(47) =< V5+V8+2
+aux(23) =< 2
+aux(24) =< 3
+aux(25) =< V5
+aux(26) =< V5+V8+1
+aux(27) =< 2*V5
+aux(28) =< 2*V5+6
+aux(29) =< 2*V5+8
+aux(30) =< V5/2
+aux(31) =< V5/3
+aux(32) =< V5/4
+aux(33) =< 3/2*V5
+aux(34) =< 3/2*V5+6
+aux(35) =< 3/2*V5+9/2
+s(25) =< aux(23)
+s(64) =< aux(24)
+s(35) =< aux(31)
+s(53) =< aux(31)
+s(73) =< aux(31)
+s(93) =< aux(31)
+s(27) =< aux(25)
+s(77) =< aux(30)
+s(78) =< aux(30)
+s(79) =< aux(30)
+s(73) =< aux(30)
+s(73) =< aux(25)
+s(77) =< s(67)
+s(78) =< s(67)
+s(79) =< s(67)
+s(73) =< s(67)
+s(77) =< aux(25)
+s(78) =< aux(25)
+s(79) =< aux(25)
+s(78) =< aux(35)
+s(79) =< aux(35)
+s(73) =< aux(35)
+s(80) =< aux(35)
+s(78) =< aux(33)
+s(79) =< aux(33)
+s(73) =< aux(33)
+s(80) =< aux(33)
+s(78) =< aux(28)
+s(79) =< aux(28)
+s(73) =< aux(28)
+s(81) =< aux(28)
+s(78) =< aux(27)
+s(79) =< aux(27)
+s(73) =< aux(27)
+s(81) =< aux(27)
+s(77) =< aux(32)
+s(78) =< aux(32)
+s(39) =< aux(30)
+s(40) =< aux(30)
+s(41) =< aux(30)
+s(35) =< aux(30)
+s(35) =< aux(25)
+s(39) =< aux(26)
+s(40) =< aux(26)
+s(41) =< aux(26)
+s(35) =< aux(26)
+s(39) =< aux(25)
+s(40) =< aux(25)
+s(41) =< aux(25)
+s(40) =< aux(34)
+s(41) =< aux(34)
+s(35) =< aux(34)
+s(42) =< aux(34)
+s(40) =< aux(33)
+s(41) =< aux(33)
+s(35) =< aux(33)
+s(42) =< aux(33)
+s(40) =< aux(29)
+s(41) =< aux(29)
+s(35) =< aux(29)
+s(43) =< aux(29)
+s(40) =< aux(27)
+s(41) =< aux(27)
+s(35) =< aux(27)
+s(43) =< aux(27)
+s(39) =< aux(32)
+s(40) =< aux(32)
+s(98) =< aux(30)
+s(99) =< aux(30)
+s(93) =< aux(30)
+s(93) =< aux(25)
+s(98) =< aux(26)
+s(99) =< aux(26)
+s(93) =< aux(26)
+s(98) =< aux(25)
+s(99) =< aux(25)
+s(98) =< aux(35)
+s(99) =< aux(35)
+s(93) =< aux(35)
+s(98) =< aux(33)
+s(99) =< aux(33)
+s(93) =< aux(33)
+s(98) =< aux(28)
+s(99) =< aux(28)
+s(93) =< aux(28)
+s(98) =< aux(27)
+s(99) =< aux(27)
+s(93) =< aux(27)
+s(98) =< aux(32)
+s(57) =< aux(30)
+s(58) =< aux(30)
+s(59) =< aux(30)
+s(53) =< aux(30)
+s(53) =< aux(25)
+s(57) =< s(47)
+s(58) =< s(47)
+s(59) =< s(47)
+s(53) =< s(47)
+s(57) =< aux(25)
+s(58) =< aux(25)
+s(59) =< aux(25)
+s(58) =< aux(34)
+s(59) =< aux(34)
+s(53) =< aux(34)
+s(58) =< aux(33)
+s(59) =< aux(33)
+s(53) =< aux(33)
+s(58) =< aux(29)
+s(59) =< aux(29)
+s(53) =< aux(29)
+s(58) =< aux(27)
+s(59) =< aux(27)
+s(53) =< aux(27)
+s(57) =< aux(32)
+s(58) =< aux(32)
+
+  with precondition: [V=0] 
+
+* Chain [27]: 4*s(103)+5*s(113)+5*s(117)+5*s(118)+5*s(119)+4*s(120)+4*s(121)+8*s(122)+5*s(129)+5*s(133)+5*s(134)+5*s(135)+9
+  Such that:s(107) =< 2*V+1
+s(123) =< 2*V+V5
+aux(38) =< V
+aux(39) =< 2*V
+aux(40) =< 3*V
+aux(41) =< 3*V+6
+aux(42) =< 4*V
+aux(43) =< 4*V+8
+aux(44) =< V/2
+aux(45) =< 2/3*V
+s(103) =< aux(38)
+s(113) =< aux(45)
+s(129) =< aux(45)
+s(117) =< aux(38)
+s(118) =< aux(38)
+s(119) =< aux(38)
+s(113) =< aux(38)
+s(113) =< aux(39)
+s(117) =< s(107)
+s(118) =< s(107)
+s(119) =< s(107)
+s(113) =< s(107)
+s(117) =< aux(39)
+s(118) =< aux(39)
+s(119) =< aux(39)
+s(118) =< aux(41)
+s(119) =< aux(41)
+s(113) =< aux(41)
+s(120) =< aux(41)
+s(118) =< aux(40)
+s(119) =< aux(40)
+s(113) =< aux(40)
+s(120) =< aux(40)
+s(118) =< aux(43)
+s(119) =< aux(43)
+s(113) =< aux(43)
+s(121) =< aux(43)
+s(118) =< aux(42)
+s(119) =< aux(42)
+s(113) =< aux(42)
+s(121) =< aux(42)
+s(117) =< aux(44)
+s(118) =< aux(44)
+s(122) =< aux(39)
+s(133) =< aux(38)
+s(134) =< aux(38)
+s(135) =< aux(38)
+s(129) =< aux(38)
+s(129) =< aux(39)
+s(133) =< s(123)
+s(134) =< s(123)
+s(135) =< s(123)
+s(129) =< s(123)
+s(133) =< aux(39)
+s(134) =< aux(39)
+s(135) =< aux(39)
+s(134) =< aux(41)
+s(135) =< aux(41)
+s(129) =< aux(41)
+s(134) =< aux(40)
+s(135) =< aux(40)
+s(129) =< aux(40)
+s(134) =< aux(43)
+s(135) =< aux(43)
+s(129) =< aux(43)
+s(134) =< aux(42)
+s(135) =< aux(42)
+s(129) =< aux(42)
+s(133) =< aux(44)
+s(134) =< aux(44)
+
+  with precondition: [V>=1] 
+
+
+Closed-form bounds of start(V,V5,V8): 
+-------------------------------------
+* Chain [28] with precondition: [V=0] 
+    - Upper bound: nat(V5)*24+25+nat(2*V5+6)*4+nat(2*V5+8)*4+nat(3/2*V5+6)*4+nat(3/2*V5+9/2)*4+nat(V5/2)*60+nat(V5/3)*20 
+    - Complexity: n 
+* Chain [27] with precondition: [V>=1] 
+    - Upper bound: 254/3*V+65 
+    - Complexity: n 
+
+### Maximum cost of start(V,V5,V8): max([254/3*V+56,nat(V5)*24+16+nat(2*V5+6)*4+nat(2*V5+8)*4+nat(3/2*V5+6)*4+nat(3/2*V5+9/2)*4+nat(V5/2)*60+nat(V5/3)*20])+9 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 40 ms.
+* Invariants computed in 90 ms.
+   - Backward Invariants 40 ms.
+   - Transitive Invariants 22 ms.
+* Refinement performed in 256 ms.
+* Termination proved in 29 ms.
+* Upper bounds computed in 785 ms.
+   - Equation cost structures 414 ms.
+   - Phase cost structures 253 ms.
+   - Chain cost structures 69 ms.
+   - Solving cost expressions 46 ms.
+* Total analysis performed in 1264 ms.
+

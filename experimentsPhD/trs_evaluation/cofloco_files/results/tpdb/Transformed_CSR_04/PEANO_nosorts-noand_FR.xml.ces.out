@@ -1,0 +1,163 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [activate/2]
+1. recursive  : [fun/4,fun1/4,plus/3]
+2. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into plus/3
+2. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations plus/3 
+* CE 7 is refined into CE [8] 
+* CE 6 is refined into CE [9] 
+
+
+#### Refined cost equations plus/3 
+* CE 8: plus(A,B,A) = 1
+     [A>=0,B=0] 
+* CE 9: plus(V1,V,Out) = 7+ plus(V1,W1,X1)
+     [W1>=0,V1>=0,X1+1=Out,W1+1=V] 
+
+### Cost equations --> "Loop" of plus/3 
+* CEs [9] --> Loop 4 
+* CEs [8] --> Loop 5 
+
+#### Loops of plus/3 
+* Loop 4: plus(V1,V,Out)->  plus(V1,V',Out')
+                  [V'>=0,V1>=0,Out=Out'+1,V'+1=V] 
+* Loop 5: plus(A,B,A) [A>=0,B=0] 
+
+### Ranking functions of CR plus(V1,V,Out) 
+* RF of phase [4]: [V]
+
+#### Partial ranking functions of CR plus(V1,V,Out) 
+* Partial RF of phase [4]:
+  - RF of loop [4:1]:
+    V
+
+
+### Resulting Chains:plus(V1,V,Out) 
+* [[4],5]
+* [5]
+
+
+### Merging Chains  plus/3 into  External patterns of execution 
+* [[5]] --> 1 
+* [[5,[4]]] --> 2 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [10,11] 
+* CE 3 is refined into CE [12,13] 
+* CE 4 is refined into CE [14,15] 
+* CE 5 is refined into CE [16] 
+
+
+#### Refined cost equations start/3 
+* CE 10: start(V1,V,V2) = 6+ plus(V2,W2,V2):1
+     [V2>=0,W2=0,V=0,V1=0] 
+* CE 11: start(V1,V,V2) = 6+ plus(V2,W2,X2):2
+     [X2>=V2+1,V2>=0,X2=V2+W2,X2=V+V2,V1=0] 
+* CE 12: start(V1,V,V2) = 3+ plus(V2,W2,V2):1
+     [V2>=0,W2=0,V=0,V1=0] 
+* CE 13: start(V1,V,V2) = 3+ plus(V2,W2,X2):2
+     [X2>=V2+1,V2>=0,X2=V2+W2,X2=V+V2,V1=0] 
+* CE 14: start(V1,V,V2) = 0+ plus(V1,W2,V1):1
+     [V1>=0,W2=0,V=0] 
+* CE 15: start(V1,V,V2) = 0+ plus(V1,W2,X2):2
+     [X2>=V1+1,V1>=0,X2=V1+W2,X2=V1+V] 
+* CE 16: start(V1,V,V2) = 1
+     [V1>=0] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [11,13] --> Loop 6 
+* CEs [10,12,14,15,16] --> Loop 7 
+
+#### Loops of start/3 
+* Loop 6: start(V1,V,V2) [V2>=0,V>=1,V1=0] 
+* Loop 7: start(V1,V,V2) [V1>=0] 
+
+### Ranking functions of CR start(V1,V,V2) 
+
+#### Partial ranking functions of CR start(V1,V,V2) 
+
+
+### Resulting Chains:start(V1,V,V2) 
+* [7]
+* [6]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[6],[7]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [4] 
+
+ * loop 4:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+7
+#### Cost of phase [4]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+7*it(4)+0
+  Such that:it(4) =< V
+it(4) =< V-V'
+
+#### Cost of chains of plus(V1,V,Out):
+* Chain [[4],5]: 7*it(4)+1
+  Such that:it(4) =< V
+
+  with precondition: [V+V1=Out,V1>=0,V>=1] 
+
+* Chain [5]: 1
+  with precondition: [V=0,V1=Out,V1>=0] 
+
+
+#### Cost of chains of start(V1,V,V2):
+* Chain [7]: 7*s(1)+7
+  Such that:s(1) =< V
+
+  with precondition: [V1>=0] 
+
+* Chain [6]: 14*s(2)+7
+  Such that:aux(1) =< V
+s(2) =< aux(1)
+
+  with precondition: [V1=0,V>=1,V2>=0] 
+
+
+Closed-form bounds of start(V1,V,V2): 
+-------------------------------------
+* Chain [7] with precondition: [V1>=0] 
+    - Upper bound: nat(V)*7+7 
+    - Complexity: n 
+* Chain [6] with precondition: [V1=0,V>=1,V2>=0] 
+    - Upper bound: 14*V+7 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V,V2): nat(V)*14+7 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 15 ms.
+* Invariants computed in 7 ms.
+   - Backward Invariants 4 ms.
+   - Transitive Invariants 1 ms.
+* Refinement performed in 15 ms.
+* Termination proved in 1 ms.
+* Upper bounds computed in 12 ms.
+   - Equation cost structures 6 ms.
+   - Phase cost structures 3 ms.
+   - Chain cost structures 3 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 62 ms.
+

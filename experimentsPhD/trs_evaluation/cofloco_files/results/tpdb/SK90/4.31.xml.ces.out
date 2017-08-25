@@ -1,0 +1,228 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive [multiple] : [remove/3]
+1. recursive  : [purge/2]
+2. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into remove/3
+1. SCC is partially evaluated into purge/2
+2. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations remove/3 
+* CE 7 is refined into CE [10] 
+* CE 9 is refined into CE [11] 
+* CE 8 is refined into CE [12] 
+
+
+#### Refined cost equations remove/3 
+* CE 10: remove(V,V4,Out) = 1
+     [V>=0,Out=0,V4=0] 
+* CE 11: remove(V,V4,Out) = 0
+     [V4>=0,V>=0,Out=0] 
+* CE 12: remove(V,V4,Out) = 1+ remove(V,W4,X4)+ remove(V,W4,Y4)
+     [V4>=W4+1,W4>=0,V>=0,V+X4+Y4+2*V4+1=2*W4+Out] 
+
+### Cost equations --> "Loop" of remove/3 
+* CEs [12] --> Loop 6 
+* CEs [10,11] --> Loop 7 
+
+#### Loops of remove/3 
+* Loop 6: remove(V,V4,Out)->  remove(V,V4',Out')  remove(V,V4',A'2)
+                  [V4>=V4'+1,V4'>=0,V>=0,V+Out'+A'2+2*V4+1=2*V4'+Out] 
+* Loop 7: remove(V,V4,Out) [V4>=0,V>=0,Out=0] 
+
+### Ranking functions of CR remove(V,V4,Out) 
+* RF of phase [6]: [V4]
+
+#### Partial ranking functions of CR remove(V,V4,Out) 
+* Partial RF of phase [6]:
+  - RF of loop [6:1,6:2]:
+    V4
+
+
+### Resulting Chains:remove(V,V4,Out) 
+* [7]
+* [multiple([6],[[7]])]
+
+
+### Merging Chains  remove/3 into  External patterns of execution 
+* [[7]] --> 1 
+* [[multiple([6],[[7]])]] --> 2 
+
+
+### Specialization of cost equations purge/2 
+* CE 4 is refined into CE [13] 
+* CE 6 is refined into CE [14] 
+* CE 5 is refined into CE [15,16] 
+
+
+#### Refined cost equations purge/2 
+* CE 13: purge(V,Out) = 1
+     [Out=0,V=0] 
+* CE 14: purge(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 15: purge(V,Out) = 1+ remove(W,X,Y):1+ purge(Z,A1)
+     [X>=0,W>=0,W+A1+1=Out,W+X+1=V,Z=0,Y=0] 
+* CE 16: purge(V,Out) = 1+ remove(W,X,Y):2+ purge(Y,Z)
+     [Y>=W+3,X>=1,W>=0,W+Z+1=Out,W+X+1=V] 
+
+### Cost equations --> "Loop" of purge/2 
+* CEs [16] --> Loop 8 
+* CEs [15] --> Loop 9 
+* CEs [13,14] --> Loop 10 
+
+#### Loops of purge/2 
+* Loop 8: purge(V,Out)->  purge(V',Out')
+                  [V'+Out'>=Out+2,V+Out'>=Out+1,Out>=Out'+1] 
+* Loop 9: purge(V,Out)->  purge(V',Out')
+                  [V+Out'>=Out,Out>=Out'+1,V'=0] 
+* Loop 10: purge(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR purge(V,Out) 
+
+#### Partial ranking functions of CR purge(V,Out) 
+
+
+### Resulting Chains:purge(V,Out) 
+* [[8]]...
+* [[8],10]
+* [[8],9,10]
+* [10]
+* [9,10]
+
+
+### Merging Chains  purge/2 into  External patterns of execution 
+* [[10]] --> 1 
+* [[10,9,[8]],[10,[8]]] --> 2 
+* [[10,9]] --> 3 
+* [[[8]]] --> 4 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [17,18,19,20] 
+* CE 3 is refined into CE [21,22] 
+
+
+#### Refined cost equations start/2 
+* CE 17: start(V,V4) = 0+ purge(V,W4):1
+     [V>=0,W4=0] 
+* CE 18: start(V,V4) = 0+ purge(V,W4):2
+     [W4>=1,V>=2] 
+* CE 19: start(V,V4) = 0+ purge(V,W4):3
+     [V>=W4,W4>=1] 
+* CE 20: start(V,V4) = 0+ purge(V,W4):4
+     [V>=2] 
+* CE 21: start(V,V4) = 0+ remove(V,V4,W4):1
+     [V4>=0,V>=0,W4=0] 
+* CE 22: start(V,V4) = 0+ remove(V,V4,W4):2
+     [W4>=V+3,V4>=1,V>=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [17,18,19,21,22] --> Loop 11 
+* CEs [20] --> Loop 12 
+
+#### Loops of start/2 
+* Loop 11: start(V,V4) [V>=0] 
+* Loop 12: start(V,V4) [V>=2] 
+
+### Ranking functions of CR start(V,V4) 
+
+#### Partial ranking functions of CR start(V,V4) 
+
+
+### Resulting Chains:start(V,V4) 
+* [12]...
+* [11]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[11]] --> 1 
+* [[12]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6] 
+
+ * loop 6:remove(V,V4,Out) -> [remove(V',V4',Out'),remove(V'2,V4'2,Out'2)] 
+1
+#### Cost of phase [6]:remove(V,V4,Out) -> [] 
+1*it(6)+1*it([7])+0
+#### Cost of chains of remove(V,V4,Out):
+* Chain [7]: 1
+  with precondition: [Out=0,V>=0,V4>=0] 
+
+* Chain [multiple([6],[[7]])]: 1*it(6)+1*it([7])+0
+  with precondition: [V>=0,V4>=1,Out>=V+3] 
+
+
+#### Cost of loops [8] 
+
+ * loop 8:purge(V,Out) -> [purge(V',Out')] 
+2*s(3)+1
+#### Cost of phase [8]:purge(V,Out) -> [purge(V',Out')] 
+3*it(8)+0
+#### Cost of phase [8]:purge(V,Out) -> [purge(V',Out')] 
+3*it(8)+0
+#### Cost of phase [8]:purge(V,Out) -> [purge(V',Out')] 
+3*it(8)+0
+#### Cost of chains of purge(V,Out):
+* Chain [[8]]...: 3*it(8)+0
+  with precondition: [V>=2] 
+
+* Chain [[8],10]: 3*it(8)+1
+  with precondition: [V>=2,Out>=1] 
+
+* Chain [[8],9,10]: 3*it(8)+3
+  with precondition: [V>=2,Out>=2] 
+
+* Chain [10]: 1
+  with precondition: [Out=0,V>=0] 
+
+* Chain [9,10]: 3
+  with precondition: [Out>=1,V>=Out] 
+
+
+#### Cost of chains of start(V,V4):
+* Chain [12]...: 3*s(7)+0
+  with precondition: [V>=2] 
+
+* Chain [11]: 1*aux(5)+0
+  with precondition: [V>=0] 
+
+
+Closed-form bounds of start(V,V4): 
+-------------------------------------
+* Chain [12]... with precondition: [V>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [11] with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V4): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 15 ms.
+   - Backward Invariants 7 ms.
+   - Transitive Invariants 2 ms.
+* Refinement performed in 25 ms.
+* Termination proved in 3 ms.
+* Upper bounds computed in 25 ms.
+   - Equation cost structures 5 ms.
+   - Phase cost structures 16 ms.
+   - Chain cost structures 3 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 84 ms.
+

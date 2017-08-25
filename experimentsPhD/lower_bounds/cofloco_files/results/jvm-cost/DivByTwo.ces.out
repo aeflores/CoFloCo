@@ -1,0 +1,147 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [m4/1]
+1. recursive : [m0/1,m1/1,m6/1]
+2. non_recursive : [m3/0]
+3. non_recursive : [m5/1]
+4. non_recursive : [m2/1]
+5. non_recursive : [divByTwo/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into m0/1
+2. SCC is completely evaluated into other SCCs
+3. SCC is completely evaluated into other SCCs
+4. SCC is completely evaluated into other SCCs
+5. SCC is partially evaluated into divByTwo/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/1 
+* CE 4 is refined into CE [5] 
+* CE 3 is refined into CE [6] 
+
+
+#### Refined cost equations m0/1 
+* CE 5: m0(A) = 8+ m0(B)
+     [A>=2*B,A>=1] 
+* CE 6: m0(A) = 2
+     [] 
+
+### Cost equations --> "Loop" of m0/1 
+* CEs [6] --> Loop 4 
+* CEs [5] --> Loop 5 
+
+#### Loops of m0/1 
+* Loop 4: m0(A) [] 
+* Loop 5: m0(A)->  m0(A')
+                  [A>=2*A',A>=1] 
+
+### Ranking functions of CR m0(A) 
+* RF of phase [5]: [2*A-1]
+
+#### Partial ranking functions of CR m0(A) 
+* Partial RF of phase [5]:
+  - RF of loop [5:1]:
+    2*A-1
+
+
+### Resulting Chains:m0(A) 
+* [[5],4]
+* [4]
+
+
+### Specialization of cost equations divByTwo/1 
+* CE 2 is refined into CE [7,8] 
+
+
+#### Refined cost equations divByTwo/1 
+* CE 7: divByTwo(A) = 4+ m0(A):[[5],4]
+     [A>=1] 
+* CE 8: divByTwo(A) = 4+ m0(A):[4]
+     [A>=1] 
+
+### Cost equations --> "Loop" of divByTwo/1 
+* CEs [8] --> Loop 6 
+* CEs [7] --> Loop 7 
+
+#### Loops of divByTwo/1 
+* Loop 6: divByTwo(A) [A>=1] 
+* Loop 7: divByTwo(A) [A>=1] 
+
+### Ranking functions of CR divByTwo(A) 
+
+#### Partial ranking functions of CR divByTwo(A) 
+
+
+### Resulting Chains:divByTwo(A) 
+* [7]
+* [6]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5] 
+
+ * loop 5:m0(A) -> [m0(A')] 
+8
+#### Cost of phase [5]:m0(A) -> [m0(A')] 
+8*it(5)+0
+  Such that:it(5) =< 2*A-1
+it(5) =< 2*A-2*A'
+
+#### Cost of chains of m0(A):
+* Chain [[5],4]: 8*it(5)+2
+  Such that:it(5) =< 2*A-1
+
+  with precondition: [A>=1] 
+
+* Chain [4]: 2
+  with precondition: [] 
+
+
+#### Cost of chains of divByTwo(A):
+* Chain [7]: 8*s(1)+6
+  Such that:s(1) =< 2*A-1
+
+  with precondition: [A>=1] 
+
+* Chain [6]: 6
+  with precondition: [A>=1] 
+
+
+Closed-form bounds of divByTwo(A): 
+-------------------------------------
+* Chain [7] with precondition: [A>=1] 
+    - Lower bound: 6 
+    - Complexity: constant
+ * Chain [6] with precondition: [A>=1] 
+    - Lower bound: 6 
+    - Complexity: constant
+ 
+### Partitioned lower bound of divByTwo(A): 
+* 6 
+ if [A>=1]
+Possible lower bounds : [6]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 8 ms.
+* Invariants computed in 8 ms.
+   - Backward Invariants 3 ms.
+   - Transitive Invariants 2 ms.
+* Refinement performed in 11 ms.
+* Termination proved in 2 ms.
+* Upper bounds computed in 15 ms.
+   - Equation cost structures 4 ms.
+   - Phase cost structures 4 ms.
+   - Chain cost structures 3 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 60 ms.
+

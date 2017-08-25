@@ -1,0 +1,2270 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [append/3]
+1. recursive  : [ge/3]
+2. recursive  : [filterhigh/3,if2/5]
+3. recursive  : [filterlow/3,if1/5]
+4. recursive  : [last/2]
+5. recursive [non_tail,multiple] : [qsort/2]
+6. non_recursive  : [start/4]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into append/3
+1. SCC is partially evaluated into ge/3
+2. SCC is partially evaluated into filterhigh/3
+3. SCC is partially evaluated into filterlow/3
+4. SCC is partially evaluated into last/2
+5. SCC is partially evaluated into qsort/2
+6. SCC is partially evaluated into start/4
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations append/3 
+* CE 32 is refined into CE [37] 
+* CE 30 is refined into CE [38] 
+* CE 31 is refined into CE [39] 
+
+
+#### Refined cost equations append/3 
+* CE 37: append(V,V3,Out) = 0
+     [V3>=0,V>=0,Out=0] 
+* CE 38: append(V,V3,Out) = 1
+     [Out=1,V3=1,V=0] 
+* CE 39: append(V,V3,Out) = 1+ append(W3,X3,Y3)
+     [V+Y3>=Out,Out>=Y3+1,V+Y3=Out+W3,X3=1,V3=1] 
+
+### Cost equations --> "Loop" of append/3 
+* CEs [39] --> Loop 21 
+* CEs [37] --> Loop 22 
+* CEs [38] --> Loop 23 
+
+#### Loops of append/3 
+* Loop 21: append(V,V3,Out)->  append(V',V3',Out')
+                  [V+Out'>=Out,Out>=Out'+1,V+Out'=Out+V',V3'=1,V3=1] 
+* Loop 22: append(V,V3,Out) [V3>=0,V>=0,Out=0] 
+* Loop 23: append(V,V3,Out) [Out=1,V3=1,V=0] 
+
+### Ranking functions of CR append(V,V3,Out) 
+* RF of phase [21]: [V]
+
+#### Partial ranking functions of CR append(V,V3,Out) 
+* Partial RF of phase [21]:
+  - RF of loop [21:1]:
+    V
+
+
+### Resulting Chains:append(V,V3,Out) 
+* [[21],23]
+* [[21],22]
+* [23]
+* [22]
+
+
+### Merging Chains  append/3 into  External patterns of execution 
+* [[23]] --> 1 
+* [[23,[21]]] --> 2 
+* [[22,[21]]] --> 3 
+* [[22]] --> 4 
+
+
+### Specialization of cost equations ge/3 
+* CE 29 is refined into CE [40] 
+* CE 26 is refined into CE [41] 
+* CE 27 is refined into CE [42] 
+* CE 28 is refined into CE [43] 
+
+
+#### Refined cost equations ge/3 
+* CE 40: ge(V,V3,Out) = 0
+     [V3>=0,V>=0,Out=0] 
+* CE 41: ge(V,V3,Out) = 1
+     [V>=0,Out=2,V3=0] 
+* CE 42: ge(V,V3,Out) = 1
+     [V3>=1,Out=1,V=0] 
+* CE 43: ge(V,V3,Out) = 1+ ge(W3,X3,Out)
+     [X3>=0,W3>=0,X3+1=V3,W3+1=V] 
+
+### Cost equations --> "Loop" of ge/3 
+* CEs [43] --> Loop 24 
+* CEs [40] --> Loop 25 
+* CEs [41] --> Loop 26 
+* CEs [42] --> Loop 27 
+
+#### Loops of ge/3 
+* Loop 24: ge(V,V3,Out)->  ge(V',V3',Out)
+                  [V3'>=0,V'>=0,V3'+1=V3,V'+1=V] 
+* Loop 25: ge(V,V3,Out) [V3>=0,V>=0,Out=0] 
+* Loop 26: ge(V,V3,Out) [V>=0,Out=2,V3=0] 
+* Loop 27: ge(V,V3,Out) [V3>=1,Out=1,V=0] 
+
+### Ranking functions of CR ge(V,V3,Out) 
+* RF of phase [24]: [V,V3]
+
+#### Partial ranking functions of CR ge(V,V3,Out) 
+* Partial RF of phase [24]:
+  - RF of loop [24:1]:
+    V
+    V3
+
+
+### Resulting Chains:ge(V,V3,Out) 
+* [[24],27]
+* [[24],26]
+* [[24],25]
+* [27]
+* [26]
+* [25]
+
+
+### Merging Chains  ge/3 into  External patterns of execution 
+* [[27]] --> 1 
+* [[26]] --> 2 
+* [[25],[25,[24]]] --> 3 
+* [[27,[24]]] --> 4 
+* [[26,[24]]] --> 5 
+
+
+### Specialization of cost equations filterhigh/3 
+* CE 18 is refined into CE [44,45,46,47,48] 
+* CE 21 is refined into CE [49] 
+* CE 22 is refined into CE [50] 
+* CE 19 is refined into CE [51,52] 
+* CE 20 is refined into CE [53,54] 
+
+
+#### Refined cost equations filterhigh/3 
+* CE 44: filterhigh(V,V3,Out) = 1+ ge(W3,V,X3):1
+     [V>=1,V3>=1,X3=1,W3=0,Out=0] 
+* CE 45: filterhigh(V,V3,Out) = 1+ ge(W3,X3,Y3):2
+     [V3>=W3+1,W3>=0,Y3=2,X3=0,Out=0,V=0] 
+* CE 46: filterhigh(V,V3,Out) = 1+ ge(W3,V,X3):3
+     [V3>=W3+1,V>=0,W3>=0,X3=0,Out=0] 
+* CE 47: filterhigh(V,V3,Out) = 1+ ge(W3,V,X3):4
+     [V>=W3+1,V3>=W3+1,W3>=1,X3=1,Out=0] 
+* CE 48: filterhigh(V,V3,Out) = 1+ ge(W3,V,X3):5
+     [W3>=V,V3>=W3+1,V>=1,X3=2,Out=0] 
+* CE 49: filterhigh(V,V3,Out) = 1
+     [V>=0,Out=0,V3=0] 
+* CE 50: filterhigh(V,V3,Out) = 0
+     [V3>=0,V>=0,Out=0] 
+* CE 51: filterhigh(V,V3,Out) = 2+ ge(W3,V,X3):1+ filterhigh(V,Y3,Z3)
+     [Y3>=0,V>=1,Out=Z3+1,Y3+1=V3,X3=1,W3=0] 
+* CE 52: filterhigh(V,V3,Out) = 2+ ge(W3,V,X3):4+ filterhigh(V,Y3,Z3)
+     [V>=W3+1,Y3>=0,W3>=1,W3+Z3+1=Out,W3+Y3+1=V3,X3=1] 
+* CE 53: filterhigh(V,V3,Out) = 2+ ge(W3,X3,Y3):2+ filterhigh(Z3,A4,Out)
+     [A4>=0,W3>=0,W3+A4+1=V3,Z3=0,Y3=2,X3=0,V=0] 
+* CE 54: filterhigh(V,V3,Out) = 2+ ge(W3,V,X3):5+ filterhigh(V,Y3,Out)
+     [W3>=V,Y3>=0,V>=1,W3+Y3+1=V3,X3=2] 
+
+### Cost equations --> "Loop" of filterhigh/3 
+* CEs [52] --> Loop 28 
+* CEs [54] --> Loop 29 
+* CEs [51] --> Loop 30 
+* CEs [53] --> Loop 31 
+* CEs [49] --> Loop 32 
+* CEs [44,45,46,47,48,50] --> Loop 33 
+
+#### Loops of filterhigh/3 
+* Loop 28: filterhigh(V,V3,Out)->  filterhigh(V,V3',Out')
+                  [V+V3'>=V3,V3>=V3'+2,V3'>=0,V3+Out'=Out+V3'] 
+* Loop 29: filterhigh(V,V3,Out)->  filterhigh(V,V3',Out)
+                  [V3>=V+V3'+1,V3'>=0,V>=1] 
+* Loop 30: filterhigh(V,V3,Out)->  filterhigh(V,V3',Out')
+                  [V3>=1,V>=1,Out=Out'+1,V3=V3'+1] 
+* Loop 31: filterhigh(V,V3,Out)->  filterhigh(V',V3',Out)
+                  [V3>=V3'+1,V3'>=0,V'=0,V=0] 
+* Loop 32: filterhigh(V,V3,Out) [V>=0,Out=0,V3=0] 
+* Loop 33: filterhigh(V,V3,Out) [V3>=0,V>=0,Out=0] 
+
+### Ranking functions of CR filterhigh(V,V3,Out) 
+* RF of phase [28,29,30]: [V3]
+* RF of phase [31]: [V3]
+
+#### Partial ranking functions of CR filterhigh(V,V3,Out) 
+* Partial RF of phase [28,29,30]:
+  - RF of loop [28:1]:
+    V3-1
+  - RF of loop [29:1]:
+    -V/2+V3/2
+    V3/2-1/2
+  - RF of loop [30:1]:
+    V3
+* Partial RF of phase [31]:
+  - RF of loop [31:1]:
+    V3
+
+
+### Resulting Chains:filterhigh(V,V3,Out) 
+* [[31],33]
+* [[31],32]
+* [[28,29,30],33]
+* [[28,29,30],32]
+* [33]
+* [32]
+
+
+### Merging Chains  filterhigh/3 into  External patterns of execution 
+* [[33],[32,[31]],[33,[31]]] --> 1 
+* [[32]] --> 2 
+* [[32,[28,29,30]],[33,[28,29,30]]] --> 3 
+
+
+### Specialization of cost equations filterlow/3 
+* CE 13 is refined into CE [55,56,57,58,59] 
+* CE 16 is refined into CE [60] 
+* CE 17 is refined into CE [61] 
+* CE 14 is refined into CE [62,63] 
+* CE 15 is refined into CE [64,65] 
+
+
+#### Refined cost equations filterlow/3 
+* CE 55: filterlow(V,V3,Out) = 1+ ge(W3,X3,Y3):1
+     [V3>=X3+1,X3>=1,Y3=1,W3=0,Out=0,V=0] 
+* CE 56: filterlow(V,V3,Out) = 1+ ge(V,W3,X3):2
+     [V>=0,V3>=1,X3=2,W3=0,Out=0] 
+* CE 57: filterlow(V,V3,Out) = 1+ ge(V,W3,X3):3
+     [V3>=W3+1,W3>=0,V>=0,X3=0,Out=0] 
+* CE 58: filterlow(V,V3,Out) = 1+ ge(V,W3,X3):4
+     [V3>=W3+1,W3>=V+1,V>=1,X3=1,Out=0] 
+* CE 59: filterlow(V,V3,Out) = 1+ ge(V,W3,X3):5
+     [V>=W3,V3>=W3+1,W3>=1,X3=2,Out=0] 
+* CE 60: filterlow(V,V3,Out) = 1
+     [V>=0,Out=0,V3=0] 
+* CE 61: filterlow(V,V3,Out) = 0
+     [V3>=0,V>=0,Out=0] 
+* CE 62: filterlow(V,V3,Out) = 2+ ge(W3,X3,Y3):1+ filterlow(Z3,A4,B4)
+     [A4>=0,X3>=1,X3+B4+1=Out,X3+A4+1=V3,Z3=0,Y3=1,W3=0,V=0] 
+* CE 63: filterlow(V,V3,Out) = 2+ ge(V,W3,X3):4+ filterlow(V,Y3,Z3)
+     [W3>=V+1,Y3>=0,V>=1,W3+Z3+1=Out,W3+Y3+1=V3,X3=1] 
+* CE 64: filterlow(V,V3,Out) = 2+ ge(V,W3,X3):2+ filterlow(V,Y3,Out)
+     [Y3>=0,V>=0,Y3+1=V3,X3=2,W3=0] 
+* CE 65: filterlow(V,V3,Out) = 2+ ge(V,W3,X3):5+ filterlow(V,Y3,Out)
+     [V>=W3,Y3>=0,W3>=1,W3+Y3+1=V3,X3=2] 
+
+### Cost equations --> "Loop" of filterlow/3 
+* CEs [63] --> Loop 34 
+* CEs [65] --> Loop 35 
+* CEs [64] --> Loop 36 
+* CEs [62] --> Loop 37 
+* CEs [60] --> Loop 38 
+* CEs [55,56,57,58,59,61] --> Loop 39 
+
+#### Loops of filterlow/3 
+* Loop 34: filterlow(V,V3,Out)->  filterlow(V,V3',Out')
+                  [V3>=V+V3'+2,V3'>=0,V>=1,Out+V3'=V3+Out'] 
+* Loop 35: filterlow(V,V3,Out)->  filterlow(V,V3',Out)
+                  [V+V3'+1>=V3,V3>=V3'+2,V3'>=0] 
+* Loop 36: filterlow(V,V3,Out)->  filterlow(V,V3',Out)
+                  [V3>=1,V>=0,V3=V3'+1] 
+* Loop 37: filterlow(V,V3,Out)->  filterlow(V',V3',Out')
+                  [V3>=V3'+2,V3'>=0,V3+Out'=Out+V3',V'=0,V=0] 
+* Loop 38: filterlow(V,V3,Out) [V>=0,Out=0,V3=0] 
+* Loop 39: filterlow(V,V3,Out) [V3>=0,V>=0,Out=0] 
+
+### Ranking functions of CR filterlow(V,V3,Out) 
+* RF of phase [34,35,36,37]: [V3]
+
+#### Partial ranking functions of CR filterlow(V,V3,Out) 
+* Partial RF of phase [34,35,36,37]:
+  - RF of loop [34:1]:
+    -V/3+V3/3-1/3
+    V3/3-2/3
+  - RF of loop [35:1]:
+    V3/2-1/2
+  - RF of loop [36:1]:
+    V3
+  - RF of loop [37:1]:
+    V3-1
+
+
+### Resulting Chains:filterlow(V,V3,Out) 
+* [[34,35,36,37],39]
+* [[34,35,36,37],38]
+* [39]
+* [38]
+
+
+### Merging Chains  filterlow/3 into  External patterns of execution 
+* [[38],[39]] --> 1 
+* [[38,[34,35,36,37]],[39,[34,35,36,37]]] --> 2 
+
+
+### Specialization of cost equations last/2 
+* CE 34 is refined into CE [66] 
+* CE 33 is refined into CE [67] 
+* CE 36 is refined into CE [68] 
+* CE 35 is refined into CE [69] 
+
+
+#### Refined cost equations last/2 
+* CE 66: last(V,Out) = 1
+     [Out>=0,Out+1=V] 
+* CE 67: last(V,Out) = 1
+     [Out=0,V=0] 
+* CE 68: last(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 69: last(V,Out) = 1+ last(W,Out)
+     [V>=W+1,W>=1] 
+
+### Cost equations --> "Loop" of last/2 
+* CEs [69] --> Loop 40 
+* CEs [66] --> Loop 41 
+* CEs [67,68] --> Loop 42 
+
+#### Loops of last/2 
+* Loop 40: last(V,Out)->  last(V',Out)
+                  [V>=V'+1,V'>=1] 
+* Loop 41: last(V,Out) [V>=1,V=Out+1] 
+* Loop 42: last(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR last(V,Out) 
+* RF of phase [40]: [V-1]
+
+#### Partial ranking functions of CR last(V,Out) 
+* Partial RF of phase [40]:
+  - RF of loop [40:1]:
+    V-1
+
+
+### Resulting Chains:last(V,Out) 
+* [[40],42]
+* [[40],41]
+* [42]
+* [41]
+
+
+### Merging Chains  last/2 into  External patterns of execution 
+* [[42],[42,[40]]] --> 1 
+* [[41]] --> 2 
+* [[41,[40]]] --> 3 
+
+
+### Specialization of cost equations qsort/2 
+* CE 23 is refined into CE [70] 
+* CE 25 is refined into CE [71] 
+* CE 24 is refined into CE [72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,350,351,352,353,354,355,356,357,358,359,360,361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380,381,382,383,384,385,386,387,388,389,390,391,392,393,394,395,396,397,398,399,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,419,420,421,422,423,424,425,426,427,428,429,430,431] 
+
+
+#### Refined cost equations qsort/2 
+* CE 70: qsort(V,Out) = 1
+     [Out=0,V=0] 
+* CE 71: qsort(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 72: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [V>=1,G1=0,F1=0,A1=0,Z=0,J1=1,I1=1,H1=0,E1=0,D1=0,C1=0,B1=0,Y=0,X=0,W=0,Out=1] 
+* CE 73: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [Out>=2,V>=1,Out=A1+1,Out=H1+1,G1=0,F1=0,Z=0,I1=1,E1=0,D1=0,C1=0,B1=0,Y=0,X=0,W=0] 
+* CE 74: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,Out>=1,V>=1,G1=0,F1=0,Z=0,H1=1,E1=0,D1=0,C1=0,B1=0,Y=0,X=0,W=0] 
+* CE 75: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [H1>=0,A1>=0,V>=1,H1=G1+1,F1=0,Z=0,I1=0,E1=0,D1=0,C1=0,B1=0,Y=0,X=0,W=0,Out=0] 
+* CE 76: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):1+ last(F1,G1):2+ filterhigh(G1,H1,I1):1+ qsort(J1,K1)+ append(L1,M1,N1):1
+     [G1>=0,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,K1=0,J1=0,C1=0,B1=0,N1=1,M1=1,L1=0,I1=0,E1=0,A1=0,Y=0,X=0,Out=1] 
+* CE 77: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):1+ last(F1,G1):2+ filterhigh(G1,H1,I1):1+ qsort(J1,K1)+ append(L1,M1,Out):2
+     [Out>=2,G1>=0,Out=C1+1,Out=L1+1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,K1=0,J1=0,B1=0,M1=1,I1=0,E1=0,A1=0,Y=0,X=0] 
+* CE 78: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):1+ last(F1,G1):2+ filterhigh(G1,H1,I1):1+ qsort(J1,K1)+ append(C1,L1,Out):3
+     [C1>=Out,Out>=1,G1>=0,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,K1=0,J1=0,B1=0,L1=1,I1=0,E1=0,A1=0,Y=0,X=0] 
+* CE 79: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):1+ last(F1,G1):2+ filterhigh(G1,H1,I1):1+ qsort(J1,K1)+ append(C1,L1,M1):4
+     [L1>=0,C1>=0,G1>=0,L1=K1+1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,J1=0,B1=0,M1=0,I1=0,E1=0,A1=0,Y=0,X=0,Out=0] 
+* CE 80: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):1+ last(F1,G1):2+ filterhigh(G1,H1,I1):3+ qsort(I1,J1)+ append(K1,L1,M1):1
+     [G1+1>=I1,I1>=0,G1>=1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,J1=0,C1=0,B1=0,M1=1,L1=1,K1=0,E1=0,A1=0,Y=0,X=0,Out=1] 
+* CE 81: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):1+ last(F1,G1):2+ filterhigh(G1,H1,I1):3+ qsort(I1,J1)+ append(K1,L1,Out):2
+     [G1+1>=I1,Out>=2,I1>=0,G1>=1,Out=C1+1,Out=K1+1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,J1=0,B1=0,L1=1,E1=0,A1=0,Y=0,X=0] 
+* CE 82: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):1+ last(F1,G1):2+ filterhigh(G1,H1,I1):3+ qsort(I1,J1)+ append(C1,K1,Out):3
+     [C1>=Out,G1+1>=I1,Out>=1,I1>=0,G1>=1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,J1=0,B1=0,K1=1,E1=0,A1=0,Y=0,X=0] 
+* CE 83: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):1+ last(F1,G1):2+ filterhigh(G1,H1,I1):3+ qsort(I1,J1)+ append(C1,K1,L1):4
+     [G1+1>=I1,K1>=0,C1>=0,I1>=0,G1>=1,K1=J1+1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,B1=0,L1=0,E1=0,A1=0,Y=0,X=0,Out=0] 
+* CE 84: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=C1+2,C1>=0,F1=0,E1=0,A1=0,Z=0,I1=1,H1=1,G1=0,D1=0,B1=0,Y=0,X=0,W=0,Out=1] 
+* CE 85: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=C1+2,Out>=2,C1>=0,Out=A1+1,Out=G1+1,F1=0,E1=0,Z=0,H1=1,D1=0,B1=0,Y=0,X=0,W=0] 
+* CE 86: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,Out):3
+     [A1>=Out,V>=C1+2,Out>=1,C1>=0,F1=0,E1=0,Z=0,G1=1,D1=0,B1=0,Y=0,X=0,W=0] 
+* CE 87: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,H1):4
+     [V>=C1+2,G1>=0,A1>=0,C1>=0,G1=F1+1,E1=0,Z=0,H1=0,D1=0,B1=0,Y=0,X=0,W=0,Out=0] 
+* CE 88: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=D1,V>=C1+2,D1>=0,C1>=1,E1=0,A1=0,Z=0,H1=1,G1=1,F1=0,B1=0,Y=0,X=0,W=0,Out=1] 
+* CE 89: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=D1,V>=C1+2,Out>=2,D1>=0,C1>=1,Out=A1+1,Out=F1+1,E1=0,Z=0,G1=1,B1=0,Y=0,X=0,W=0] 
+* CE 90: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,Out):3
+     [A1>=Out,V>=D1,V>=C1+2,Out>=1,D1>=0,C1>=1,E1=0,Z=0,F1=1,B1=0,Y=0,X=0,W=0] 
+* CE 91: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,G1):4
+     [V>=D1,V>=C1+2,F1>=0,A1>=0,D1>=0,C1>=1,F1=E1+1,Z=0,G1=0,B1=0,Y=0,X=0,W=0,Out=0] 
+* CE 92: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [V>=1,V+G1=1,V=B1+1,F1=0,A1=0,Z=0,J1=1,I1=1,H1=0,E1=0,D1=0,C1=0,Y=0,X=0,W=0,Out=1] 
+* CE 93: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [Out>=2,V>=1,V+G1=1,Out=A1+1,Out=H1+1,V=B1+1,F1=0,Z=0,I1=1,E1=0,D1=0,C1=0,Y=0,X=0,W=0] 
+* CE 94: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,Out>=1,V>=1,V+G1=1,V=B1+1,F1=0,Z=0,H1=1,E1=0,D1=0,C1=0,Y=0,X=0,W=0] 
+* CE 95: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [H1>=0,A1>=0,V>=1,H1=V+G1,V=B1+1,F1=0,Z=0,I1=0,E1=0,D1=0,C1=0,Y=0,X=0,W=0,Out=0] 
+* CE 96: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):2+ last(F1,E1):2+ filterhigh(E1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,M1):1
+     [E1>=0,E1+J1=0,E1+1=G1,E1+1=F1,E1+1=D1,E1+1=Z,E1+1=W,E1+1=V,I1=0,C1=0,B1=0,M1=1,L1=1,K1=0,H1=0,A1=0,Y=0,X=0,Out=1] 
+* CE 97: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):2+ last(F1,E1):2+ filterhigh(E1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,Out):2
+     [Out>=2,E1>=0,E1+J1=0,Out=C1+1,Out=K1+1,E1+1=G1,E1+1=F1,E1+1=D1,E1+1=Z,E1+1=W,E1+1=V,I1=0,B1=0,L1=1,H1=0,A1=0,Y=0,X=0] 
+* CE 98: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):2+ last(F1,E1):2+ filterhigh(E1,G1,H1):1+ qsort(I1,J1)+ append(C1,K1,Out):3
+     [C1>=Out,Out>=1,E1>=0,E1+J1=0,E1+1=G1,E1+1=F1,E1+1=D1,E1+1=Z,E1+1=W,E1+1=V,I1=0,B1=0,K1=1,H1=0,A1=0,Y=0,X=0] 
+* CE 99: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):2+ last(F1,E1):2+ filterhigh(E1,G1,H1):1+ qsort(I1,J1)+ append(C1,K1,L1):4
+     [K1>=0,C1>=0,E1>=0,K1=E1+J1+1,E1+1=G1,E1+1=F1,E1+1=D1,E1+1=Z,E1+1=W,E1+1=V,I1=0,B1=0,L1=0,H1=0,A1=0,Y=0,X=0,Out=0] 
+* CE 100: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):2+ last(F1,E1):2+ filterhigh(E1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [E1+1>=H1,H1>=0,E1>=1,E1+I1=0,E1+1=G1,E1+1=F1,E1+1=D1,E1+1=Z,E1+1=W,E1+1=V,C1=0,B1=0,L1=1,K1=1,J1=0,A1=0,Y=0,X=0,Out=1] 
+* CE 101: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):2+ last(F1,E1):2+ filterhigh(E1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [E1+1>=H1,Out>=2,H1>=0,E1>=1,E1+I1=0,Out=C1+1,Out=J1+1,E1+1=G1,E1+1=F1,E1+1=D1,E1+1=Z,E1+1=W,E1+1=V,B1=0,K1=1,A1=0,Y=0,X=0] 
+* CE 102: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):2+ last(F1,E1):2+ filterhigh(E1,G1,H1):3+ qsort(H1,I1)+ append(C1,J1,Out):3
+     [C1>=Out,E1+1>=H1,Out>=1,H1>=0,E1>=1,E1+I1=0,E1+1=G1,E1+1=F1,E1+1=D1,E1+1=Z,E1+1=W,E1+1=V,B1=0,J1=1,A1=0,Y=0,X=0] 
+* CE 103: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):2+ last(F1,E1):2+ filterhigh(E1,G1,H1):3+ qsort(H1,I1)+ append(C1,J1,K1):4
+     [E1+1>=H1,J1>=0,C1>=0,H1>=0,E1>=1,J1=E1+I1+1,E1+1=G1,E1+1=F1,E1+1=D1,E1+1=Z,E1+1=W,E1+1=V,B1=0,K1=0,A1=0,Y=0,X=0,Out=0] 
+* CE 104: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=C1+2,C1>=0,V+F1=1,V=B1+1,E1=0,A1=0,Z=0,I1=1,H1=1,G1=0,D1=0,Y=0,X=0,W=0,Out=1] 
+* CE 105: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=C1+2,Out>=2,C1>=0,V+F1=1,Out=A1+1,Out=G1+1,V=B1+1,E1=0,Z=0,H1=1,D1=0,Y=0,X=0,W=0] 
+* CE 106: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,Out):3
+     [A1>=Out,V>=C1+2,Out>=1,C1>=0,V+F1=1,V=B1+1,E1=0,Z=0,G1=1,D1=0,Y=0,X=0,W=0] 
+* CE 107: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,H1):4
+     [V>=C1+2,G1>=0,A1>=0,C1>=0,G1=V+F1,V=B1+1,E1=0,Z=0,H1=0,D1=0,Y=0,X=0,W=0,Out=0] 
+* CE 108: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=D1,V>=C1+2,D1>=0,C1>=1,V+E1=1,V=B1+1,A1=0,Z=0,H1=1,G1=1,F1=0,Y=0,X=0,W=0,Out=1] 
+* CE 109: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=D1,V>=C1+2,Out>=2,D1>=0,C1>=1,V+E1=1,Out=A1+1,Out=F1+1,V=B1+1,Z=0,G1=1,Y=0,X=0,W=0] 
+* CE 110: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,Out):3
+     [A1>=Out,V>=D1,V>=C1+2,Out>=1,D1>=0,C1>=1,V+E1=1,V=B1+1,Z=0,F1=1,Y=0,X=0,W=0] 
+* CE 111: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,G1):4
+     [V>=D1,V>=C1+2,F1>=0,A1>=0,D1>=0,C1>=1,F1=V+E1,V=B1+1,Z=0,G1=0,Y=0,X=0,W=0,Out=0] 
+* CE 112: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [V>=B1+2,B1>=0,B1+G1=0,F1=0,A1=0,Z=0,J1=1,I1=1,H1=0,E1=0,D1=0,C1=0,Y=0,X=0,W=0,Out=1] 
+* CE 113: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [V>=B1+2,Out>=2,B1>=0,B1+G1=0,Out=A1+1,Out=H1+1,F1=0,Z=0,I1=1,E1=0,D1=0,C1=0,Y=0,X=0,W=0] 
+* CE 114: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,V>=B1+2,Out>=1,B1>=0,B1+G1=0,F1=0,Z=0,H1=1,E1=0,D1=0,C1=0,Y=0,X=0,W=0] 
+* CE 115: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [V>=B1+2,H1>=0,A1>=0,B1>=0,H1=B1+G1+1,F1=0,Z=0,I1=0,E1=0,D1=0,C1=0,Y=0,X=0,W=0,Out=0] 
+* CE 116: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):3+ last(F1,G1):2+ filterhigh(G1,H1,I1):1+ qsort(J1,K1)+ append(L1,M1,N1):1
+     [G1>=E1+1,E1>=0,E1+K1=0,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,J1=0,C1=0,B1=0,N1=1,M1=1,L1=0,I1=0,A1=0,Y=0,X=0,Out=1] 
+* CE 117: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):3+ last(F1,G1):2+ filterhigh(G1,H1,I1):1+ qsort(J1,K1)+ append(L1,M1,Out):2
+     [G1>=E1+1,Out>=2,E1>=0,E1+K1=0,Out=C1+1,Out=L1+1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,J1=0,B1=0,M1=1,I1=0,A1=0,Y=0,X=0] 
+* CE 118: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):3+ last(F1,G1):2+ filterhigh(G1,H1,I1):1+ qsort(J1,K1)+ append(C1,L1,Out):3
+     [C1>=Out,G1>=E1+1,Out>=1,E1>=0,E1+K1=0,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,J1=0,B1=0,L1=1,I1=0,A1=0,Y=0,X=0] 
+* CE 119: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):3+ last(F1,G1):2+ filterhigh(G1,H1,I1):1+ qsort(J1,K1)+ append(C1,L1,M1):4
+     [G1>=E1+1,L1>=0,C1>=0,E1>=0,L1=E1+K1+1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,J1=0,B1=0,M1=0,I1=0,A1=0,Y=0,X=0,Out=0] 
+* CE 120: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):3+ last(F1,G1):2+ filterhigh(G1,H1,I1):3+ qsort(I1,J1)+ append(K1,L1,M1):1
+     [G1+1>=I1,G1>=E1+1,I1>=0,E1>=0,E1+J1=0,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,C1=0,B1=0,M1=1,L1=1,K1=0,A1=0,Y=0,X=0,Out=1] 
+* CE 121: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):3+ last(F1,G1):2+ filterhigh(G1,H1,I1):3+ qsort(I1,J1)+ append(K1,L1,Out):2
+     [G1+1>=I1,G1>=E1+1,Out>=2,I1>=0,E1>=0,E1+J1=0,Out=C1+1,Out=K1+1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,B1=0,L1=1,A1=0,Y=0,X=0] 
+* CE 122: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):3+ last(F1,G1):2+ filterhigh(G1,H1,I1):3+ qsort(I1,J1)+ append(C1,K1,Out):3
+     [C1>=Out,G1+1>=I1,G1>=E1+1,Out>=1,I1>=0,E1>=0,E1+J1=0,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,B1=0,K1=1,A1=0,Y=0,X=0] 
+* CE 123: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):1+ qsort(B1,C1)+ last(D1,E1):3+ last(F1,G1):2+ filterhigh(G1,H1,I1):3+ qsort(I1,J1)+ append(C1,K1,L1):4
+     [G1+1>=I1,G1>=E1+1,K1>=0,C1>=0,I1>=0,E1>=0,K1=E1+J1+1,G1+1=H1,G1+1=F1,G1+1=D1,G1+1=Z,G1+1=W,G1+1=V,B1=0,L1=0,A1=0,Y=0,X=0,Out=0] 
+* CE 124: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=C1+2,V>=B1+2,C1>=0,B1>=0,B1+F1=0,E1=0,A1=0,Z=0,I1=1,H1=1,G1=0,D1=0,Y=0,X=0,W=0,Out=1] 
+* CE 125: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=C1+2,V>=B1+2,Out>=2,C1>=0,B1>=0,B1+F1=0,Out=A1+1,Out=G1+1,E1=0,Z=0,H1=1,D1=0,Y=0,X=0,W=0] 
+* CE 126: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,Out):3
+     [A1>=Out,V>=C1+2,V>=B1+2,Out>=1,C1>=0,B1>=0,B1+F1=0,E1=0,Z=0,G1=1,D1=0,Y=0,X=0,W=0] 
+* CE 127: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,H1):4
+     [V>=C1+2,V>=B1+2,G1>=0,A1>=0,C1>=0,B1>=0,G1=B1+F1+1,E1=0,Z=0,H1=0,D1=0,Y=0,X=0,W=0,Out=0] 
+* CE 128: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=D1,V>=C1+2,V>=B1+2,D1>=0,C1>=1,B1>=0,B1+E1=0,A1=0,Z=0,H1=1,G1=1,F1=0,Y=0,X=0,W=0,Out=1] 
+* CE 129: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=D1,V>=C1+2,V>=B1+2,Out>=2,D1>=0,C1>=1,B1>=0,B1+E1=0,Out=A1+1,Out=F1+1,Z=0,G1=1,Y=0,X=0,W=0] 
+* CE 130: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,Out):3
+     [A1>=Out,V>=D1,V>=C1+2,V>=B1+2,Out>=1,D1>=0,C1>=1,B1>=0,B1+E1=0,Z=0,F1=1,Y=0,X=0,W=0] 
+* CE 131: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,G1):4
+     [V>=D1,V>=C1+2,V>=B1+2,F1>=0,A1>=0,D1>=0,C1>=1,B1>=0,F1=B1+E1+1,Z=0,G1=0,Y=0,X=0,W=0,Out=0] 
+* CE 132: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [2*V>=Y+2,V>=Y,Y>=0,F1=0,E1=0,Z=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,A1=0,X=0,W=0,Out=1] 
+* CE 133: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [2*V>=Y+2,V>=Y,Out>=2,Y>=0,Out=Z+1,Out=G1+1,F1=0,E1=0,H1=1,D1=0,C1=0,B1=0,A1=0,X=0,W=0] 
+* CE 134: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,2*V>=Y+2,V>=Y,Out>=1,Y>=0,F1=0,E1=0,G1=1,D1=0,C1=0,B1=0,A1=0,X=0,W=0] 
+* CE 135: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [2*V>=Y+2,V>=Y,G1>=0,Z>=0,Y>=0,G1=F1+1,E1=0,H1=0,D1=0,C1=0,B1=0,A1=0,X=0,W=0,Out=0] 
+* CE 136: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,M1):1
+     [2*F1>=A1,F1+1>=A1,A1>=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,J1=0,I1=0,B1=0,M1=1,L1=1,K1=0,H1=0,D1=0,Y=0,X=0,Out=1] 
+* CE 137: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,Out):2
+     [2*F1>=A1,F1+1>=A1,Out>=2,A1>=0,Out=B1+1,Out=K1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,J1=0,I1=0,L1=1,H1=0,D1=0,Y=0,X=0] 
+* CE 138: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(B1,K1,Out):3
+     [B1>=Out,2*F1>=A1,F1+1>=A1,Out>=1,A1>=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,J1=0,I1=0,K1=1,H1=0,D1=0,Y=0,X=0] 
+* CE 139: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(B1,K1,L1):4
+     [2*F1>=A1,F1+1>=A1,K1>=0,B1>=0,A1>=0,K1=J1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,I1=0,L1=0,H1=0,D1=0,Y=0,X=0,Out=0] 
+* CE 140: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [F1+1>=H1,F1+1>=A1,H1>=0,F1>=1,A1>=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,I1=0,B1=0,L1=1,K1=1,J1=0,D1=0,Y=0,X=0,Out=1] 
+* CE 141: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [F1+1>=H1,F1+1>=A1,Out>=2,H1>=0,F1>=1,A1>=0,Out=B1+1,Out=J1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,I1=0,K1=1,D1=0,Y=0,X=0] 
+* CE 142: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(B1,J1,Out):3
+     [B1>=Out,F1+1>=H1,F1+1>=A1,Out>=1,H1>=0,F1>=1,A1>=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,I1=0,J1=1,D1=0,Y=0,X=0] 
+* CE 143: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(B1,J1,K1):4
+     [F1+1>=H1,F1+1>=A1,J1>=0,B1>=0,H1>=0,F1>=1,A1>=0,J1=I1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,K1=0,D1=0,Y=0,X=0,Out=0] 
+* CE 144: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=Y,B1>=0,Y>=0,E1=0,D1=0,Z=0,H1=1,G1=1,F1=0,C1=0,A1=0,X=0,W=0,Out=1] 
+* CE 145: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=Y,Out>=2,B1>=0,Y>=0,Out=Z+1,Out=F1+1,E1=0,D1=0,G1=1,C1=0,A1=0,X=0,W=0] 
+* CE 146: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=Y,Out>=1,B1>=0,Y>=0,E1=0,D1=0,F1=1,C1=0,A1=0,X=0,W=0] 
+* CE 147: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=Y,F1>=0,Z>=0,B1>=0,Y>=0,F1=E1+1,D1=0,G1=0,C1=0,A1=0,X=0,W=0,Out=0] 
+* CE 148: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=Y,C1>=0,B1>=1,Y>=0,D1=0,Z=0,G1=1,F1=1,E1=0,A1=0,X=0,W=0,Out=1] 
+* CE 149: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=Y,Out>=2,C1>=0,B1>=1,Y>=0,Out=Z+1,Out=E1+1,D1=0,F1=1,A1=0,X=0,W=0] 
+* CE 150: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=Y,Out>=1,C1>=0,B1>=1,Y>=0,D1=0,E1=1,A1=0,X=0,W=0] 
+* CE 151: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=Y,E1>=0,Z>=0,C1>=0,B1>=1,Y>=0,E1=D1+1,F1=0,A1=0,X=0,W=0,Out=0] 
+* CE 152: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [2*V>=Y+2,V>=Y,Y>=0,V+F1=1,V=A1+1,E1=0,Z=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,X=0,W=0,Out=1] 
+* CE 153: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [2*V>=Y+2,V>=Y,Out>=2,Y>=0,V+F1=1,Out=Z+1,Out=G1+1,V=A1+1,E1=0,H1=1,D1=0,C1=0,B1=0,X=0,W=0] 
+* CE 154: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,2*V>=Y+2,V>=Y,Out>=1,Y>=0,V+F1=1,V=A1+1,E1=0,G1=1,D1=0,C1=0,B1=0,X=0,W=0] 
+* CE 155: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [2*V>=Y+2,V>=Y,G1>=0,Z>=0,Y>=0,G1=V+F1,V=A1+1,E1=0,H1=0,D1=0,C1=0,B1=0,X=0,W=0,Out=0] 
+* CE 156: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [2*D1>=A1,D1+1>=A1,A1>=0,D1+I1=0,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Z,D1+1=W,D1+1=V,H1=0,B1=0,L1=1,K1=1,J1=0,G1=0,Y=0,X=0,Out=1] 
+* CE 157: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [2*D1>=A1,D1+1>=A1,Out>=2,A1>=0,D1+I1=0,Out=B1+1,Out=J1+1,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Z,D1+1=W,D1+1=V,H1=0,K1=1,G1=0,Y=0,X=0] 
+* CE 158: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):1+ qsort(H1,I1)+ append(B1,J1,Out):3
+     [B1>=Out,2*D1>=A1,D1+1>=A1,Out>=1,A1>=0,D1+I1=0,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Z,D1+1=W,D1+1=V,H1=0,J1=1,G1=0,Y=0,X=0] 
+* CE 159: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):1+ qsort(H1,I1)+ append(B1,J1,K1):4
+     [2*D1>=A1,D1+1>=A1,J1>=0,B1>=0,A1>=0,J1=D1+I1+1,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Z,D1+1=W,D1+1=V,H1=0,K1=0,G1=0,Y=0,X=0,Out=0] 
+* CE 160: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [D1+1>=G1,D1+1>=A1,G1>=0,D1>=1,A1>=0,D1+H1=0,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Z,D1+1=W,D1+1=V,B1=0,K1=1,J1=1,I1=0,Y=0,X=0,Out=1] 
+* CE 161: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [D1+1>=G1,D1+1>=A1,Out>=2,G1>=0,D1>=1,A1>=0,D1+H1=0,Out=B1+1,Out=I1+1,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Z,D1+1=W,D1+1=V,J1=1,Y=0,X=0] 
+* CE 162: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):3+ qsort(G1,H1)+ append(B1,I1,Out):3
+     [B1>=Out,D1+1>=G1,D1+1>=A1,Out>=1,G1>=0,D1>=1,A1>=0,D1+H1=0,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Z,D1+1=W,D1+1=V,I1=1,Y=0,X=0] 
+* CE 163: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):3+ qsort(G1,H1)+ append(B1,I1,J1):4
+     [D1+1>=G1,D1+1>=A1,I1>=0,B1>=0,G1>=0,D1>=1,A1>=0,I1=D1+H1+1,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Z,D1+1=W,D1+1=V,J1=0,Y=0,X=0,Out=0] 
+* CE 164: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=Y,B1>=0,Y>=0,V+E1=1,V=A1+1,D1=0,Z=0,H1=1,G1=1,F1=0,C1=0,X=0,W=0,Out=1] 
+* CE 165: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=Y,Out>=2,B1>=0,Y>=0,V+E1=1,Out=Z+1,Out=F1+1,V=A1+1,D1=0,G1=1,C1=0,X=0,W=0] 
+* CE 166: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=Y,Out>=1,B1>=0,Y>=0,V+E1=1,V=A1+1,D1=0,F1=1,C1=0,X=0,W=0] 
+* CE 167: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=Y,F1>=0,Z>=0,B1>=0,Y>=0,F1=V+E1,V=A1+1,D1=0,G1=0,C1=0,X=0,W=0,Out=0] 
+* CE 168: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=Y,C1>=0,B1>=1,Y>=0,V+D1=1,V=A1+1,Z=0,G1=1,F1=1,E1=0,X=0,W=0,Out=1] 
+* CE 169: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=Y,Out>=2,C1>=0,B1>=1,Y>=0,V+D1=1,Out=Z+1,Out=E1+1,V=A1+1,F1=1,X=0,W=0] 
+* CE 170: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=Y,Out>=1,C1>=0,B1>=1,Y>=0,V+D1=1,V=A1+1,E1=1,X=0,W=0] 
+* CE 171: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=Y,E1>=0,Z>=0,C1>=0,B1>=1,Y>=0,E1=V+D1,V=A1+1,F1=0,X=0,W=0,Out=0] 
+* CE 172: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=A1+2,V>=Y,A1>=0,Y>=0,A1+F1=0,E1=0,Z=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,X=0,W=0,Out=1] 
+* CE 173: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=A1+2,V>=Y,Out>=2,A1>=0,Y>=0,A1+F1=0,Out=Z+1,Out=G1+1,E1=0,H1=1,D1=0,C1=0,B1=0,X=0,W=0] 
+* CE 174: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,V>=A1+2,V>=Y,Out>=1,A1>=0,Y>=0,A1+F1=0,E1=0,G1=1,D1=0,C1=0,B1=0,X=0,W=0] 
+* CE 175: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [V>=A1+2,V>=Y,G1>=0,Z>=0,A1>=0,Y>=0,G1=A1+F1+1,E1=0,H1=0,D1=0,C1=0,B1=0,X=0,W=0,Out=0] 
+* CE 176: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,M1):1
+     [F1>=D1+1,F1+1>=A1,D1>=0,A1>=0,D1+J1=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,I1=0,B1=0,M1=1,L1=1,K1=0,H1=0,Y=0,X=0,Out=1] 
+* CE 177: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,Out):2
+     [F1>=D1+1,F1+1>=A1,Out>=2,D1>=0,A1>=0,D1+J1=0,Out=B1+1,Out=K1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,I1=0,L1=1,H1=0,Y=0,X=0] 
+* CE 178: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(B1,K1,Out):3
+     [B1>=Out,F1>=D1+1,F1+1>=A1,Out>=1,D1>=0,A1>=0,D1+J1=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,I1=0,K1=1,H1=0,Y=0,X=0] 
+* CE 179: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(B1,K1,L1):4
+     [F1>=D1+1,F1+1>=A1,K1>=0,B1>=0,D1>=0,A1>=0,K1=D1+J1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,I1=0,L1=0,H1=0,Y=0,X=0,Out=0] 
+* CE 180: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [F1+1>=H1,F1>=D1+1,F1+1>=A1,H1>=0,D1>=0,A1>=0,D1+I1=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,B1=0,L1=1,K1=1,J1=0,Y=0,X=0,Out=1] 
+* CE 181: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [F1+1>=H1,F1>=D1+1,F1+1>=A1,Out>=2,H1>=0,D1>=0,A1>=0,D1+I1=0,Out=B1+1,Out=J1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,K1=1,Y=0,X=0] 
+* CE 182: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(B1,J1,Out):3
+     [B1>=Out,F1+1>=H1,F1>=D1+1,F1+1>=A1,Out>=1,H1>=0,D1>=0,A1>=0,D1+I1=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,J1=1,Y=0,X=0] 
+* CE 183: qsort(V,Out) = 1+ last(W,X):1+ filterlow(Y,Z,A1):2+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(B1,J1,K1):4
+     [F1+1>=H1,F1>=D1+1,F1+1>=A1,J1>=0,B1>=0,H1>=0,D1>=0,A1>=0,J1=D1+I1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Z,F1+1=W,F1+1=V,K1=0,Y=0,X=0,Out=0] 
+* CE 184: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=A1+2,V>=Y,B1>=0,A1>=0,Y>=0,A1+E1=0,D1=0,Z=0,H1=1,G1=1,F1=0,C1=0,X=0,W=0,Out=1] 
+* CE 185: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=A1+2,V>=Y,Out>=2,B1>=0,A1>=0,Y>=0,A1+E1=0,Out=Z+1,Out=F1+1,D1=0,G1=1,C1=0,X=0,W=0] 
+* CE 186: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=A1+2,V>=Y,Out>=1,B1>=0,A1>=0,Y>=0,A1+E1=0,D1=0,F1=1,C1=0,X=0,W=0] 
+* CE 187: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=A1+2,V>=Y,F1>=0,Z>=0,B1>=0,A1>=0,Y>=0,F1=A1+E1+1,D1=0,G1=0,C1=0,X=0,W=0,Out=0] 
+* CE 188: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=A1+2,V>=Y,C1>=0,B1>=1,A1>=0,Y>=0,A1+D1=0,Z=0,G1=1,F1=1,E1=0,X=0,W=0,Out=1] 
+* CE 189: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=A1+2,V>=Y,Out>=2,C1>=0,B1>=1,A1>=0,Y>=0,A1+D1=0,Out=Z+1,Out=E1+1,F1=1,X=0,W=0] 
+* CE 190: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=A1+2,V>=Y,Out>=1,C1>=0,B1>=1,A1>=0,Y>=0,A1+D1=0,E1=1,X=0,W=0] 
+* CE 191: qsort(V,Out) = 1+ last(V,W):1+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=A1+2,V>=Y,E1>=0,Z>=0,C1>=0,B1>=1,A1>=0,Y>=0,E1=A1+D1+1,F1=0,X=0,W=0,Out=0] 
+* CE 192: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [V>=1,V=X+1,V=W+1,G1=0,F1=0,A1=0,Z=0,J1=1,I1=1,H1=0,E1=0,D1=0,C1=0,B1=0,Y=0,Out=1] 
+* CE 193: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [Out>=2,V>=1,Out=A1+1,Out=H1+1,V=X+1,V=W+1,G1=0,F1=0,Z=0,I1=1,E1=0,D1=0,C1=0,B1=0,Y=0] 
+* CE 194: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,Out>=1,V>=1,V=X+1,V=W+1,G1=0,F1=0,Z=0,H1=1,E1=0,D1=0,C1=0,B1=0,Y=0] 
+* CE 195: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [H1>=0,A1>=0,V>=1,H1=G1+1,V=X+1,V=W+1,F1=0,Z=0,I1=0,E1=0,D1=0,C1=0,B1=0,Y=0,Out=0] 
+* CE 196: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,X):2+ filterhigh(X,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [X>=0,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,I1=0,H1=0,B1=0,A1=0,L1=1,K1=1,J1=0,G1=0,D1=0,Z=0,Out=1] 
+* CE 197: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,X):2+ filterhigh(X,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [Out>=2,X>=0,Out=B1+1,Out=J1+1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,I1=0,H1=0,A1=0,K1=1,G1=0,D1=0,Z=0] 
+* CE 198: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,X):2+ filterhigh(X,F1,G1):1+ qsort(H1,I1)+ append(B1,J1,Out):3
+     [B1>=Out,Out>=1,X>=0,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,I1=0,H1=0,A1=0,J1=1,G1=0,D1=0,Z=0] 
+* CE 199: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,X):2+ filterhigh(X,F1,G1):1+ qsort(H1,I1)+ append(B1,J1,K1):4
+     [J1>=0,B1>=0,X>=0,J1=I1+1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,H1=0,A1=0,K1=0,G1=0,D1=0,Z=0,Out=0] 
+* CE 200: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,X):2+ filterhigh(X,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [X+1>=G1,G1>=0,X>=1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,H1=0,B1=0,A1=0,K1=1,J1=1,I1=0,D1=0,Z=0,Out=1] 
+* CE 201: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,X):2+ filterhigh(X,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [X+1>=G1,Out>=2,G1>=0,X>=1,Out=B1+1,Out=I1+1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,H1=0,A1=0,J1=1,D1=0,Z=0] 
+* CE 202: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,X):2+ filterhigh(X,F1,G1):3+ qsort(G1,H1)+ append(B1,I1,Out):3
+     [B1>=Out,X+1>=G1,Out>=1,G1>=0,X>=1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,H1=0,A1=0,I1=1,D1=0,Z=0] 
+* CE 203: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,X):2+ filterhigh(X,F1,G1):3+ qsort(G1,H1)+ append(B1,I1,J1):4
+     [X+1>=G1,I1>=0,B1>=0,G1>=0,X>=1,I1=H1+1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,A1=0,J1=0,D1=0,Z=0,Out=0] 
+* CE 204: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=C1+2,C1>=0,V=X+1,V=W+1,F1=0,E1=0,A1=0,Z=0,I1=1,H1=1,G1=0,D1=0,B1=0,Y=0,Out=1] 
+* CE 205: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=C1+2,Out>=2,C1>=0,Out=A1+1,Out=G1+1,V=X+1,V=W+1,F1=0,E1=0,Z=0,H1=1,D1=0,B1=0,Y=0] 
+* CE 206: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,Out):3
+     [A1>=Out,V>=C1+2,Out>=1,C1>=0,V=X+1,V=W+1,F1=0,E1=0,Z=0,G1=1,D1=0,B1=0,Y=0] 
+* CE 207: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,H1):4
+     [V>=C1+2,G1>=0,A1>=0,C1>=0,G1=F1+1,V=X+1,V=W+1,E1=0,Z=0,H1=0,D1=0,B1=0,Y=0,Out=0] 
+* CE 208: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=D1,V>=C1+2,D1>=0,C1>=1,V=X+1,V=W+1,E1=0,A1=0,Z=0,H1=1,G1=1,F1=0,B1=0,Y=0,Out=1] 
+* CE 209: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=D1,V>=C1+2,Out>=2,D1>=0,C1>=1,Out=A1+1,Out=F1+1,V=X+1,V=W+1,E1=0,Z=0,G1=1,B1=0,Y=0] 
+* CE 210: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,Out):3
+     [A1>=Out,V>=D1,V>=C1+2,Out>=1,D1>=0,C1>=1,V=X+1,V=W+1,E1=0,Z=0,F1=1,B1=0,Y=0] 
+* CE 211: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):1+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,G1):4
+     [V>=D1,V>=C1+2,F1>=0,A1>=0,D1>=0,C1>=1,F1=E1+1,V=X+1,V=W+1,Z=0,G1=0,B1=0,Y=0,Out=0] 
+* CE 212: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [V>=1,V+G1=1,V=B1+1,V=X+1,V=W+1,F1=0,A1=0,Z=0,J1=1,I1=1,H1=0,E1=0,D1=0,C1=0,Y=0,Out=1] 
+* CE 213: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [Out>=2,V>=1,V+G1=1,Out=A1+1,Out=H1+1,V=B1+1,V=X+1,V=W+1,F1=0,Z=0,I1=1,E1=0,D1=0,C1=0,Y=0] 
+* CE 214: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,Out>=1,V>=1,V+G1=1,V=B1+1,V=X+1,V=W+1,F1=0,Z=0,H1=1,E1=0,D1=0,C1=0,Y=0] 
+* CE 215: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [H1>=0,A1>=0,V>=1,H1=V+G1,V=B1+1,V=X+1,V=W+1,F1=0,Z=0,I1=0,E1=0,D1=0,C1=0,Y=0,Out=0] 
+* CE 216: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,X):2+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [X>=0,X+H1=0,X+1=E1,X+1=D1,X+1=C1,X+1=Y,X+1=W,X+1=V,G1=0,B1=0,A1=0,K1=1,J1=1,I1=0,F1=0,Z=0,Out=1] 
+* CE 217: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,X):2+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [Out>=2,X>=0,X+H1=0,Out=B1+1,Out=I1+1,X+1=E1,X+1=D1,X+1=C1,X+1=Y,X+1=W,X+1=V,G1=0,A1=0,J1=1,F1=0,Z=0] 
+* CE 218: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,X):2+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(B1,I1,Out):3
+     [B1>=Out,Out>=1,X>=0,X+H1=0,X+1=E1,X+1=D1,X+1=C1,X+1=Y,X+1=W,X+1=V,G1=0,A1=0,I1=1,F1=0,Z=0] 
+* CE 219: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,X):2+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(B1,I1,J1):4
+     [I1>=0,B1>=0,X>=0,I1=X+H1+1,X+1=E1,X+1=D1,X+1=C1,X+1=Y,X+1=W,X+1=V,G1=0,A1=0,J1=0,F1=0,Z=0,Out=0] 
+* CE 220: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,X):2+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [X+1>=F1,F1>=0,X>=1,X+G1=0,X+1=E1,X+1=D1,X+1=C1,X+1=Y,X+1=W,X+1=V,B1=0,A1=0,J1=1,I1=1,H1=0,Z=0,Out=1] 
+* CE 221: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,X):2+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [X+1>=F1,Out>=2,F1>=0,X>=1,X+G1=0,Out=B1+1,Out=H1+1,X+1=E1,X+1=D1,X+1=C1,X+1=Y,X+1=W,X+1=V,A1=0,I1=1,Z=0] 
+* CE 222: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,X):2+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(B1,H1,Out):3
+     [B1>=Out,X+1>=F1,Out>=1,F1>=0,X>=1,X+G1=0,X+1=E1,X+1=D1,X+1=C1,X+1=Y,X+1=W,X+1=V,A1=0,H1=1,Z=0] 
+* CE 223: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,X):2+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(B1,H1,I1):4
+     [X+1>=F1,H1>=0,B1>=0,F1>=0,X>=1,H1=X+G1+1,X+1=E1,X+1=D1,X+1=C1,X+1=Y,X+1=W,X+1=V,A1=0,I1=0,Z=0,Out=0] 
+* CE 224: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=C1+2,C1>=0,V+F1=1,V=B1+1,V=X+1,V=W+1,E1=0,A1=0,Z=0,I1=1,H1=1,G1=0,D1=0,Y=0,Out=1] 
+* CE 225: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=C1+2,Out>=2,C1>=0,V+F1=1,Out=A1+1,Out=G1+1,V=B1+1,V=X+1,V=W+1,E1=0,Z=0,H1=1,D1=0,Y=0] 
+* CE 226: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,Out):3
+     [A1>=Out,V>=C1+2,Out>=1,C1>=0,V+F1=1,V=B1+1,V=X+1,V=W+1,E1=0,Z=0,G1=1,D1=0,Y=0] 
+* CE 227: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,H1):4
+     [V>=C1+2,G1>=0,A1>=0,C1>=0,G1=V+F1,V=B1+1,V=X+1,V=W+1,E1=0,Z=0,H1=0,D1=0,Y=0,Out=0] 
+* CE 228: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=D1,V>=C1+2,D1>=0,C1>=1,V+E1=1,V=B1+1,V=X+1,V=W+1,A1=0,Z=0,H1=1,G1=1,F1=0,Y=0,Out=1] 
+* CE 229: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=D1,V>=C1+2,Out>=2,D1>=0,C1>=1,V+E1=1,Out=A1+1,Out=F1+1,V=B1+1,V=X+1,V=W+1,Z=0,G1=1,Y=0] 
+* CE 230: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,Out):3
+     [A1>=Out,V>=D1,V>=C1+2,Out>=1,D1>=0,C1>=1,V+E1=1,V=B1+1,V=X+1,V=W+1,Z=0,F1=1,Y=0] 
+* CE 231: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):2+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,G1):4
+     [V>=D1,V>=C1+2,F1>=0,A1>=0,D1>=0,C1>=1,F1=V+E1,V=B1+1,V=X+1,V=W+1,Z=0,G1=0,Y=0,Out=0] 
+* CE 232: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [V>=B1+2,B1>=0,B1+G1=0,V=X+1,V=W+1,F1=0,A1=0,Z=0,J1=1,I1=1,H1=0,E1=0,D1=0,C1=0,Y=0,Out=1] 
+* CE 233: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [V>=B1+2,Out>=2,B1>=0,B1+G1=0,Out=A1+1,Out=H1+1,V=X+1,V=W+1,F1=0,Z=0,I1=1,E1=0,D1=0,C1=0,Y=0] 
+* CE 234: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,V>=B1+2,Out>=1,B1>=0,B1+G1=0,V=X+1,V=W+1,F1=0,Z=0,H1=1,E1=0,D1=0,C1=0,Y=0] 
+* CE 235: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):1+ filterhigh(D1,V,E1):1+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [V>=B1+2,H1>=0,A1>=0,B1>=0,H1=B1+G1+1,V=X+1,V=W+1,F1=0,Z=0,I1=0,E1=0,D1=0,C1=0,Y=0,Out=0] 
+* CE 236: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,X):2+ filterhigh(X,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [X>=D1+1,D1>=0,D1+I1=0,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,H1=0,B1=0,A1=0,L1=1,K1=1,J1=0,G1=0,Z=0,Out=1] 
+* CE 237: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,X):2+ filterhigh(X,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [X>=D1+1,Out>=2,D1>=0,D1+I1=0,Out=B1+1,Out=J1+1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,H1=0,A1=0,K1=1,G1=0,Z=0] 
+* CE 238: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,X):2+ filterhigh(X,F1,G1):1+ qsort(H1,I1)+ append(B1,J1,Out):3
+     [B1>=Out,X>=D1+1,Out>=1,D1>=0,D1+I1=0,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,H1=0,A1=0,J1=1,G1=0,Z=0] 
+* CE 239: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,X):2+ filterhigh(X,F1,G1):1+ qsort(H1,I1)+ append(B1,J1,K1):4
+     [X>=D1+1,J1>=0,B1>=0,D1>=0,J1=D1+I1+1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,H1=0,A1=0,K1=0,G1=0,Z=0,Out=0] 
+* CE 240: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,X):2+ filterhigh(X,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [X+1>=G1,X>=D1+1,G1>=0,D1>=0,D1+H1=0,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,B1=0,A1=0,K1=1,J1=1,I1=0,Z=0,Out=1] 
+* CE 241: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,X):2+ filterhigh(X,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [X+1>=G1,X>=D1+1,Out>=2,G1>=0,D1>=0,D1+H1=0,Out=B1+1,Out=I1+1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,A1=0,J1=1,Z=0] 
+* CE 242: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,X):2+ filterhigh(X,F1,G1):3+ qsort(G1,H1)+ append(B1,I1,Out):3
+     [B1>=Out,X+1>=G1,X>=D1+1,Out>=1,G1>=0,D1>=0,D1+H1=0,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,A1=0,I1=1,Z=0] 
+* CE 243: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,X):2+ filterhigh(X,F1,G1):3+ qsort(G1,H1)+ append(B1,I1,J1):4
+     [X+1>=G1,X>=D1+1,I1>=0,B1>=0,G1>=0,D1>=0,I1=D1+H1+1,X+1=F1,X+1=E1,X+1=C1,X+1=Y,X+1=W,X+1=V,A1=0,J1=0,Z=0,Out=0] 
+* CE 244: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=C1+2,V>=B1+2,C1>=0,B1>=0,B1+F1=0,V=X+1,V=W+1,E1=0,A1=0,Z=0,I1=1,H1=1,G1=0,D1=0,Y=0,Out=1] 
+* CE 245: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=C1+2,V>=B1+2,Out>=2,C1>=0,B1>=0,B1+F1=0,Out=A1+1,Out=G1+1,V=X+1,V=W+1,E1=0,Z=0,H1=1,D1=0,Y=0] 
+* CE 246: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,Out):3
+     [A1>=Out,V>=C1+2,V>=B1+2,Out>=1,C1>=0,B1>=0,B1+F1=0,V=X+1,V=W+1,E1=0,Z=0,G1=1,D1=0,Y=0] 
+* CE 247: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(A1,G1,H1):4
+     [V>=C1+2,V>=B1+2,G1>=0,A1>=0,C1>=0,B1>=0,G1=B1+F1+1,V=X+1,V=W+1,E1=0,Z=0,H1=0,D1=0,Y=0,Out=0] 
+* CE 248: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=D1,V>=C1+2,V>=B1+2,D1>=0,C1>=1,B1>=0,B1+E1=0,V=X+1,V=W+1,A1=0,Z=0,H1=1,G1=1,F1=0,Y=0,Out=1] 
+* CE 249: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=D1,V>=C1+2,V>=B1+2,Out>=2,D1>=0,C1>=1,B1>=0,B1+E1=0,Out=A1+1,Out=F1+1,V=X+1,V=W+1,Z=0,G1=1,Y=0] 
+* CE 250: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,Out):3
+     [A1>=Out,V>=D1,V>=C1+2,V>=B1+2,Out>=1,D1>=0,C1>=1,B1>=0,B1+E1=0,V=X+1,V=W+1,Z=0,F1=1,Y=0] 
+* CE 251: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):1+ qsort(Z,A1)+ last(V,B1):3+ last(V,C1):3+ filterhigh(C1,V,D1):3+ qsort(D1,E1)+ append(A1,F1,G1):4
+     [V>=D1,V>=C1+2,V>=B1+2,F1>=0,A1>=0,D1>=0,C1>=1,B1>=0,F1=B1+E1+1,V=X+1,V=W+1,Z=0,G1=0,Y=0,Out=0] 
+* CE 252: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [2*V>=Y+2,V>=Y,Y>=0,V=X+1,V=W+1,F1=0,E1=0,Z=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,A1=0,Out=1] 
+* CE 253: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [2*V>=Y+2,V>=Y,Out>=2,Y>=0,Out=Z+1,Out=G1+1,V=X+1,V=W+1,F1=0,E1=0,H1=1,D1=0,C1=0,B1=0,A1=0] 
+* CE 254: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,2*V>=Y+2,V>=Y,Out>=1,Y>=0,V=X+1,V=W+1,F1=0,E1=0,G1=1,D1=0,C1=0,B1=0,A1=0] 
+* CE 255: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [2*V>=Y+2,V>=Y,G1>=0,Z>=0,Y>=0,G1=F1+1,V=X+1,V=W+1,E1=0,H1=0,D1=0,C1=0,B1=0,A1=0,Out=0] 
+* CE 256: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [2*X>=Z,X+1>=Z,Z>=0,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,H1=0,G1=0,A1=0,K1=1,J1=1,I1=0,F1=0,C1=0,Out=1] 
+* CE 257: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [2*X>=Z,X+1>=Z,Out>=2,Z>=0,Out=A1+1,Out=I1+1,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,H1=0,G1=0,J1=1,F1=0,C1=0] 
+* CE 258: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(A1,I1,Out):3
+     [A1>=Out,2*X>=Z,X+1>=Z,Out>=1,Z>=0,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,H1=0,G1=0,I1=1,F1=0,C1=0] 
+* CE 259: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(A1,I1,J1):4
+     [2*X>=Z,X+1>=Z,I1>=0,A1>=0,Z>=0,I1=H1+1,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=0,J1=0,F1=0,C1=0,Out=0] 
+* CE 260: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [X+1>=F1,X+1>=Z,F1>=0,X>=1,Z>=0,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=0,A1=0,J1=1,I1=1,H1=0,C1=0,Out=1] 
+* CE 261: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [X+1>=F1,X+1>=Z,Out>=2,F1>=0,X>=1,Z>=0,Out=A1+1,Out=H1+1,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=0,I1=1,C1=0] 
+* CE 262: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,X+1>=F1,X+1>=Z,Out>=1,F1>=0,X>=1,Z>=0,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=0,H1=1,C1=0] 
+* CE 263: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [X+1>=F1,X+1>=Z,H1>=0,A1>=0,F1>=0,X>=1,Z>=0,H1=G1+1,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,I1=0,C1=0,Out=0] 
+* CE 264: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=Y,B1>=0,Y>=0,V=X+1,V=W+1,E1=0,D1=0,Z=0,H1=1,G1=1,F1=0,C1=0,A1=0,Out=1] 
+* CE 265: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=Y,Out>=2,B1>=0,Y>=0,Out=Z+1,Out=F1+1,V=X+1,V=W+1,E1=0,D1=0,G1=1,C1=0,A1=0] 
+* CE 266: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=Y,Out>=1,B1>=0,Y>=0,V=X+1,V=W+1,E1=0,D1=0,F1=1,C1=0,A1=0] 
+* CE 267: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=Y,F1>=0,Z>=0,B1>=0,Y>=0,F1=E1+1,V=X+1,V=W+1,D1=0,G1=0,C1=0,A1=0,Out=0] 
+* CE 268: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=Y,C1>=0,B1>=1,Y>=0,V=X+1,V=W+1,D1=0,Z=0,G1=1,F1=1,E1=0,A1=0,Out=1] 
+* CE 269: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=Y,Out>=2,C1>=0,B1>=1,Y>=0,Out=Z+1,Out=E1+1,V=X+1,V=W+1,D1=0,F1=1,A1=0] 
+* CE 270: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=Y,Out>=1,C1>=0,B1>=1,Y>=0,V=X+1,V=W+1,D1=0,E1=1,A1=0] 
+* CE 271: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=Y,E1>=0,Z>=0,C1>=0,B1>=1,Y>=0,E1=D1+1,V=X+1,V=W+1,F1=0,A1=0,Out=0] 
+* CE 272: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [2*V>=Y+2,V>=Y,Y>=0,V+F1=1,V=A1+1,V=X+1,V=W+1,E1=0,Z=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,Out=1] 
+* CE 273: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [2*V>=Y+2,V>=Y,Out>=2,Y>=0,V+F1=1,Out=Z+1,Out=G1+1,V=A1+1,V=X+1,V=W+1,E1=0,H1=1,D1=0,C1=0,B1=0] 
+* CE 274: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,2*V>=Y+2,V>=Y,Out>=1,Y>=0,V+F1=1,V=A1+1,V=X+1,V=W+1,E1=0,G1=1,D1=0,C1=0,B1=0] 
+* CE 275: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [2*V>=Y+2,V>=Y,G1>=0,Z>=0,Y>=0,G1=V+F1,V=A1+1,V=X+1,V=W+1,E1=0,H1=0,D1=0,C1=0,B1=0,Out=0] 
+* CE 276: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,X):2+ last(C1,X):2+ filterhigh(X,D1,E1):1+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [2*X>=Z,X+1>=Z,Z>=0,X+G1=0,X+1=D1,X+1=C1,X+1=B1,X+1=Y,X+1=W,X+1=V,F1=0,A1=0,J1=1,I1=1,H1=0,E1=0,Out=1] 
+* CE 277: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,X):2+ last(C1,X):2+ filterhigh(X,D1,E1):1+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [2*X>=Z,X+1>=Z,Out>=2,Z>=0,X+G1=0,Out=A1+1,Out=H1+1,X+1=D1,X+1=C1,X+1=B1,X+1=Y,X+1=W,X+1=V,F1=0,I1=1,E1=0] 
+* CE 278: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,X):2+ last(C1,X):2+ filterhigh(X,D1,E1):1+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,2*X>=Z,X+1>=Z,Out>=1,Z>=0,X+G1=0,X+1=D1,X+1=C1,X+1=B1,X+1=Y,X+1=W,X+1=V,F1=0,H1=1,E1=0] 
+* CE 279: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,X):2+ last(C1,X):2+ filterhigh(X,D1,E1):1+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [2*X>=Z,X+1>=Z,H1>=0,A1>=0,Z>=0,H1=X+G1+1,X+1=D1,X+1=C1,X+1=B1,X+1=Y,X+1=W,X+1=V,F1=0,I1=0,E1=0,Out=0] 
+* CE 280: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,X):2+ last(C1,X):2+ filterhigh(X,D1,E1):3+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [X+1>=E1,X+1>=Z,E1>=0,X>=1,Z>=0,X+F1=0,X+1=D1,X+1=C1,X+1=B1,X+1=Y,X+1=W,X+1=V,A1=0,I1=1,H1=1,G1=0,Out=1] 
+* CE 281: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,X):2+ last(C1,X):2+ filterhigh(X,D1,E1):3+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [X+1>=E1,X+1>=Z,Out>=2,E1>=0,X>=1,Z>=0,X+F1=0,Out=A1+1,Out=G1+1,X+1=D1,X+1=C1,X+1=B1,X+1=Y,X+1=W,X+1=V,H1=1] 
+* CE 282: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,X):2+ last(C1,X):2+ filterhigh(X,D1,E1):3+ qsort(E1,F1)+ append(A1,G1,Out):3
+     [A1>=Out,X+1>=E1,X+1>=Z,Out>=1,E1>=0,X>=1,Z>=0,X+F1=0,X+1=D1,X+1=C1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=1] 
+* CE 283: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,X):2+ last(C1,X):2+ filterhigh(X,D1,E1):3+ qsort(E1,F1)+ append(A1,G1,H1):4
+     [X+1>=E1,X+1>=Z,G1>=0,A1>=0,E1>=0,X>=1,Z>=0,G1=X+F1+1,X+1=D1,X+1=C1,X+1=B1,X+1=Y,X+1=W,X+1=V,H1=0,Out=0] 
+* CE 284: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=Y,B1>=0,Y>=0,V+E1=1,V=A1+1,V=X+1,V=W+1,D1=0,Z=0,H1=1,G1=1,F1=0,C1=0,Out=1] 
+* CE 285: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=Y,Out>=2,B1>=0,Y>=0,V+E1=1,Out=Z+1,Out=F1+1,V=A1+1,V=X+1,V=W+1,D1=0,G1=1,C1=0] 
+* CE 286: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=Y,Out>=1,B1>=0,Y>=0,V+E1=1,V=A1+1,V=X+1,V=W+1,D1=0,F1=1,C1=0] 
+* CE 287: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=Y,F1>=0,Z>=0,B1>=0,Y>=0,F1=V+E1,V=A1+1,V=X+1,V=W+1,D1=0,G1=0,C1=0,Out=0] 
+* CE 288: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=Y,C1>=0,B1>=1,Y>=0,V+D1=1,V=A1+1,V=X+1,V=W+1,Z=0,G1=1,F1=1,E1=0,Out=1] 
+* CE 289: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=Y,Out>=2,C1>=0,B1>=1,Y>=0,V+D1=1,Out=Z+1,Out=E1+1,V=A1+1,V=X+1,V=W+1,F1=1] 
+* CE 290: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=Y,Out>=1,C1>=0,B1>=1,Y>=0,V+D1=1,V=A1+1,V=X+1,V=W+1,E1=1] 
+* CE 291: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=Y,E1>=0,Z>=0,C1>=0,B1>=1,Y>=0,E1=V+D1,V=A1+1,V=X+1,V=W+1,F1=0,Out=0] 
+* CE 292: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=A1+2,V>=Y,A1>=0,Y>=0,A1+F1=0,V=X+1,V=W+1,E1=0,Z=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,Out=1] 
+* CE 293: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=A1+2,V>=Y,Out>=2,A1>=0,Y>=0,A1+F1=0,Out=Z+1,Out=G1+1,V=X+1,V=W+1,E1=0,H1=1,D1=0,C1=0,B1=0] 
+* CE 294: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,V>=A1+2,V>=Y,Out>=1,A1>=0,Y>=0,A1+F1=0,V=X+1,V=W+1,E1=0,G1=1,D1=0,C1=0,B1=0] 
+* CE 295: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [V>=A1+2,V>=Y,G1>=0,Z>=0,A1>=0,Y>=0,G1=A1+F1+1,V=X+1,V=W+1,E1=0,H1=0,D1=0,C1=0,B1=0,Out=0] 
+* CE 296: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [X>=C1+1,X+1>=Z,C1>=0,Z>=0,C1+H1=0,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=0,A1=0,K1=1,J1=1,I1=0,F1=0,Out=1] 
+* CE 297: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [X>=C1+1,X+1>=Z,Out>=2,C1>=0,Z>=0,C1+H1=0,Out=A1+1,Out=I1+1,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=0,J1=1,F1=0] 
+* CE 298: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(A1,I1,Out):3
+     [A1>=Out,X>=C1+1,X+1>=Z,Out>=1,C1>=0,Z>=0,C1+H1=0,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=0,I1=1,F1=0] 
+* CE 299: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,X):2+ filterhigh(X,E1,F1):1+ qsort(G1,H1)+ append(A1,I1,J1):4
+     [X>=C1+1,X+1>=Z,I1>=0,A1>=0,C1>=0,Z>=0,I1=C1+H1+1,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,G1=0,J1=0,F1=0,Out=0] 
+* CE 300: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [X+1>=F1,X>=C1+1,X+1>=Z,F1>=0,C1>=0,Z>=0,C1+G1=0,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,A1=0,J1=1,I1=1,H1=0,Out=1] 
+* CE 301: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [X+1>=F1,X>=C1+1,X+1>=Z,Out>=2,F1>=0,C1>=0,Z>=0,C1+G1=0,Out=A1+1,Out=H1+1,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,I1=1] 
+* CE 302: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,X+1>=F1,X>=C1+1,X+1>=Z,Out>=1,F1>=0,C1>=0,Z>=0,C1+G1=0,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,H1=1] 
+* CE 303: qsort(V,Out) = 1+ last(W,X):2+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,X):2+ filterhigh(X,E1,F1):3+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [X+1>=F1,X>=C1+1,X+1>=Z,H1>=0,A1>=0,F1>=0,C1>=0,Z>=0,H1=C1+G1+1,X+1=E1,X+1=D1,X+1=B1,X+1=Y,X+1=W,X+1=V,I1=0,Out=0] 
+* CE 304: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=A1+2,V>=Y,B1>=0,A1>=0,Y>=0,A1+E1=0,V=X+1,V=W+1,D1=0,Z=0,H1=1,G1=1,F1=0,C1=0,Out=1] 
+* CE 305: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=A1+2,V>=Y,Out>=2,B1>=0,A1>=0,Y>=0,A1+E1=0,Out=Z+1,Out=F1+1,V=X+1,V=W+1,D1=0,G1=1,C1=0] 
+* CE 306: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=A1+2,V>=Y,Out>=1,B1>=0,A1>=0,Y>=0,A1+E1=0,V=X+1,V=W+1,D1=0,F1=1,C1=0] 
+* CE 307: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=A1+2,V>=Y,F1>=0,Z>=0,B1>=0,A1>=0,Y>=0,F1=A1+E1+1,V=X+1,V=W+1,D1=0,G1=0,C1=0,Out=0] 
+* CE 308: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=A1+2,V>=Y,C1>=0,B1>=1,A1>=0,Y>=0,A1+D1=0,V=X+1,V=W+1,Z=0,G1=1,F1=1,E1=0,Out=1] 
+* CE 309: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=A1+2,V>=Y,Out>=2,C1>=0,B1>=1,A1>=0,Y>=0,A1+D1=0,Out=Z+1,Out=E1+1,V=X+1,V=W+1,F1=1] 
+* CE 310: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=A1+2,V>=Y,Out>=1,C1>=0,B1>=1,A1>=0,Y>=0,A1+D1=0,V=X+1,V=W+1,E1=1] 
+* CE 311: qsort(V,Out) = 1+ last(V,W):2+ filterlow(X,V,Y):2+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=A1+2,V>=Y,E1>=0,Z>=0,C1>=0,B1>=1,A1>=0,Y>=0,E1=A1+D1+1,V=X+1,V=W+1,F1=0,Out=0] 
+* CE 312: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=W+2,W>=0,F1=0,E1=0,Z=0,Y=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,A1=0,X=0,Out=1] 
+* CE 313: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=W+2,Out>=2,W>=0,Out=Z+1,Out=G1+1,F1=0,E1=0,Y=0,H1=1,D1=0,C1=0,B1=0,A1=0,X=0] 
+* CE 314: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,V>=W+2,Out>=1,W>=0,F1=0,E1=0,Y=0,G1=1,D1=0,C1=0,B1=0,A1=0,X=0] 
+* CE 315: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [V>=W+2,G1>=0,Z>=0,W>=0,G1=F1+1,E1=0,Y=0,H1=0,D1=0,C1=0,B1=0,A1=0,X=0,Out=0] 
+* CE 316: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,M1):1
+     [F1>=X+1,X>=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,J1=0,I1=0,B1=0,A1=0,M1=1,L1=1,K1=0,H1=0,D1=0,Z=0,Out=1] 
+* CE 317: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,Out):2
+     [F1>=X+1,Out>=2,X>=0,Out=B1+1,Out=K1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,J1=0,I1=0,A1=0,L1=1,H1=0,D1=0,Z=0] 
+* CE 318: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(B1,K1,Out):3
+     [B1>=Out,F1>=X+1,Out>=1,X>=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,J1=0,I1=0,A1=0,K1=1,H1=0,D1=0,Z=0] 
+* CE 319: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(B1,K1,L1):4
+     [F1>=X+1,K1>=0,B1>=0,X>=0,K1=J1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,I1=0,A1=0,L1=0,H1=0,D1=0,Z=0,Out=0] 
+* CE 320: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [F1+1>=H1,F1>=X+1,H1>=0,X>=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,I1=0,B1=0,A1=0,L1=1,K1=1,J1=0,D1=0,Z=0,Out=1] 
+* CE 321: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [F1+1>=H1,F1>=X+1,Out>=2,H1>=0,X>=0,Out=B1+1,Out=J1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,I1=0,A1=0,K1=1,D1=0,Z=0] 
+* CE 322: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(B1,J1,Out):3
+     [B1>=Out,F1+1>=H1,F1>=X+1,Out>=1,H1>=0,X>=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,I1=0,A1=0,J1=1,D1=0,Z=0] 
+* CE 323: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):1+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(B1,J1,K1):4
+     [F1+1>=H1,F1>=X+1,J1>=0,B1>=0,H1>=0,X>=0,J1=I1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,A1=0,K1=0,D1=0,Z=0,Out=0] 
+* CE 324: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=W+2,B1>=0,W>=0,E1=0,D1=0,Z=0,Y=0,H1=1,G1=1,F1=0,C1=0,A1=0,X=0,Out=1] 
+* CE 325: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=W+2,Out>=2,B1>=0,W>=0,Out=Z+1,Out=F1+1,E1=0,D1=0,Y=0,G1=1,C1=0,A1=0,X=0] 
+* CE 326: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=W+2,Out>=1,B1>=0,W>=0,E1=0,D1=0,Y=0,F1=1,C1=0,A1=0,X=0] 
+* CE 327: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=W+2,F1>=0,Z>=0,B1>=0,W>=0,F1=E1+1,D1=0,Y=0,G1=0,C1=0,A1=0,X=0,Out=0] 
+* CE 328: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=W+2,C1>=0,B1>=1,W>=0,D1=0,Z=0,Y=0,G1=1,F1=1,E1=0,A1=0,X=0,Out=1] 
+* CE 329: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=W+2,Out>=2,C1>=0,B1>=1,W>=0,Out=Z+1,Out=E1+1,D1=0,Y=0,F1=1,A1=0,X=0] 
+* CE 330: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=W+2,Out>=1,C1>=0,B1>=1,W>=0,D1=0,Y=0,E1=1,A1=0,X=0] 
+* CE 331: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):1+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=W+2,E1>=0,Z>=0,C1>=0,B1>=1,W>=0,E1=D1+1,Y=0,F1=0,A1=0,X=0,Out=0] 
+* CE 332: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=W+2,W>=0,V+F1=1,V=A1+1,E1=0,Z=0,Y=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,X=0,Out=1] 
+* CE 333: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=W+2,Out>=2,W>=0,V+F1=1,Out=Z+1,Out=G1+1,V=A1+1,E1=0,Y=0,H1=1,D1=0,C1=0,B1=0,X=0] 
+* CE 334: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,V>=W+2,Out>=1,W>=0,V+F1=1,V=A1+1,E1=0,Y=0,G1=1,D1=0,C1=0,B1=0,X=0] 
+* CE 335: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [V>=W+2,G1>=0,Z>=0,W>=0,G1=V+F1,V=A1+1,E1=0,Y=0,H1=0,D1=0,C1=0,B1=0,X=0,Out=0] 
+* CE 336: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [D1>=X+1,X>=0,D1+I1=0,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Y,D1+1=W,D1+1=V,H1=0,B1=0,A1=0,L1=1,K1=1,J1=0,G1=0,Z=0,Out=1] 
+* CE 337: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [D1>=X+1,Out>=2,X>=0,D1+I1=0,Out=B1+1,Out=J1+1,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Y,D1+1=W,D1+1=V,H1=0,A1=0,K1=1,G1=0,Z=0] 
+* CE 338: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):1+ qsort(H1,I1)+ append(B1,J1,Out):3
+     [B1>=Out,D1>=X+1,Out>=1,X>=0,D1+I1=0,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Y,D1+1=W,D1+1=V,H1=0,A1=0,J1=1,G1=0,Z=0] 
+* CE 339: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):1+ qsort(H1,I1)+ append(B1,J1,K1):4
+     [D1>=X+1,J1>=0,B1>=0,X>=0,J1=D1+I1+1,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Y,D1+1=W,D1+1=V,H1=0,A1=0,K1=0,G1=0,Z=0,Out=0] 
+* CE 340: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [D1+1>=G1,D1>=X+1,G1>=0,X>=0,D1+H1=0,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Y,D1+1=W,D1+1=V,B1=0,A1=0,K1=1,J1=1,I1=0,Z=0,Out=1] 
+* CE 341: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [D1+1>=G1,D1>=X+1,Out>=2,G1>=0,X>=0,D1+H1=0,Out=B1+1,Out=I1+1,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Y,D1+1=W,D1+1=V,A1=0,J1=1,Z=0] 
+* CE 342: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):3+ qsort(G1,H1)+ append(B1,I1,Out):3
+     [B1>=Out,D1+1>=G1,D1>=X+1,Out>=1,G1>=0,X>=0,D1+H1=0,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Y,D1+1=W,D1+1=V,A1=0,I1=1,Z=0] 
+* CE 343: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):2+ last(E1,D1):2+ filterhigh(D1,F1,G1):3+ qsort(G1,H1)+ append(B1,I1,J1):4
+     [D1+1>=G1,D1>=X+1,I1>=0,B1>=0,G1>=0,X>=0,I1=D1+H1+1,D1+1=F1,D1+1=E1,D1+1=C1,D1+1=Y,D1+1=W,D1+1=V,A1=0,J1=0,Z=0,Out=0] 
+* CE 344: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=W+2,B1>=0,W>=0,V+E1=1,V=A1+1,D1=0,Z=0,Y=0,H1=1,G1=1,F1=0,C1=0,X=0,Out=1] 
+* CE 345: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=W+2,Out>=2,B1>=0,W>=0,V+E1=1,Out=Z+1,Out=F1+1,V=A1+1,D1=0,Y=0,G1=1,C1=0,X=0] 
+* CE 346: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=W+2,Out>=1,B1>=0,W>=0,V+E1=1,V=A1+1,D1=0,Y=0,F1=1,C1=0,X=0] 
+* CE 347: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=W+2,F1>=0,Z>=0,B1>=0,W>=0,F1=V+E1,V=A1+1,D1=0,Y=0,G1=0,C1=0,X=0,Out=0] 
+* CE 348: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=W+2,C1>=0,B1>=1,W>=0,V+D1=1,V=A1+1,Z=0,Y=0,G1=1,F1=1,E1=0,X=0,Out=1] 
+* CE 349: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=W+2,Out>=2,C1>=0,B1>=1,W>=0,V+D1=1,Out=Z+1,Out=E1+1,V=A1+1,Y=0,F1=1,X=0] 
+* CE 350: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=W+2,Out>=1,C1>=0,B1>=1,W>=0,V+D1=1,V=A1+1,Y=0,E1=1,X=0] 
+* CE 351: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):2+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=W+2,E1>=0,Z>=0,C1>=0,B1>=1,W>=0,E1=V+D1,V=A1+1,Y=0,F1=0,X=0,Out=0] 
+* CE 352: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,I1):1
+     [V>=A1+2,V>=W+2,A1>=0,W>=0,A1+F1=0,E1=0,Z=0,Y=0,I1=1,H1=1,G1=0,D1=0,C1=0,B1=0,X=0,Out=1] 
+* CE 353: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(G1,H1,Out):2
+     [V>=A1+2,V>=W+2,Out>=2,A1>=0,W>=0,A1+F1=0,Out=Z+1,Out=G1+1,E1=0,Y=0,H1=1,D1=0,C1=0,B1=0,X=0] 
+* CE 354: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,Out):3
+     [Z>=Out,V>=A1+2,V>=W+2,Out>=1,A1>=0,W>=0,A1+F1=0,E1=0,Y=0,G1=1,D1=0,C1=0,B1=0,X=0] 
+* CE 355: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):1+ filterhigh(C1,V,D1):1+ qsort(E1,F1)+ append(Z,G1,H1):4
+     [V>=A1+2,V>=W+2,G1>=0,Z>=0,A1>=0,W>=0,G1=A1+F1+1,E1=0,Y=0,H1=0,D1=0,C1=0,B1=0,X=0,Out=0] 
+* CE 356: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,M1):1
+     [F1>=D1+1,F1>=X+1,D1>=0,X>=0,D1+J1=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,I1=0,B1=0,A1=0,M1=1,L1=1,K1=0,H1=0,Z=0,Out=1] 
+* CE 357: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(K1,L1,Out):2
+     [F1>=D1+1,F1>=X+1,Out>=2,D1>=0,X>=0,D1+J1=0,Out=B1+1,Out=K1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,I1=0,A1=0,L1=1,H1=0,Z=0] 
+* CE 358: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(B1,K1,Out):3
+     [B1>=Out,F1>=D1+1,F1>=X+1,Out>=1,D1>=0,X>=0,D1+J1=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,I1=0,A1=0,K1=1,H1=0,Z=0] 
+* CE 359: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):1+ qsort(I1,J1)+ append(B1,K1,L1):4
+     [F1>=D1+1,F1>=X+1,K1>=0,B1>=0,D1>=0,X>=0,K1=D1+J1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,I1=0,A1=0,L1=0,H1=0,Z=0,Out=0] 
+* CE 360: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [F1+1>=H1,F1>=D1+1,F1>=X+1,H1>=0,D1>=0,X>=0,D1+I1=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,B1=0,A1=0,L1=1,K1=1,J1=0,Z=0,Out=1] 
+* CE 361: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [F1+1>=H1,F1>=D1+1,F1>=X+1,Out>=2,H1>=0,D1>=0,X>=0,D1+I1=0,Out=B1+1,Out=J1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,A1=0,K1=1,Z=0] 
+* CE 362: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(B1,J1,Out):3
+     [B1>=Out,F1+1>=H1,F1>=D1+1,F1>=X+1,Out>=1,H1>=0,D1>=0,X>=0,D1+I1=0,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,A1=0,J1=1,Z=0] 
+* CE 363: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):1+ qsort(A1,B1)+ last(C1,D1):3+ last(E1,F1):2+ filterhigh(F1,G1,H1):3+ qsort(H1,I1)+ append(B1,J1,K1):4
+     [F1+1>=H1,F1>=D1+1,F1>=X+1,J1>=0,B1>=0,H1>=0,D1>=0,X>=0,J1=D1+I1+1,F1+1=G1,F1+1=E1,F1+1=C1,F1+1=Y,F1+1=W,F1+1=V,A1=0,K1=0,Z=0,Out=0] 
+* CE 364: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=B1+2,V>=A1+2,V>=W+2,B1>=0,A1>=0,W>=0,A1+E1=0,D1=0,Z=0,Y=0,H1=1,G1=1,F1=0,C1=0,X=0,Out=1] 
+* CE 365: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=B1+2,V>=A1+2,V>=W+2,Out>=2,B1>=0,A1>=0,W>=0,A1+E1=0,Out=Z+1,Out=F1+1,D1=0,Y=0,G1=1,C1=0,X=0] 
+* CE 366: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,Out):3
+     [Z>=Out,V>=B1+2,V>=A1+2,V>=W+2,Out>=1,B1>=0,A1>=0,W>=0,A1+E1=0,D1=0,Y=0,F1=1,C1=0,X=0] 
+* CE 367: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Z,F1,G1):4
+     [V>=B1+2,V>=A1+2,V>=W+2,F1>=0,Z>=0,B1>=0,A1>=0,W>=0,F1=A1+E1+1,D1=0,Y=0,G1=0,C1=0,X=0,Out=0] 
+* CE 368: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=C1,V>=B1+2,V>=A1+2,V>=W+2,C1>=0,B1>=1,A1>=0,W>=0,A1+D1=0,Z=0,Y=0,G1=1,F1=1,E1=0,X=0,Out=1] 
+* CE 369: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=C1,V>=B1+2,V>=A1+2,V>=W+2,Out>=2,C1>=0,B1>=1,A1>=0,W>=0,A1+D1=0,Out=Z+1,Out=E1+1,Y=0,F1=1,X=0] 
+* CE 370: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,Out):3
+     [Z>=Out,V>=C1,V>=B1+2,V>=A1+2,V>=W+2,Out>=1,C1>=0,B1>=1,A1>=0,W>=0,A1+D1=0,Y=0,E1=1,X=0] 
+* CE 371: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):1+ qsort(Y,Z)+ last(V,A1):3+ last(V,B1):3+ filterhigh(B1,V,C1):3+ qsort(C1,D1)+ append(Z,E1,F1):4
+     [V>=C1,V>=B1+2,V>=A1+2,V>=W+2,E1>=0,Z>=0,C1>=0,B1>=1,A1>=0,W>=0,E1=A1+D1+1,Y=0,F1=0,X=0,Out=0] 
+* CE 372: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=X,V>=W+2,X>=0,W>=0,E1=0,D1=0,Y=0,H1=1,G1=1,F1=0,C1=0,B1=0,A1=0,Z=0,Out=1] 
+* CE 373: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=X,V>=W+2,Out>=2,X>=0,W>=0,Out=Y+1,Out=F1+1,E1=0,D1=0,G1=1,C1=0,B1=0,A1=0,Z=0] 
+* CE 374: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Y,F1,Out):3
+     [Y>=Out,V>=X,V>=W+2,Out>=1,X>=0,W>=0,E1=0,D1=0,F1=1,C1=0,B1=0,A1=0,Z=0] 
+* CE 375: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Y,F1,G1):4
+     [V>=X,V>=W+2,F1>=0,Y>=0,X>=0,W>=0,F1=E1+1,D1=0,G1=0,C1=0,B1=0,A1=0,Z=0,Out=0] 
+* CE 376: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,E1):2+ filterhigh(E1,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [E1+1>=Z,E1>=X+1,Z>=0,X>=0,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,I1=0,H1=0,A1=0,L1=1,K1=1,J1=0,G1=0,C1=0,Out=1] 
+* CE 377: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,E1):2+ filterhigh(E1,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [E1+1>=Z,E1>=X+1,Out>=2,Z>=0,X>=0,Out=A1+1,Out=J1+1,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,I1=0,H1=0,K1=1,G1=0,C1=0] 
+* CE 378: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,E1):2+ filterhigh(E1,F1,G1):1+ qsort(H1,I1)+ append(A1,J1,Out):3
+     [A1>=Out,E1+1>=Z,E1>=X+1,Out>=1,Z>=0,X>=0,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,I1=0,H1=0,J1=1,G1=0,C1=0] 
+* CE 379: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,E1):2+ filterhigh(E1,F1,G1):1+ qsort(H1,I1)+ append(A1,J1,K1):4
+     [E1+1>=Z,E1>=X+1,J1>=0,A1>=0,Z>=0,X>=0,J1=I1+1,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,H1=0,K1=0,G1=0,C1=0,Out=0] 
+* CE 380: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,E1):2+ filterhigh(E1,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [E1+1>=G1,E1+1>=Z,E1>=X+1,G1>=0,Z>=0,X>=0,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,H1=0,A1=0,K1=1,J1=1,I1=0,C1=0,Out=1] 
+* CE 381: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,E1):2+ filterhigh(E1,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [E1+1>=G1,E1+1>=Z,E1>=X+1,Out>=2,G1>=0,Z>=0,X>=0,Out=A1+1,Out=I1+1,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,H1=0,J1=1,C1=0] 
+* CE 382: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,E1):2+ filterhigh(E1,F1,G1):3+ qsort(G1,H1)+ append(A1,I1,Out):3
+     [A1>=Out,E1+1>=G1,E1+1>=Z,E1>=X+1,Out>=1,G1>=0,Z>=0,X>=0,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,H1=0,I1=1,C1=0] 
+* CE 383: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):1+ last(D1,E1):2+ filterhigh(E1,F1,G1):3+ qsort(G1,H1)+ append(A1,I1,J1):4
+     [E1+1>=G1,E1+1>=Z,E1>=X+1,I1>=0,A1>=0,G1>=0,Z>=0,X>=0,I1=H1+1,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,J1=0,C1=0,Out=0] 
+* CE 384: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=A1+2,V>=X,V>=W+2,A1>=0,X>=0,W>=0,D1=0,C1=0,Y=0,G1=1,F1=1,E1=0,B1=0,Z=0,Out=1] 
+* CE 385: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=A1+2,V>=X,V>=W+2,Out>=2,A1>=0,X>=0,W>=0,Out=Y+1,Out=E1+1,D1=0,C1=0,F1=1,B1=0,Z=0] 
+* CE 386: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(Y,E1,Out):3
+     [Y>=Out,V>=A1+2,V>=X,V>=W+2,Out>=1,A1>=0,X>=0,W>=0,D1=0,C1=0,E1=1,B1=0,Z=0] 
+* CE 387: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(Y,E1,F1):4
+     [V>=A1+2,V>=X,V>=W+2,E1>=0,Y>=0,A1>=0,X>=0,W>=0,E1=D1+1,C1=0,F1=0,B1=0,Z=0,Out=0] 
+* CE 388: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(D1,E1,F1):1
+     [V>=B1,V>=A1+2,V>=X,V>=W+2,B1>=0,A1>=1,X>=0,W>=0,C1=0,Y=0,F1=1,E1=1,D1=0,Z=0,Out=1] 
+* CE 389: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(D1,E1,Out):2
+     [V>=B1,V>=A1+2,V>=X,V>=W+2,Out>=2,B1>=0,A1>=1,X>=0,W>=0,Out=Y+1,Out=D1+1,C1=0,E1=1,Z=0] 
+* CE 390: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(Y,D1,Out):3
+     [Y>=Out,V>=B1,V>=A1+2,V>=X,V>=W+2,Out>=1,B1>=0,A1>=1,X>=0,W>=0,C1=0,D1=1,Z=0] 
+* CE 391: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):1+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(Y,D1,E1):4
+     [V>=B1,V>=A1+2,V>=X,V>=W+2,D1>=0,Y>=0,B1>=0,A1>=1,X>=0,W>=0,D1=C1+1,E1=0,Z=0,Out=0] 
+* CE 392: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=X,V>=W+2,X>=0,W>=0,V+E1=1,V=Z+1,D1=0,Y=0,H1=1,G1=1,F1=0,C1=0,B1=0,A1=0,Out=1] 
+* CE 393: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=X,V>=W+2,Out>=2,X>=0,W>=0,V+E1=1,Out=Y+1,Out=F1+1,V=Z+1,D1=0,G1=1,C1=0,B1=0,A1=0] 
+* CE 394: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Y,F1,Out):3
+     [Y>=Out,V>=X,V>=W+2,Out>=1,X>=0,W>=0,V+E1=1,V=Z+1,D1=0,F1=1,C1=0,B1=0,A1=0] 
+* CE 395: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Y,F1,G1):4
+     [V>=X,V>=W+2,F1>=0,Y>=0,X>=0,W>=0,F1=V+E1,V=Z+1,D1=0,G1=0,C1=0,B1=0,A1=0,Out=0] 
+* CE 396: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):2+ last(D1,C1):2+ filterhigh(C1,E1,F1):1+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [C1+1>=Z,C1>=X+1,Z>=0,X>=0,C1+H1=0,C1+1=E1,C1+1=D1,C1+1=B1,C1+1=Y,C1+1=W,C1+1=V,G1=0,A1=0,K1=1,J1=1,I1=0,F1=0,Out=1] 
+* CE 397: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):2+ last(D1,C1):2+ filterhigh(C1,E1,F1):1+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [C1+1>=Z,C1>=X+1,Out>=2,Z>=0,X>=0,C1+H1=0,Out=A1+1,Out=I1+1,C1+1=E1,C1+1=D1,C1+1=B1,C1+1=Y,C1+1=W,C1+1=V,G1=0,J1=1,F1=0] 
+* CE 398: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):2+ last(D1,C1):2+ filterhigh(C1,E1,F1):1+ qsort(G1,H1)+ append(A1,I1,Out):3
+     [A1>=Out,C1+1>=Z,C1>=X+1,Out>=1,Z>=0,X>=0,C1+H1=0,C1+1=E1,C1+1=D1,C1+1=B1,C1+1=Y,C1+1=W,C1+1=V,G1=0,I1=1,F1=0] 
+* CE 399: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):2+ last(D1,C1):2+ filterhigh(C1,E1,F1):1+ qsort(G1,H1)+ append(A1,I1,J1):4
+     [C1+1>=Z,C1>=X+1,I1>=0,A1>=0,Z>=0,X>=0,I1=C1+H1+1,C1+1=E1,C1+1=D1,C1+1=B1,C1+1=Y,C1+1=W,C1+1=V,G1=0,J1=0,F1=0,Out=0] 
+* CE 400: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):2+ last(D1,C1):2+ filterhigh(C1,E1,F1):3+ qsort(F1,G1)+ append(H1,I1,J1):1
+     [C1+1>=F1,C1+1>=Z,C1>=X+1,F1>=0,Z>=0,X>=0,C1+G1=0,C1+1=E1,C1+1=D1,C1+1=B1,C1+1=Y,C1+1=W,C1+1=V,A1=0,J1=1,I1=1,H1=0,Out=1] 
+* CE 401: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):2+ last(D1,C1):2+ filterhigh(C1,E1,F1):3+ qsort(F1,G1)+ append(H1,I1,Out):2
+     [C1+1>=F1,C1+1>=Z,C1>=X+1,Out>=2,F1>=0,Z>=0,X>=0,C1+G1=0,Out=A1+1,Out=H1+1,C1+1=E1,C1+1=D1,C1+1=B1,C1+1=Y,C1+1=W,C1+1=V,I1=1] 
+* CE 402: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):2+ last(D1,C1):2+ filterhigh(C1,E1,F1):3+ qsort(F1,G1)+ append(A1,H1,Out):3
+     [A1>=Out,C1+1>=F1,C1+1>=Z,C1>=X+1,Out>=1,F1>=0,Z>=0,X>=0,C1+G1=0,C1+1=E1,C1+1=D1,C1+1=B1,C1+1=Y,C1+1=W,C1+1=V,H1=1] 
+* CE 403: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):2+ last(D1,C1):2+ filterhigh(C1,E1,F1):3+ qsort(F1,G1)+ append(A1,H1,I1):4
+     [C1+1>=F1,C1+1>=Z,C1>=X+1,H1>=0,A1>=0,F1>=0,Z>=0,X>=0,H1=C1+G1+1,C1+1=E1,C1+1=D1,C1+1=B1,C1+1=Y,C1+1=W,C1+1=V,I1=0,Out=0] 
+* CE 404: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=A1+2,V>=X,V>=W+2,A1>=0,X>=0,W>=0,V+D1=1,V=Z+1,C1=0,Y=0,G1=1,F1=1,E1=0,B1=0,Out=1] 
+* CE 405: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=A1+2,V>=X,V>=W+2,Out>=2,A1>=0,X>=0,W>=0,V+D1=1,Out=Y+1,Out=E1+1,V=Z+1,C1=0,F1=1,B1=0] 
+* CE 406: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(Y,E1,Out):3
+     [Y>=Out,V>=A1+2,V>=X,V>=W+2,Out>=1,A1>=0,X>=0,W>=0,V+D1=1,V=Z+1,C1=0,E1=1,B1=0] 
+* CE 407: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(Y,E1,F1):4
+     [V>=A1+2,V>=X,V>=W+2,E1>=0,Y>=0,A1>=0,X>=0,W>=0,E1=V+D1,V=Z+1,C1=0,F1=0,B1=0,Out=0] 
+* CE 408: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(D1,E1,F1):1
+     [V>=B1,V>=A1+2,V>=X,V>=W+2,B1>=0,A1>=1,X>=0,W>=0,V+C1=1,V=Z+1,Y=0,F1=1,E1=1,D1=0,Out=1] 
+* CE 409: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(D1,E1,Out):2
+     [V>=B1,V>=A1+2,V>=X,V>=W+2,Out>=2,B1>=0,A1>=1,X>=0,W>=0,V+C1=1,Out=Y+1,Out=D1+1,V=Z+1,E1=1] 
+* CE 410: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(Y,D1,Out):3
+     [Y>=Out,V>=B1,V>=A1+2,V>=X,V>=W+2,Out>=1,B1>=0,A1>=1,X>=0,W>=0,V+C1=1,V=Z+1,D1=1] 
+* CE 411: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):2+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(Y,D1,E1):4
+     [V>=B1,V>=A1+2,V>=X,V>=W+2,D1>=0,Y>=0,B1>=0,A1>=1,X>=0,W>=0,D1=V+C1,V=Z+1,E1=0,Out=0] 
+* CE 412: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,H1):1
+     [V>=Z+2,V>=X,V>=W+2,Z>=0,X>=0,W>=0,Z+E1=0,D1=0,Y=0,H1=1,G1=1,F1=0,C1=0,B1=0,A1=0,Out=1] 
+* CE 413: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(F1,G1,Out):2
+     [V>=Z+2,V>=X,V>=W+2,Out>=2,Z>=0,X>=0,W>=0,Z+E1=0,Out=Y+1,Out=F1+1,D1=0,G1=1,C1=0,B1=0,A1=0] 
+* CE 414: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Y,F1,Out):3
+     [Y>=Out,V>=Z+2,V>=X,V>=W+2,Out>=1,Z>=0,X>=0,W>=0,Z+E1=0,D1=0,F1=1,C1=0,B1=0,A1=0] 
+* CE 415: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):1+ filterhigh(B1,V,C1):1+ qsort(D1,E1)+ append(Y,F1,G1):4
+     [V>=Z+2,V>=X,V>=W+2,F1>=0,Y>=0,Z>=0,X>=0,W>=0,F1=Z+E1+1,D1=0,G1=0,C1=0,B1=0,A1=0,Out=0] 
+* CE 416: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,E1):2+ filterhigh(E1,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,L1):1
+     [E1>=C1+1,E1+1>=Z,E1>=X+1,C1>=0,Z>=0,X>=0,C1+I1=0,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,H1=0,A1=0,L1=1,K1=1,J1=0,G1=0,Out=1] 
+* CE 417: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,E1):2+ filterhigh(E1,F1,G1):1+ qsort(H1,I1)+ append(J1,K1,Out):2
+     [E1>=C1+1,E1+1>=Z,E1>=X+1,Out>=2,C1>=0,Z>=0,X>=0,C1+I1=0,Out=A1+1,Out=J1+1,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,H1=0,K1=1,G1=0] 
+* CE 418: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,E1):2+ filterhigh(E1,F1,G1):1+ qsort(H1,I1)+ append(A1,J1,Out):3
+     [A1>=Out,E1>=C1+1,E1+1>=Z,E1>=X+1,Out>=1,C1>=0,Z>=0,X>=0,C1+I1=0,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,H1=0,J1=1,G1=0] 
+* CE 419: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,E1):2+ filterhigh(E1,F1,G1):1+ qsort(H1,I1)+ append(A1,J1,K1):4
+     [E1>=C1+1,E1+1>=Z,E1>=X+1,J1>=0,A1>=0,C1>=0,Z>=0,X>=0,J1=C1+I1+1,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,H1=0,K1=0,G1=0,Out=0] 
+* CE 420: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,E1):2+ filterhigh(E1,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,K1):1
+     [E1+1>=G1,E1>=C1+1,E1+1>=Z,E1>=X+1,G1>=0,C1>=0,Z>=0,X>=0,C1+H1=0,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,A1=0,K1=1,J1=1,I1=0,Out=1] 
+* CE 421: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,E1):2+ filterhigh(E1,F1,G1):3+ qsort(G1,H1)+ append(I1,J1,Out):2
+     [E1+1>=G1,E1>=C1+1,E1+1>=Z,E1>=X+1,Out>=2,G1>=0,C1>=0,Z>=0,X>=0,C1+H1=0,Out=A1+1,Out=I1+1,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,J1=1] 
+* CE 422: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,E1):2+ filterhigh(E1,F1,G1):3+ qsort(G1,H1)+ append(A1,I1,Out):3
+     [A1>=Out,E1+1>=G1,E1>=C1+1,E1+1>=Z,E1>=X+1,Out>=1,G1>=0,C1>=0,Z>=0,X>=0,C1+H1=0,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,I1=1] 
+* CE 423: qsort(V,Out) = 1+ last(W,X):3+ filterlow(X,Y,Z):2+ qsort(Z,A1)+ last(B1,C1):3+ last(D1,E1):2+ filterhigh(E1,F1,G1):3+ qsort(G1,H1)+ append(A1,I1,J1):4
+     [E1+1>=G1,E1>=C1+1,E1+1>=Z,E1>=X+1,I1>=0,A1>=0,G1>=0,C1>=0,Z>=0,X>=0,I1=C1+H1+1,E1+1=F1,E1+1=D1,E1+1=B1,E1+1=Y,E1+1=W,E1+1=V,J1=0,Out=0] 
+* CE 424: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(E1,F1,G1):1
+     [V>=A1+2,V>=Z+2,V>=X,V>=W+2,A1>=0,Z>=0,X>=0,W>=0,Z+D1=0,C1=0,Y=0,G1=1,F1=1,E1=0,B1=0,Out=1] 
+* CE 425: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(E1,F1,Out):2
+     [V>=A1+2,V>=Z+2,V>=X,V>=W+2,Out>=2,A1>=0,Z>=0,X>=0,W>=0,Z+D1=0,Out=Y+1,Out=E1+1,C1=0,F1=1,B1=0] 
+* CE 426: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(Y,E1,Out):3
+     [Y>=Out,V>=A1+2,V>=Z+2,V>=X,V>=W+2,Out>=1,A1>=0,Z>=0,X>=0,W>=0,Z+D1=0,C1=0,E1=1,B1=0] 
+* CE 427: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):3+ filterhigh(A1,V,B1):1+ qsort(C1,D1)+ append(Y,E1,F1):4
+     [V>=A1+2,V>=Z+2,V>=X,V>=W+2,E1>=0,Y>=0,A1>=0,Z>=0,X>=0,W>=0,E1=Z+D1+1,C1=0,F1=0,B1=0,Out=0] 
+* CE 428: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(D1,E1,F1):1
+     [V>=B1,V>=A1+2,V>=Z+2,V>=X,V>=W+2,B1>=0,A1>=1,Z>=0,X>=0,W>=0,Z+C1=0,Y=0,F1=1,E1=1,D1=0,Out=1] 
+* CE 429: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(D1,E1,Out):2
+     [V>=B1,V>=A1+2,V>=Z+2,V>=X,V>=W+2,Out>=2,B1>=0,A1>=1,Z>=0,X>=0,W>=0,Z+C1=0,Out=Y+1,Out=D1+1,E1=1] 
+* CE 430: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(Y,D1,Out):3
+     [Y>=Out,V>=B1,V>=A1+2,V>=Z+2,V>=X,V>=W+2,Out>=1,B1>=0,A1>=1,Z>=0,X>=0,W>=0,Z+C1=0,D1=1] 
+* CE 431: qsort(V,Out) = 1+ last(V,W):3+ filterlow(W,V,X):2+ qsort(X,Y)+ last(V,Z):3+ last(V,A1):3+ filterhigh(A1,V,B1):3+ qsort(B1,C1)+ append(Y,D1,E1):4
+     [V>=B1,V>=A1+2,V>=Z+2,V>=X,V>=W+2,D1>=0,Y>=0,B1>=0,A1>=1,Z>=0,X>=0,W>=0,D1=Z+C1+1,E1=0,Out=0] 
+
+### Cost equations --> "Loop" of qsort/2 
+* CEs [166,286,394,398,406] --> Loop 43 
+* CEs [165,285,393,397,405] --> Loop 44 
+* CEs [146,174,178,186,266,294,298,306,374,378,386,414,418,426] --> Loop 45 
+* CEs [145,173,177,185,265,293,297,305,373,377,385,413,417,425] --> Loop 46 
+* CEs [130,190,250,310,370,430] --> Loop 47 
+* CEs [102,110,162,170,222,230,282,290,342,350,402,410] --> Loop 48 
+* CEs [129,189,249,309,369,429] --> Loop 49 
+* CEs [101,109,161,169,221,229,281,289,341,349,401,409] --> Loop 50 
+* CEs [82,90,142,150,202,210,262,270,322,330,382,390] --> Loop 51 
+* CEs [81,89,141,149,201,209,261,269,321,329,381,389] --> Loop 52 
+* CEs [114,118,122,126,182,234,238,242,246,302,354,358,362,366,422] --> Loop 53 
+* CEs [94,98,106,154,158,214,218,226,274,278,334,338,346] --> Loop 54 
+* CEs [113,117,121,125,181,233,237,241,245,301,353,357,361,365,421] --> Loop 55 
+* CEs [93,97,105,153,157,213,217,225,273,277,333,337,345] --> Loop 56 
+* CEs [74,78,86,134,138,194,198,206,254,258,314,318,326] --> Loop 57 
+* CEs [73,77,85,133,137,193,197,205,253,257,313,317,325] --> Loop 58 
+* CEs [164,284,392,396,404] --> Loop 59 
+* CEs [144,172,176,184,264,292,296,304,372,376,384,412,416,424] --> Loop 60 
+* CEs [128,188,248,308,368,428] --> Loop 61 
+* CEs [100,108,160,168,220,228,280,288,340,348,400,408] --> Loop 62 
+* CEs [80,88,140,148,200,208,260,268,320,328,380,388] --> Loop 63 
+* CEs [112,116,120,124,180,232,236,240,244,300,352,356,360,364,420] --> Loop 64 
+* CEs [92,96,104,152,156,212,216,224,272,276,332,336,344] --> Loop 65 
+* CEs [72,76,84,132,136,192,196,204,252,256,312,316,324] --> Loop 66 
+* CEs [143,263,383] --> Loop 67 
+* CEs [135,139,255,259] --> Loop 68 
+* CEs [147,167,175,179,187,267,287,295,299,307,375,379,387,395,399,407,415,419,427] --> Loop 69 
+* CEs [83,91,103,111,123,131,151,163,171,183,191,203,211,223,231,243,251,271,283,291,303,311,323,331,343,351,363,371,391,403,411,423,431] --> Loop 70 
+* CEs [75,79,87,95,99,107,115,119,127,155,159,195,199,207,215,219,227,235,239,247,275,279,315,319,327,335,339,347,355,359,367] --> Loop 71 
+* CEs [70,71] --> Loop 72 
+
+#### Loops of qsort/2 
+* Loop 43: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V',Out'>=Out,V'>=0,Out>=1,V>=2,V+Out'2=1,V'2=0] 
+* Loop 44: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V',V'>=0,Out>=2,V>=2,V+Out'2=1,Out=Out'+1,V'2=0] 
+* Loop 45: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V',Out'>=Out,V'>=0,Out>=1,0>=Out'2,V'2=0] 
+* Loop 46: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V',V'>=0,Out>=2,0>=Out'2,Out=Out'+1,V'2=0] 
+* Loop 47: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V'2,V>=V',Out'>=Out,V'2>=0,V'>=0,Out>=1,V>=3,0>=Out'2] 
+* Loop 48: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V'2,V>=V',Out'>=Out,V'2>=0,V'>=0,Out>=1,V>=2,V+Out'2=1] 
+* Loop 49: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V'2,V>=V',V'2>=0,V'>=0,Out>=2,V>=3,0>=Out'2,Out=Out'+1] 
+* Loop 50: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V'2,V>=V',V'2>=0,V'>=0,Out>=2,V>=2,V+Out'2=1,Out=Out'+1] 
+* Loop 51: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V'2,V>=V',Out'>=Out,V'2>=0,V'>=0,Out>=1,V>=2,Out'2=0] 
+* Loop 52: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V'2,V>=V',V'2>=0,V'>=0,Out>=2,V>=2,Out=Out'+1,Out'2=0] 
+* Loop 53: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V'2,V>=V',Out'>=Out,V'2>=0,V'>=0,Out>=1,0>=Out'2] 
+* Loop 54: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [2*V>=V'+2,V>=V',Out'>=Out,V'>=0,Out>=1,V+Out'2=1,V'2=0] 
+* Loop 55: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V'2,V>=V',V'2>=0,V'>=0,Out>=2,0>=Out'2,Out=Out'+1] 
+* Loop 56: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [2*V>=V'+2,V>=V',V'>=0,Out>=2,V+Out'2=1,Out=Out'+1,V'2=0] 
+* Loop 57: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [2*V>=V'+2,V>=V',Out'>=Out,V'>=0,Out>=1,Out'2=0,V'2=0] 
+* Loop 58: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [2*V>=V'+2,V>=V',V'>=0,Out>=2,Out=Out'+1,Out'2=0,V'2=0] 
+* Loop 59: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V',V'>=0,V>=2,V+Out'2=1,V'2=0,Out'=0,Out=1] 
+* Loop 60: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V',V'>=0,0>=Out'2,V'2=0,Out'=0,Out=1] 
+* Loop 61: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V'2,V>=V',V'2>=0,V'>=0,V>=3,0>=Out'2,Out'=0,Out=1] 
+* Loop 62: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V'2,V>=V',V'2>=0,V'>=0,V>=2,V+Out'2=1,Out'=0,Out=1] 
+* Loop 63: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V'2,V>=V',V'2>=0,V'>=0,V>=2,Out'2=0,Out'=0,Out=1] 
+* Loop 64: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=2,V>=V'2,V>=V',V'2>=0,V'>=0,0>=Out'2,Out'=0,Out=1] 
+* Loop 65: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [2*V>=V'+2,V>=V',V'>=0,V+Out'2=1,V'2=0,Out'=0,Out=1] 
+* Loop 66: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [2*V>=V'+2,V>=V',V'>=0,Out'2=0,V'2=0,Out'=0,Out=1] 
+* Loop 67: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V>=V'2,V>=V',Out'2+1>=0,V'2>=0,Out'>=0,V'>=0,V>=2,Out=0] 
+* Loop 68: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [2*V>=V'+2,V>=V',Out'2+1>=0,Out'>=0,V'>=0,V'2=0,Out=0] 
+* Loop 69: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=0,V>=V',Out'>=0,V'>=0,V>=2,V'2=0,Out=0] 
+* Loop 70: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=0,V>=V'2,V>=V',V'2>=0,Out'>=0,V'>=0,V>=2,Out=0] 
+* Loop 71: qsort(V,Out)->  qsort(V',Out')  qsort(V'2,Out'2)
+                  [V+Out'2>=0,2*V>=V'+2,V>=V',Out'>=0,V'>=0,V'2=0,Out=0] 
+* Loop 72: qsort(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR qsort(V,Out) 
+
+#### Partial ranking functions of CR qsort(V,Out) 
+* Partial RF of phase [43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71]:
+  - RF of loop [43:2,44:2,45:2,46:2,59:2,60:2,69:2]:
+    V-1
+  - RF of loop [54:2,56:2,57:2,58:2,65:2,66:2,68:2,71:2]:
+    V
+
+
+### Resulting Chains:qsort(V,Out) 
+* [multiple([43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71],[[],[72]])]...
+* [72]
+
+
+### Merging Chains  qsort/2 into  External patterns of execution 
+* [[72]] --> 1 
+* [[multiple([43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71],[[],[72]])]] --> 2 
+
+
+### Specialization of cost equations start/4 
+* CE 4 is refined into CE [432,433] 
+* CE 6 is refined into CE [434,435,436] 
+* CE 2 is refined into CE [437] 
+* CE 3 is refined into CE [438,439] 
+* CE 5 is refined into CE [440,441,442] 
+* CE 7 is refined into CE [443,444] 
+* CE 8 is refined into CE [445,446] 
+* CE 9 is refined into CE [447,448,449] 
+* CE 10 is refined into CE [450,451,452,453,454] 
+* CE 11 is refined into CE [455,456,457,458] 
+* CE 12 is refined into CE [459,460,461] 
+
+
+#### Refined cost equations start/4 
+* CE 432: start(V,V3,V9,V12) = 1+ filterlow(V3,V12,W12):1
+     [V12>=0,V3>=0,V9>=0,W12=0,V=2] 
+* CE 433: start(V,V3,V9,V12) = 1+ filterlow(V3,V12,W12):2
+     [2*V12>=W12+2,V12>=W12,W12>=0,V3>=0,V9>=0,V=2] 
+* CE 434: start(V,V3,V9,V12) = 1+ filterhigh(V3,V12,W12):1
+     [V12>=0,V3>=0,V9>=0,W12=0,V=2] 
+* CE 435: start(V,V3,V9,V12) = 1+ filterhigh(V3,W12,X12):2
+     [V3>=0,V9>=0,X12=0,W12=0,V12=0,V=2] 
+* CE 436: start(V,V3,V9,V12) = 1+ filterhigh(V3,V12,W12):3
+     [V12+W12>=2,V12>=W12,W12>=0,V3>=1,V9>=0,V=2] 
+* CE 437: start(V,V3,V9,V12) = 0
+     [V12>=0,V9>=0,V3>=0,V>=0] 
+* CE 438: start(V,V3,V9,V12) = 1+ filterlow(V3,V12,W12):1
+     [V12>=0,V3>=0,V9>=0,W12=0,V=1] 
+* CE 439: start(V,V3,V9,V12) = 1+ filterlow(V3,V12,W12):2
+     [2*V12>=W12+2,V12>=W12,W12>=0,V3>=0,V9>=0,V=1] 
+* CE 440: start(V,V3,V9,V12) = 1+ filterhigh(V3,V12,W12):1
+     [V12>=0,V3>=0,V9>=0,W12=0,V=1] 
+* CE 441: start(V,V3,V9,V12) = 1+ filterhigh(V3,W12,X12):2
+     [V3>=0,V9>=0,X12=0,W12=0,V12=0,V=1] 
+* CE 442: start(V,V3,V9,V12) = 1+ filterhigh(V3,V12,W12):3
+     [V12+W12>=2,V12>=W12,W12>=0,V3>=1,V9>=0,V=1] 
+* CE 443: start(V,V3,V9,V12) = 0+ qsort(V,W12):1
+     [V>=0,W12=0] 
+* CE 444: start(V,V3,V9,V12) = 0+ qsort(V,W12):2
+     [W12>=0,V>=1] 
+* CE 445: start(V,V3,V9,V12) = 0+ filterlow(V,V3,W12):1
+     [V3>=0,V>=0,W12=0] 
+* CE 446: start(V,V3,V9,V12) = 0+ filterlow(V,V3,W12):2
+     [2*V3>=W12+2,V3>=W12,W12>=0,V>=0] 
+* CE 447: start(V,V3,V9,V12) = 0+ filterhigh(V,V3,W12):1
+     [V3>=0,V>=0,W12=0] 
+* CE 448: start(V,V3,V9,V12) = 0+ filterhigh(V,W12,X12):2
+     [V>=0,X12=0,W12=0,V3=0] 
+* CE 449: start(V,V3,V9,V12) = 0+ filterhigh(V,V3,W12):3
+     [V3+W12>=2,V3>=W12,W12>=0,V>=1] 
+* CE 450: start(V,V3,V9,V12) = 0+ ge(W12,V3,X12):1
+     [V3>=1,X12=1,W12=0,V=0] 
+* CE 451: start(V,V3,V9,V12) = 0+ ge(V,W12,X12):2
+     [V>=0,X12=2,W12=0,V3=0] 
+* CE 452: start(V,V3,V9,V12) = 0+ ge(V,V3,W12):3
+     [V3>=0,V>=0,W12=0] 
+* CE 453: start(V,V3,V9,V12) = 0+ ge(V,V3,W12):4
+     [V3>=V+1,V>=1,W12=1] 
+* CE 454: start(V,V3,V9,V12) = 0+ ge(V,V3,W12):5
+     [V>=V3,V3>=1,W12=2] 
+* CE 455: start(V,V3,V9,V12) = 0+ append(W12,X12,Y12):1
+     [Y12=1,X12=1,W12=0,V3=1,V=0] 
+* CE 456: start(V,V3,V9,V12) = 0+ append(W12,X12,Y12):2
+     [Y12>=2,Y12=W12+1,Y12=V+1,X12=1,V3=1] 
+* CE 457: start(V,V3,V9,V12) = 0+ append(V,W12,X12):3
+     [V>=X12,X12>=1,W12=1,V3=1] 
+* CE 458: start(V,V3,V9,V12) = 0+ append(V,V3,W12):4
+     [V3>=0,V>=0,W12=0] 
+* CE 459: start(V,V3,V9,V12) = 0+ last(V,W12):1
+     [V>=0,W12=0] 
+* CE 460: start(V,V3,V9,V12) = 0+ last(W12,X12):2
+     [X12>=0,X12+1=W12,X12+1=V] 
+* CE 461: start(V,V3,V9,V12) = 0+ last(V,W12):3
+     [V>=W12+2,W12>=0] 
+
+### Cost equations --> "Loop" of start/4 
+* CEs [456,457] --> Loop 73 
+* CEs [448,451] --> Loop 74 
+* CEs [432,433,434,435,436] --> Loop 75 
+* CEs [438,439,440,441,442] --> Loop 76 
+* CEs [437,443,445,446,447,449,450,452,453,454,455,458,459,460,461] --> Loop 77 
+* CEs [444] --> Loop 78 
+
+#### Loops of start/4 
+* Loop 73: start(V,V3,V9,V12) [V>=1,V3=1] 
+* Loop 74: start(V,V3,V9,V12) [V>=0,V3=0] 
+* Loop 75: start(V,V3,V9,V12) [V12>=0,V9>=0,V3>=0,V=2] 
+* Loop 76: start(V,V3,V9,V12) [V12>=0,V9>=0,V3>=0,V=1] 
+* Loop 77: start(V,V3,V9,V12) [V>=0] 
+* Loop 78: start(V,V3,V9,V12) [V>=1] 
+
+### Ranking functions of CR start(V,V3,V9,V12) 
+
+#### Partial ranking functions of CR start(V,V3,V9,V12) 
+
+
+### Resulting Chains:start(V,V3,V9,V12) 
+* [78]...
+* [77]
+* [76]
+* [75]
+* [74]
+* [73]
+
+
+### Merging Chains  start/4 into  External patterns of execution 
+* [[76],[77]] --> 1 
+* [[75]] --> 2 
+* [[74]] --> 3 
+* [[73]] --> 4 
+* [[78]] --> 5 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [21] 
+
+ * loop 21:append(V,V3,Out) -> [append(V',V3',Out')] 
+1
+#### Cost of phase [21]:append(V,V3,Out) -> [append(V',V3',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V
+it(21) =< V-V'
+
+#### Cost of phase [21]:append(V,V3,Out) -> [append(V',V3',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V
+it(21) =< V-V'
+
+#### Cost of chains of append(V,V3,Out):
+* Chain [[21],23]: 1*it(21)+1
+  Such that:it(21) =< Out
+
+  with precondition: [V3=1,V+1=Out,V>=1] 
+
+* Chain [[21],22]: 1*it(21)+0
+  Such that:it(21) =< Out
+
+  with precondition: [V3=1,Out>=1,V>=Out] 
+
+* Chain [23]: 1
+  with precondition: [V=0,V3=1,Out=1] 
+
+* Chain [22]: 0
+  with precondition: [Out=0,V>=0,V3>=0] 
+
+
+#### Cost of loops [24] 
+
+ * loop 24:ge(V,V3,Out) -> [ge(V',V3',Out')] 
+1
+#### Cost of phase [24]:ge(V,V3,Out) -> [ge(V',V3',Out')] 
+1*it(24)+0
+  Such that:it(24) =< V
+it(24) =< V-V'
+it(24) =< V3
+it(24) =< V3-V3'
+
+#### Cost of phase [24]:ge(V,V3,Out) -> [ge(V',V3',Out')] 
+1*it(24)+0
+  Such that:it(24) =< V
+it(24) =< V-V'
+it(24) =< V3
+it(24) =< V3-V3'
+
+#### Cost of phase [24]:ge(V,V3,Out) -> [ge(V',V3',Out')] 
+1*it(24)+0
+  Such that:it(24) =< V
+it(24) =< V-V'
+it(24) =< V3
+it(24) =< V3-V3'
+
+#### Cost of chains of ge(V,V3,Out):
+* Chain [[24],27]: 1*it(24)+1
+  Such that:it(24) =< V
+
+  with precondition: [Out=1,V>=1,V3>=V+1] 
+
+* Chain [[24],26]: 1*it(24)+1
+  Such that:it(24) =< V3
+
+  with precondition: [Out=2,V3>=1,V>=V3] 
+
+* Chain [[24],25]: 1*it(24)+0
+  Such that:it(24) =< V3
+
+  with precondition: [Out=0,V>=1,V3>=1] 
+
+* Chain [27]: 1
+  with precondition: [V=0,Out=1,V3>=1] 
+
+* Chain [26]: 1
+  with precondition: [V3=0,Out=2,V>=0] 
+
+* Chain [25]: 0
+  with precondition: [Out=0,V>=0,V3>=0] 
+
+
+#### Cost of loops [31] 
+
+ * loop 31:filterhigh(V,V3,Out) -> [filterhigh(V',V3',Out')] 
+3
+#### Cost of phase [31]:filterhigh(V,V3,Out) -> [filterhigh(V',V3',Out')] 
+3*it(31)+0
+  Such that:it(31) =< V3
+it(31) =< V3-V3'
+
+#### Cost of phase [31]:filterhigh(V,V3,Out) -> [filterhigh(V',V3',Out')] 
+3*it(31)+0
+  Such that:it(31) =< V3
+it(31) =< V3-V3'
+
+#### Cost of loops [28,29,30] 
+
+ * loop 28:filterhigh(V,V3,Out) -> [filterhigh(V',V3',Out')] 
+1*s(6)+3
+  Such that:s(6) =< V3-V3'
+
+ * loop 29:filterhigh(V,V3,Out) -> [filterhigh(V',V3',Out')] 
+1*s(8)+3
+  Such that:s(8) =< V'
+
+ * loop 30:filterhigh(V,V3,Out) -> [filterhigh(V',V3',Out')] 
+3
+#### Cost of phase [28,29,30]:filterhigh(V,V3,Out) -> [filterhigh(V',V3',Out')] 
+8*it(28)+3*it(29)+0
+  Such that:it(29) =< -V/2+V3/2
+it(29) =< -V/2+V3/2+V'/2-V3'/2
+it(29) =< V3/2
+it(29) =< V3/2-V3'/2
+aux(3) =< V3
+aux(4) =< V3-V3'
+it(28) =< aux(3)
+it(29) =< aux(3)
+it(28) =< aux(4)
+it(29) =< aux(4)
+
+#### Cost of phase [28,29,30]:filterhigh(V,V3,Out) -> [filterhigh(V',V3',Out')] 
+8*it(28)+3*it(29)+0
+  Such that:it(29) =< -V/2+V3/2
+it(29) =< -V/2+V3/2+V'/2-V3'/2
+it(29) =< V3/2
+it(29) =< V3/2-V3'/2
+aux(3) =< V3
+aux(4) =< V3-V3'
+it(28) =< aux(3)
+it(29) =< aux(3)
+it(28) =< aux(4)
+it(29) =< aux(4)
+
+#### Cost of chains of filterhigh(V,V3,Out):
+* Chain [[31],33]: 4*it(31)+2
+  Such that:aux(2) =< V3
+it(31) =< aux(2)
+
+  with precondition: [V=0,Out=0,V3>=1] 
+
+* Chain [[31],32]: 3*it(31)+1
+  Such that:it(31) =< V3
+
+  with precondition: [V=0,Out=0,V3>=1] 
+
+* Chain [[28,29,30],33]: 9*it(28)+3*it(29)+2*s(2)+2
+  Such that:aux(1) =< V
+it(29) =< -V/2+V3/2
+it(29) =< V3/2
+aux(5) =< V3
+it(29) =< aux(5)
+it(28) =< aux(5)
+s(2) =< aux(1)
+
+  with precondition: [V>=1,Out>=0,V3>=Out,Out+V3>=2] 
+
+* Chain [[28,29,30],32]: 8*it(28)+3*it(29)+1
+  Such that:it(29) =< -V/2+V3/2
+it(29) =< V3/2
+aux(6) =< V3
+it(28) =< aux(6)
+it(29) =< aux(6)
+
+  with precondition: [V>=1,Out>=0,V3>=Out,Out+V3>=2] 
+
+* Chain [33]: 2*s(2)+1*s(3)+2
+  Such that:s(3) =< V3
+aux(1) =< V
+s(2) =< aux(1)
+
+  with precondition: [Out=0,V>=0,V3>=0] 
+
+* Chain [32]: 1
+  with precondition: [V3=0,Out=0,V>=0] 
+
+
+#### Cost of loops [34,35,36,37] 
+
+ * loop 34:filterlow(V,V3,Out) -> [filterlow(V',V3',Out')] 
+1*s(29)+3
+  Such that:s(29) =< V'
+
+ * loop 35:filterlow(V,V3,Out) -> [filterlow(V',V3',Out')] 
+1*s(31)+3
+  Such that:s(31) =< V3-V3'
+
+ * loop 36:filterlow(V,V3,Out) -> [filterlow(V',V3',Out')] 
+3
+ * loop 37:filterlow(V,V3,Out) -> [filterlow(V',V3',Out')] 
+3
+#### Cost of phase [34,35,36,37]:filterlow(V,V3,Out) -> [filterlow(V',V3',Out')] 
+3*it(34)+6*it(35)+5*it(36)+0
+  Such that:it(34) =< -V/3+V3/3
+it(34) =< -V/3+V3/3+V'/3-V3'/3
+it(34) =< V3/3
+it(34) =< V3/3-V3'/3
+aux(12) =< V3
+aux(13) =< V3-V3'
+aux(14) =< V3/2
+aux(15) =< V3/2-V3'/2
+it(34) =< aux(12)
+it(35) =< aux(12)
+it(36) =< aux(12)
+it(34) =< aux(13)
+it(35) =< aux(13)
+it(36) =< aux(13)
+it(35) =< aux(14)
+it(35) =< aux(15)
+
+#### Cost of phase [34,35,36,37]:filterlow(V,V3,Out) -> [filterlow(V',V3',Out')] 
+3*it(34)+6*it(35)+5*it(36)+0
+  Such that:it(34) =< -V/3+V3/3
+it(34) =< -V/3+V3/3+V'/3-V3'/3
+it(34) =< V3/3
+it(34) =< V3/3-V3'/3
+aux(12) =< V3
+aux(13) =< V3-V3'
+aux(14) =< V3/2
+aux(15) =< V3/2-V3'/2
+it(34) =< aux(12)
+it(35) =< aux(12)
+it(36) =< aux(12)
+it(34) =< aux(13)
+it(35) =< aux(13)
+it(36) =< aux(13)
+it(35) =< aux(14)
+it(35) =< aux(15)
+
+#### Cost of chains of filterlow(V,V3,Out):
+* Chain [[34,35,36,37],39]: 3*it(34)+6*it(35)+7*it(36)+1*s(26)+2
+  Such that:s(26) =< V
+it(34) =< -V/3+V3/3
+aux(14) =< V3/2
+aux(16) =< V3
+it(34) =< aux(16)
+it(36) =< aux(16)
+it(35) =< aux(16)
+it(35) =< aux(14)
+
+  with precondition: [V>=0,Out>=0,V3>=Out,2*V3>=Out+2] 
+
+* Chain [[34,35,36,37],38]: 3*it(34)+6*it(35)+5*it(36)+1
+  Such that:it(34) =< -V/3+V3/3
+it(34) =< V3/3
+aux(17) =< V3
+aux(18) =< V3/2
+it(34) =< aux(17)
+it(35) =< aux(17)
+it(36) =< aux(17)
+it(35) =< aux(18)
+
+  with precondition: [V>=0,Out>=0,V3>=Out,2*V3>=Out+2] 
+
+* Chain [39]: 2*s(25)+1*s(26)+2
+  Such that:s(26) =< V
+aux(11) =< V3
+s(25) =< aux(11)
+
+  with precondition: [Out=0,V>=0,V3>=0] 
+
+* Chain [38]: 1
+  with precondition: [V3=0,Out=0,V>=0] 
+
+
+#### Cost of loops [40] 
+
+ * loop 40:last(V,Out) -> [last(V',Out')] 
+1
+#### Cost of phase [40]:last(V,Out) -> [last(V',Out')] 
+1*it(40)+0
+  Such that:it(40) =< V
+it(40) =< V-V'
+
+#### Cost of phase [40]:last(V,Out) -> [last(V',Out')] 
+1*it(40)+0
+  Such that:it(40) =< V
+it(40) =< V-V'
+
+#### Cost of chains of last(V,Out):
+* Chain [[40],42]: 1*it(40)+1
+  Such that:it(40) =< V
+
+  with precondition: [Out=0,V>=2] 
+
+* Chain [[40],41]: 1*it(40)+1
+  Such that:it(40) =< V-Out
+
+  with precondition: [Out>=0,V>=Out+2] 
+
+* Chain [42]: 1
+  with precondition: [Out=0,V>=0] 
+
+* Chain [41]: 1
+  with precondition: [V=Out+1,V>=1] 
+
+
+#### Cost of loops [43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71] 
+
+ * loop 43:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+129*s(128)+15*s(127)+60*s(130)+5*s(131)+3*s(126)+3*s(129)+8
+  Such that:s(122) =< 1/3
+s(123) =< V
+s(124) =< V/2
+s(125) =< V/3
+s(126) =< s(125)
+s(127) =< s(125)
+s(128) =< s(123)
+s(126) =< s(122)
+s(129) =< s(122)
+s(129) =< s(123)
+s(130) =< s(123)
+s(130) =< s(124)
+s(126) =< s(123)
+s(127) =< s(123)
+
+ * loop 44:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+129*s(211)+15*s(210)+60*s(213)+5*s(214)+3*s(209)+3*s(212)+9
+  Such that:s(205) =< 1/3
+s(206) =< V
+s(207) =< V/2
+s(208) =< V/3
+s(209) =< s(208)
+s(210) =< s(208)
+s(211) =< s(206)
+s(209) =< s(205)
+s(212) =< s(205)
+s(212) =< s(206)
+s(213) =< s(206)
+s(213) =< s(207)
+s(209) =< s(206)
+s(210) =< s(206)
+
+ * loop 45:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+362*s(437)+42*s(436)+168*s(439)+14*s(440)+12*s(435)+12*s(438)+8
+  Such that:s(431) =< 1/3
+s(432) =< V
+s(433) =< V/2
+s(434) =< V/3
+s(435) =< s(434)
+s(436) =< s(434)
+s(437) =< s(432)
+s(435) =< s(431)
+s(438) =< s(431)
+s(438) =< s(432)
+s(439) =< s(432)
+s(439) =< s(433)
+s(435) =< s(432)
+s(436) =< s(432)
+
+ * loop 46:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+362*s(663)+42*s(662)+168*s(665)+14*s(666)+12*s(661)+12*s(664)+9
+  Such that:s(657) =< 1/3
+s(658) =< V
+s(659) =< V/2
+s(660) =< V/3
+s(661) =< s(660)
+s(662) =< s(660)
+s(663) =< s(658)
+s(661) =< s(657)
+s(664) =< s(657)
+s(664) =< s(658)
+s(665) =< s(658)
+s(665) =< s(659)
+s(661) =< s(658)
+s(662) =< s(658)
+
+ * loop 47:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+179*s(770)+72*s(771)+6*s(773)+9*s(769)+3*s(768)+3*s(772)+8
+  Such that:s(764) =< 1/3
+s(765) =< V
+s(766) =< V/2
+s(767) =< V/3
+s(768) =< s(767)
+s(769) =< s(767)
+s(770) =< s(765)
+s(771) =< s(765)
+s(771) =< s(766)
+s(768) =< s(764)
+s(772) =< s(764)
+s(772) =< s(765)
+s(768) =< s(765)
+s(769) =< s(765)
+
+ * loop 48:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+340*s(957)+36*s(958)+12*s(961)+108*s(959)+18*s(956)+6*s(955)+6*s(960)+8
+  Such that:s(950) =< 1/2
+s(951) =< 1/3
+s(952) =< V
+s(953) =< V/2
+s(954) =< V/3
+s(955) =< s(954)
+s(956) =< s(954)
+s(957) =< s(952)
+s(958) =< s(950)
+s(958) =< s(953)
+s(958) =< s(952)
+s(956) =< s(952)
+s(959) =< s(952)
+s(959) =< s(953)
+s(955) =< s(951)
+s(960) =< s(951)
+s(960) =< s(952)
+s(955) =< s(952)
+
+ * loop 49:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+179*s(1065)+72*s(1066)+6*s(1068)+9*s(1064)+3*s(1063)+3*s(1067)+9
+  Such that:s(1059) =< 1/3
+s(1060) =< V
+s(1061) =< V/2
+s(1062) =< V/3
+s(1063) =< s(1062)
+s(1064) =< s(1062)
+s(1065) =< s(1060)
+s(1066) =< s(1060)
+s(1066) =< s(1061)
+s(1063) =< s(1059)
+s(1067) =< s(1059)
+s(1067) =< s(1060)
+s(1063) =< s(1060)
+s(1064) =< s(1060)
+
+ * loop 50:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+340*s(1252)+36*s(1253)+12*s(1256)+108*s(1254)+18*s(1251)+6*s(1250)+6*s(1255)+9
+  Such that:s(1245) =< 1/2
+s(1246) =< 1/3
+s(1247) =< V
+s(1248) =< V/2
+s(1249) =< V/3
+s(1250) =< s(1249)
+s(1251) =< s(1249)
+s(1252) =< s(1247)
+s(1253) =< s(1245)
+s(1253) =< s(1248)
+s(1253) =< s(1247)
+s(1251) =< s(1247)
+s(1254) =< s(1247)
+s(1254) =< s(1248)
+s(1250) =< s(1246)
+s(1255) =< s(1246)
+s(1255) =< s(1247)
+s(1250) =< s(1247)
+
+ * loop 51:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+352*s(1452)+36*s(1453)+12*s(1456)+108*s(1454)+18*s(1451)+6*s(1450)+6*s(1455)+8
+  Such that:s(1445) =< 1/2
+s(1446) =< 1/3
+s(1447) =< V
+s(1448) =< V/2
+s(1449) =< V/3
+s(1450) =< s(1449)
+s(1451) =< s(1449)
+s(1452) =< s(1447)
+s(1453) =< s(1445)
+s(1453) =< s(1448)
+s(1453) =< s(1447)
+s(1451) =< s(1447)
+s(1454) =< s(1447)
+s(1454) =< s(1448)
+s(1450) =< s(1446)
+s(1455) =< s(1446)
+s(1455) =< s(1447)
+s(1450) =< s(1447)
+
+ * loop 52:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+352*s(1652)+36*s(1653)+12*s(1656)+108*s(1654)+18*s(1651)+6*s(1650)+6*s(1655)+9
+  Such that:s(1645) =< 1/2
+s(1646) =< 1/3
+s(1647) =< V
+s(1648) =< V/2
+s(1649) =< V/3
+s(1650) =< s(1649)
+s(1651) =< s(1649)
+s(1652) =< s(1647)
+s(1653) =< s(1645)
+s(1653) =< s(1648)
+s(1653) =< s(1647)
+s(1651) =< s(1647)
+s(1654) =< s(1647)
+s(1654) =< s(1648)
+s(1650) =< s(1646)
+s(1655) =< s(1646)
+s(1655) =< s(1647)
+s(1650) =< s(1647)
+
+ * loop 53:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+302*s(1848)+15*s(1852)+36*s(1849)+9*s(1847)+36*s(1850)+3*s(1846)+3*s(1851)+8
+  Such that:s(1841) =< 1/3
+s(1842) =< 1/2
+s(1843) =< V
+s(1844) =< V/2
+s(1845) =< V/3
+s(1846) =< s(1845)
+s(1847) =< s(1845)
+s(1848) =< s(1843)
+s(1849) =< s(1842)
+s(1849) =< s(1844)
+s(1849) =< s(1843)
+s(1847) =< s(1843)
+s(1850) =< s(1843)
+s(1850) =< s(1844)
+s(1846) =< s(1841)
+s(1851) =< s(1841)
+s(1851) =< s(1843)
+s(1846) =< s(1843)
+
+ * loop 54:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+210*s(1998)+13*s(2002)+12*s(2001)+48*s(2000)+6*s(1997)+6*s(1999)+8
+  Such that:s(1993) =< 1/3
+s(1994) =< V
+s(1995) =< V/2
+s(1996) =< V/3
+s(1997) =< s(1996)
+s(1998) =< s(1994)
+s(1997) =< s(1993)
+s(1999) =< s(1993)
+s(1999) =< s(1994)
+s(2000) =< s(1994)
+s(2000) =< s(1995)
+s(1997) =< s(1994)
+s(2001) =< s(1996)
+s(2001) =< s(1994)
+
+ * loop 55:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+302*s(2194)+15*s(2198)+36*s(2195)+9*s(2193)+36*s(2196)+3*s(2192)+3*s(2197)+9
+  Such that:s(2187) =< 1/3
+s(2188) =< 1/2
+s(2189) =< V
+s(2190) =< V/2
+s(2191) =< V/3
+s(2192) =< s(2191)
+s(2193) =< s(2191)
+s(2194) =< s(2189)
+s(2195) =< s(2188)
+s(2195) =< s(2190)
+s(2195) =< s(2189)
+s(2193) =< s(2189)
+s(2196) =< s(2189)
+s(2196) =< s(2190)
+s(2192) =< s(2187)
+s(2197) =< s(2187)
+s(2197) =< s(2189)
+s(2192) =< s(2189)
+
+ * loop 56:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+210*s(2344)+13*s(2348)+12*s(2347)+48*s(2346)+6*s(2343)+6*s(2345)+9
+  Such that:s(2339) =< 1/3
+s(2340) =< V
+s(2341) =< V/2
+s(2342) =< V/3
+s(2343) =< s(2342)
+s(2344) =< s(2340)
+s(2343) =< s(2339)
+s(2345) =< s(2339)
+s(2345) =< s(2340)
+s(2346) =< s(2340)
+s(2346) =< s(2341)
+s(2343) =< s(2340)
+s(2347) =< s(2342)
+s(2347) =< s(2340)
+
+ * loop 57:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+223*s(2507)+13*s(2511)+12*s(2510)+48*s(2509)+6*s(2506)+6*s(2508)+8
+  Such that:s(2502) =< 1/3
+s(2503) =< V
+s(2504) =< V/2
+s(2505) =< V/3
+s(2506) =< s(2505)
+s(2507) =< s(2503)
+s(2506) =< s(2502)
+s(2508) =< s(2502)
+s(2508) =< s(2503)
+s(2509) =< s(2503)
+s(2509) =< s(2504)
+s(2506) =< s(2503)
+s(2510) =< s(2505)
+s(2510) =< s(2503)
+
+ * loop 58:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+223*s(2670)+13*s(2674)+12*s(2673)+48*s(2672)+6*s(2669)+6*s(2671)+9
+  Such that:s(2665) =< 1/3
+s(2666) =< V
+s(2667) =< V/2
+s(2668) =< V/3
+s(2669) =< s(2668)
+s(2670) =< s(2666)
+s(2669) =< s(2665)
+s(2671) =< s(2665)
+s(2671) =< s(2666)
+s(2672) =< s(2666)
+s(2672) =< s(2667)
+s(2669) =< s(2666)
+s(2673) =< s(2668)
+s(2673) =< s(2666)
+
+ * loop 59:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+129*s(2749)+15*s(2748)+60*s(2751)+3*s(2747)+3*s(2750)+9
+  Such that:s(2743) =< 1/3
+s(2744) =< V
+s(2745) =< V/2
+s(2746) =< V/3
+s(2747) =< s(2746)
+s(2748) =< s(2746)
+s(2749) =< s(2744)
+s(2747) =< s(2743)
+s(2750) =< s(2743)
+s(2750) =< s(2744)
+s(2751) =< s(2744)
+s(2751) =< s(2745)
+s(2747) =< s(2744)
+s(2748) =< s(2744)
+
+ * loop 60:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+362*s(2960)+42*s(2959)+168*s(2962)+12*s(2958)+12*s(2961)+9
+  Such that:s(2954) =< 1/3
+s(2955) =< V
+s(2956) =< V/2
+s(2957) =< V/3
+s(2958) =< s(2957)
+s(2959) =< s(2957)
+s(2960) =< s(2955)
+s(2958) =< s(2954)
+s(2961) =< s(2954)
+s(2961) =< s(2955)
+s(2962) =< s(2955)
+s(2962) =< s(2956)
+s(2958) =< s(2955)
+s(2959) =< s(2955)
+
+ * loop 61:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+179*s(3060)+72*s(3061)+9*s(3059)+3*s(3058)+3*s(3062)+9
+  Such that:s(3054) =< 1/3
+s(3055) =< V
+s(3056) =< V/2
+s(3057) =< V/3
+s(3058) =< s(3057)
+s(3059) =< s(3057)
+s(3060) =< s(3055)
+s(3061) =< s(3055)
+s(3061) =< s(3056)
+s(3058) =< s(3054)
+s(3062) =< s(3054)
+s(3062) =< s(3055)
+s(3058) =< s(3055)
+s(3059) =< s(3055)
+
+ * loop 62:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+340*s(3234)+36*s(3235)+108*s(3236)+18*s(3233)+6*s(3232)+6*s(3237)+9
+  Such that:s(3227) =< 1/2
+s(3228) =< 1/3
+s(3229) =< V
+s(3230) =< V/2
+s(3231) =< V/3
+s(3232) =< s(3231)
+s(3233) =< s(3231)
+s(3234) =< s(3229)
+s(3235) =< s(3227)
+s(3235) =< s(3230)
+s(3235) =< s(3229)
+s(3233) =< s(3229)
+s(3236) =< s(3229)
+s(3236) =< s(3230)
+s(3232) =< s(3228)
+s(3237) =< s(3228)
+s(3237) =< s(3229)
+s(3232) =< s(3229)
+
+ * loop 63:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+352*s(3421)+36*s(3422)+108*s(3423)+18*s(3420)+6*s(3419)+6*s(3424)+9
+  Such that:s(3414) =< 1/2
+s(3415) =< 1/3
+s(3416) =< V
+s(3417) =< V/2
+s(3418) =< V/3
+s(3419) =< s(3418)
+s(3420) =< s(3418)
+s(3421) =< s(3416)
+s(3422) =< s(3414)
+s(3422) =< s(3417)
+s(3422) =< s(3416)
+s(3420) =< s(3416)
+s(3423) =< s(3416)
+s(3423) =< s(3417)
+s(3419) =< s(3415)
+s(3424) =< s(3415)
+s(3424) =< s(3416)
+s(3419) =< s(3416)
+
+ * loop 64:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+302*s(3601)+36*s(3602)+9*s(3600)+36*s(3603)+3*s(3599)+3*s(3604)+9
+  Such that:s(3594) =< 1/3
+s(3595) =< 1/2
+s(3596) =< V
+s(3597) =< V/2
+s(3598) =< V/3
+s(3599) =< s(3598)
+s(3600) =< s(3598)
+s(3601) =< s(3596)
+s(3602) =< s(3595)
+s(3602) =< s(3597)
+s(3602) =< s(3596)
+s(3600) =< s(3596)
+s(3603) =< s(3596)
+s(3603) =< s(3597)
+s(3599) =< s(3594)
+s(3604) =< s(3594)
+s(3604) =< s(3596)
+s(3599) =< s(3596)
+
+ * loop 65:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+210*s(3737)+12*s(3740)+48*s(3739)+6*s(3736)+6*s(3738)+9
+  Such that:s(3732) =< 1/3
+s(3733) =< V
+s(3734) =< V/2
+s(3735) =< V/3
+s(3736) =< s(3735)
+s(3737) =< s(3733)
+s(3736) =< s(3732)
+s(3738) =< s(3732)
+s(3738) =< s(3733)
+s(3739) =< s(3733)
+s(3739) =< s(3734)
+s(3736) =< s(3733)
+s(3740) =< s(3735)
+s(3740) =< s(3733)
+
+ * loop 66:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+223*s(3886)+12*s(3889)+48*s(3888)+6*s(3885)+6*s(3887)+9
+  Such that:s(3881) =< 1/3
+s(3882) =< V
+s(3883) =< V/2
+s(3884) =< V/3
+s(3885) =< s(3884)
+s(3886) =< s(3882)
+s(3885) =< s(3881)
+s(3887) =< s(3881)
+s(3887) =< s(3882)
+s(3888) =< s(3882)
+s(3888) =< s(3883)
+s(3885) =< s(3882)
+s(3889) =< s(3884)
+s(3889) =< s(3882)
+
+ * loop 67:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+103*s(3947)+9*s(3946)+36*s(3949)+18*s(3948)+3*s(3945)+3*s(3950)+8
+  Such that:s(3940) =< 1/3
+s(3941) =< 1/2
+s(3942) =< V
+s(3943) =< V/2
+s(3944) =< V/3
+s(3945) =< s(3944)
+s(3946) =< s(3944)
+s(3947) =< s(3942)
+s(3948) =< s(3941)
+s(3948) =< s(3943)
+s(3948) =< s(3942)
+s(3946) =< s(3942)
+s(3949) =< s(3942)
+s(3949) =< s(3943)
+s(3945) =< s(3940)
+s(3950) =< s(3940)
+s(3950) =< s(3942)
+s(3945) =< s(3942)
+
+ * loop 68:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+94*s(4012)+12*s(4015)+48*s(4014)+6*s(4011)+6*s(4013)+8
+  Such that:s(4007) =< 1/3
+s(4008) =< V
+s(4009) =< V/2
+s(4010) =< V/3
+s(4011) =< s(4010)
+s(4012) =< s(4008)
+s(4011) =< s(4007)
+s(4013) =< s(4007)
+s(4013) =< s(4008)
+s(4014) =< s(4008)
+s(4014) =< s(4009)
+s(4011) =< s(4008)
+s(4015) =< s(4010)
+s(4015) =< s(4008)
+
+ * loop 69:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+491*s(4292)+57*s(4291)+228*s(4294)+15*s(4290)+15*s(4293)+8
+  Such that:s(4286) =< 1/3
+s(4287) =< V
+s(4288) =< V/2
+s(4289) =< V/3
+s(4290) =< s(4289)
+s(4291) =< s(4289)
+s(4292) =< s(4287)
+s(4290) =< s(4286)
+s(4293) =< s(4286)
+s(4293) =< s(4287)
+s(4294) =< s(4287)
+s(4294) =< s(4288)
+s(4290) =< s(4287)
+s(4291) =< s(4287)
+
+ * loop 70:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+941*s(4768)+90*s(4769)+288*s(4770)+45*s(4767)+15*s(4766)+15*s(4771)+8
+  Such that:s(4761) =< 1/2
+s(4762) =< 1/3
+s(4763) =< V
+s(4764) =< V/2
+s(4765) =< V/3
+s(4766) =< s(4765)
+s(4767) =< s(4765)
+s(4768) =< s(4763)
+s(4769) =< s(4761)
+s(4769) =< s(4764)
+s(4769) =< s(4763)
+s(4767) =< s(4763)
+s(4770) =< s(4763)
+s(4770) =< s(4764)
+s(4766) =< s(4762)
+s(4771) =< s(4762)
+s(4771) =< s(4763)
+s(4766) =< s(4763)
+
+ * loop 71:qsort(V,Out) -> [qsort(V',Out'),qsort(V'2,Out'2)] 
+468*s(5072)+12*s(5075)+48*s(5074)+6*s(5071)+6*s(5073)+8
+  Such that:s(5067) =< 1/3
+s(5068) =< V
+s(5069) =< V/2
+s(5070) =< V/3
+s(5071) =< s(5070)
+s(5072) =< s(5068)
+s(5071) =< s(5067)
+s(5073) =< s(5067)
+s(5073) =< s(5068)
+s(5074) =< s(5068)
+s(5074) =< s(5069)
+s(5071) =< s(5068)
+s(5075) =< s(5070)
+s(5075) =< s(5068)
+
+#### Cost of phase [43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71]:qsort(V,Out) -> [] 
+128*it(43)+300*it(47)+1*it([72])+129*s(5076)+15*s(5077)+60*s(5078)+3*s(5080)+3*s(5081)+3696*s(5086)+309*s(5087)+1236*s(5088)+105*s(5090)+105*s(5091)+4563*s(5116)+1296*s(5117)+216*s(5119)+9*s(5120)+9*s(5121)+432*s(5127)+63*s(5131)+63*s(5132)+0
+#### Cost of chains of qsort(V,Out):
+* Chain [multiple([43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71],[[],[72]])]...: 128*it(43)+300*it(47)+1*it([72])+129*s(5076)+15*s(5077)+60*s(5078)+3*s(5080)+3*s(5081)+3696*s(5086)+309*s(5087)+1236*s(5088)+105*s(5090)+105*s(5091)+4563*s(5116)+1296*s(5117)+216*s(5119)+9*s(5120)+9*s(5121)+432*s(5127)+63*s(5131)+63*s(5132)+0
+  with precondition: [V>=1,Out>=0] 
+
+* Chain [72]: 1
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of chains of start(V,V3,V9,V12):
+* Chain [78]...: 12741*s(5375)+0
+  with precondition: [V>=1] 
+
+* Chain [77]: 9*s(5396)+41*s(5398)+3*s(5400)+3*s(5404)+12*s(5406)+6*s(5415)+2
+  Such that:s(5412) =< -V/2+V3/2
+s(5401) =< -V/3+V3/3
+s(5400) =< V3/3
+aux(830) =< V
+aux(831) =< V3
+aux(832) =< V3/2
+s(5396) =< aux(830)
+s(5398) =< aux(831)
+s(5400) =< s(5401)
+s(5404) =< s(5401)
+s(5404) =< aux(831)
+s(5406) =< aux(831)
+s(5406) =< aux(832)
+s(5400) =< aux(831)
+s(5415) =< s(5412)
+s(5415) =< aux(832)
+s(5415) =< aux(831)
+
+  with precondition: [V>=0] 
+
+* Chain [76]: 6*s(5423)+39*s(5425)+3*s(5427)+3*s(5431)+12*s(5433)+6*s(5442)+3
+  Such that:s(5439) =< -V3/2+V12/2
+s(5428) =< -V3/3+V12/3
+s(5427) =< V12/3
+aux(833) =< V3
+aux(834) =< V12
+aux(835) =< V12/2
+s(5423) =< aux(833)
+s(5425) =< aux(834)
+s(5427) =< s(5428)
+s(5431) =< s(5428)
+s(5431) =< aux(834)
+s(5433) =< aux(834)
+s(5433) =< aux(835)
+s(5427) =< aux(834)
+s(5442) =< s(5439)
+s(5442) =< aux(835)
+s(5442) =< aux(834)
+
+  with precondition: [V=1,V3>=0,V9>=0,V12>=0] 
+
+* Chain [75]: 6*s(5445)+39*s(5447)+3*s(5449)+3*s(5453)+12*s(5455)+6*s(5464)+3
+  Such that:s(5461) =< -V3/2+V12/2
+s(5450) =< -V3/3+V12/3
+s(5449) =< V12/3
+aux(836) =< V3
+aux(837) =< V12
+aux(838) =< V12/2
+s(5445) =< aux(836)
+s(5447) =< aux(837)
+s(5449) =< s(5450)
+s(5453) =< s(5450)
+s(5453) =< aux(837)
+s(5455) =< aux(837)
+s(5455) =< aux(838)
+s(5449) =< aux(837)
+s(5464) =< s(5461)
+s(5464) =< aux(838)
+s(5464) =< aux(837)
+
+  with precondition: [V=2,V3>=0,V9>=0,V12>=0] 
+
+* Chain [74]: 1
+  with precondition: [V3=0,V>=0] 
+
+* Chain [73]: 1*s(5467)+1*s(5468)+1
+  Such that:s(5468) =< V
+s(5467) =< V+1
+
+  with precondition: [V3=1,V>=1] 
+
+
+Closed-form bounds of start(V,V3,V9,V12): 
+-------------------------------------
+* Chain [78]... with precondition: [V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [77] with precondition: [V>=0] 
+    - Upper bound: 9*V+2+nat(V3)*53+nat(-V/2+V3/2)*6+nat(-V/3+V3/3)*3+nat(V3/3)*3 
+    - Complexity: n 
+* Chain [76] with precondition: [V=1,V3>=0,V9>=0,V12>=0] 
+    - Upper bound: 6*V3+51*V12+3+nat(-V3/2+V12/2)*6+nat(-V3/3+V12/3)*3+V12 
+    - Complexity: n 
+* Chain [75] with precondition: [V=2,V3>=0,V9>=0,V12>=0] 
+    - Upper bound: 6*V3+51*V12+3+nat(-V3/2+V12/2)*6+nat(-V3/3+V12/3)*3+V12 
+    - Complexity: n 
+* Chain [74] with precondition: [V3=0,V>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [73] with precondition: [V3=1,V>=1] 
+    - Upper bound: 2*V+2 
+    - Complexity: n 
+
+### Maximum cost of start(V,V3,V9,V12): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 38 ms.
+* Invariants computed in 145 ms.
+   - Backward Invariants 35 ms.
+   - Transitive Invariants 45 ms.
+* Refinement performed in 5934 ms.
+* Termination proved in 92 ms.
+* Upper bounds computed in 9215 ms.
+   - Equation cost structures 5913 ms.
+   - Phase cost structures 9088 ms.
+   - Chain cost structures 45 ms.
+   - Solving cost expressions 4 ms.
+* Total analysis performed in 15470 ms.
+

@@ -1,0 +1,51 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/quicksort_mutual.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   A mutually recursive implementation of the quick sort algorithm as
+ *   given in the article 'Dependent types for program termination
+ *   verification' by Hongwei Xi (Logic in Computer Science, 2001).
+ *   
+ *   My experiments indicate that RAML computes a tight bound on the
+ *   number of evaluation steps that are used by the function qs.
+ *   
+ *   It is interesting that the inputs that produce the worst-case behavior
+ *   are not reversely sorted lists [-1,-2,-3,-4,-5,-6] as usual.  The
+ *   reason is that it makes a difference for functional implementations of
+ *   quick sort whether the first or second recursive call receives a
+ *   longer input list.  Because of the function append, the worst-case
+ *   behavior emerges if the first argument of append is as long as
+ *   possible.  As a result, worst-case inputs have the form
+ *   [-1,-3,-5,-6,-4,-2].
+ *)
+
+
+
+let rec append l1 l2 =
+	match l1 with
+	| [] -> l2
+	| x::xs -> (Raml.tick(1.0); x::append xs l2);;
+
+let rec part y l r xs =
+	match xs with
+	| [] -> (Raml.tick(1.0); append (qs l) (y::(qs r)))
+	| x::xs' ->
+		(Raml.tick(1.0);
+		if ((x:int) < (y:int)) then part y (x::l) r xs'
+		else part y l (x::r) xs')
+  and
+    qs l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); part x [] [] xs);;
+
+qs [-1;-3;-5;-7;-9;-10;-8;-6;-4;-2]

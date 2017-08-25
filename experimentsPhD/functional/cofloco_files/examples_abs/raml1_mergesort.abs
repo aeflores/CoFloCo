@@ -1,0 +1,85 @@
+/* * * * * * * * * * *
+Translation to ABS
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/raml1_mergesort.raml
+ *
+ * 
+ * Description:
+ *   An implementation of the well known sorting algorithm mergesort.
+ *   This implementation deallocates the input list.  Copy the list before 
+ *   if you want to use the unsorted list later.
+ *
+ *   It is suprising that the function mergesort can be analysed.  The
+ *   type of the function looks like the result of a bug on the first
+ *   view.  But it is correct.  The function mergesort is a nice
+ *   example of a type that might be hard to find {out type
+ *   inference.
+ *
+ *   There is also an out commented buggy version of mergesort
+ *   (mergesortBuggy) that does not terminate and consumes an infinite
+ *   ammount of heap-space and time.  Thus our analysis does not work
+ *   for mergesortBuggy.  (Note that it is no general problem for our
+ *   analysis if a function does not terminate.  For example f(x) =
+ *   f(x) consumes no heap-space and can be analysed { the
+ *   heap-space metric.)
+ */
+ 
+ module Mergesort;
+
+
+def Pair<List<Int>,List<Int>> msplit(List<Int> l) =
+	case l {
+	Nil => Pair(Nil, Nil);
+	Cons(x1,xs) =>
+		case xs {
+		Nil => Pair(Cons(x1,Nil), Nil);
+		Cons(x2,xsp) =>
+			let (Pair<List<Int>,List<Int>> pair)= msplit(xsp) in
+			case pair { Pair(l1, l2) =>
+			        Pair(Cons(x1,l1), Cons(x2,l2));
+				};
+		};
+	};
+
+def List<Int> merge(List<Int> l1,List<Int> l2) =
+	case l1 {
+	Nil => l2;
+	Cons(x,xs) =>
+		case l2 {
+		Nil => Cons(x,xs);
+		Cons(y,ys) =>
+			if x < y then Cons(x,merge( xs, Cons(y,ys)))
+			else Cons(y,merge(Cons(x,xs), ys));
+			};
+	};
+
+def List<Int> mergesortBuggy(List<Int> l) =
+	case l {
+	Nil => Nil;
+	Cons(x1,xs) =>
+		let (Pair<List<Int>,List<Int>> pair)= msplit(l) in
+			case pair { Pair(l1, l2) =>
+			 merge(mergesortBuggy(l1), mergesortBuggy( l2));
+			 };
+		};
+
+def List<Int> mergesort(List<Int> l) =
+	case l {
+	Nil => Nil;
+	Cons(x1,xs) =>
+		case xs {
+		Nil => Cons(x1,xs);
+		Cons(x2,xsp) =>
+			let (Pair<List<Int>,List<Int>> pair)= msplit(Cons(x1,Cons(x2,xsp))) in
+			case pair { Pair(l1, l2) =>
+			      merge(mergesort(l1), mergesort(l2));
+			      };
+		};
+	};
+			
+{}		
+

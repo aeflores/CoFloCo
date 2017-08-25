@@ -1,0 +1,556 @@
+
+Preprocessing Cost Relations
+=====================================
+4. SCC does not have a single cut point : [isNat/2,activate/2]  
+ Merged into isNatactivate/2
+
+#### Computed strongly connected components 
+0. non_recursive  : [fun3/1]
+1. non_recursive  : [plus/3]
+2. non_recursive  : [s/2]
+3. non_recursive  : [x/3]
+5. non_recursive  : [fun/3]
+6. non_recursive  : [fun1/4]
+7. non_recursive  : [fun2/2]
+8. non_recursive  : [fun4/4]
+9. non_recursive  : [start/3]
+4. recursive [non_tail,multiple] : [and/3,isNatactivate/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is completely evaluated into other SCCs
+5. SCC is partially evaluated into fun/3
+6. SCC is partially evaluated into fun1/4
+7. SCC is partially evaluated into fun2/2
+8. SCC is partially evaluated into fun4/4
+9. SCC is partially evaluated into start/3
+4. SCC is partially evaluated into isNatactivate/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations isNatactivate/2 
+* CE 12 is refined into CE [27] 
+* CE 14 is refined into CE [28] 
+* CE 18 is refined into CE [29] 
+* CE 16 is refined into CE [30] 
+* CE 17 is refined into CE [31] 
+* CE 15 is refined into CE [32] 
+* CE 13 is refined into CE [33] 
+* CE 11 is refined into CE [34] 
+* CE 10 is refined into CE [35] 
+
+
+#### Refined cost equations isNatactivate/2 
+* CE 27: isNatactivate(A,B) = 1
+     [A>=0,A+1=B] 
+* CE 28: isNatactivate(A,B) = 2
+     [B=0,A=0] 
+* CE 29: isNatactivate(A,A) = 1
+     [A>=0] 
+* CE 30: isNatactivate(A,B) = 1+ isNatactivate(C,B)
+     [C>=0,C+1=A] 
+* CE 31: isNatactivate(A,B) = 2+ isNatactivate(C,D)
+     [D>=0,C>=0,D+1=B,C+1=A] 
+* CE 32: isNatactivate(A,B) = 2+ isNatactivate(C,D)+ isNatactivate(E,F)
+     [F>=0,E>=0,D>=0,C>=0,D+F+1=B,C+E+1=A] 
+* CE 33: isNatactivate(A,B) = 1+ isNatactivate(C,D)+ isNatactivate(D,B)
+     [C>=0,C+1=A] 
+* CE 34: isNatactivate(A,B) = 2+ isNatactivate(C,D)+ isNatactivate(D,E)+ isNatactivate(F,G)+ isNatactivate(H,B)
+     [H>=0,F>=0,C>=0,C+F+1=A,H=G+1,E=1] 
+* CE 35: isNatactivate(A,B) = 1+ isNatactivate(C,D)+ isNatactivate(D,E)+ isNatactivate(F,G)
+     [G+1>=0,F>=0,E>=0,C>=0,C+F+1=A,B=0] 
+
+### Cost equations --> "Loop" of isNatactivate/2 
+* CEs [35] --> Loop 17 
+* CEs [34] --> Loop 18 
+* CEs [32] --> Loop 19 
+* CEs [33] --> Loop 20 
+* CEs [30] --> Loop 21 
+* CEs [31] --> Loop 22 
+* CEs [27] --> Loop 23 
+* CEs [28,29] --> Loop 24 
+
+#### Loops of isNatactivate/2 
+* Loop 17: isNatactivate(A,B)->  isNatactivate(A',B')  isNatactivate(B',A'2)  isNatactivate(A'3,B'3)
+                  [B'3+1>=0,A'3>=0,A'2>=0,A'>=0,A'+A'3+1=A,B=0] 
+* Loop 18: isNatactivate(A,B)->  isNatactivate(A',B')  isNatactivate(B',A'2)  isNatactivate(A'3,B'3)  isNatactivate(A'4,B)
+                  [A'4>=0,A'3>=0,A'>=0,A'+A'3+1=A,A'4=B'3+1,A'2=1] 
+* Loop 19: isNatactivate(A,B)->  isNatactivate(A',B')  isNatactivate(A'2,B'2)
+                  [B>=B'+1,A>=A'+1,B'>=0,A'>=0,B'+B'2+1=B,A'+A'2+1=A] 
+* Loop 20: isNatactivate(A,B)->  isNatactivate(A',B')  isNatactivate(B',B)
+                  [A>=1,A=A'+1] 
+* Loop 21: isNatactivate(A,B)->  isNatactivate(A',B)
+                  [A>=1,A=A'+1] 
+* Loop 22: isNatactivate(A,B)->  isNatactivate(A',B')
+                  [B>=1,A>=1,B=B'+1,A=A'+1] 
+* Loop 23: isNatactivate(A,B) [A>=0,A+1=B] 
+* Loop 24: isNatactivate(A,A) [A>=0] 
+
+### Ranking functions of CR isNatactivate(A,B) 
+
+#### Partial ranking functions of CR isNatactivate(A,B) 
+* Partial RF of phase [17,18,19,20,21,22]:
+  - RF of loop [17:1,17:3,18:1,18:3,19:1,19:2,20:1,21:1,22:1]:
+    A depends on loops [17:2,18:2,18:4,20:2] 
+
+
+### Resulting Chains:isNatactivate(A,B) 
+* [multiple([17,18,19,20,21,22],[[],[24],[23]])]...
+* [24]
+* [23]
+
+
+### Merging Chains  isNatactivate/2 into  External patterns of execution 
+* [[23]] --> 1 
+* [[24]] --> 2 
+* [[multiple([17,18,19,20,21,22],[[],[24],[23]])]] --> 3 
+
+
+### Specialization of cost equations fun/3 
+* CE 20 is refined into CE [36] 
+* CE 19 is refined into CE [37,38,39] 
+
+
+#### Refined cost equations fun/3 
+* CE 36: fun(V3,V,Out) = 0
+     [V>=0,V3>=0,Out=0] 
+* CE 37: fun(V3,V,Out) = 1+ isNatactivate(W3,Out):1
+     [Out>=1,Out=W3+1,Out=V+1,V3=1] 
+* CE 38: fun(A,B,B) = 1+ isNatactivate(B,B):2
+     [B>=0,A=1] 
+* CE 39: fun(V3,V,Out) = 1+ isNatactivate(V,Out):3
+     [V>=1,V3=1] 
+
+### Cost equations --> "Loop" of fun/3 
+* CEs [39] --> Loop 25 
+* CEs [36] --> Loop 26 
+* CEs [38] --> Loop 27 
+* CEs [37] --> Loop 28 
+
+#### Loops of fun/3 
+* Loop 25: fun(V3,V,Out) [V>=1,V3=1] 
+* Loop 26: fun(V3,V,Out) [V>=0,V3>=0,Out=0] 
+* Loop 27: fun(A,B,B) [B>=0,A=1] 
+* Loop 28: fun(V3,V,Out) [V>=0,V+1=Out,V3=1] 
+
+### Ranking functions of CR fun(V3,V,Out) 
+
+#### Partial ranking functions of CR fun(V3,V,Out) 
+
+
+### Resulting Chains:fun(V3,V,Out) 
+* [28]
+* [27]
+* [26]
+* [25]...
+
+
+### Merging Chains  fun/3 into  External patterns of execution 
+* [[28]] --> 1 
+* [[27]] --> 2 
+* [[26]] --> 3 
+* [[25]] --> 4 
+
+
+### Specialization of cost equations fun1/4 
+* CE 22 is refined into CE [40] 
+* CE 21 is refined into CE [41,42,43,44,45,46,47] 
+
+
+#### Refined cost equations fun1/4 
+* CE 40: fun1(V3,V,V4,Out) = 0
+     [V4>=0,V>=0,V3>=0,Out=0] 
+* CE 41: fun1(V3,V,V4,Out) = 3+ isNatactivate(W4,X4):1+ isNatactivate(Y4,Z4):1
+     [Z4>=1,X4>=1,X4+Z4+2=Out,Z4=Y4+1,X4=W4+1,X4=V4+1,Z4=V+1,V3=1] 
+* CE 42: fun1(V3,V,V4,Out) = 3+ isNatactivate(W4,X4):1+ isNatactivate(V,V):2
+     [V>=0,X4>=1,V+X4+2=Out,X4=W4+1,X4=V4+1,V3=1] 
+* CE 43: fun1(V3,V,V4,Out) = 3+ isNatactivate(W4,X4):1+ isNatactivate(V,Y4):3
+     [Out>=X4+2,V>=1,X4>=1,X4+Y4+2=Out,X4=W4+1,X4=V4+1,V3=1] 
+* CE 44: fun1(V3,V,V4,Out) = 3+ isNatactivate(V4,V4):2+ isNatactivate(W4,X4):1
+     [X4>=1,V4>=0,V4+X4+2=Out,X4=W4+1,X4=V+1,V3=1] 
+* CE 45: fun1(V3,V,V4,Out) = 3+ isNatactivate(V4,V4):2+ isNatactivate(V,V):2
+     [V>=0,V4>=0,V+V4+2=Out,V3=1] 
+* CE 46: fun1(V3,V,V4,Out) = 3+ isNatactivate(V4,V4):2+ isNatactivate(V,W4):3
+     [Out>=V4+2,V>=1,V4>=0,V4+W4+2=Out,V3=1] 
+* CE 47: fun1(V3,V,V4,Out) = 3+ isNatactivate(V4,W4):3
+     [Out>=X4+2,X4>=0,V4>=1,V>=0,Out=W4+X4+2,V3=1] 
+
+### Cost equations --> "Loop" of fun1/4 
+* CEs [43,46] --> Loop 29 
+* CEs [47] --> Loop 30 
+* CEs [40] --> Loop 31 
+* CEs [45] --> Loop 32 
+* CEs [42,44] --> Loop 33 
+* CEs [41] --> Loop 34 
+
+#### Loops of fun1/4 
+* Loop 29: fun1(V3,V,V4,Out) [Out>=V4+2,V4>=0,V>=1,V3=1] 
+* Loop 30: fun1(V3,V,V4,Out) [Out>=2,V4>=1,V>=0,V3=1] 
+* Loop 31: fun1(V3,V,V4,Out) [V4>=0,V>=0,V3>=0,Out=0] 
+* Loop 32: fun1(V3,V,V4,Out) [V4>=0,V>=0,V+V4+2=Out,V3=1] 
+* Loop 33: fun1(V3,V,V4,Out) [V4>=0,V>=0,V+V4+3=Out,V3=1] 
+* Loop 34: fun1(V3,V,V4,Out) [V4>=0,V>=0,V+V4+4=Out,V3=1] 
+
+### Ranking functions of CR fun1(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun1(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun1(V3,V,V4,Out) 
+* [34]
+* [33]
+* [32]
+* [31]
+* [30]...
+* [29]...
+
+
+### Merging Chains  fun1/4 into  External patterns of execution 
+* [[34]] --> 1 
+* [[33]] --> 2 
+* [[32]] --> 3 
+* [[31]] --> 4 
+* [[30]] --> 5 
+* [[29]] --> 6 
+
+
+### Specialization of cost equations fun2/2 
+* CE 23 is refined into CE [48] 
+* CE 24 is refined into CE [49] 
+
+
+#### Refined cost equations fun2/2 
+* CE 48: fun2(V3,Out) = 2
+     [Out=0,V3=1] 
+* CE 49: fun2(V3,Out) = 0
+     [V3>=0,Out=0] 
+
+### Cost equations --> "Loop" of fun2/2 
+* CEs [48,49] --> Loop 35 
+
+#### Loops of fun2/2 
+* Loop 35: fun2(V3,Out) [V3>=0,Out=0] 
+
+### Ranking functions of CR fun2(V3,Out) 
+
+#### Partial ranking functions of CR fun2(V3,Out) 
+
+
+### Resulting Chains:fun2(V3,Out) 
+* [35]
+
+
+### Merging Chains  fun2/2 into  External patterns of execution 
+* [[35]] --> 1 
+
+
+### Specialization of cost equations fun4/4 
+* CE 26 is refined into CE [50] 
+* CE 25 is refined into CE [51,52,53,54,55,56,57,58,59,60,61,62,63,64,65] 
+
+
+#### Refined cost equations fun4/4 
+* CE 50: fun4(V3,V,V4,Out) = 0
+     [V4>=0,V>=0,V3>=0,Out=0] 
+* CE 51: fun4(V3,V,V4,Out) = 3+ isNatactivate(W4,X4):1+ isNatactivate(Y4,Z4):1+ isNatactivate(A5,X4):1
+     [X4>=1,Z4>=1,Z4+2*X4+2=Out,X4=A5+1,Z4=Y4+1,X4=W4+1,X4=V4+1,Z4=V+1,V3=1] 
+* CE 52: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,W4):1+ isNatactivate(X4,Y4):1+ isNatactivate(V4,V4):2
+     [V4>=0,Y4>=1,Y4+2*V4+3=Out,Y4=X4+1,V4+1=W4,Y4=V+1,V3=1] 
+* CE 53: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,W4):1+ isNatactivate(X4,Y4):1+ isNatactivate(V4,Z4):3
+     [Out>=V4+Y4+3,V4>=1,Y4>=1,V4+Y4+Z4+3=Out,Y4=X4+1,V4+1=W4,Y4=V+1,V3=1] 
+* CE 54: fun4(V3,V,V4,Out) = 3+ isNatactivate(W4,X4):1+ isNatactivate(V,V):2+ isNatactivate(Y4,X4):1
+     [X4>=1,V>=0,V+2*X4+2=Out,X4=Y4+1,X4=W4+1,X4=V4+1,V3=1] 
+* CE 55: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,W4):1+ isNatactivate(V,V):2+ isNatactivate(V4,V4):2
+     [V4>=0,V>=0,V+2*V4+3=Out,V4+1=W4,V3=1] 
+* CE 56: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,W4):1+ isNatactivate(V,V):2+ isNatactivate(V4,X4):3
+     [Out>=V+V4+3,V4>=1,V>=0,V+V4+X4+3=Out,V4+1=W4,V3=1] 
+* CE 57: fun4(V3,V,V4,Out) = 3+ isNatactivate(W4,X4):1+ isNatactivate(V,Y4):3
+     [Out>=X4+Y4+2,Y4>=0,V>=1,X4>=1,X4+Y4+Z4+2=Out,X4=A5+1,X4=W4+1,X4=V4+1,V3=1] 
+* CE 58: fun4(V3,V,V4,Out) = 3+ isNatactivate(W4,X4):2+ isNatactivate(Y4,Z4):1+ isNatactivate(A5,B5):1
+     [B5>=1,Z4>=1,Z4+2*B5+1=Out,B5=A5+1,Z4=Y4+1,B5=X4+1,B5=W4+1,B5=V4+1,Z4=V+1,V3=1] 
+* CE 59: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,V4):2+ isNatactivate(W4,X4):1+ isNatactivate(V4,V4):2
+     [V4>=0,X4>=1,X4+2*V4+2=Out,X4=W4+1,X4=V+1,V3=1] 
+* CE 60: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,V4):2+ isNatactivate(W4,X4):1+ isNatactivate(V4,Y4):3
+     [Out>=V4+X4+2,V4>=1,X4>=1,V4+X4+Y4+2=Out,X4=W4+1,X4=V+1,V3=1] 
+* CE 61: fun4(V3,V,V4,Out) = 3+ isNatactivate(W4,X4):2+ isNatactivate(V,V):2+ isNatactivate(Y4,Z4):1
+     [Z4>=1,V>=0,V+2*Z4+1=Out,Z4=Y4+1,Z4=X4+1,Z4=W4+1,Z4=V4+1,V3=1] 
+* CE 62: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,V4):2+ isNatactivate(V,V):2+ isNatactivate(V4,V4):2
+     [V4>=0,V>=0,V+2*V4+2=Out,V3=1] 
+* CE 63: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,V4):2+ isNatactivate(V,V):2+ isNatactivate(V4,W4):3
+     [Out>=V+V4+2,V4>=1,V>=0,V+V4+W4+2=Out,V3=1] 
+* CE 64: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,V4):2+ isNatactivate(V,W4):3
+     [Out>=V4+W4+2,W4>=0,V>=1,V4>=0,V4+W4+X4+2=Out,V3=1] 
+* CE 65: fun4(V3,V,V4,Out) = 3+ isNatactivate(V4,W4):3
+     [Out>=X4+Y4+2,Y4>=0,X4>=0,V4>=1,V>=0,Out=W4+X4+Y4+2,V3=1] 
+
+### Cost equations --> "Loop" of fun4/4 
+* CEs [57,64] --> Loop 36 
+* CEs [53,56,60,63,65] --> Loop 37 
+* CEs [50] --> Loop 38 
+* CEs [62] --> Loop 39 
+* CEs [55,59,61] --> Loop 40 
+* CEs [52,54,58] --> Loop 41 
+* CEs [51] --> Loop 42 
+
+#### Loops of fun4/4 
+* Loop 36: fun4(V3,V,V4,Out) [Out>=V4+2,V4>=0,V>=1,V3=1] 
+* Loop 37: fun4(V3,V,V4,Out) [Out>=2,V4>=1,V>=0,V3=1] 
+* Loop 38: fun4(V3,V,V4,Out) [V4>=0,V>=0,V3>=0,Out=0] 
+* Loop 39: fun4(V3,V,V4,Out) [V4>=0,V>=0,V+2*V4+2=Out,V3=1] 
+* Loop 40: fun4(V3,V,V4,Out) [V4>=0,V>=0,V+2*V4+3=Out,V3=1] 
+* Loop 41: fun4(V3,V,V4,Out) [V4>=0,V>=0,V+2*V4+4=Out,V3=1] 
+* Loop 42: fun4(V3,V,V4,Out) [V4>=0,V>=0,V+2*V4+5=Out,V3=1] 
+
+### Ranking functions of CR fun4(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun4(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun4(V3,V,V4,Out) 
+* [42]
+* [41]
+* [40]
+* [39]
+* [38]
+* [37]...
+* [36]...
+
+
+### Merging Chains  fun4/4 into  External patterns of execution 
+* [[42]] --> 1 
+* [[41]] --> 2 
+* [[40]] --> 3 
+* [[39]] --> 4 
+* [[38]] --> 5 
+* [[37]] --> 6 
+* [[36]] --> 7 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [66] 
+* CE 3 is refined into CE [67,68,69] 
+* CE 4 is refined into CE [70,71,72,73] 
+* CE 5 is refined into CE [74,75,76,77,78,79] 
+* CE 6 is refined into CE [80] 
+* CE 7 is refined into CE [81,82,83,84,85,86,87] 
+* CE 8 is refined into CE [88,89,90] 
+* CE 9 is refined into CE [91] 
+
+
+#### Refined cost equations start/3 
+* CE 66: start(V3,V,V4) = 0
+     [V>=0,V3>=0] 
+* CE 67: start(V3,V,V4) = 1+ isNatactivate(W4,X4):1
+     [X4>=1,X4=W4+1,X4=V+1,V3=1] 
+* CE 68: start(V3,V,V4) = 1+ isNatactivate(V,V):2
+     [V>=0,V3=1] 
+* CE 69: start(V3,V,V4) = 1+ isNatactivate(V,W4):3
+     [V>=1,V3=1] 
+* CE 70: start(V3,V,V4) = 0+ fun(W4,X4,Y4):1
+     [Y4>=1,Y4=X4+1,Y4=V+1,W4=1,V3=1] 
+* CE 71: start(V3,V,V4) = 0+ fun(W4,V,V):2
+     [V>=0,W4=1,V3=1] 
+* CE 72: start(V3,V,V4) = 0+ fun(V3,V,W4):3
+     [V>=0,V3>=0,W4=0] 
+* CE 73: start(V3,V,V4) = 0+ fun(W4,V,X4):4
+     [V>=1,W4=1,V3=1] 
+* CE 74: start(V3,V,V4) = 0+ fun1(W4,V,X4,Y4):1
+     [Y4>=V+4,V>=0,Y4=V+X4+4,Y4=V+V4+4,W4=1,V3=1] 
+* CE 75: start(V3,V,V4) = 0+ fun1(W4,V,X4,Y4):2
+     [Y4>=V+3,V>=0,Y4=V+X4+3,Y4=V+V4+3,W4=1,V3=1] 
+* CE 76: start(V3,V,V4) = 0+ fun1(W4,V,X4,Y4):3
+     [Y4>=V+2,V>=0,Y4=V+X4+2,Y4=V+V4+2,W4=1,V3=1] 
+* CE 77: start(V3,V,V4) = 0+ fun1(V3,V,V4,W4):4
+     [V4>=0,V>=0,V3>=0,W4=0] 
+* CE 78: start(V3,V,V4) = 0+ fun1(W4,V,V4,X4):5
+     [X4>=2,V4>=1,V>=0,W4=1,V3=1] 
+* CE 79: start(V3,V,V4) = 0+ fun1(W4,V,V4,X4):6
+     [X4>=V4+2,V4>=0,V>=1,W4=1,V3=1] 
+* CE 80: start(V3,V,V4) = 0+ fun2(V3,W4):1
+     [V3>=0,W4=0] 
+* CE 81: start(V3,V,V4) = 0+ fun4(W4,V,X4,Y4):1
+     [Y4>=V+5,V>=0,Y4=2*X4+V+5,Y4=2*V4+V+5,W4=1,V3=1] 
+* CE 82: start(V3,V,V4) = 0+ fun4(W4,V,X4,Y4):2
+     [Y4>=V+4,V>=0,Y4=2*X4+V+4,Y4=2*V4+V+4,W4=1,V3=1] 
+* CE 83: start(V3,V,V4) = 0+ fun4(W4,V,X4,Y4):3
+     [Y4>=V+3,V>=0,Y4=2*X4+V+3,Y4=2*V4+V+3,W4=1,V3=1] 
+* CE 84: start(V3,V,V4) = 0+ fun4(W4,V,X4,Y4):4
+     [Y4>=V+2,V>=0,Y4=2*X4+V+2,Y4=2*V4+V+2,W4=1,V3=1] 
+* CE 85: start(V3,V,V4) = 0+ fun4(V3,V,V4,W4):5
+     [V4>=0,V>=0,V3>=0,W4=0] 
+* CE 86: start(V3,V,V4) = 0+ fun4(W4,V,V4,X4):6
+     [X4>=2,V4>=1,V>=0,W4=1,V3=1] 
+* CE 87: start(V3,V,V4) = 0+ fun4(W4,V,V4,X4):7
+     [X4>=V4+2,V4>=0,V>=1,W4=1,V3=1] 
+* CE 88: start(V3,V,V4) = 0+ isNatactivate(W4,X4):1
+     [X4>=1,X4=W4+1,X4=V3+1] 
+* CE 89: start(V3,V,V4) = 0+ isNatactivate(V3,V3):2
+     [V3>=0] 
+* CE 90: start(V3,V,V4) = 0+ isNatactivate(V3,W4):3
+     [V3>=1] 
+* CE 91: start(V3,V,V4) = 1
+     [] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [66,67,68,70,71,72,74,75,76,77,80,81,82,83,84,85,88,89,91] --> Loop 43 
+* CEs [69,73,79,87] --> Loop 44 
+* CEs [78,86,90] --> Loop 45 
+
+#### Loops of start/3 
+* Loop 43: start(V3,V,V4) [] 
+* Loop 44: start(V3,V,V4) [V>=1,V3=1] 
+* Loop 45: start(V3,V,V4) [V3>=1] 
+
+### Ranking functions of CR start(V3,V,V4) 
+
+#### Partial ranking functions of CR start(V3,V,V4) 
+
+
+### Resulting Chains:start(V3,V,V4) 
+* [45]...
+* [44]...
+* [43]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[43]] --> 1 
+* [[44]] --> 2 
+* [[45]] --> 3 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [17,18,19,20,21,22] 
+
+ * loop 17:isNatactivate(A,B) -> [isNatactivate(A',B'),isNatactivate(A'2,B'2),isNatactivate(A'3,B'3)] 
+1
+ * loop 18:isNatactivate(A,B) -> [isNatactivate(A',B'),isNatactivate(A'2,B'2),isNatactivate(A'3,B'3),isNatactivate(A'4,B'4)] 
+2
+ * loop 19:isNatactivate(A,B) -> [isNatactivate(A',B'),isNatactivate(A'2,B'2)] 
+2
+ * loop 20:isNatactivate(A,B) -> [isNatactivate(A',B'),isNatactivate(A'2,B'2)] 
+1
+ * loop 21:isNatactivate(A,B) -> [isNatactivate(A',B')] 
+1
+ * loop 22:isNatactivate(A,B) -> [isNatactivate(A',B')] 
+2
+#### Cost of phase [17,18,19,20,21,22]:isNatactivate(A,B) -> [] 
+4*it(17)+5*it(19)+3*it([23])+0
+#### Cost of chains of isNatactivate(A,B):
+* Chain [multiple([17,18,19,20,21,22],[[],[24],[23]])]...: 4*it(17)+5*it(19)+3*it([23])+0
+  with precondition: [A>=1] 
+
+* Chain [24]: 2
+  with precondition: [A=B,A>=0] 
+
+* Chain [23]: 1
+  with precondition: [A+1=B,A>=0] 
+
+
+#### Cost of chains of fun(V3,V,Out):
+* Chain [28]: 2
+  with precondition: [V3=1,V+1=Out,V>=0] 
+
+* Chain [27]: 3
+  with precondition: [V3=1,V=Out,V>=0] 
+
+* Chain [26]: 0
+  with precondition: [Out=0,V3>=0,V>=0] 
+
+* Chain [25]...: 12*s(1)+1
+  with precondition: [V3=1,V>=1] 
+
+
+#### Cost of chains of fun1(V3,V,V4,Out):
+* Chain [34]: 5
+  with precondition: [V3=1,V+V4+4=Out,V>=0,V4>=0] 
+
+* Chain [33]: 6
+  with precondition: [V3=1,V+V4+3=Out,V>=0,V4>=0] 
+
+* Chain [32]: 7
+  with precondition: [V3=1,V+V4+2=Out,V>=0,V4>=0] 
+
+* Chain [31]: 0
+  with precondition: [Out=0,V3>=0,V>=0,V4>=0] 
+
+* Chain [30]...: 12*s(4)+3
+  with precondition: [V3=1,V>=0,V4>=1,Out>=2] 
+
+* Chain [29]...: 1*aux(9)+0
+  with precondition: [V3=1,V>=1,V4>=0,Out>=V4+2] 
+
+
+#### Cost of chains of fun2(V3,Out):
+* Chain [35]: 2
+  with precondition: [Out=0,V3>=0] 
+
+
+#### Cost of chains of fun4(V3,V,V4,Out):
+* Chain [42]: 6
+  with precondition: [V3=1,V+2*V4+5=Out,V>=0,V4>=0] 
+
+* Chain [41]: 7
+  with precondition: [V3=1,V+2*V4+4=Out,V>=0,V4>=0] 
+
+* Chain [40]: 8
+  with precondition: [V3=1,V+2*V4+3=Out,V>=0,V4>=0] 
+
+* Chain [39]: 9
+  with precondition: [V3=1,V+2*V4+2=Out,V>=0,V4>=0] 
+
+* Chain [38]: 0
+  with precondition: [Out=0,V3>=0,V>=0,V4>=0] 
+
+* Chain [37]...: 1*aux(10)+0
+  with precondition: [V3=1,V>=0,V4>=1,Out>=2] 
+
+* Chain [36]...: 1*aux(11)+0
+  with precondition: [V3=1,V>=1,V4>=0,Out>=V4+2] 
+
+
+#### Cost of chains of start(V3,V,V4):
+* Chain [45]...: 1*aux(12)+0
+  with precondition: [V3>=1] 
+
+* Chain [44]...: 1*aux(13)+0
+  with precondition: [V3=1,V>=1] 
+
+* Chain [43]: 9
+  with precondition: [] 
+
+
+Closed-form bounds of start(V3,V,V4): 
+-------------------------------------
+* Chain [45]... with precondition: [V3>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [44]... with precondition: [V3=1,V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [43] with precondition: [] 
+    - Upper bound: 9 
+    - Complexity: constant 
+
+### Maximum cost of start(V3,V,V4): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 29 ms.
+* Invariants computed in 31 ms.
+   - Backward Invariants 8 ms.
+   - Transitive Invariants 6 ms.
+* Refinement performed in 135 ms.
+* Termination proved in 7 ms.
+* Upper bounds computed in 95 ms.
+   - Equation cost structures 42 ms.
+   - Phase cost structures 51 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 336 ms.
+

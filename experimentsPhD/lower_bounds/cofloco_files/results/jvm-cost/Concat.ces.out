@@ -1,0 +1,304 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [m6/2]
+1. recursive : [m0/2,m1/2,m8/2]
+2. non_recursive : [m7/2]
+3. recursive : [m2/2,m3/2,m9/2]
+4. non_recursive : [m5/0]
+5. non_recursive : [n0/2]
+6. non_recursive : [m4/2]
+7. non_recursive : [concat/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into m0/2
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into m2/2
+4. SCC is completely evaluated into other SCCs
+5. SCC is partially evaluated into n0/2
+6. SCC is completely evaluated into other SCCs
+7. SCC is partially evaluated into concat/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/2 
+* CE 5 is refined into CE [8] 
+* CE 4 is refined into CE [9] 
+
+
+#### Refined cost equations m0/2 
+* CE 8: m0(A,B) = 11+ m0(A,C)
+     [A>=B+1,B>=0,B+1=C] 
+* CE 9: m0(A,B) = 3
+     [A>=B,B>=0] 
+
+### Cost equations --> "Loop" of m0/2 
+* CEs [9] --> Loop 7 
+* CEs [8] --> Loop 8 
+
+#### Loops of m0/2 
+* Loop 7: m0(A,B) [A>=B,B>=0] 
+* Loop 8: m0(A,B)->  m0(A,B')
+                  [A>=B+1,B>=0,B+1=B'] 
+
+### Ranking functions of CR m0(A,B) 
+* RF of phase [8]: [A-B]
+
+#### Partial ranking functions of CR m0(A,B) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    A-B
+
+
+### Resulting Chains:m0(A,B) 
+* [[8],7]
+* [7]
+
+
+### Specialization of cost equations m2/2 
+* CE 7 is refined into CE [10] 
+* CE 6 is refined into CE [11] 
+
+
+#### Refined cost equations m2/2 
+* CE 10: m2(A,B) = 11+ m2(A,C)
+     [A>=C,C>=1,C=B+1] 
+* CE 11: m2(A,B) = 3
+     [A>=B,B>=0] 
+
+### Cost equations --> "Loop" of m2/2 
+* CEs [11] --> Loop 9 
+* CEs [10] --> Loop 10 
+
+#### Loops of m2/2 
+* Loop 9: m2(A,B) [A>=B,B>=0] 
+* Loop 10: m2(A,B)->  m2(A,B')
+                  [A>=B',B'>=1,B'=B+1] 
+
+### Ranking functions of CR m2(A,B) 
+* RF of phase [10]: [A-B]
+
+#### Partial ranking functions of CR m2(A,B) 
+* Partial RF of phase [10]:
+  - RF of loop [10:1]:
+    A-B
+
+
+### Resulting Chains:m2(A,B) 
+* [[10],9]
+* [9]
+
+
+### Specialization of cost equations n0/2 
+* CE 3 is refined into CE [12,13,14,15] 
+
+
+#### Refined cost equations n0/2 
+* CE 12: n0(C,D) = 19+ m0(C,E):[[8],7]+ m2(F,C):[[10],9]
+     [F>=C+1,C>=1,C+D=F,E=0] 
+* CE 13: n0(C,D) = 19+ m0(C,E):[[8],7]+ m2(F,C):[9]
+     [F>=C,C>=1,C+D=F,E=0] 
+* CE 14: n0(C,D) = 19+ m0(C,E):[7]+ m2(F,C):[[10],9]
+     [F>=C+1,C>=0,C+D=F,E=0] 
+* CE 15: n0(C,D) = 19+ m0(C,E):[7]+ m2(F,C):[9]
+     [F>=C,C>=0,C+D=F,E=0] 
+
+### Cost equations --> "Loop" of n0/2 
+* CEs [12] --> Loop 11 
+* CEs [13] --> Loop 12 
+* CEs [14] --> Loop 13 
+* CEs [15] --> Loop 14 
+
+#### Loops of n0/2 
+* Loop 11: n0(C,D) [D>=1,C>=1] 
+* Loop 12: n0(C,D) [D>=0,C>=1] 
+* Loop 13: n0(C,D) [D>=1,C>=0] 
+* Loop 14: n0(C,D) [D>=0,C>=0] 
+
+### Ranking functions of CR n0(C,D) 
+
+#### Partial ranking functions of CR n0(C,D) 
+
+
+### Resulting Chains:n0(C,D) 
+* [14]
+* [13]
+* [12]
+* [11]
+
+
+### Specialization of cost equations concat/2 
+* CE 2 is refined into CE [16,17,18,19] 
+
+
+#### Refined cost equations concat/2 
+* CE 16: concat(A,B) = 0+ n0(A,B):[14]
+     [B>=0,A>=0] 
+* CE 17: concat(A,B) = 0+ n0(A,B):[13]
+     [B>=1,A>=0] 
+* CE 18: concat(A,B) = 0+ n0(A,B):[12]
+     [B>=0,A>=1] 
+* CE 19: concat(A,B) = 0+ n0(A,B):[11]
+     [B>=1,A>=1] 
+
+### Cost equations --> "Loop" of concat/2 
+* CEs [19] --> Loop 15 
+* CEs [18] --> Loop 16 
+* CEs [17] --> Loop 17 
+* CEs [16] --> Loop 18 
+
+#### Loops of concat/2 
+* Loop 15: concat(A,B) [B>=1,A>=1] 
+* Loop 16: concat(A,B) [B>=0,A>=1] 
+* Loop 17: concat(A,B) [B>=1,A>=0] 
+* Loop 18: concat(A,B) [B>=0,A>=0] 
+
+### Ranking functions of CR concat(A,B) 
+
+#### Partial ranking functions of CR concat(A,B) 
+
+
+### Resulting Chains:concat(A,B) 
+* [18]
+* [17]
+* [16]
+* [15]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [8] 
+
+ * loop 8:m0(A,B) -> [m0(A',B')] 
+11
+#### Cost of phase [8]:m0(A,B) -> [m0(A',B')] 
+11*it(8)+0
+  Such that:it(8) =< A-B
+it(8) =< A-B-A'+B'
+it(8) >= A-B-A'+B'
+
+#### Cost of chains of m0(A,B):
+* Chain [[8],7]: 11*it(8)+3
+  Such that:it(8) =< A-B
+it(8) >= 1
+
+  with precondition: [B>=0,A>=B+1] 
+
+* Chain [7]: 3
+  with precondition: [B>=0,A>=B] 
+
+
+#### Cost of loops [10] 
+
+ * loop 10:m2(A,B) -> [m2(A',B')] 
+11
+#### Cost of phase [10]:m2(A,B) -> [m2(A',B')] 
+11*it(10)+0
+  Such that:it(10) =< A-B
+it(10) =< A-B-A'+B'
+it(10) >= A-B-A'+B'
+
+#### Cost of chains of m2(A,B):
+* Chain [[10],9]: 11*it(10)+3
+  Such that:it(10) =< A-B
+it(10) >= 1
+
+  with precondition: [B>=0,A>=B+1] 
+
+* Chain [9]: 3
+  with precondition: [B>=0,A>=B] 
+
+
+#### Cost of chains of n0(C,D):
+* Chain [14]: 25
+  with precondition: [C>=0,D>=0] 
+
+* Chain [13]: 11*s(1)+25
+  Such that:s(1) =< D
+s(1) >= 1
+
+  with precondition: [C>=0,D>=1] 
+
+* Chain [12]: 11*s(2)+25
+  Such that:s(2) =< C
+s(2) >= 1
+
+  with precondition: [C>=1,D>=0] 
+
+* Chain [11]: 11*s(3)+11*s(4)+25
+  Such that:s(3) =< C
+s(4) =< D
+aux(1) >= 1
+s(3) >= aux(1)
+s(4) >= aux(1)
+
+  with precondition: [C>=1,D>=1] 
+
+
+#### Cost of chains of concat(A,B):
+* Chain [18]: 25
+  with precondition: [A>=0,B>=0] 
+
+* Chain [17]: 11*s(5)+25
+  Such that:s(5) =< B
+s(5) >= 1
+
+  with precondition: [A>=0,B>=1] 
+
+* Chain [16]: 11*s(6)+25
+  Such that:s(6) =< A
+s(6) >= 1
+
+  with precondition: [A>=1,B>=0] 
+
+* Chain [15]: 11*s(7)+11*s(8)+25
+  Such that:s(7) =< A
+s(8) =< B
+s(9) >= 1
+s(7) >= s(9)
+s(8) >= s(9)
+
+  with precondition: [A>=1,B>=1] 
+
+
+Closed-form bounds of concat(A,B): 
+-------------------------------------
+* Chain [18] with precondition: [A>=0,B>=0] 
+    - Lower bound: 25 
+    - Complexity: constant
+ * Chain [17] with precondition: [A>=0,B>=1] 
+    - Lower bound: 36 
+    - Complexity: constant
+ * Chain [16] with precondition: [A>=1,B>=0] 
+    - Lower bound: 36 
+    - Complexity: constant
+ * Chain [15] with precondition: [A>=1,B>=1] 
+    - Lower bound: 47 
+    - Complexity: constant
+ 
+### Partitioned lower bound of concat(A,B): 
+* 25 
+ if [A>=0,B>=0]
+Possible lower bounds : [25]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 38 ms.
+* Invariants computed in 56 ms.
+   - Backward Invariants 25 ms.
+   - Transitive Invariants 10 ms.
+* Refinement performed in 79 ms.
+* Termination proved in 19 ms.
+* Upper bounds computed in 83 ms.
+   - Equation cost structures 35 ms.
+   - Phase cost structures 22 ms.
+   - Chain cost structures 16 ms.
+   - Solving cost expressions 3 ms.
+* Total analysis performed in 341 ms.
+

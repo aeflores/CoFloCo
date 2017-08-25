@@ -1,0 +1,192 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive : [filter/2]
+1. recursive : [eratos/1]
+3. recursive : [out_filter/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into filter/2
+1. SCC is partially evaluated into eratos/1
+3. SCC is completely evaluated into other SCCs
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations filter/2 
+* CE 5 is refined into CE [6] 
+* CE 4 is refined into CE [7] 
+
+
+#### Refined cost equations filter/2 
+* CE 6: filter(A,B) = 1+ filter(A,C)
+     [B>=1,B=C+1] 
+* CE 7: filter(A,B) = 1
+     [B=0] 
+
+### Cost equations --> "Loop" of filter/2 
+* CEs [7] --> Loop 5 
+* CEs [6] --> Loop 6 
+
+#### Loops of filter/2 
+* Loop 5: filter(A,B) [B=0] 
+* Loop 6: filter(A,B)->  filter(A,B')
+                  [B>=1,B=B'+1] 
+
+### Ranking functions of CR filter(A,B) 
+* RF of phase [6]: [B]
+
+#### Partial ranking functions of CR filter(A,B) 
+* Partial RF of phase [6]:
+  - RF of loop [6:1]:
+    B
+
+
+### Resulting Chains:filter(A,B) 
+* [[6],5]
+* [5]
+
+
+### Specialization of cost equations eratos/1 
+* CE 3 is refined into CE [8,9] 
+* CE 2 is refined into CE [10] 
+
+
+#### Refined cost equations eratos/1 
+* CE 8: eratos(A) = 1+ eratos(B)+ filter(C,B):[[6],5]
+     [B>=1,B+1=A] 
+* CE 9: eratos(A) = 1+ eratos(B)+ filter(C,D):[5]
+     [B=0,D=0,A=1] 
+* CE 10: eratos(A) = 1
+     [A=0] 
+
+### Cost equations --> "Loop" of eratos/1 
+* CEs [10] --> Loop 7 
+* CEs [8] --> Loop 8 
+* CEs [9] --> Loop 9 
+
+#### Loops of eratos/1 
+* Loop 7: eratos(A) [A=0] 
+* Loop 8: eratos(A)->  eratos(A')
+                  [A'>=1,A'+1=A] 
+* Loop 9: eratos(A)->  eratos(A')
+                  [A'=0,A=1] 
+
+### Ranking functions of CR eratos(A) 
+* RF of phase [8]: [A-1]
+
+#### Partial ranking functions of CR eratos(A) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    A-1
+
+
+### Resulting Chains:eratos(A) 
+* [[8],9,7]
+* [9,7]
+* [7]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6] 
+
+ * loop 6:filter(A,B) -> [filter(A',B')] 
+1
+#### Cost of phase [6]:filter(A,B) -> [filter(A',B')] 
+1*it(6)+0
+  Such that:it(6) =< B
+it(6) =< B-B'
+it(6) >= B-B'
+
+#### Cost of chains of filter(A,B):
+* Chain [[6],5]: 1*it(6)+1
+  Such that:it(6) =< B
+it(6) >= B
+
+  with precondition: [B>=1] 
+
+* Chain [5]: 1
+  with precondition: [B=0] 
+
+
+#### Cost of loops [8] 
+
+ * loop 8:eratos(A) -> [eratos(A')] 
+1*s(2)+2
+  Such that:s(2) =< A'
+s(2) >= A'
+
+#### Cost of phase [8]:eratos(A) -> [eratos(A')] 
+2*it(8)+1*s(3)+0
+  Such that:it(8) =< A-A'
+aux(4) =< A-1
+it(8) =< aux(4)
+s(3) =< it(8)*aux(4)
+aux(1) =< it(8)
+aux(2) >= A-1
+it(8) >= A-A'
+aux(1) >= it(8)
+s(3) >= aux(1)*aux(2)+aux(1)* (1/2)-aux(1)*aux(1)* (1/2)
+
+#### Cost of chains of eratos(A):
+* Chain [[8],9,7]: 2*it(8)+1*s(3)+3
+  Such that:aux(5) =< A-1
+it(8) =< aux(5)
+s(3) =< it(8)*aux(5)
+aux(1) =< it(8)
+aux(6) >= A-1
+aux(6) >= aux(6)
+it(8) >= aux(6)
+aux(1) >= it(8)
+s(3) >= aux(1)*aux(6)+aux(1)* (1/2)-aux(1)*aux(1)* (1/2)
+
+  with precondition: [A>=2] 
+
+* Chain [9,7]: 3
+  with precondition: [A=1] 
+
+* Chain [7]: 1
+  with precondition: [A=0] 
+
+
+Closed-form bounds of eratos(A): 
+-------------------------------------
+* Chain [[8],9,7] with precondition: [A>=2] 
+    - Lower bound: 5/2*A+1/2+ (A/2-1/2)* (A-1) 
+    - Complexity: n^2
+ * Chain [9,7] with precondition: [A=1] 
+    - Lower bound: 3 
+    - Complexity: constant
+ * Chain [7] with precondition: [A=0] 
+    - Lower bound: 1 
+    - Complexity: constant
+ 
+### Partitioned lower bound of eratos(A): 
+* 1 
+ if [A=0]
+* 3 
+ if [A=1]
+* 5/2*A+1/2+ (A/2-1/2)* (A-1) 
+ if [A>=2]
+Possible lower bounds : [1,3,5/2*A+1/2+ (A/2-1/2)* (A-1)]
+Maximum lower bound complexity: n^2
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 21 ms.
+   - Backward Invariants 8 ms.
+   - Transitive Invariants 5 ms.
+* Refinement performed in 22 ms.
+* Termination proved in 7 ms.
+* Upper bounds computed in 52 ms.
+   - Equation cost structures 9 ms.
+   - Phase cost structures 23 ms.
+   - Chain cost structures 13 ms.
+   - Solving cost expressions 3 ms.
+* Total analysis performed in 130 ms.
+

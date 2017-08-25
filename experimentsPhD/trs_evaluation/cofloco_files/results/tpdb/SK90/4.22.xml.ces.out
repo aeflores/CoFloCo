@@ -1,0 +1,202 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive [multiple] : [and/3]
+1. recursive [non_tail,multiple] : [not/2]
+2. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into and/3
+1. SCC is partially evaluated into not/2
+2. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations and/3 
+* CE 5 is refined into CE [8] 
+* CE 4 is refined into CE [9] 
+
+
+#### Refined cost equations and/3 
+* CE 8: and(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 9: and(V,V1,Out) = 1+ and(V,W1,X1)+ and(V,Y1,Z1)
+     [Y1>=0,W1>=0,V>=0,X1+Z1+1=Out,W1+Y1+1=V1] 
+
+### Cost equations --> "Loop" of and/3 
+* CEs [9] --> Loop 6 
+* CEs [8] --> Loop 7 
+
+#### Loops of and/3 
+* Loop 6: and(V,V1,Out)->  and(V,V1',Out')  and(V,V1'2,Out'2)
+                  [V1'2>=0,V1'>=0,V>=0,Out=Out'+Out'2+1,V1'+V1'2+1=V1] 
+* Loop 7: and(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR and(V,V1,Out) 
+* RF of phase [6]: [V1]
+
+#### Partial ranking functions of CR and(V,V1,Out) 
+* Partial RF of phase [6]:
+  - RF of loop [6:1,6:2]:
+    V1
+
+
+### Resulting Chains:and(V,V1,Out) 
+* [7]
+* [multiple([6],[[7]])]
+
+
+### Merging Chains  and/3 into  External patterns of execution 
+* [[7]] --> 1 
+* [[multiple([6],[[7]])]] --> 2 
+
+
+### Specialization of cost equations not/2 
+* CE 7 is refined into CE [10] 
+* CE 6 is refined into CE [11,12] 
+
+
+#### Refined cost equations not/2 
+* CE 10: not(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 11: not(V,Out) = 1+ not(W,X)+ not(Y,Z)+ and(X,Z,A1):1
+     [Y>=0,W>=0,Z>=0,X>=0,W+Y+1=V,A1=0,Out=0] 
+* CE 12: not(V,Out) = 1+ not(W,X)+ not(Y,Z)+ and(X,Z,Out):2
+     [Z>=Out,Y>=0,W>=0,Out>=1,X>=0,W+Y+1=V] 
+
+### Cost equations --> "Loop" of not/2 
+* CEs [12] --> Loop 8 
+* CEs [11] --> Loop 9 
+* CEs [10] --> Loop 10 
+
+#### Loops of not/2 
+* Loop 8: not(V,Out)->  not(V',Out')  not(V'2,Out'2)
+                  [V>=V'+1,Out'2>=Out,Out'>=0,V'>=0,Out>=1,V'+V'2+1=V] 
+* Loop 9: not(V,Out)->  not(V',Out')  not(V'2,Out'2)
+                  [V>=V'+1,Out'2>=0,Out'>=0,V'>=0,V'+V'2+1=V,Out=0] 
+* Loop 10: not(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR not(V,Out) 
+* RF of phase [8,9]: [V]
+
+#### Partial ranking functions of CR not(V,Out) 
+* Partial RF of phase [8,9]:
+  - RF of loop [8:1,8:2,9:1,9:2]:
+    V
+
+
+### Resulting Chains:not(V,Out) 
+* [10]
+* [multiple([8,9],[[10]])]
+
+
+### Merging Chains  not/2 into  External patterns of execution 
+* [[10],[multiple([8,9],[[10]])]] --> 1 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [13,14] 
+* CE 3 is refined into CE [15] 
+
+
+#### Refined cost equations start/2 
+* CE 13: start(V,V1) = 0+ and(V,V1,W1):1
+     [V1>=0,V>=0,W1=0] 
+* CE 14: start(V,V1) = 0+ and(V,V1,W1):2
+     [V1>=W1,W1>=1,V>=0] 
+* CE 15: start(V,V1) = 0+ not(V,W1):1
+     [V>=0,W1=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [13,14,15] --> Loop 11 
+
+#### Loops of start/2 
+* Loop 11: start(V,V1) [V>=0] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [11]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[11]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6] 
+
+ * loop 6:and(V,V1,Out) -> [and(V',V1',Out'),and(V'2,V1'2,Out'2)] 
+1
+#### Cost of phase [6]:and(V,V1,Out) -> [] 
+1*it(6)+0
+  Such that:it(6) =< V1
+
+#### Cost of chains of and(V,V1,Out):
+* Chain [7]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+* Chain [multiple([6],[[7]])]: 1*it(6)+0
+  Such that:it(6) =< V1
+
+  with precondition: [V>=0,Out>=1,V1>=Out] 
+
+
+#### Cost of loops [9] 
+
+ * loop 9:not(V,Out) -> [not(V',Out'),not(V'2,Out'2)] 
+1
+#### Cost of phase [8,9]:not(V,Out) -> [] 
+1*it(9)+0
+  Such that:it(9) =< V
+
+#### Cost of chains of not(V,Out):
+* Chain [10]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [multiple([8,9],[[10]])]: 1*it(9)+0
+  Such that:it(9) =< V
+
+  with precondition: [Out=0,V>=1] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [11]: 1*s(2)+1*s(3)+0
+  Such that:s(3) =< V
+s(2) =< V1
+
+  with precondition: [V>=0] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [11] with precondition: [V>=0] 
+    - Upper bound: nat(V1)+V 
+    - Complexity: n 
+
+### Maximum cost of start(V,V1): nat(V1)+V 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 4 ms.
+* Invariants computed in 15 ms.
+   - Backward Invariants 5 ms.
+   - Transitive Invariants 4 ms.
+* Refinement performed in 22 ms.
+* Termination proved in 4 ms.
+* Upper bounds computed in 26 ms.
+   - Equation cost structures 3 ms.
+   - Phase cost structures 23 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 83 ms.
+

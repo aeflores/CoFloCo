@@ -1,0 +1,289 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [cons/3]
+1. non_recursive  : [from/2]
+2. non_recursive  : [nil/1]
+3. non_recursive  : [activate/2]
+4. recursive  : [length/2,length1/2]
+5. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into from/2
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into activate/2
+4. SCC is partially evaluated into length1/2
+5. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations from/2 
+* CE 16 is refined into CE [17] 
+* CE 15 is refined into CE [18] 
+
+
+#### Refined cost equations from/2 
+* CE 17: from(V,Out) = 1
+     [V>=0,V+1=Out] 
+* CE 18: from(V,Out) = 2
+     [Out>=3,Out=2*V+3] 
+
+### Cost equations --> "Loop" of from/2 
+* CEs [17] --> Loop 8 
+* CEs [18] --> Loop 9 
+
+#### Loops of from/2 
+* Loop 8: from(V,Out) [V>=0,V+1=Out] 
+* Loop 9: from(V,Out) [V>=0,2*V+3=Out] 
+
+### Ranking functions of CR from(V,Out) 
+
+#### Partial ranking functions of CR from(V,Out) 
+
+
+### Resulting Chains:from(V,Out) 
+* [9]
+* [8]
+
+
+### Merging Chains  from/2 into  External patterns of execution 
+* [[8]] --> 1 
+* [[9]] --> 2 
+
+
+### Specialization of cost equations activate/2 
+* CE 8 is refined into CE [19,20] 
+* CE 9 is refined into CE [21] 
+* CE 10 is refined into CE [22] 
+* CE 11 is refined into CE [23] 
+
+
+#### Refined cost equations activate/2 
+* CE 19: activate(A,A) = 1+ from(B,A):1
+     [A>=1,A=B+1] 
+* CE 20: activate(V,Out) = 1+ from(W,Out):2
+     [Out>=3,Out=2*W+3,Out=2*V+1] 
+* CE 21: activate(V,Out) = 2
+     [Out=0,V=0] 
+* CE 22: activate(A,A) = 2
+     [A>=1] 
+* CE 23: activate(A,A) = 1
+     [A>=0] 
+
+### Cost equations --> "Loop" of activate/2 
+* CEs [20] --> Loop 10 
+* CEs [19,21,22,23] --> Loop 11 
+
+#### Loops of activate/2 
+* Loop 10: activate(V,Out) [V>=1,2*V+1=Out] 
+* Loop 11: activate(A,A) [A>=0] 
+
+### Ranking functions of CR activate(V,Out) 
+
+#### Partial ranking functions of CR activate(V,Out) 
+
+
+### Resulting Chains:activate(V,Out) 
+* [11]
+* [10]
+
+
+### Merging Chains  activate/2 into  External patterns of execution 
+* [[11]] --> 1 
+* [[10]] --> 2 
+
+
+### Specialization of cost equations length1/2 
+* CE 12 is refined into CE [24,25] 
+* CE 14 is refined into CE [26] 
+* CE 13 is refined into CE [27,28,29,30] 
+
+
+#### Refined cost equations length1/2 
+* CE 24: length1(V,Out) = 1+ activate(V,V):1
+     [V>=0,Out=0] 
+* CE 25: length1(V,Out) = 1+ activate(W,X):2
+     [X>=3,X=2*W+1,X=2*V+1,Out=0] 
+* CE 26: length1(V,Out) = 2+ activate(W,X):1
+     [X=0,W=0,Out=0,V=0] 
+* CE 27: length1(V,Out) = 2+ activate(V,V):1+ activate(W,W):1+ length1(W,X)
+     [V>=W+1,W>=0,X+1=Out] 
+* CE 28: length1(V,Out) = 2+ activate(V,V):1+ activate(W,X):2+ length1(X,Y)
+     [2*V>=X+1,X>=3,Y+1=Out,X=2*W+1] 
+* CE 29: length1(V,Out) = 2+ activate(W,X):2+ activate(Y,Y):1+ length1(Y,Z)
+     [X>=Y+1,Y>=0,X>=3,Z+1=Out,X=2*W+1,X=2*V+1] 
+* CE 30: length1(V,Out) = 2+ activate(W,X):2+ activate(Y,Z):2+ length1(Z,A1)
+     [2*X>=Z+1,Z>=3,X>=3,A1+1=Out,Z=2*Y+1,X=2*W+1,X=2*V+1] 
+
+### Cost equations --> "Loop" of length1/2 
+* CEs [30] --> Loop 12 
+* CEs [27,28,29] --> Loop 13 
+* CEs [24,25,26] --> Loop 14 
+
+#### Loops of length1/2 
+* Loop 12: length1(V,Out)->  length1(V',Out')
+                  [4*V+1>=V',V'>=3,V>=1,Out=Out'+1] 
+* Loop 13: length1(V,Out)->  length1(V',Out')
+                  [2*V>=V',V'>=0,V>=1,Out=Out'+1] 
+* Loop 14: length1(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR length1(V,Out) 
+
+#### Partial ranking functions of CR length1(V,Out) 
+
+
+### Resulting Chains:length1(V,Out) 
+* [[12,13]]...
+* [[12,13],14]
+* [14]
+
+
+### Merging Chains  length1/2 into  External patterns of execution 
+* [[14]] --> 1 
+* [[14,[12,13]]] --> 2 
+* [[[12,13]]] --> 3 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [31] 
+* CE 3 is refined into CE [32,33,34,35,36,37] 
+* CE 4 is refined into CE [38] 
+* CE 5 is refined into CE [39,40] 
+* CE 6 is refined into CE [41,42,43] 
+* CE 7 is refined into CE [44,45] 
+
+
+#### Refined cost equations start/2 
+* CE 31: start(V,V1) = 0
+     [V>=0] 
+* CE 32: start(V,V1) = 1+ activate(W1,W1):1+ length1(W1,X1):1
+     [V>=W1+1,W1>=0,X1=0] 
+* CE 33: start(V,V1) = 1+ activate(W1,W1):1+ length1(W1,X1):2
+     [V>=W1+1,X1>=1,W1>=1] 
+* CE 34: start(V,V1) = 1+ activate(W1,W1):1+ length1(W1,X1):3
+     [V>=W1+1,W1>=1] 
+* CE 35: start(V,V1) = 1+ activate(W1,X1):2+ length1(X1,Y1):1
+     [2*V>=X1+1,X1>=3,X1=2*W1+1,Y1=0] 
+* CE 36: start(V,V1) = 1+ activate(W1,X1):2+ length1(X1,Y1):2
+     [2*V>=X1+1,Y1>=1,X1>=3,X1=2*W1+1] 
+* CE 37: start(V,V1) = 1+ activate(W1,X1):2+ length1(X1,Y1):3
+     [2*V>=X1+1,X1>=3,X1=2*W1+1] 
+* CE 38: start(V,V1) = 1
+     [] 
+* CE 39: start(V,V1) = 0+ from(W1,X1):1
+     [X1>=1,X1=W1+1,X1=V+1] 
+* CE 40: start(V,V1) = 0+ from(W1,X1):2
+     [X1>=3,X1=2*W1+3,X1=2*V+3] 
+* CE 41: start(V,V1) = 0+ length1(V,W1):1
+     [V>=0,W1=0] 
+* CE 42: start(V,V1) = 0+ length1(V,W1):2
+     [W1>=1,V>=1] 
+* CE 43: start(V,V1) = 0+ length1(V,W1):3
+     [V>=1] 
+* CE 44: start(V,V1) = 0+ activate(V,V):1
+     [V>=0] 
+* CE 45: start(V,V1) = 0+ activate(W1,X1):2
+     [X1>=3,X1=2*W1+1,X1=2*V+1] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [31,32,33,35,36,38,39,40,41,42,44,45] --> Loop 15 
+* CEs [34,37,43] --> Loop 16 
+
+#### Loops of start/2 
+* Loop 15: start(V,V1) [] 
+* Loop 16: start(V,V1) [V>=1] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [16]...
+* [15]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[15]] --> 1 
+* [[16]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of from(V,Out):
+* Chain [9]: 2
+  with precondition: [2*V+3=Out,V>=0] 
+
+* Chain [8]: 1
+  with precondition: [V+1=Out,V>=0] 
+
+
+#### Cost of chains of activate(V,Out):
+* Chain [11]: 2
+  with precondition: [V=Out,V>=0] 
+
+* Chain [10]: 3
+  with precondition: [2*V+1=Out,V>=1] 
+
+
+#### Cost of loops [12,13] 
+
+ * loop 12:length1(V,Out) -> [length1(V',Out')] 
+8
+ * loop 13:length1(V,Out) -> [length1(V',Out')] 
+7
+#### Cost of phase [12,13]:length1(V,Out) -> [length1(V',Out')] 
+15*it(12)+0
+#### Cost of phase [12,13]:length1(V,Out) -> [length1(V',Out')] 
+15*it(12)+0
+#### Cost of chains of length1(V,Out):
+* Chain [[12,13]]...: 15*it(12)+0
+  with precondition: [V>=1] 
+
+* Chain [[12,13],14]: 15*it(12)+4
+  with precondition: [V>=1,Out>=1] 
+
+* Chain [14]: 4
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [16]...: 1*aux(1)+0
+  with precondition: [V>=1] 
+
+* Chain [15]: 1*aux(2)+0
+  with precondition: [] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [16]... with precondition: [V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [15] with precondition: [] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V1): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 38 ms.
+* Invariants computed in 26 ms.
+   - Backward Invariants 11 ms.
+   - Transitive Invariants 7 ms.
+* Refinement performed in 113 ms.
+* Termination proved in 5 ms.
+* Upper bounds computed in 53 ms.
+   - Equation cost structures 39 ms.
+   - Phase cost structures 14 ms.
+   - Chain cost structures 6 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 276 ms.
+

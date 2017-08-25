@@ -1,0 +1,299 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [n1/1]
+1. non_recursive : [m4/0]
+2. non_recursive : [m6/1]
+3. recursive : [m0/1,m1/1,m5/1,m7/1,m8/1]
+4. recursive : [m2/1,m3/1,n3/1]
+5. non_recursive : [n0/0]
+6. non_recursive : [n2/1]
+7. non_recursive : [m9/1]
+8. non_recursive : [doSum/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into m0/1
+4. SCC is partially evaluated into m2/1
+5. SCC is completely evaluated into other SCCs
+6. SCC is completely evaluated into other SCCs
+7. SCC is completely evaluated into other SCCs
+8. SCC is partially evaluated into doSum/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/1 
+* CE 6 is refined into CE [7] 
+* CE 5 is refined into CE [8] 
+
+
+#### Refined cost equations m0/1 
+* CE 7: m0(A) = 9+ m0(B)
+     [A>=1,A=B+1] 
+* CE 8: m0(A) = 4
+     [A=0] 
+
+### Cost equations --> "Loop" of m0/1 
+* CEs [8] --> Loop 6 
+* CEs [7] --> Loop 7 
+
+#### Loops of m0/1 
+* Loop 6: m0(A) [A=0] 
+* Loop 7: m0(A)->  m0(A')
+                  [A>=1,A=A'+1] 
+
+### Ranking functions of CR m0(A) 
+* RF of phase [7]: [A]
+
+#### Partial ranking functions of CR m0(A) 
+* Partial RF of phase [7]:
+  - RF of loop [7:1]:
+    A
+
+
+### Resulting Chains:m0(A) 
+* [[7],6]
+* [6]
+
+
+### Specialization of cost equations m2/1 
+* CE 4 is refined into CE [9,10] 
+* CE 3 is refined into CE [11] 
+
+
+#### Refined cost equations m2/1 
+* CE 9: m2(A) = 12+ m2(B)+ m0(A):[[7],6]
+     [A>=1,A=B+1] 
+* CE 10: m2(A) = 12+ m2(B)+ m0(C):[6]
+     [B+1=0,C=0,A=0] 
+* CE 11: m2(A) = 2
+     [A+1>=0] 
+
+### Cost equations --> "Loop" of m2/1 
+* CEs [11] --> Loop 8 
+* CEs [9] --> Loop 9 
+* CEs [10] --> Loop 10 
+
+#### Loops of m2/1 
+* Loop 8: m2(A) [A+1>=0] 
+* Loop 9: m2(A)->  m2(A')
+                  [A>=1,A=A'+1] 
+* Loop 10: m2(A)->  m2(A')
+                  [A'+1=0,A=0] 
+
+### Ranking functions of CR m2(A) 
+* RF of phase [9]: [A]
+
+#### Partial ranking functions of CR m2(A) 
+* Partial RF of phase [9]:
+  - RF of loop [9:1]:
+    A
+
+
+### Resulting Chains:m2(A) 
+* [[9],10,8]
+* [[9],8]
+* [10,8]
+* [8]
+
+
+### Specialization of cost equations doSum/1 
+* CE 2 is refined into CE [12,13,14,15] 
+
+
+#### Refined cost equations doSum/1 
+* CE 12: doSum(A) = 4+ m2(A):[[9],10,8]
+     [A>=1] 
+* CE 13: doSum(A) = 4+ m2(A):[[9],8]
+     [A>=1] 
+* CE 14: doSum(A) = 4+ m2(B):[10,8]
+     [B=0,A=0] 
+* CE 15: doSum(A) = 4+ m2(A):[8]
+     [A>=0] 
+
+### Cost equations --> "Loop" of doSum/1 
+* CEs [13] --> Loop 11 
+* CEs [12] --> Loop 12 
+* CEs [15] --> Loop 13 
+* CEs [14] --> Loop 14 
+
+#### Loops of doSum/1 
+* Loop 11: doSum(A) [A>=1] 
+* Loop 12: doSum(A) [A>=1] 
+* Loop 13: doSum(A) [A>=0] 
+* Loop 14: doSum(A) [A=0] 
+
+### Ranking functions of CR doSum(A) 
+
+#### Partial ranking functions of CR doSum(A) 
+
+
+### Resulting Chains:doSum(A) 
+* [14]
+* [13]
+* [12]
+* [11]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [7] 
+
+ * loop 7:m0(A) -> [m0(A')] 
+9
+#### Cost of phase [7]:m0(A) -> [m0(A')] 
+9*it(7)+0
+  Such that:it(7) =< A
+it(7) =< A-A'
+it(7) >= A-A'
+
+#### Cost of chains of m0(A):
+* Chain [[7],6]: 9*it(7)+4
+  Such that:it(7) =< A
+it(7) >= A
+
+  with precondition: [A>=1] 
+
+* Chain [6]: 4
+  with precondition: [A=0] 
+
+
+#### Cost of loops [9] 
+
+ * loop 9:m2(A) -> [m2(A')] 
+9*s(2)+16
+  Such that:s(2) =< A
+s(2) >= A
+
+#### Cost of phase [9]:m2(A) -> [m2(A')] 
+16*it(9)+9*s(3)+0
+  Such that:it(9) =< A-A'
+aux(4) =< A
+it(9) =< aux(4)
+s(3) =< it(9)*aux(4)
+aux(1) =< it(9)
+aux(2) >= A
+it(9) >= A-A'
+aux(1) >= it(9)
+s(3) >= aux(1)*aux(2)+aux(1)* (1/2)-aux(1)*aux(1)* (1/2)
+
+#### Cost of phase [9]:m2(A) -> [m2(A')] 
+16*it(9)+9*s(3)+0
+  Such that:it(9) =< A-A'
+aux(4) =< A
+it(9) =< aux(4)
+s(3) =< it(9)*aux(4)
+aux(1) =< it(9)
+aux(2) >= A
+it(9) >= A-A'
+aux(1) >= it(9)
+s(3) >= aux(1)*aux(2)+aux(1)* (1/2)-aux(1)*aux(1)* (1/2)
+
+#### Cost of chains of m2(A):
+* Chain [[9],10,8]: 16*it(9)+9*s(3)+18
+  Such that:aux(5) =< A
+it(9) =< aux(5)
+s(3) =< it(9)*aux(5)
+aux(1) =< it(9)
+aux(6) >= A
+aux(6) >= aux(6)
+it(9) >= aux(6)
+aux(1) >= it(9)
+s(3) >= aux(1)*aux(6)+aux(1)* (1/2)-aux(1)*aux(1)* (1/2)
+
+  with precondition: [A>=1] 
+
+* Chain [[9],8]: 16*it(9)+9*s(3)+2
+  Such that:aux(7) =< A
+it(9) =< aux(7)
+s(3) =< it(9)*aux(7)
+aux(1) =< it(9)
+it(9) >= 1
+aux(2) >= A
+aux(1) >= it(9)
+s(3) >= aux(1)*aux(2)+aux(1)* (1/2)-aux(1)*aux(1)* (1/2)
+
+  with precondition: [A>=1] 
+
+* Chain [10,8]: 18
+  with precondition: [A=0] 
+
+* Chain [8]: 2
+  with precondition: [A+1>=0] 
+
+
+#### Cost of chains of doSum(A):
+* Chain [14]: 22
+  with precondition: [A=0] 
+
+* Chain [13]: 6
+  with precondition: [A>=0] 
+
+* Chain [12]: 16*s(6)+9*s(7)+22
+  Such that:s(4) =< A
+s(6) =< s(4)
+s(7) =< s(6)*s(4)
+s(8) =< s(6)
+s(5) >= A
+s(5) >= s(5)
+s(6) >= s(5)
+s(8) >= s(6)
+s(7) >= s(8)*s(5)+s(8)* (1/2)-s(8)*s(8)* (1/2)
+
+  with precondition: [A>=1] 
+
+* Chain [11]: 16*s(10)+9*s(12)+6
+  Such that:s(9) =< A
+s(10) =< s(9)
+s(12) =< s(10)*s(9)
+s(13) =< s(10)
+s(10) >= 1
+s(11) >= A
+s(13) >= s(10)
+s(12) >= s(13)*s(11)+s(13)* (1/2)-s(13)*s(13)* (1/2)
+
+  with precondition: [A>=1] 
+
+
+Closed-form bounds of doSum(A): 
+-------------------------------------
+* Chain [14] with precondition: [A=0] 
+    - Lower bound: 22 
+    - Complexity: constant
+ * Chain [13] with precondition: [A>=0] 
+    - Lower bound: 6 
+    - Complexity: constant
+ * Chain [12] with precondition: [A>=1] 
+    - Lower bound: 41/2*A+22+9/2*A*A 
+    - Complexity: n^2
+ * Chain [11] with precondition: [A>=1] 
+    - Lower bound: nat(A+1/2+ -A/2*A)*9+22 
+    - Complexity: n^2
+ 
+### Partitioned lower bound of doSum(A): 
+* 6 
+ if [A>=0]
+Possible lower bounds : [6]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 17 ms.
+* Invariants computed in 27 ms.
+   - Backward Invariants 13 ms.
+   - Transitive Invariants 4 ms.
+* Refinement performed in 25 ms.
+* Termination proved in 6 ms.
+* Upper bounds computed in 67 ms.
+   - Equation cost structures 15 ms.
+   - Phase cost structures 21 ms.
+   - Chain cost structures 18 ms.
+   - Solving cost expressions 4 ms.
+* Total analysis performed in 171 ms.
+

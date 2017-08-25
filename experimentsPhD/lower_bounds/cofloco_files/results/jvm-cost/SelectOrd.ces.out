@@ -1,0 +1,251 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [m8/2]
+1. non_recursive : [m9/3]
+2. recursive : [m0/3,m1/4,m6/5,m7/3,n0/4,n2/4,n3/5]
+3. recursive : [m2/2,m3/3,n4/3]
+4. non_recursive : [m5/0]
+5. non_recursive : [n1/1]
+6. non_recursive : [m4/1]
+7. non_recursive : [selectOrd/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is partially evaluated into m0/3
+3. SCC is partially evaluated into m2/2
+4. SCC is completely evaluated into other SCCs
+5. SCC is completely evaluated into other SCCs
+6. SCC is completely evaluated into other SCCs
+7. SCC is partially evaluated into selectOrd/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/3 
+* CE 6 is refined into CE [8] 
+* CE 7 is refined into CE [9] 
+* CE 5 is refined into CE [10] 
+
+
+#### Refined cost equations m0/3 
+* CE 8: m0(A,B,C) = 17+ m0(A,C,D)
+     [A>=C+2,C>=B+1,B>=0,C+1=D] 
+* CE 9: m0(A,B,C) = 15+ m0(A,B,D)
+     [A>=C+2,C>=B+1,B>=0,C+1=D] 
+* CE 10: m0(A,B,C) = 6
+     [A>=C+1,C>=B+1,B>=0,A>=3] 
+
+### Cost equations --> "Loop" of m0/3 
+* CEs [10] --> Loop 7 
+* CEs [8] --> Loop 8 
+* CEs [9] --> Loop 9 
+
+#### Loops of m0/3 
+* Loop 7: m0(A,B,C) [A>=C+1,C>=B+1,B>=0,A>=3] 
+* Loop 8: m0(A,B,C)->  m0(A,C,A')
+                  [A>=C+2,C>=B+1,B>=0,C+1=A'] 
+* Loop 9: m0(A,B,C)->  m0(A,B,C')
+                  [A>=C+2,C>=B+1,B>=0,C+1=C'] 
+
+### Ranking functions of CR m0(A,B,C) 
+* RF of phase [8,9]: [A-C-1]
+
+#### Partial ranking functions of CR m0(A,B,C) 
+* Partial RF of phase [8,9]:
+  - RF of loop [8:1]:
+    A-B-2
+  - RF of loop [8:1,9:1]:
+    A-C-1
+
+
+### Resulting Chains:m0(A,B,C) 
+* [[8,9],7]
+* [7]
+
+
+### Specialization of cost equations m2/2 
+* CE 4 is refined into CE [11,12] 
+* CE 3 is refined into CE [13] 
+
+
+#### Refined cost equations m2/2 
+* CE 11: m2(A,B) = 28+ m2(A,C)+ m0(A,B,D):[[8,9],7]
+     [A>=B+3,B>=0,B+1=C,B+1=D] 
+* CE 12: m2(A,B) = 28+ m2(A,C)+ m0(A,B,D):[7]
+     [A>=B+3,B>=0,B+1=C,B+1=D] 
+* CE 13: m2(A,B) = 6
+     [B>=0] 
+
+### Cost equations --> "Loop" of m2/2 
+* CEs [13] --> Loop 10 
+* CEs [12] --> Loop 11 
+* CEs [11] --> Loop 12 
+
+#### Loops of m2/2 
+* Loop 10: m2(A,B) [B>=0] 
+* Loop 11: m2(A,B)->  m2(A,B')
+                  [A>=B'+2,B'>=1,B'=B+1] 
+* Loop 12: m2(A,B)->  m2(A,B')
+                  [A>=B'+2,B'>=1,B'=B+1] 
+
+### Ranking functions of CR m2(A,B) 
+* RF of phase [11,12]: [A-B-2]
+
+#### Partial ranking functions of CR m2(A,B) 
+* Partial RF of phase [11,12]:
+  - RF of loop [11:1,12:1]:
+    A-B-2
+
+
+### Resulting Chains:m2(A,B) 
+* [[11,12],10]
+* [10]
+
+
+### Specialization of cost equations selectOrd/1 
+* CE 2 is refined into CE [14,15] 
+
+
+#### Refined cost equations selectOrd/1 
+* CE 14: selectOrd(A) = 3+ m2(A,B):[[11,12],10]
+     [A>=3,B=0] 
+* CE 15: selectOrd(A) = 3+ m2(A,B):[10]
+     [A>=0,B=0] 
+
+### Cost equations --> "Loop" of selectOrd/1 
+* CEs [14] --> Loop 13 
+* CEs [15] --> Loop 14 
+
+#### Loops of selectOrd/1 
+* Loop 13: selectOrd(A) [A>=3] 
+* Loop 14: selectOrd(A) [A>=0] 
+
+### Ranking functions of CR selectOrd(A) 
+
+#### Partial ranking functions of CR selectOrd(A) 
+
+
+### Resulting Chains:selectOrd(A) 
+* [14]
+* [13]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [8,9] 
+
+ * loop 8:m0(A,B,C) -> [m0(A',B',C')] 
+17
+ * loop 9:m0(A,B,C) -> [m0(A',B',C')] 
+15
+#### Cost of phase [8,9]:m0(A,B,C) -> [m0(A',B',C')] 
+17*it(8)+15*it(9)+0
+  Such that:it(8) =< A-B-2
+it(8) =< A-B-A'+B'
+it(8)+it(9) =< A-C-1
+it(8)+it(9) =< A-C-A'+C'
+it(8)+it(9) >= A-C-A'+C'
+
+#### Cost of chains of m0(A,B,C):
+* Chain [[8,9],7]: 17*it(8)+15*it(9)+6
+  Such that:it(8) =< A-B-2
+it(9)+it(8) =< A-C-1
+it(9)+it(8) >= 1
+
+  with precondition: [B>=0,C>=B+1,A>=C+2] 
+
+* Chain [7]: 6
+  with precondition: [A>=3,B>=0,C>=B+1,A>=C+1] 
+
+
+#### Cost of loops [11,12] 
+
+ * loop 11:m2(A,B) -> [m2(A',B')] 
+34
+ * loop 12:m2(A,B) -> [m2(A',B')] 
+17*s(4)+15*s(5)+34
+  Such that:s(3) =< A'-B'-1
+s(4)+s(5) =< s(3)
+s(4)+s(5) >= 1
+
+#### Cost of phase [11,12]:m2(A,B) -> [m2(A',B')] 
+34*it(11)+34*it(12)+17*s(6)+15*s(7)+0
+  Such that:it(11)+it(12) =< A-B-A'+B'
+aux(4) =< A-B-2
+it(11)+it(12) =< aux(4)
+s(8) =< it(12)*aux(4)
+s(6)+s(7) =< s(8)
+aux(5) >= A-B-A'+B'
+aux(2)+it(11) >= aux(5)
+it(11)+it(12) >= aux(5)
+s(6)+s(7) >= aux(2)
+
+#### Cost of chains of m2(A,B):
+* Chain [[11,12],10]: 34*it(11)+34*it(12)+17*s(6)+15*s(7)+6
+  Such that:aux(6) =< A-B-2
+it(11)+it(12) =< aux(6)
+s(8) =< it(12)*aux(6)
+s(6)+s(7) =< s(8)
+aux(5) >= 1
+aux(2)+it(11) >= aux(5)
+it(11)+it(12) >= aux(5)
+s(6)+s(7) >= aux(2)
+
+  with precondition: [B>=0,A>=B+3] 
+
+* Chain [10]: 6
+  with precondition: [B>=0] 
+
+
+#### Cost of chains of selectOrd(A):
+* Chain [14]: 9
+  with precondition: [A>=0] 
+
+* Chain [13]: 34*s(11)+34*s(12)+17*s(15)+15*s(16)+9
+  Such that:s(9) =< A-2
+s(11)+s(12) =< s(9)
+s(14) =< s(12)*s(9)
+s(15)+s(16) =< s(14)
+s(10) >= 1
+s(11)+s(13) >= s(10)
+s(11)+s(12) >= s(10)
+s(15)+s(16) >= s(13)
+
+  with precondition: [A>=3] 
+
+
+Closed-form bounds of selectOrd(A): 
+-------------------------------------
+* Chain [14] with precondition: [A>=0] 
+    - Lower bound: 9 
+    - Complexity: constant
+ * Chain [13] with precondition: [A>=3] 
+    - Lower bound: 24 
+    - Complexity: constant
+ 
+### Partitioned lower bound of selectOrd(A): 
+* 9 
+ if [A>=0]
+Possible lower bounds : [9]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 49 ms.
+* Invariants computed in 67 ms.
+   - Backward Invariants 24 ms.
+   - Transitive Invariants 21 ms.
+* Refinement performed in 61 ms.
+* Termination proved in 22 ms.
+* Upper bounds computed in 109 ms.
+   - Equation cost structures 30 ms.
+   - Phase cost structures 63 ms.
+   - Chain cost structures 27 ms.
+   - Solving cost expressions 3 ms.
+* Total analysis performed in 367 ms.
+

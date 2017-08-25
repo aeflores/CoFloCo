@@ -1,0 +1,173 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [from/2]
+1. non_recursive  : [fun/2]
+2. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into from/2
+1. SCC is partially evaluated into fun/2
+2. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations from/2 
+* CE 6 is refined into CE [7] 
+
+
+#### Refined cost equations from/2 
+* CE 7: from(V,Out) = 1+ from(W,X)
+     [V>=0,V+X+1=Out,V+1=W] 
+
+### Cost equations --> "Loop" of from/2 
+* CEs [7] --> Loop 5 
+
+#### Loops of from/2 
+* Loop 5: from(V,Out)->  from(V',Out')
+                  [V>=0,V+Out'+1=Out,V+1=V'] 
+
+### Ranking functions of CR from(V,Out) 
+
+#### Partial ranking functions of CR from(V,Out) 
+
+Warning: no base case found for predicate
+
+### Resulting Chains:from(V,Out) 
+* [[5]]...
+
+
+### Merging Chains  from/2 into  External patterns of execution 
+* [[[5]]] --> 1 
+
+
+### Specialization of cost equations fun/2 
+* CE 4 is refined into CE [8] 
+* CE 5 is refined into CE [9] 
+
+
+#### Refined cost equations fun/2 
+* CE 8: fun(V,Out) = 1
+     [V>=Out+2,Out>=0] 
+* CE 9: fun(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of fun/2 
+* CEs [8] --> Loop 6 
+* CEs [9] --> Loop 7 
+
+#### Loops of fun/2 
+* Loop 6: fun(V,Out) [V>=Out+2,Out>=0] 
+* Loop 7: fun(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR fun(V,Out) 
+
+#### Partial ranking functions of CR fun(V,Out) 
+
+
+### Resulting Chains:fun(V,Out) 
+* [7]
+* [6]
+
+
+### Merging Chains  fun/2 into  External patterns of execution 
+* [[7]] --> 1 
+* [[6]] --> 2 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [10,11] 
+* CE 3 is refined into CE [12] 
+
+
+#### Refined cost equations start/1 
+* CE 10: start(V) = 0+ fun(V,W):1
+     [V>=0,W=0] 
+* CE 11: start(V) = 0+ fun(V,W):2
+     [V>=W+2,W>=0] 
+* CE 12: start(V) = 0+ from(V,W):1
+     [V>=0] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [12] --> Loop 8 
+* CEs [10,11] --> Loop 9 
+
+#### Loops of start/1 
+* Loop 8: start(V) [V>=0] 
+* Loop 9: start(V) [V>=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [9]
+* [8]...
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[9]] --> 1 
+* [[8]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5] 
+
+ * loop 5:from(V,Out) -> [from(V',Out')] 
+1
+#### Cost of phase [5]:from(V,Out) -> [from(V',Out')] 
+1*it(5)+0
+#### Cost of chains of from(V,Out):
+* Chain [[5]]...: 1*it(5)+0
+  with precondition: [V>=0] 
+
+
+#### Cost of chains of fun(V,Out):
+* Chain [7]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [6]: 1
+  with precondition: [Out>=0,V>=Out+2] 
+
+
+#### Cost of chains of start(V):
+* Chain [9]: 1
+  with precondition: [V>=0] 
+
+* Chain [8]...: 1*s(1)+0
+  with precondition: [V>=0] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [9] with precondition: [V>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [8]... with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 2 ms.
+* Invariants computed in 4 ms.
+   - Backward Invariants 2 ms.
+   - Transitive Invariants 1 ms.
+* Refinement performed in 8 ms.
+* Termination proved in 1 ms.
+* Upper bounds computed in 5 ms.
+   - Equation cost structures 3 ms.
+   - Phase cost structures 1 ms.
+   - Chain cost structures 1 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 27 ms.
+

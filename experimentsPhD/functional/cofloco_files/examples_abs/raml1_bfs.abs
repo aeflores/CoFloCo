@@ -1,0 +1,103 @@
+/* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Unit Tests * *
+ *
+ * File:
+ *   tests/raml1_bfs.raml
+ *
+ * Author:
+ *   Jan Hoffmann, Shu-Chun Weng (2015)
+ * 
+ * Description:
+ *   Depth-first search and breadth-first search.
+ *   
+ */
+
+module Bfs;
+
+data Btree = Leaf | Node(Int val,Btree lside,Btree rside);
+
+
+/* depth-first search */
+
+def Maybe<Btree> dfs_aux(List<Btree> queue,Int x)=
+    case queue {
+    Nil => Nothing;
+    Cons(t,ts) =>
+    	  case t {
+	  Leaf => dfs_aux(ts,x);
+	  Node(a,t1,t2) => if a==x then Just(t)
+	  		else dfs_aux(Cons(t1,Cons(t2,ts)),x);
+			};
+	};
+
+def Maybe<Btree> dfs(Btree t,Int x)=
+    dfs_aux(Cons(t,Nil),x);
+
+
+
+
+ def Pair<List<Int>,List<Int>> split(List<Int> l) =
+    case l {
+      Nil => Pair(Nil,Nil);
+      Cons(x1,xs) =>
+	case xs {
+	  Nil => Pair(Cons(x1,Nil),Nil);
+	  Cons(x2,xs2) =>
+	    let (Pair<List<Int>,List<Int>> pair)= split(xs2) in
+	    case pair { Pair(a,b) => 
+	    	      Pair(Cons(x1,a),Cons(x2,b));};
+	      };
+	};
+
+
+def Btree make_btree(List<Int> l) =
+    case l {
+      Nil => Leaf;
+      Cons(x,xs) =>
+         let (Pair<List<Int>,List<Int>> pair)= split(xs) in
+	 case pair { Pair(a,b) => 
+	 Node(x,make_btree(a),make_btree(b));};
+	 };
+
+
+
+
+def List<A> append_rev<A>(List<A> acc,List<A> l) = 
+   case l { 
+      Nil => acc ; 
+      Cons(h, t) => append_rev(Cons(h,acc),t) ; 
+   };
+def List<A> revL<A>(List<A> l) = append_rev(Nil,l);
+
+
+/* breadth-first search */
+
+
+def Btree bfs_aux(List<Btree> queue,List<Btree> futurequeue,Int x)=
+    case queue {
+    	 Nil =>  
+	    case futurequeue {
+	    	 Nil => Leaf;
+	    	 Cons(t,ts) => bfs_aux(revL(futurequeue),Nil,x);
+            };
+    	 Cons(t,ts) =>
+	    case t {
+	    Leaf => bfs_aux(ts,futurequeue,x);
+	    Node(y,t1,t2)=> 
+	       if x==y then Node(y,t1,t2)
+	       else bfs_aux(ts,Cons(t2,Cons(t1,futurequeue)),x);
+	       };
+       };
+
+def Maybe<Btree> bfs(Btree t,Int x)=
+    case bfs_aux(Cons(t,Nil),Nil,x) {
+     Leaf => Nothing;
+     Node(x,t1,t2)=> Just(Node(x,t1,t2));
+     };
+
+
+
+{}

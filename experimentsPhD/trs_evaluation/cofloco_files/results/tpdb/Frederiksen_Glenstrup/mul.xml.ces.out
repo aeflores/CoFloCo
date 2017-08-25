@@ -1,0 +1,249 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [add0/3]
+1. recursive [non_tail] : [mul0/3]
+2. non_recursive  : [goal/3]
+3. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into add0/3
+1. SCC is partially evaluated into mul0/3
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations add0/3 
+* CE 8 is refined into CE [9] 
+* CE 7 is refined into CE [10] 
+
+
+#### Refined cost equations add0/3 
+* CE 9: add0(A,B,B) = 1
+     [B>=0,A=0] 
+* CE 10: add0(V1,V,Out) = 1+ add0(W1,X1,Out)
+     [V1>=W1+1,W1>=0,V>=0,V+1=X1] 
+
+### Cost equations --> "Loop" of add0/3 
+* CEs [10] --> Loop 6 
+* CEs [9] --> Loop 7 
+
+#### Loops of add0/3 
+* Loop 6: add0(V1,V,Out)->  add0(V1',V',Out)
+                  [V1>=V1'+1,V1'>=0,V>=0,V+1=V'] 
+* Loop 7: add0(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR add0(V1,V,Out) 
+* RF of phase [6]: [V1]
+
+#### Partial ranking functions of CR add0(V1,V,Out) 
+* Partial RF of phase [6]:
+  - RF of loop [6:1]:
+    V1
+
+
+### Resulting Chains:add0(V1,V,Out) 
+* [[6],7]
+* [7]
+
+
+### Merging Chains  add0/3 into  External patterns of execution 
+* [[7]] --> 1 
+* [[7,[6]]] --> 2 
+
+
+### Specialization of cost equations mul0/3 
+* CE 6 is refined into CE [11] 
+* CE 5 is refined into CE [12,13] 
+
+
+#### Refined cost equations mul0/3 
+* CE 11: mul0(V1,V,Out) = 1
+     [V>=0,Out=0,V1=0] 
+* CE 12: mul0(A,B,B) = 1+ mul0(C,B,D)+ add0(E,B,B):1
+     [A>=C+1,C>=0,B>=0,D=0,E=0] 
+* CE 13: mul0(V1,V,Out) = 1+ mul0(W1,V,X1)+ add0(X1,V,Out):2
+     [V+X1>=Out,V1>=W1+1,Out>=V+1,W1>=0,V>=0] 
+
+### Cost equations --> "Loop" of mul0/3 
+* CEs [13] --> Loop 8 
+* CEs [12] --> Loop 9 
+* CEs [11] --> Loop 10 
+
+#### Loops of mul0/3 
+* Loop 8: mul0(V1,V,Out)->  mul0(V1',V,Out')
+                  [V+Out'>=Out,V1>=V1'+1,Out>=V+1,V1'>=0,V>=0] 
+* Loop 9: mul0(A,B,B)->  mul0(A',B,B')
+                  [A>=A'+1,A'>=0,B>=0,B'=0] 
+* Loop 10: mul0(V1,V,Out) [V>=0,Out=0,V1=0] 
+
+### Ranking functions of CR mul0(V1,V,Out) 
+* RF of phase [8]: [V1]
+* RF of phase [9]: [V1]
+
+#### Partial ranking functions of CR mul0(V1,V,Out) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    V1
+* Partial RF of phase [9]:
+  - RF of loop [9:1]:
+    V1
+
+
+### Resulting Chains:mul0(V1,V,Out) 
+* [[9],10]
+* [[8],[9],10]
+* [10]
+
+
+### Merging Chains  mul0/3 into  External patterns of execution 
+* [[10]] --> 1 
+* [[10,[9]]] --> 2 
+* [[10,[9],[8]]] --> 3 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [14,15,16] 
+* CE 3 is refined into CE [17,18] 
+* CE 4 is refined into CE [19,20,21] 
+
+
+#### Refined cost equations start/2 
+* CE 14: start(V1,V) = 0+ mul0(W1,V,X1):1
+     [V>=0,X1=0,W1=0,V1=0] 
+* CE 15: start(V1,V) = 0+ mul0(V1,V,V):2
+     [V>=0,V1>=1] 
+* CE 16: start(V1,V) = 0+ mul0(V1,V,W1):3
+     [W1>=V+1,V>=1,V1>=2] 
+* CE 17: start(V1,V) = 0+ add0(W1,V,V):1
+     [V>=0,W1=0,V1=0] 
+* CE 18: start(V1,V) = 0+ add0(V1,V,W1):2
+     [V1+V>=W1,W1>=V+1,V>=0] 
+* CE 19: start(V1,V) = 1+ mul0(W1,V,X1):1
+     [V>=0,X1=0,W1=0,V1=0] 
+* CE 20: start(V1,V) = 1+ mul0(V1,V,V):2
+     [V>=0,V1>=1] 
+* CE 21: start(V1,V) = 1+ mul0(V1,V,W1):3
+     [W1>=V+1,V>=1,V1>=2] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [15,16,18,20,21] --> Loop 11 
+* CEs [14,17,19] --> Loop 12 
+
+#### Loops of start/2 
+* Loop 11: start(V1,V) [V>=0,V1>=1] 
+* Loop 12: start(V1,V) [V>=0,V1=0] 
+
+### Ranking functions of CR start(V1,V) 
+
+#### Partial ranking functions of CR start(V1,V) 
+
+
+### Resulting Chains:start(V1,V) 
+* [12]
+* [11]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[12]] --> 1 
+* [[11]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6] 
+
+ * loop 6:add0(V1,V,Out) -> [add0(V1',V',Out')] 
+1
+#### Cost of phase [6]:add0(V1,V,Out) -> [add0(V1',V',Out')] 
+1*it(6)+0
+  Such that:it(6) =< V1
+it(6) =< V1-V1'
+
+#### Cost of chains of add0(V1,V,Out):
+* Chain [[6],7]: 1*it(6)+1
+  Such that:it(6) =< V1
+
+  with precondition: [V>=0,Out>=V+1,V+V1>=Out] 
+
+* Chain [7]: 1
+  with precondition: [V1=0,V=Out,V>=0] 
+
+
+#### Cost of loops [9] 
+
+ * loop 9:mul0(V1,V,Out) -> [mul0(V1',V',Out')] 
+2
+#### Cost of phase [9]:mul0(V1,V,Out) -> [mul0(V1',V',Out')] 
+2*it(9)+0
+  Such that:it(9) =< V1
+it(9) =< V1-V1'
+
+#### Cost of loops [8] 
+
+ * loop 8:mul0(V1,V,Out) -> [mul0(V1',V',Out')] 
+1*s(2)+2
+#### Cost of phase [8]:mul0(V1,V,Out) -> [mul0(V1',V',Out')] 
+2*it(8)+1*s(3)+0
+  Such that:it(8) =< V1
+it(8) =< V1-V1'
+
+#### Cost of chains of mul0(V1,V,Out):
+* Chain [[9],10]: 2*it(9)+1
+  Such that:it(9) =< V1
+
+  with precondition: [V=Out,V1>=1,V>=0] 
+
+* Chain [[8],[9],10]: 4*it(8)+1*s(3)+1
+  Such that:aux(1) =< V1
+it(8) =< aux(1)
+
+  with precondition: [V1>=2,V>=1,Out>=V+1] 
+
+* Chain [10]: 1
+  with precondition: [V1=0,Out=0,V>=0] 
+
+
+#### Cost of chains of start(V1,V):
+* Chain [12]: 2
+  with precondition: [V1=0,V>=0] 
+
+* Chain [11]: 13*s(4)+2*s(7)+2
+  Such that:aux(2) =< V1
+s(4) =< aux(2)
+
+  with precondition: [V1>=1,V>=0] 
+
+
+Closed-form bounds of start(V1,V): 
+-------------------------------------
+* Chain [12] with precondition: [V1=0,V>=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [11] with precondition: [V1>=1,V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V1,V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 17 ms.
+* Invariants computed in 52 ms.
+   - Backward Invariants 21 ms.
+   - Transitive Invariants 11 ms.
+* Refinement performed in 82 ms.
+* Termination proved in 14 ms.
+* Upper bounds computed in 73 ms.
+   - Equation cost structures 33 ms.
+   - Phase cost structures 25 ms.
+   - Chain cost structures 22 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 277 ms.
+

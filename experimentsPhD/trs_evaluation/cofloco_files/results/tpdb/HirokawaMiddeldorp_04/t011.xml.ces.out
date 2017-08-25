@@ -1,0 +1,145 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [g/3,h/3]
+1. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into h/3
+1. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations h/3 
+* CE 6 is refined into CE [7] 
+* CE 5 is refined into CE [8] 
+
+
+#### Refined cost equations h/3 
+* CE 7: h(V1,V,Out) = 2+ h(W1,X1,Y1)
+     [X1>=1,W1>=0,Y1+1=Out,X1=V+1,W1+1=V1] 
+* CE 8: h(V1,V,Out) = 1
+     [V>=0,V1>=0,Out=0] 
+
+### Cost equations --> "Loop" of h/3 
+* CEs [8] --> Loop 4 
+* CEs [7] --> Loop 5 
+
+#### Loops of h/3 
+* Loop 4: h(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 5: h(V1,V,Out)->  h(V1',V',Out')
+                  [V'>=1,V1'>=0,Out=Out'+1,V'=V+1,V1'+1=V1] 
+
+### Ranking functions of CR h(V1,V,Out) 
+* RF of phase [5]: [V1]
+
+#### Partial ranking functions of CR h(V1,V,Out) 
+* Partial RF of phase [5]:
+  - RF of loop [5:1]:
+    V1
+
+
+### Resulting Chains:h(V1,V,Out) 
+* [[5],4]
+* [4]
+
+
+### Merging Chains  h/3 into  External patterns of execution 
+* [[4]] --> 1 
+* [[4,[5]]] --> 2 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [9] 
+* CE 3 is refined into CE [10,11] 
+* CE 4 is refined into CE [12,13] 
+
+
+#### Refined cost equations start/2 
+* CE 9: start(V1,V) = 0
+     [V>=0,V1>=0] 
+* CE 10: start(V1,V) = 1+ h(W1,V,X1):1
+     [V>=0,W1>=0,W1+1=V1,X1=0] 
+* CE 11: start(V1,V) = 1+ h(W1,V,X1):2
+     [W1>=X1,X1>=1,V>=0,W1+1=V1] 
+* CE 12: start(V1,V) = 0+ h(V1,V,W1):1
+     [V>=0,V1>=0,W1=0] 
+* CE 13: start(V1,V) = 0+ h(V1,V,W1):2
+     [V1>=W1,W1>=1,V>=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [9,10,11,12,13] --> Loop 6 
+
+#### Loops of start/2 
+* Loop 6: start(V1,V) [V>=0,V1>=0] 
+
+### Ranking functions of CR start(V1,V) 
+
+#### Partial ranking functions of CR start(V1,V) 
+
+
+### Resulting Chains:start(V1,V) 
+* [6]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[6]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5] 
+
+ * loop 5:h(V1,V,Out) -> [h(V1',V',Out')] 
+2
+#### Cost of phase [5]:h(V1,V,Out) -> [h(V1',V',Out')] 
+2*it(5)+0
+  Such that:it(5) =< V1
+it(5) =< V1-V1'
+
+#### Cost of chains of h(V1,V,Out):
+* Chain [[5],4]: 2*it(5)+1
+  Such that:it(5) =< Out
+
+  with precondition: [V>=0,Out>=1,V1>=Out] 
+
+* Chain [4]: 1
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of chains of start(V1,V):
+* Chain [6]: 4*s(1)+2
+  Such that:aux(1) =< V1
+s(1) =< aux(1)
+
+  with precondition: [V1>=0,V>=0] 
+
+
+Closed-form bounds of start(V1,V): 
+-------------------------------------
+* Chain [6] with precondition: [V1>=0,V>=0] 
+    - Upper bound: 4*V1+2 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V): 4*V1+2 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 6 ms.
+* Invariants computed in 5 ms.
+   - Backward Invariants 2 ms.
+   - Transitive Invariants 1 ms.
+* Refinement performed in 12 ms.
+* Termination proved in 2 ms.
+* Upper bounds computed in 10 ms.
+   - Equation cost structures 5 ms.
+   - Phase cost structures 2 ms.
+   - Chain cost structures 3 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 43 ms.
+

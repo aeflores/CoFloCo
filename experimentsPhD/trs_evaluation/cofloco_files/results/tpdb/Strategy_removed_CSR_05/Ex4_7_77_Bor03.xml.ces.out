@@ -1,0 +1,173 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [tail/2]
+1. recursive  : [zeros/1]
+2. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into tail/2
+1. SCC is partially evaluated into zeros/1
+2. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations tail/2 
+* CE 5 is refined into CE [7] 
+* CE 6 is refined into CE [8] 
+
+
+#### Refined cost equations tail/2 
+* CE 7: tail(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 8: tail(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of tail/2 
+* CEs [7] --> Loop 5 
+* CEs [8] --> Loop 6 
+
+#### Loops of tail/2 
+* Loop 5: tail(V,Out) [V>=Out+1,Out>=0] 
+* Loop 6: tail(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR tail(V,Out) 
+
+#### Partial ranking functions of CR tail(V,Out) 
+
+
+### Resulting Chains:tail(V,Out) 
+* [6]
+* [5]
+
+
+### Merging Chains  tail/2 into  External patterns of execution 
+* [[6]] --> 1 
+* [[5]] --> 2 
+
+
+### Specialization of cost equations zeros/1 
+* CE 4 is refined into CE [9] 
+
+
+#### Refined cost equations zeros/1 
+* CE 9: zeros(Out) = 1+ zeros(B)
+     [B+1=Out] 
+
+### Cost equations --> "Loop" of zeros/1 
+* CEs [9] --> Loop 7 
+
+#### Loops of zeros/1 
+* Loop 7: zeros(Out)->  zeros(Out')
+                  [Out=Out'+1] 
+
+### Ranking functions of CR zeros(Out) 
+
+#### Partial ranking functions of CR zeros(Out) 
+
+Warning: no base case found for predicate
+
+### Resulting Chains:zeros(Out) 
+* [[7]]...
+
+
+### Merging Chains  zeros/1 into  External patterns of execution 
+* [[[7]]] --> 1 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [10] 
+* CE 3 is refined into CE [11,12] 
+
+
+#### Refined cost equations start/1 
+* CE 10: start(V) = 0+ zeros(W):1
+     [] 
+* CE 11: start(V) = 0+ tail(V,W):1
+     [V>=0,W=0] 
+* CE 12: start(V) = 0+ tail(V,W):2
+     [V>=W+1,W>=0] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [11,12] --> Loop 8 
+* CEs [10] --> Loop 9 
+
+#### Loops of start/1 
+* Loop 8: start(V) [V>=0] 
+* Loop 9: start(V) [] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [9]...
+* [8]
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[8]] --> 1 
+* [[9]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of tail(V,Out):
+* Chain [6]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [5]: 1
+  with precondition: [Out>=0,V>=Out+1] 
+
+
+#### Cost of loops [7] 
+
+ * loop 7:zeros(Out) -> [zeros(Out')] 
+1
+#### Cost of phase [7]:zeros(Out) -> [zeros(Out')] 
+1*it(7)+0
+#### Cost of chains of zeros(Out):
+* Chain [[7]]...: 1*it(7)+0
+  with precondition: [] 
+
+
+#### Cost of chains of start(V):
+* Chain [9]...: 1*s(1)+0
+  with precondition: [] 
+
+* Chain [8]: 1
+  with precondition: [V>=0] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [9]... with precondition: [] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [8] with precondition: [V>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+
+### Maximum cost of start(V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 2 ms.
+* Invariants computed in 2 ms.
+   - Backward Invariants 0 ms.
+   - Transitive Invariants 1 ms.
+* Refinement performed in 5 ms.
+* Termination proved in 0 ms.
+* Upper bounds computed in 4 ms.
+   - Equation cost structures 3 ms.
+   - Phase cost structures 1 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 20 ms.
+

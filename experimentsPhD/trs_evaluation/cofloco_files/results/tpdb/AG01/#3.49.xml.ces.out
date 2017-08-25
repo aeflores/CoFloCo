@@ -1,0 +1,168 @@
+
+Preprocessing Cost Relations
+=====================================
+0. SCC does not have a single cut point : [f/2,g/2]  
+ Merged into fg/2
+
+#### Computed strongly connected components 
+1. non_recursive  : [start/1]
+0. recursive  : [fg/2]
+
+#### Obtained direct recursion through partial evaluation 
+1. SCC is partially evaluated into start/1
+0. SCC is partially evaluated into fg/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations fg/2 
+* CE 5 is refined into CE [6] 
+* CE 4 is refined into CE [7] 
+* CE 3 is refined into CE [8] 
+
+
+#### Refined cost equations fg/2 
+* CE 6: fg(A,B) = 0
+     [A>=0,B=0] 
+* CE 7: fg(A,B) = 1+ fg(C,B)
+     [A>=3,A=C+2] 
+* CE 8: fg(A,B) = 1+ fg(A,B)
+     [A>=2] 
+
+### Cost equations --> "Loop" of fg/2 
+* CEs [7] --> Loop 5 
+* CEs [8] --> Loop 6 
+* CEs [6] --> Loop 7 
+
+#### Loops of fg/2 
+* Loop 5: fg(A,B)->  fg(A',B)
+                  [A>=3,A=A'+2] 
+* Loop 6: fg(A,B)->  fg(A,B)
+                  [A>=2] 
+* Loop 7: fg(A,B) [A>=0,B=0] 
+
+### Ranking functions of CR fg(A,B) 
+
+#### Partial ranking functions of CR fg(A,B) 
+* Partial RF of phase [5,6]:
+  - RF of loop [5:1]:
+    A/2-1
+
+
+### Resulting Chains:fg(A,B) 
+* [[5,6]]...
+* [[5,6],7]
+* [7]
+
+
+### Merging Chains  fg/2 into  External patterns of execution 
+* [[7],[7,[5,6]]] --> 1 
+* [[[5,6]]] --> 2 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [9,10] 
+
+
+#### Refined cost equations start/1 
+* CE 9: start(V) = 0+ fg(V,W):1
+     [V>=0,W=0] 
+* CE 10: start(V) = 0+ fg(V,W):2
+     [V>=2] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [10] --> Loop 8 
+* CEs [9] --> Loop 9 
+
+#### Loops of start/1 
+* Loop 8: start(V) [V>=2] 
+* Loop 9: start(V) [V>=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [9]
+* [8]...
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[9]] --> 1 
+* [[8]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5,6] 
+
+ * loop 5:fg(A,B) -> [fg(A',B')] 
+1
+ * loop 6:fg(A,B) -> [fg(A',B')] 
+1
+#### Cost of phase [5,6]:fg(A,B) -> [fg(A',B')] 
+1*it(5)+1*it(6)+0
+  Such that:it(5) =< A/2
+it(5) =< A/2-A'/2
+
+#### Cost of phase [5,6]:fg(A,B) -> [fg(A',B')] 
+1*it(5)+1*it(6)+0
+  Such that:it(5) =< A/2
+it(5) =< A/2-A'/2
+
+#### Cost of chains of fg(A,B):
+* Chain [[5,6]]...: 1*it(5)+1*it(6)+0
+  Such that:it(5) =< A
+
+  with precondition: [A>=2] 
+
+* Chain [[5,6],7]: 1*it(5)+1*it(6)+0
+  Such that:it(5) =< A
+
+  with precondition: [B=0,A>=2] 
+
+* Chain [7]: 0
+  with precondition: [B=0,A>=0] 
+
+
+#### Cost of chains of start(V):
+* Chain [9]: 1*s(3)+1*s(4)+0
+  Such that:s(3) =< V
+
+  with precondition: [V>=0] 
+
+* Chain [8]...: 1*s(5)+1*s(6)+0
+  Such that:s(5) =< V
+
+  with precondition: [V>=2] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [9] with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [8]... with precondition: [V>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 4 ms.
+* Invariants computed in 7 ms.
+   - Backward Invariants 2 ms.
+   - Transitive Invariants 2 ms.
+* Refinement performed in 8 ms.
+* Termination proved in 1 ms.
+* Upper bounds computed in 9 ms.
+   - Equation cost structures 2 ms.
+   - Phase cost structures 3 ms.
+   - Chain cost structures 4 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 38 ms.
+

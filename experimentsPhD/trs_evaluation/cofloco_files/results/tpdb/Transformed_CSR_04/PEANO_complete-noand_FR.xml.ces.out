@@ -1,0 +1,1515 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [fun18/1]
+1. non_recursive  : [plus/3]
+2. non_recursive  : [s/2]
+3. recursive [non_tail,multiple] : [activate/2]
+4. non_recursive  : [fun5/2]
+5. non_recursive  : [fun8/2]
+6. non_recursive  : [fun11/2]
+7. non_recursive  : [fun10/2]
+8. recursive [non_tail,multiple] : [fun9/3,isNatKind/2]
+9. recursive [non_tail,multiple] : [fun/4,fun1/4,fun2/4,fun3/4,fun4/3,fun6/3,fun7/3,isNat/2]
+10. non_recursive  : [fun13/3]
+11. non_recursive  : [fun12/3]
+12. non_recursive  : [fun17/4]
+13. non_recursive  : [fun16/4]
+14. non_recursive  : [fun15/4]
+15. non_recursive  : [fun14/4]
+16. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into activate/2
+4. SCC is completely evaluated into other SCCs
+5. SCC is completely evaluated into other SCCs
+6. SCC is completely evaluated into other SCCs
+7. SCC is completely evaluated into other SCCs
+8. SCC is partially evaluated into isNatKind/2
+9. SCC is partially evaluated into isNat/2
+10. SCC is completely evaluated into other SCCs
+11. SCC is partially evaluated into fun12/3
+12. SCC is partially evaluated into fun17/4
+13. SCC is partially evaluated into fun16/4
+14. SCC is partially evaluated into fun15/4
+15. SCC is partially evaluated into fun14/4
+16. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations activate/2 
+* CE 19 is refined into CE [34] 
+* CE 22 is refined into CE [35] 
+* CE 21 is refined into CE [36] 
+* CE 20 is refined into CE [37] 
+
+
+#### Refined cost equations activate/2 
+* CE 34: activate(V3,Out) = 2
+     [Out=0,V3=0] 
+* CE 35: activate(A,A) = 1
+     [A>=0] 
+* CE 36: activate(V3,Out) = 2+ activate(W3,X3)
+     [X3>=0,W3>=0,X3+1=Out,W3+1=V3] 
+* CE 37: activate(V3,Out) = 2+ activate(W3,X3)+ activate(Y3,Z3)
+     [Z3>=0,Y3>=0,X3>=0,W3>=0,X3+Z3+1=Out,W3+Y3+1=V3] 
+
+### Cost equations --> "Loop" of activate/2 
+* CEs [37] --> Loop 16 
+* CEs [36] --> Loop 17 
+* CEs [34,35] --> Loop 18 
+
+#### Loops of activate/2 
+* Loop 16: activate(V3,Out)->  activate(V3',Out')  activate(V3'2,Out'2)
+                  [Out'2>=0,V3'2>=0,Out'>=0,V3'>=0,Out'+Out'2+1=Out,V3'+V3'2+1=V3] 
+* Loop 17: activate(V3,Out)->  activate(V3',Out')
+                  [Out'>=0,V3'>=0,Out'+1=Out,V3'+1=V3] 
+* Loop 18: activate(A,A) [A>=0] 
+
+### Ranking functions of CR activate(V3,Out) 
+* RF of phase [16,17]: [V3]
+
+#### Partial ranking functions of CR activate(V3,Out) 
+* Partial RF of phase [16,17]:
+  - RF of loop [16:1,16:2,17:1]:
+    V3
+
+
+### Resulting Chains:activate(V3,Out) 
+* [18]
+* [multiple([16,17],[[18]])]
+
+
+### Merging Chains  activate/2 into  External patterns of execution 
+* [[18],[multiple([16,17],[[18]])]] --> 1 
+
+
+### Specialization of cost equations isNatKind/2 
+* CE 25 is refined into CE [38] 
+* CE 24 is refined into CE [39] 
+* CE 23 is refined into CE [40] 
+
+
+#### Refined cost equations isNatKind/2 
+* CE 38: isNatKind(V3,Out) = 2+ activate(W3,W3):1+ isNatKind(W3,X3)
+     [W3>=0,W3+1=V3,X3=0,Out=0] 
+* CE 39: isNatKind(V3,Out) = 1
+     [Out=0,V3=0] 
+* CE 40: isNatKind(V3,Out) = 3+ activate(W3,W3):1+ isNatKind(W3,X3)+ activate(Y3,Y3):1+ activate(Y3,Y3):1+ isNatKind(Y3,Z3)
+     [Y3>=0,W3>=0,W3+Y3+1=V3,Z3=0,X3=0,Out=0] 
+
+### Cost equations --> "Loop" of isNatKind/2 
+* CEs [40] --> Loop 19 
+* CEs [39] --> Loop 20 
+* CEs [38] --> Loop 21 
+
+#### Loops of isNatKind/2 
+* Loop 19: isNatKind(V3,Out)->  isNatKind(V3',Out')  isNatKind(V3'2,Out'2)
+                  [V3'2>=0,V3'>=0,V3'+V3'2+1=V3,Out'2=0,Out'=0,Out=0] 
+* Loop 20: isNatKind(V3,Out) [Out=0,V3=0] 
+* Loop 21: isNatKind(V3,Out)->  isNatKind(V3',Out')
+                  [V3'>=0,V3'+1=V3,Out'=0,Out=0] 
+
+### Ranking functions of CR isNatKind(V3,Out) 
+* RF of phase [19,21]: [V3]
+
+#### Partial ranking functions of CR isNatKind(V3,Out) 
+* Partial RF of phase [19,21]:
+  - RF of loop [19:1,19:2,21:1]:
+    V3
+
+
+### Resulting Chains:isNatKind(V3,Out) 
+* [20]
+* [multiple([19,21],[[20]])]
+
+
+### Merging Chains  isNatKind/2 into  External patterns of execution 
+* [[20]] --> 1 
+* [[multiple([19,21],[[20]])]] --> 2 
+
+
+### Specialization of cost equations isNat/2 
+* CE 28 is refined into CE [41] 
+* CE 27 is refined into CE [42,43,44,45] 
+* CE 26 is refined into CE [46,47] 
+
+
+#### Refined cost equations isNat/2 
+* CE 41: isNat(V3,Out) = 1
+     [Out=0,V3=0] 
+* CE 42: isNat(V3,Out) = 7+ activate(W3,X3):1+ isNatKind(Y3,Z3):1+ activate(A4,B4):1+ activate(C4,D4):1+ activate(E4,F4):1+ isNatKind(G4,H4):1+ activate(I4,J4):1+ activate(K4,L4):1+ activate(M4,N4):1+ isNatKind(O4,P4):1+ activate(Q4,R4):1+ activate(S4,T4):1+ activate(U4,V4):1+ isNatKind(W4,X4):1+ activate(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ isNat(E5,F5)+ activate(G5,H5):1+ activate(I5,J5):1+ isNat(K5,L5)
+     [L5=0,K5=0,F5=0,E5=0,J5=0,I5=0,H5=0,G5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,U4=0,T4=0,S4=0,R4=0,Q4=0,P4=0,O4=0,N4=0,M4=0,L4=0,K4=0,J4=0,I4=0,H4=0,G4=0,F4=0,E4=0,D4=0,C4=0,B4=0,A4=0,Z3=0,Y3=0,X3=0,W3=0,Out=0,V3=1] 
+* CE 43: isNat(V3,Out) = 7+ activate(W3,X3):1+ isNatKind(Y3,Z3):1+ activate(A4,B4):1+ activate(C4,C4):1+ activate(D4,E4):1+ isNatKind(F4,G4):1+ activate(H4,I4):1+ activate(C4,C4):1+ activate(C4,C4):1+ isNatKind(C4,J4):2+ activate(K4,L4):1+ activate(C4,C4):1+ activate(C4,C4):1+ isNatKind(C4,M4):2+ activate(N4,O4):1+ activate(C4,C4):1+ activate(P4,Q4):1+ isNat(R4,S4)+ activate(C4,C4):1+ activate(C4,C4):1+ isNat(C4,T4)
+     [C4>=1,C4+1=V3,T4=0,S4=0,R4=0,Q4=0,P4=0,O4=0,N4=0,M4=0,L4=0,K4=0,J4=0,I4=0,H4=0,G4=0,F4=0,E4=0,D4=0,B4=0,A4=0,Z3=0,Y3=0,X3=0,W3=0,Out=0] 
+* CE 44: isNat(V3,Out) = 7+ activate(W3,W3):1+ isNatKind(W3,X3):2+ activate(W3,W3):1+ activate(Y3,Z3):1+ activate(W3,W3):1+ isNatKind(W3,A4):2+ activate(W3,W3):1+ activate(B4,C4):1+ activate(D4,E4):1+ isNatKind(F4,G4):1+ activate(W3,W3):1+ activate(H4,I4):1+ activate(J4,K4):1+ isNatKind(L4,M4):1+ activate(W3,W3):1+ activate(N4,O4):1+ activate(W3,W3):1+ isNat(W3,P4)+ activate(Q4,R4):1+ activate(S4,T4):1+ isNat(U4,V4)
+     [W3>=1,W3+1=V3,V4=0,U4=0,P4=0,T4=0,S4=0,R4=0,Q4=0,O4=0,N4=0,M4=0,L4=0,K4=0,J4=0,I4=0,H4=0,G4=0,F4=0,E4=0,D4=0,C4=0,B4=0,A4=0,Z3=0,Y3=0,X3=0,Out=0] 
+* CE 45: isNat(V3,Out) = 7+ activate(W3,W3):1+ isNatKind(W3,X3):2+ activate(W3,W3):1+ activate(Y3,Y3):1+ activate(W3,W3):1+ isNatKind(W3,Z3):2+ activate(W3,W3):1+ activate(Y3,Y3):1+ activate(Y3,Y3):1+ isNatKind(Y3,A4):2+ activate(W3,W3):1+ activate(Y3,Y3):1+ activate(Y3,Y3):1+ isNatKind(Y3,B4):2+ activate(W3,W3):1+ activate(Y3,Y3):1+ activate(W3,W3):1+ isNat(W3,C4)+ activate(Y3,Y3):1+ activate(Y3,Y3):1+ isNat(Y3,D4)
+     [Y3>=1,W3>=1,W3+Y3+1=V3,D4=0,C4=0,B4=0,A4=0,Z3=0,X3=0,Out=0] 
+* CE 46: isNat(V3,Out) = 4+ activate(W3,X3):1+ isNatKind(Y3,Z3):1+ activate(A4,B4):1+ activate(C4,D4):1+ isNatKind(E4,F4):1+ activate(G4,H4):1+ activate(I4,J4):1+ isNat(K4,L4)
+     [L4=0,K4=0,J4=0,I4=0,H4=0,G4=0,F4=0,E4=0,D4=0,C4=0,B4=0,A4=0,Z3=0,Y3=0,X3=0,W3=0,Out=0,V3=1] 
+* CE 47: isNat(V3,Out) = 4+ activate(W3,W3):1+ isNatKind(W3,X3):2+ activate(W3,W3):1+ activate(W3,W3):1+ isNatKind(W3,Y3):2+ activate(W3,W3):1+ activate(W3,W3):1+ isNat(W3,Z3)
+     [W3>=1,W3+1=V3,Z3=0,Y3=0,X3=0,Out=0] 
+
+### Cost equations --> "Loop" of isNat/2 
+* CEs [47] --> Loop 22 
+* CEs [46] --> Loop 23 
+* CEs [45] --> Loop 24 
+* CEs [44] --> Loop 25 
+* CEs [43] --> Loop 26 
+* CEs [42] --> Loop 27 
+* CEs [41] --> Loop 28 
+
+#### Loops of isNat/2 
+* Loop 22: isNat(V3,Out)->  isNat(V3',Out')
+                  [V3>=2,V3=V3'+1,Out'=0,Out=0] 
+* Loop 23: isNat(V3,Out)->  isNat(V3',Out')
+                  [Out'=0,V3'=0,Out=0,V3=1] 
+* Loop 24: isNat(V3,Out)->  isNat(V3',Out')  isNat(V3'2,Out'2)
+                  [V3>=V3'+2,V3'>=1,V3'+V3'2+1=V3,Out'2=0,Out'=0,Out=0] 
+* Loop 25: isNat(V3,Out)->  isNat(V3',Out')  isNat(V3'2,Out'2)
+                  [V3>=2,V3=V3'+1,Out'2=0,V3'2=0,Out'=0,Out=0] 
+* Loop 26: isNat(V3,Out)->  isNat(V3',Out')  isNat(V3'2,Out'2)
+                  [V3>=2,V3=V3'2+1,Out'2=0,Out'=0,V3'=0,Out=0] 
+* Loop 27: isNat(V3,Out)->  isNat(V3',Out')  isNat(V3'2,Out'2)
+                  [Out'2=0,V3'2=0,Out'=0,V3'=0,Out=0,V3=1] 
+* Loop 28: isNat(V3,Out) [Out=0,V3=0] 
+
+### Ranking functions of CR isNat(V3,Out) 
+* RF of phase [22,24,25,26]: [V3-1]
+
+#### Partial ranking functions of CR isNat(V3,Out) 
+* Partial RF of phase [22,24,25,26]:
+  - RF of loop [22:1,25:1,25:2,26:1,26:2]:
+    V3-1
+  - RF of loop [24:1,24:2]:
+    V3/2-1
+
+
+### Resulting Chains:isNat(V3,Out) 
+* [28]
+* [multiple(27,[[28]])]
+* [23,28]
+* [multiple([22,24,25,26],[[28],[multiple(27,[[28]])],[23,28]])]
+
+
+### Merging Chains  isNat/2 into  External patterns of execution 
+* [[28]] --> 1 
+* [[28,23],[multiple(27,[[28]])]] --> 2 
+* [[multiple([22,24,25,26],[[28],[multiple(27,[[28]])],[23,28]])]] --> 3 
+
+
+### Specialization of cost equations fun12/3 
+* CE 29 is refined into CE [48,49] 
+
+
+#### Refined cost equations fun12/3 
+* CE 48: fun12(V3,V,Out) = 2+ activate(W3,X3):1+ isNatKind(Y3,Z3):1+ activate(A4,B4):1+ activate(C4,D4):1
+     [D4=0,C4=0,B4=0,A4=0,Z3=0,Y3=0,X3=0,W3=0,Out=0,V=0,V3=0] 
+* CE 49: fun12(A,B,B) = 2+ activate(B,B):1+ isNatKind(B,C):2+ activate(B,B):1+ activate(B,B):1
+     [B>=1,C=0,A=0] 
+
+### Cost equations --> "Loop" of fun12/3 
+* CEs [49] --> Loop 29 
+* CEs [48] --> Loop 30 
+
+#### Loops of fun12/3 
+* Loop 29: fun12(A,B,B) [B>=1,A=0] 
+* Loop 30: fun12(V3,V,Out) [Out=0,V=0,V3=0] 
+
+### Ranking functions of CR fun12(V3,V,Out) 
+
+#### Partial ranking functions of CR fun12(V3,V,Out) 
+
+
+### Resulting Chains:fun12(V3,V,Out) 
+* [30]
+* [29]
+
+
+### Merging Chains  fun12/3 into  External patterns of execution 
+* [[30]] --> 1 
+* [[29]] --> 2 
+
+
+### Specialization of cost equations fun17/4 
+* CE 33 is refined into CE [50] 
+
+
+#### Refined cost equations fun17/4 
+* CE 50: fun17(V3,V,V4,Out) = 3+ activate(V4,V4):1+ activate(V,V):1
+     [V>=0,V4>=0,V+V4+2=Out,V3=0] 
+
+### Cost equations --> "Loop" of fun17/4 
+* CEs [50] --> Loop 31 
+
+#### Loops of fun17/4 
+* Loop 31: fun17(V3,V,V4,Out) [V4>=0,V>=0,V+V4+2=Out,V3=0] 
+
+### Ranking functions of CR fun17(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun17(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun17(V3,V,V4,Out) 
+* [31]
+
+
+### Merging Chains  fun17/4 into  External patterns of execution 
+* [[31]] --> 1 
+
+
+### Specialization of cost equations fun16/4 
+* CE 32 is refined into CE [51,52] 
+
+
+#### Refined cost equations fun16/4 
+* CE 51: fun16(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ fun17(E5,F5,G5,Out):1
+     [Out>=2,Out=F5+2,Out=B5+2,Out=A5+2,Out=V+2,G5=0,E5=0,D5=0,C5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V3=0] 
+* CE 52: fun16(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(V,V):1+ activate(A5,B5):1+ fun17(C5,V,D5,Out):1
+     [Out>=V+3,V>=0,Out=V+D5+2,Out=V+B5+2,Out=V+A5+2,Out=V+Y4+2,Out=V+X4+2,Out=V+W4+2,Out=V+V4+2,C5=0,Z4=0,V3=0] 
+
+### Cost equations --> "Loop" of fun16/4 
+* CEs [52] --> Loop 32 
+* CEs [51] --> Loop 33 
+
+#### Loops of fun16/4 
+* Loop 32: fun16(V3,V,V4,Out) [V4>=1,V>=0,V+V4+2=Out,V3=0] 
+* Loop 33: fun16(V3,V,V4,Out) [V>=0,V+2=Out,V4=0,V3=0] 
+
+### Ranking functions of CR fun16(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun16(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun16(V3,V,V4,Out) 
+* [33]
+* [32]
+
+
+### Merging Chains  fun16/4 into  External patterns of execution 
+* [[33]] --> 1 
+* [[32]] --> 2 
+
+
+### Specialization of cost equations fun15/4 
+* CE 31 is refined into CE [53,54,55] 
+
+
+#### Refined cost equations fun15/4 
+* CE 53: fun15(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNat(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ fun16(E5,F5,G5,Out):1
+     [Out>=2,Out=F5+2,Out=B5+2,Out=A5+2,Out=V+2,G5=0,E5=0,D5=0,C5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V3=0] 
+* CE 54: fun15(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNat(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ fun16(E5,F5,G5,Out):2
+     [Out>=3,Out=F5+3,Out=B5+3,Out=A5+3,Out=V+3,G5=1,E5=0,D5=1,C5=1,Z4=0,Y4=1,X4=1,W4=1,V4=1,V3=0] 
+* CE 55: fun15(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNat(Y4,Z4):3+ activate(V,V):1+ activate(A5,B5):1+ fun16(C5,V,D5,Out):2
+     [Out>=V+4,V>=0,Out=V+D5+2,Out=V+B5+2,Out=V+A5+2,Out=V+Y4+2,Out=V+X4+2,Out=V+W4+2,Out=V+V4+2,C5=0,Z4=0,V3=0] 
+
+### Cost equations --> "Loop" of fun15/4 
+* CEs [55] --> Loop 34 
+* CEs [54] --> Loop 35 
+* CEs [53] --> Loop 36 
+
+#### Loops of fun15/4 
+* Loop 34: fun15(V3,V,V4,Out) [V4>=2,V>=0,V+V4+2=Out,V3=0] 
+* Loop 35: fun15(V3,V,V4,Out) [V>=0,V+3=Out,V4=1,V3=0] 
+* Loop 36: fun15(V3,V,V4,Out) [V>=0,V+2=Out,V4=0,V3=0] 
+
+### Ranking functions of CR fun15(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun15(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun15(V3,V,V4,Out) 
+* [36]
+* [35]
+* [34]
+
+
+### Merging Chains  fun15/4 into  External patterns of execution 
+* [[36]] --> 1 
+* [[35]] --> 2 
+* [[34]] --> 3 
+
+
+### Specialization of cost equations fun14/4 
+* CE 30 is refined into CE [56,57,58,59,60,61] 
+
+
+#### Refined cost equations fun14/4 
+* CE 56: fun14(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ fun15(E5,F5,G5,H5):1
+     [H5=2,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,Out=2,V4=0,V=0,V3=0] 
+* CE 57: fun14(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ fun15(E5,F5,G5,H5):2
+     [H5=3,G5=1,F5=0,E5=0,D5=1,C5=1,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,Out=3,V4=1,V=0,V3=0] 
+* CE 58: fun14(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ fun15(E5,F5,G5,Out):3
+     [Out>=4,Out=G5+2,Out=D5+2,Out=C5+2,Out=V4+2,F5=0,E5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 59: fun14(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ fun15(E5,F5,G5,Out):1
+     [Out>=3,Out=F5+2,Out=B5+2,Out=A5+2,Out=Y4+2,Out=X4+2,Out=W4+2,Out=V+2,G5=0,E5=0,D5=0,C5=0,Z4=0,V4=0,V3=0] 
+* CE 60: fun14(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ fun15(E5,F5,G5,Out):2
+     [Out>=4,Out=F5+3,Out=B5+3,Out=A5+3,Out=Y4+3,Out=X4+3,Out=W4+3,Out=V+3,G5=1,E5=0,D5=1,C5=1,Z4=0,V4=1,V3=0] 
+* CE 61: fun14(V3,V,V4,Out) = 1+ activate(V,V):1+ isNatKind(V,W4):2+ activate(V,V):1+ activate(X4,Y4):1+ fun15(Z4,V,A5,Out):3
+     [Out>=V+4,V>=1,Out=V+A5+2,Out=V+Y4+2,Out=V+X4+2,Out=V+V4+2,Z4=0,W4=0,V3=0] 
+
+### Cost equations --> "Loop" of fun14/4 
+* CEs [61] --> Loop 37 
+* CEs [60] --> Loop 38 
+* CEs [59] --> Loop 39 
+* CEs [58] --> Loop 40 
+* CEs [57] --> Loop 41 
+* CEs [56] --> Loop 42 
+
+#### Loops of fun14/4 
+* Loop 37: fun14(V3,V,V4,Out) [V4>=2,V>=1,V+V4+2=Out,V3=0] 
+* Loop 38: fun14(V3,V,V4,Out) [V>=1,V+3=Out,V4=1,V3=0] 
+* Loop 39: fun14(V3,V,V4,Out) [V>=1,V+2=Out,V4=0,V3=0] 
+* Loop 40: fun14(V3,V,V4,Out) [V4>=2,V4+2=Out,V=0,V3=0] 
+* Loop 41: fun14(V3,V,V4,Out) [Out=3,V4=1,V=0,V3=0] 
+* Loop 42: fun14(V3,V,V4,Out) [Out=2,V4=0,V=0,V3=0] 
+
+### Ranking functions of CR fun14(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun14(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun14(V3,V,V4,Out) 
+* [42]
+* [41]
+* [40]
+* [39]
+* [38]
+* [37]
+
+
+### Merging Chains  fun14/4 into  External patterns of execution 
+* [[42]] --> 1 
+* [[41]] --> 2 
+* [[40]] --> 3 
+* [[39]] --> 4 
+* [[38]] --> 5 
+* [[37]] --> 6 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [62,63,64] 
+* CE 3 is refined into CE [65,66,67] 
+* CE 4 is refined into CE [68,69,70,71,72,73,74,75,76] 
+* CE 5 is refined into CE [77,78,79,80,81,82,83,84,85] 
+* CE 6 is refined into CE [86,87,88,89,90,91,92,93,94] 
+* CE 7 is refined into CE [95,96,97,98,99,100,101,102,103] 
+* CE 8 is refined into CE [104,105] 
+* CE 9 is refined into CE [106] 
+* CE 10 is refined into CE [107,108] 
+* CE 11 is refined into CE [109] 
+* CE 12 is refined into CE [110,111,112,113,114,115] 
+* CE 13 is refined into CE [116,117,118] 
+* CE 14 is refined into CE [119,120] 
+* CE 15 is refined into CE [121] 
+* CE 16 is refined into CE [122,123,124] 
+* CE 17 is refined into CE [125,126] 
+* CE 18 is refined into CE [127] 
+
+
+#### Refined cost equations start/3 
+* CE 62: start(V3,V,V4) = 3+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ isNat(E5,F5):1
+     [F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 63: start(V3,V,V4) = 3+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ isNat(E5,F5):2
+     [F5=0,E5=1,D5=1,C5=1,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V=1,V3=0] 
+* CE 64: start(V3,V,V4) = 3+ activate(V,V):1+ isNatKind(V,W4):2+ activate(V,V):1+ activate(V,V):1+ isNat(V,X4):3
+     [V>=2,X4=0,W4=0,V3=0] 
+* CE 65: start(V3,V,V4) = 2+ activate(W4,X4):1+ isNat(Y4,Z4):1
+     [Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 66: start(V3,V,V4) = 2+ activate(W4,X4):1+ isNat(Y4,Z4):2
+     [Z4=0,Y4=1,X4=1,W4=1,V=1,V3=0] 
+* CE 67: start(V3,V,V4) = 2+ activate(V,V):1+ isNat(V,W4):3
+     [V>=2,W4=0,V3=0] 
+* CE 68: start(V3,V,V4) = 6+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNatKind(G5,H5):1+ activate(I5,J5):1+ activate(K5,L5):1+ activate(M5,N5):1+ isNatKind(O5,P5):1+ activate(Q5,R5):1+ activate(S5,T5):1+ activate(U5,V5):1+ isNat(W5,X5):1+ activate(Y5,Z5):1+ activate(A6,B6):1+ isNat(C6,D6):1
+     [D6=0,C6=0,B6=0,A6=0,Z5=0,Y5=0,X5=0,W5=0,V5=0,U5=0,T5=0,S5=0,R5=0,Q5=0,P5=0,O5=0,N5=0,M5=0,L5=0,K5=0,J5=0,I5=0,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V=0,V3=0] 
+* CE 69: start(V3,V,V4) = 6+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNatKind(G5,H5):2+ activate(I5,J5):1+ activate(K5,L5):1+ activate(M5,N5):1+ isNatKind(O5,P5):2+ activate(Q5,R5):1+ activate(S5,T5):1+ activate(U5,V5):1+ isNat(W5,X5):1+ activate(Y5,Z5):1+ activate(A6,B6):1+ isNat(C6,D6):2
+     [D6=0,C6=1,B6=1,A6=1,Z5=1,Y5=1,X5=0,W5=0,V5=0,U5=0,T5=1,S5=1,R5=0,Q5=0,P5=0,O5=1,N5=1,M5=1,L5=1,K5=1,J5=0,I5=0,H5=0,G5=1,F5=1,E5=1,D5=1,C5=1,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=1,V=0,V3=0] 
+* CE 70: start(V3,V,V4) = 6+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,C5):2+ activate(D5,E5):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,F5):2+ activate(G5,H5):1+ activate(V4,V4):1+ activate(I5,J5):1+ isNat(K5,L5):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,M5):3
+     [V4>=2,M5=0,L5=0,K5=0,J5=0,I5=0,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 71: start(V3,V,V4) = 6+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNatKind(G5,H5):1+ activate(I5,J5):1+ activate(K5,L5):1+ activate(M5,N5):1+ isNatKind(O5,P5):1+ activate(Q5,R5):1+ activate(S5,T5):1+ activate(U5,V5):1+ isNat(W5,X5):2+ activate(Y5,Z5):1+ activate(A6,B6):1+ isNat(C6,D6):1
+     [D6=0,C6=0,B6=0,A6=0,Z5=0,Y5=0,X5=0,W5=1,V5=1,U5=1,T5=0,S5=0,R5=1,Q5=1,P5=0,O5=0,N5=0,M5=0,L5=0,K5=0,J5=1,I5=1,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V4=0,V=1,V3=0] 
+* CE 72: start(V3,V,V4) = 6+ activate(V,V):1+ isNatKind(V,W4):2+ activate(V,V):1+ activate(X4,Y4):1+ activate(Z4,A5):1+ isNatKind(B5,C5):1+ activate(V,V):1+ activate(D5,E5):1+ activate(F5,G5):1+ isNatKind(H5,I5):1+ activate(V,V):1+ activate(J5,K5):1+ activate(V,V):1+ isNat(V,L5):3+ activate(M5,N5):1+ activate(O5,P5):1+ isNat(Q5,R5):1
+     [V>=2,R5=0,Q5=0,P5=0,O5=0,N5=0,M5=0,L5=0,K5=0,J5=0,I5=0,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V3=0] 
+* CE 73: start(V3,V,V4) = 6+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNatKind(G5,H5):2+ activate(I5,J5):1+ activate(K5,L5):1+ activate(M5,N5):1+ isNatKind(O5,P5):2+ activate(Q5,R5):1+ activate(S5,T5):1+ activate(U5,V5):1+ isNat(W5,X5):2+ activate(Y5,Z5):1+ activate(A6,B6):1+ isNat(C6,D6):2
+     [D6=0,C6=1,B6=1,A6=1,Z5=1,Y5=1,X5=0,W5=1,V5=1,U5=1,T5=1,S5=1,R5=1,Q5=1,P5=0,O5=1,N5=1,M5=1,L5=1,K5=1,J5=1,I5=1,H5=0,G5=1,F5=1,E5=1,D5=1,C5=1,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V4=1,V=1,V3=0] 
+* CE 74: start(V3,V,V4) = 6+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,C5):2+ activate(D5,E5):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,F5):2+ activate(G5,H5):1+ activate(V4,V4):1+ activate(I5,J5):1+ isNat(K5,L5):2+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,M5):3
+     [V4>=2,M5=0,L5=0,K5=1,J5=1,I5=1,H5=1,G5=1,F5=0,E5=1,D5=1,C5=0,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V=1,V3=0] 
+* CE 75: start(V3,V,V4) = 6+ activate(V,V):1+ isNatKind(V,W4):2+ activate(V,V):1+ activate(X4,Y4):1+ activate(Z4,A5):1+ isNatKind(B5,C5):2+ activate(V,V):1+ activate(D5,E5):1+ activate(F5,G5):1+ isNatKind(H5,I5):2+ activate(V,V):1+ activate(J5,K5):1+ activate(V,V):1+ isNat(V,L5):3+ activate(M5,N5):1+ activate(O5,P5):1+ isNat(Q5,R5):2
+     [V>=2,R5=0,Q5=1,P5=1,O5=1,N5=1,M5=1,L5=0,K5=1,J5=1,I5=0,H5=1,G5=1,F5=1,E5=1,D5=1,C5=0,B5=1,A5=1,Z4=1,Y4=1,X4=1,W4=0,V4=1,V3=0] 
+* CE 76: start(V3,V,V4) = 6+ activate(V,V):1+ isNatKind(V,W4):2+ activate(V,V):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,X4):2+ activate(V,V):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,Y4):2+ activate(V,V):1+ activate(V4,V4):1+ activate(V,V):1+ isNat(V,Z4):3+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,A5):3
+     [V4>=2,V>=2,A5=0,Z4=0,Y4=0,X4=0,W4=0,V3=0] 
+* CE 77: start(V3,V,V4) = 5+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNatKind(G5,H5):1+ activate(I5,J5):1+ activate(K5,L5):1+ activate(M5,N5):1+ isNat(O5,P5):1+ activate(Q5,R5):1+ activate(S5,T5):1+ isNat(U5,V5):1
+     [V5=0,U5=0,T5=0,S5=0,R5=0,Q5=0,P5=0,O5=0,N5=0,M5=0,L5=0,K5=0,J5=0,I5=0,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V=0,V3=0] 
+* CE 78: start(V3,V,V4) = 5+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNatKind(G5,H5):1+ activate(I5,J5):1+ activate(K5,L5):1+ activate(M5,N5):1+ isNat(O5,P5):2+ activate(Q5,R5):1+ activate(S5,T5):1+ isNat(U5,V5):1
+     [V5=0,U5=0,T5=0,S5=0,R5=0,Q5=0,P5=0,O5=1,N5=1,M5=1,L5=0,K5=0,J5=1,I5=1,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=1,A5=1,Z4=0,Y4=0,X4=0,W4=0,V4=0,V=1,V3=0] 
+* CE 79: start(V3,V,V4) = 5+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(V,V):1+ activate(A5,B5):1+ activate(C5,D5):1+ isNatKind(E5,F5):1+ activate(V,V):1+ activate(G5,H5):1+ activate(V,V):1+ isNat(V,I5):3+ activate(J5,K5):1+ activate(L5,M5):1+ isNat(N5,O5):1
+     [V>=2,O5=0,N5=0,M5=0,L5=0,K5=0,J5=0,I5=0,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V3=0] 
+* CE 80: start(V3,V,V4) = 5+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNatKind(G5,H5):2+ activate(I5,J5):1+ activate(K5,L5):1+ activate(M5,N5):1+ isNat(O5,P5):1+ activate(Q5,R5):1+ activate(S5,T5):1+ isNat(U5,V5):2
+     [V5=0,U5=1,T5=1,S5=1,R5=1,Q5=1,P5=0,O5=0,N5=0,M5=0,L5=1,K5=1,J5=0,I5=0,H5=0,G5=1,F5=1,E5=1,D5=1,C5=1,B5=0,A5=0,Z4=0,Y4=1,X4=1,W4=1,V4=1,V=0,V3=0] 
+* CE 81: start(V3,V,V4) = 5+ activate(V4,V4):1+ isNatKind(V4,W4):2+ activate(X4,Y4):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,Z4):2+ activate(A5,B5):1+ activate(V4,V4):1+ activate(C5,D5):1+ isNat(E5,F5):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,G5):3
+     [V4>=2,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 82: start(V3,V,V4) = 5+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNatKind(G5,H5):2+ activate(I5,J5):1+ activate(K5,L5):1+ activate(M5,N5):1+ isNat(O5,P5):2+ activate(Q5,R5):1+ activate(S5,T5):1+ isNat(U5,V5):2
+     [V5=0,U5=1,T5=1,S5=1,R5=1,Q5=1,P5=0,O5=1,N5=1,M5=1,L5=1,K5=1,J5=1,I5=1,H5=0,G5=1,F5=1,E5=1,D5=1,C5=1,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V4=1,V=1,V3=0] 
+* CE 83: start(V3,V,V4) = 5+ activate(V4,V4):1+ isNatKind(V4,W4):2+ activate(X4,Y4):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,Z4):2+ activate(A5,B5):1+ activate(V4,V4):1+ activate(C5,D5):1+ isNat(E5,F5):2+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,G5):3
+     [V4>=2,G5=0,F5=0,E5=1,D5=1,C5=1,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=0,V=1,V3=0] 
+* CE 84: start(V3,V,V4) = 5+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(V,V):1+ activate(A5,B5):1+ activate(C5,D5):1+ isNatKind(E5,F5):2+ activate(V,V):1+ activate(G5,H5):1+ activate(V,V):1+ isNat(V,I5):3+ activate(J5,K5):1+ activate(L5,M5):1+ isNat(N5,O5):2
+     [V>=2,O5=0,N5=1,M5=1,L5=1,K5=1,J5=1,I5=0,H5=1,G5=1,F5=0,E5=1,D5=1,C5=1,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V4=1,V3=0] 
+* CE 85: start(V3,V,V4) = 5+ activate(V4,V4):1+ isNatKind(V4,W4):2+ activate(V,V):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNatKind(V4,X4):2+ activate(V,V):1+ activate(V4,V4):1+ activate(V,V):1+ isNat(V,Y4):3+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,Z4):3
+     [V4>=2,V>=2,Z4=0,Y4=0,X4=0,W4=0,V3=0] 
+* CE 86: start(V3,V,V4) = 4+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNat(G5,H5):1+ activate(I5,J5):1+ activate(K5,L5):1+ isNat(M5,N5):1
+     [N5=0,M5=0,L5=0,K5=0,J5=0,I5=0,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V=0,V3=0] 
+* CE 87: start(V3,V,V4) = 4+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNat(G5,H5):2+ activate(I5,J5):1+ activate(K5,L5):1+ isNat(M5,N5):1
+     [N5=0,M5=0,L5=0,K5=0,J5=0,I5=0,H5=0,G5=1,F5=1,E5=1,D5=0,C5=0,B5=1,A5=1,Z4=0,Y4=0,X4=0,W4=0,V4=0,V=1,V3=0] 
+* CE 88: start(V3,V,V4) = 4+ activate(W4,X4):1+ isNatKind(Y4,Z4):1+ activate(V,V):1+ activate(A5,B5):1+ activate(V,V):1+ isNat(V,C5):3+ activate(D5,E5):1+ activate(F5,G5):1+ isNat(H5,I5):1
+     [V>=2,I5=0,H5=0,G5=0,F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V3=0] 
+* CE 89: start(V3,V,V4) = 4+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNat(G5,H5):1+ activate(I5,J5):1+ activate(K5,L5):1+ isNat(M5,N5):2
+     [N5=0,M5=1,L5=1,K5=1,J5=1,I5=1,H5=0,G5=0,F5=0,E5=0,D5=1,C5=1,B5=0,A5=0,Z4=0,Y4=1,X4=1,W4=1,V4=1,V=0,V3=0] 
+* CE 90: start(V3,V,V4) = 4+ activate(V4,V4):1+ isNatKind(V4,W4):2+ activate(X4,Y4):1+ activate(V4,V4):1+ activate(Z4,A5):1+ isNat(B5,C5):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,D5):3
+     [V4>=2,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 91: start(V3,V,V4) = 4+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ activate(E5,F5):1+ isNat(G5,H5):2+ activate(I5,J5):1+ activate(K5,L5):1+ isNat(M5,N5):2
+     [N5=0,M5=1,L5=1,K5=1,J5=1,I5=1,H5=0,G5=1,F5=1,E5=1,D5=1,C5=1,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V4=1,V=1,V3=0] 
+* CE 92: start(V3,V,V4) = 4+ activate(V4,V4):1+ isNatKind(V4,W4):2+ activate(X4,Y4):1+ activate(V4,V4):1+ activate(Z4,A5):1+ isNat(B5,C5):2+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,D5):3
+     [V4>=2,D5=0,C5=0,B5=1,A5=1,Z4=1,Y4=1,X4=1,W4=0,V=1,V3=0] 
+* CE 93: start(V3,V,V4) = 4+ activate(W4,X4):1+ isNatKind(Y4,Z4):2+ activate(V,V):1+ activate(A5,B5):1+ activate(V,V):1+ isNat(V,C5):3+ activate(D5,E5):1+ activate(F5,G5):1+ isNat(H5,I5):2
+     [V>=2,I5=0,H5=1,G5=1,F5=1,E5=1,D5=1,C5=0,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V4=1,V3=0] 
+* CE 94: start(V3,V,V4) = 4+ activate(V4,V4):1+ isNatKind(V4,W4):2+ activate(V,V):1+ activate(V4,V4):1+ activate(V,V):1+ isNat(V,X4):3+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,Y4):3
+     [V4>=2,V>=2,Y4=0,X4=0,W4=0,V3=0] 
+* CE 95: start(V3,V,V4) = 3+ activate(W4,X4):1+ isNat(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ isNat(E5,F5):1
+     [F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V=0,V3=0] 
+* CE 96: start(V3,V,V4) = 3+ activate(W4,X4):1+ isNat(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ isNat(E5,F5):2
+     [F5=0,E5=1,D5=1,C5=1,B5=1,A5=1,Z4=0,Y4=0,X4=0,W4=0,V4=1,V=0,V3=0] 
+* CE 97: start(V3,V,V4) = 3+ activate(W4,X4):1+ isNat(Y4,Z4):1+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,A5):3
+     [V4>=2,A5=0,Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 98: start(V3,V,V4) = 3+ activate(W4,X4):1+ isNat(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ isNat(E5,F5):1
+     [F5=0,E5=0,D5=0,C5=0,B5=0,A5=0,Z4=0,Y4=1,X4=1,W4=1,V4=0,V=1,V3=0] 
+* CE 99: start(V3,V,V4) = 3+ activate(W4,X4):1+ isNat(Y4,Z4):2+ activate(A5,B5):1+ activate(C5,D5):1+ isNat(E5,F5):2
+     [F5=0,E5=1,D5=1,C5=1,B5=1,A5=1,Z4=0,Y4=1,X4=1,W4=1,V4=1,V=1,V3=0] 
+* CE 100: start(V3,V,V4) = 3+ activate(W4,X4):1+ isNat(Y4,Z4):2+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,A5):3
+     [V4>=2,A5=0,Z4=0,Y4=1,X4=1,W4=1,V=1,V3=0] 
+* CE 101: start(V3,V,V4) = 3+ activate(V,V):1+ isNat(V,W4):3+ activate(X4,Y4):1+ activate(Z4,A5):1+ isNat(B5,C5):1
+     [V>=2,C5=0,B5=0,A5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V3=0] 
+* CE 102: start(V3,V,V4) = 3+ activate(V,V):1+ isNat(V,W4):3+ activate(X4,Y4):1+ activate(Z4,A5):1+ isNat(B5,C5):2
+     [V>=2,C5=0,B5=1,A5=1,Z4=1,Y4=1,X4=1,W4=0,V4=1,V3=0] 
+* CE 103: start(V3,V,V4) = 3+ activate(V,V):1+ isNat(V,W4):3+ activate(V4,V4):1+ activate(V4,V4):1+ isNat(V4,X4):3
+     [V4>=2,V>=2,X4=0,W4=0,V3=0] 
+* CE 104: start(V3,V,V4) = 2+ activate(W4,X4):1+ isNatKind(Y4,Z4):1
+     [Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 105: start(V3,V,V4) = 2+ activate(V,V):1+ isNatKind(V,W4):2
+     [V>=1,W4=0,V3=0] 
+* CE 106: start(V3,V,V4) = 1
+     [] 
+* CE 107: start(V3,V,V4) = 0+ fun12(W4,X4,Y4):1
+     [Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 108: start(V3,V,V4) = 0+ fun12(W4,V,V):2
+     [V>=1,W4=0,V3=0] 
+* CE 109: start(V3,V,V4) = 1+ activate(V,V):1
+     [V>=0,V3=0] 
+* CE 110: start(V3,V,V4) = 0+ fun14(W4,X4,Y4,Z4):1
+     [Z4=2,Y4=0,X4=0,W4=0,V4=0,V=0,V3=0] 
+* CE 111: start(V3,V,V4) = 0+ fun14(W4,X4,Y4,Z4):2
+     [Z4=3,Y4=1,X4=0,W4=0,V4=1,V=0,V3=0] 
+* CE 112: start(V3,V,V4) = 0+ fun14(W4,X4,Y4,Z4):3
+     [Z4>=4,Z4=Y4+2,Z4=V4+2,X4=0,W4=0,V=0,V3=0] 
+* CE 113: start(V3,V,V4) = 0+ fun14(W4,X4,Y4,Z4):4
+     [Z4>=3,Z4=X4+2,Z4=V+2,Y4=0,W4=0,V4=0,V3=0] 
+* CE 114: start(V3,V,V4) = 0+ fun14(W4,X4,Y4,Z4):5
+     [Z4>=4,Z4=X4+3,Z4=V+3,Y4=1,W4=0,V4=1,V3=0] 
+* CE 115: start(V3,V,V4) = 0+ fun14(W4,V,X4,Y4):6
+     [Y4>=V+4,V>=1,Y4=V+X4+2,Y4=V+V4+2,W4=0,V3=0] 
+* CE 116: start(V3,V,V4) = 0+ fun15(W4,X4,Y4,Z4):1
+     [Z4>=2,Z4=X4+2,Z4=V+2,Y4=0,W4=0,V4=0,V3=0] 
+* CE 117: start(V3,V,V4) = 0+ fun15(W4,X4,Y4,Z4):2
+     [Z4>=3,Z4=X4+3,Z4=V+3,Y4=1,W4=0,V4=1,V3=0] 
+* CE 118: start(V3,V,V4) = 0+ fun15(W4,V,X4,Y4):3
+     [Y4>=V+4,V>=0,Y4=V+X4+2,Y4=V+V4+2,W4=0,V3=0] 
+* CE 119: start(V3,V,V4) = 0+ fun16(W4,X4,Y4,Z4):1
+     [Z4>=2,Z4=X4+2,Z4=V+2,Y4=0,W4=0,V4=0,V3=0] 
+* CE 120: start(V3,V,V4) = 0+ fun16(W4,V,X4,Y4):2
+     [Y4>=V+3,V>=0,Y4=V+X4+2,Y4=V+V4+2,W4=0,V3=0] 
+* CE 121: start(V3,V,V4) = 0+ fun17(W4,V,X4,Y4):1
+     [Y4>=V+2,V>=0,Y4=V+X4+2,Y4=V+V4+2,W4=0,V3=0] 
+* CE 122: start(V3,V,V4) = 0+ isNat(W4,X4):1
+     [X4=0,W4=0,V3=0] 
+* CE 123: start(V3,V,V4) = 0+ isNat(W4,X4):2
+     [X4=0,W4=1,V3=1] 
+* CE 124: start(V3,V,V4) = 0+ isNat(V3,W4):3
+     [V3>=2,W4=0] 
+* CE 125: start(V3,V,V4) = 0+ isNatKind(W4,X4):1
+     [X4=0,W4=0,V3=0] 
+* CE 126: start(V3,V,V4) = 0+ isNatKind(V3,W4):2
+     [V3>=1,W4=0] 
+* CE 127: start(V3,V,V4) = 0+ activate(V3,V3):1
+     [V3>=0] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127] --> Loop 43 
+
+#### Loops of start/3 
+* Loop 43: start(V3,V,V4) [] 
+
+### Ranking functions of CR start(V3,V,V4) 
+
+#### Partial ranking functions of CR start(V3,V,V4) 
+
+
+### Resulting Chains:start(V3,V,V4) 
+* [43]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[43]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [16,17] 
+
+ * loop 16:activate(V3,Out) -> [activate(V3',Out'),activate(V3'2,Out'2)] 
+2
+ * loop 17:activate(V3,Out) -> [activate(V3',Out')] 
+2
+#### Cost of phase [16,17]:activate(V3,Out) -> [] 
+4*it(16)+2*it([18])+0
+  Such that:it([18]) =< V3+1
+aux(1) =< V3
+it(16) =< aux(1)
+
+#### Cost of chains of activate(V3,Out):
+* Chain [18]: 2
+  with precondition: [V3=Out,V3>=0] 
+
+* Chain [multiple([16,17],[[18]])]: 4*it(16)+2*it([18])+0
+  Such that:it([18]) =< V3+1
+aux(1) =< V3
+it(16) =< aux(1)
+
+  with precondition: [V3=Out,V3>=1] 
+
+
+#### Cost of loops [19,21] 
+
+ * loop 19:isNatKind(V3,Out) -> [isNatKind(V3',Out'),isNatKind(V3'2,Out'2)] 
+2*s(14)+4*s(19)+4*s(17)+8*s(18)+9
+  Such that:s(13) =< V3'
+s(14) =< V3'+1
+s(15) =< V3'2
+s(16) =< V3'2+1
+s(17) =< s(16)
+s(18) =< s(15)
+s(19) =< s(13)
+
+ * loop 21:isNatKind(V3,Out) -> [isNatKind(V3',Out')] 
+6*s(24)+4
+  Such that:s(23) =< V3
+s(24) =< s(23)
+
+#### Cost of phase [19,21]:isNatKind(V3,Out) -> [] 
+13*it(19)+1*it([20])+2*s(25)+4*s(26)+10*s(27)+8*s(28)+0
+  Such that:it([20]) =< V3+1
+aux(10) =< V3
+it(19) =< aux(10)
+aux(6) =< aux(10)+1
+aux(7) =< aux(10)
+s(29) =< it(19)*aux(10)
+s(31) =< it(19)*aux(6)
+s(30) =< it(19)*aux(7)
+s(25) =< it(19)*aux(6)
+s(27) =< s(31)
+s(28) =< s(30)
+s(26) =< s(29)
+
+#### Cost of chains of isNatKind(V3,Out):
+* Chain [20]: 1
+  with precondition: [V3=0,Out=0] 
+
+* Chain [multiple([19,21],[[20]])]: 13*it(19)+1*it([20])+2*s(25)+4*s(26)+10*s(27)+8*s(28)+0
+  Such that:it([20]) =< V3+1
+aux(10) =< V3
+it(19) =< aux(10)
+aux(6) =< aux(10)+1
+aux(7) =< aux(10)
+s(29) =< it(19)*aux(10)
+s(31) =< it(19)*aux(6)
+s(30) =< it(19)*aux(7)
+s(25) =< it(19)*aux(6)
+s(27) =< s(31)
+s(28) =< s(30)
+s(26) =< s(29)
+
+  with precondition: [Out=0,V3>=1] 
+
+
+#### Cost of loops [22,24,25,26] 
+
+ * loop 22:isNat(V3,Out) -> [isNat(V3',Out')] 
+12*s(135)+46*s(136)+4*s(142)+20*s(143)+16*s(144)+8*s(145)+14
+  Such that:s(133) =< V3'
+s(134) =< V3'+1
+s(135) =< s(134)
+s(136) =< s(133)
+s(137) =< s(133)+1
+s(138) =< s(133)
+s(139) =< s(136)*s(133)
+s(140) =< s(136)*s(137)
+s(141) =< s(136)*s(138)
+s(142) =< s(136)*s(137)
+s(143) =< s(140)
+s(144) =< s(141)
+s(145) =< s(139)
+
+ * loop 24:isNat(V3,Out) -> [isNat(V3',Out'),isNat(V3'2,Out'2)] 
+70*s(242)+4*s(259)+20*s(260)+16*s(261)+8*s(262)+18*s(243)+58*s(244)+4*s(250)+20*s(251)+16*s(252)+8*s(253)+37
+  Such that:s(239) =< V3-V3'2
+s(240) =< V3'2
+s(241) =< V3'2+1
+s(242) =< s(239)
+s(243) =< s(241)
+s(244) =< s(240)
+s(245) =< s(240)+1
+s(246) =< s(240)
+s(247) =< s(244)*s(240)
+s(248) =< s(244)*s(245)
+s(249) =< s(244)*s(246)
+s(250) =< s(244)*s(245)
+s(251) =< s(248)
+s(252) =< s(249)
+s(253) =< s(247)
+s(254) =< s(239)+1
+s(255) =< s(239)
+s(256) =< s(242)*s(239)
+s(257) =< s(242)*s(254)
+s(258) =< s(242)*s(255)
+s(259) =< s(242)*s(254)
+s(260) =< s(257)
+s(261) =< s(258)
+s(262) =< s(256)
+
+ * loop 25:isNat(V3,Out) -> [isNat(V3',Out'),isNat(V3'2,Out'2)] 
+16*s(336)+54*s(337)+4*s(343)+20*s(344)+16*s(345)+8*s(346)+16*s(335)+39
+  Such that:s(332) =< 1
+s(333) =< V3'
+s(334) =< V3'+1
+s(335) =< s(332)
+s(336) =< s(334)
+s(337) =< s(333)
+s(338) =< s(333)+1
+s(339) =< s(333)
+s(340) =< s(337)*s(333)
+s(341) =< s(337)*s(338)
+s(342) =< s(337)*s(339)
+s(343) =< s(337)*s(338)
+s(344) =< s(341)
+s(345) =< s(342)
+s(346) =< s(340)
+
+ * loop 26:isNat(V3,Out) -> [isNat(V3',Out'),isNat(V3'2,Out'2)] 
+14*s(419)+18*s(420)+58*s(421)+4*s(427)+20*s(428)+16*s(429)+8*s(430)+39
+  Such that:s(416) =< 1
+s(417) =< V3'2
+s(418) =< V3'2+1
+s(419) =< s(416)
+s(420) =< s(418)
+s(421) =< s(417)
+s(422) =< s(417)+1
+s(423) =< s(417)
+s(424) =< s(421)*s(417)
+s(425) =< s(421)*s(422)
+s(426) =< s(421)*s(423)
+s(427) =< s(421)*s(422)
+s(428) =< s(425)
+s(429) =< s(426)
+s(430) =< s(424)
+
+#### Cost of phase [22,24,25,26]:isNat(V3,Out) -> [] 
+14*it(22)+37*it(24)+78*it(25)+61*it([23,28])+12*s(431)+46*s(432)+4*s(433)+20*s(434)+16*s(435)+8*s(436)+88*s(442)+4*s(443)+20*s(444)+16*s(445)+8*s(446)+58*s(448)+4*s(449)+20*s(450)+16*s(451)+8*s(452)+34*s(462)+112*s(463)+8*s(464)+40*s(465)+32*s(466)+16*s(467)+30*s(468)+40*s(488)+0
+  Such that:aux(52) =< 1
+aux(53) =< V3
+aux(54) =< V3/2
+aux(55) =< 2/3*V3
+it(22) =< aux(53)
+it(24) =< aux(53)
+it(25) =< aux(53)
+it(24) =< aux(54)
+it(25) =< aux(54)
+it(25) =< aux(55)
+aux(31) =< aux(53)+2
+aux(30) =< aux(53)+1
+aux(34) =< aux(53)
+aux(46) =< it(25)+it(25)+it(24)+aux(52)
+it([23,28]) =< it(25)+it(25)+it(24)+aux(52)
+s(473) =< it(25)*aux(31)
+s(472) =< it(25)*aux(30)
+s(460) =< it(24)*aux(30)
+s(459) =< it(24)*aux(34)
+s(441) =< it(22)*aux(31)
+s(440) =< it(22)*aux(30)
+s(488) =< aux(46)
+s(468) =< aux(55)
+s(462) =< s(473)
+s(463) =< s(472)
+s(137) =< aux(30)+1
+s(138) =< aux(30)
+s(469) =< s(463)*aux(30)
+s(471) =< s(463)*s(137)
+s(470) =< s(463)*s(138)
+s(464) =< s(463)*s(137)
+s(465) =< s(471)
+s(466) =< s(470)
+s(467) =< s(469)
+s(442) =< s(460)
+s(448) =< s(459)
+s(456) =< s(448)*aux(53)
+s(458) =< s(448)*aux(30)
+s(457) =< s(448)*aux(34)
+s(449) =< s(448)*aux(30)
+s(450) =< s(458)
+s(451) =< s(457)
+s(452) =< s(456)
+s(453) =< s(442)*aux(30)
+s(455) =< s(442)*s(137)
+s(454) =< s(442)*s(138)
+s(443) =< s(442)*s(137)
+s(444) =< s(455)
+s(445) =< s(454)
+s(446) =< s(453)
+s(431) =< s(441)
+s(432) =< s(440)
+s(437) =< s(432)*aux(30)
+s(439) =< s(432)*s(137)
+s(438) =< s(432)*s(138)
+s(433) =< s(432)*s(137)
+s(434) =< s(439)
+s(435) =< s(438)
+s(436) =< s(437)
+
+#### Cost of chains of isNat(V3,Out):
+* Chain [28]: 1
+  with precondition: [V3=0,Out=0] 
+
+* Chain [multiple(27,[[28]])]: 30*s(35)+43
+  Such that:aux(12) =< 1
+s(35) =< aux(12)
+
+  with precondition: [V3=1,Out=0] 
+
+* Chain [23,28]: 10*s(80)+17
+  Such that:aux(14) =< 1
+s(80) =< aux(14)
+
+  with precondition: [V3=1,Out=0] 
+
+* Chain [multiple([22,24,25,26],[[28],[multiple(27,[[28]])],[23,28]])]: 14*it(22)+37*it(24)+78*it(25)+61*it([23,28])+12*s(431)+46*s(432)+4*s(433)+20*s(434)+16*s(435)+8*s(436)+88*s(442)+4*s(443)+20*s(444)+16*s(445)+8*s(446)+58*s(448)+4*s(449)+20*s(450)+16*s(451)+8*s(452)+34*s(462)+112*s(463)+8*s(464)+40*s(465)+32*s(466)+16*s(467)+30*s(468)+40*s(488)+0
+  Such that:aux(52) =< 1
+aux(53) =< V3
+aux(54) =< V3/2
+aux(55) =< 2/3*V3
+it(22) =< aux(53)
+it(24) =< aux(53)
+it(25) =< aux(53)
+it(24) =< aux(54)
+it(25) =< aux(54)
+it(25) =< aux(55)
+aux(31) =< aux(53)+2
+aux(30) =< aux(53)+1
+aux(34) =< aux(53)
+aux(46) =< it(25)+it(25)+it(24)+aux(52)
+it([23,28]) =< it(25)+it(25)+it(24)+aux(52)
+s(473) =< it(25)*aux(31)
+s(472) =< it(25)*aux(30)
+s(460) =< it(24)*aux(30)
+s(459) =< it(24)*aux(34)
+s(441) =< it(22)*aux(31)
+s(440) =< it(22)*aux(30)
+s(488) =< aux(46)
+s(468) =< aux(55)
+s(462) =< s(473)
+s(463) =< s(472)
+s(137) =< aux(30)+1
+s(138) =< aux(30)
+s(469) =< s(463)*aux(30)
+s(471) =< s(463)*s(137)
+s(470) =< s(463)*s(138)
+s(464) =< s(463)*s(137)
+s(465) =< s(471)
+s(466) =< s(470)
+s(467) =< s(469)
+s(442) =< s(460)
+s(448) =< s(459)
+s(456) =< s(448)*aux(53)
+s(458) =< s(448)*aux(30)
+s(457) =< s(448)*aux(34)
+s(449) =< s(448)*aux(30)
+s(450) =< s(458)
+s(451) =< s(457)
+s(452) =< s(456)
+s(453) =< s(442)*aux(30)
+s(455) =< s(442)*s(137)
+s(454) =< s(442)*s(138)
+s(443) =< s(442)*s(137)
+s(444) =< s(455)
+s(445) =< s(454)
+s(446) =< s(453)
+s(431) =< s(441)
+s(432) =< s(440)
+s(437) =< s(432)*aux(30)
+s(439) =< s(432)*s(137)
+s(438) =< s(432)*s(138)
+s(433) =< s(432)*s(137)
+s(434) =< s(439)
+s(435) =< s(438)
+s(436) =< s(437)
+
+  with precondition: [Out=0,V3>=2] 
+
+
+#### Cost of chains of fun12(V3,V,Out):
+* Chain [30]: 6*s(497)+9
+  Such that:aux(58) =< 1
+s(497) =< aux(58)
+
+  with precondition: [V3=0,V=0,Out=0] 
+
+* Chain [29]: 7*s(506)+25*s(507)+2*s(516)+10*s(517)+8*s(518)+4*s(519)+8
+  Such that:aux(59) =< V
+aux(60) =< V+1
+s(506) =< aux(60)
+s(507) =< aux(59)
+s(511) =< aux(59)+1
+s(512) =< aux(59)
+s(513) =< s(507)*aux(59)
+s(514) =< s(507)*s(511)
+s(515) =< s(507)*s(512)
+s(516) =< s(507)*s(511)
+s(517) =< s(514)
+s(518) =< s(515)
+s(519) =< s(513)
+
+  with precondition: [V3=0,V=Out,V>=1] 
+
+
+#### Cost of chains of fun17(V3,V,V4,Out):
+* Chain [31]: 2*s(527)+4*s(528)+2*s(530)+4*s(531)+7
+  Such that:s(529) =< V
+s(530) =< V+1
+s(526) =< V4
+s(527) =< V4+1
+s(531) =< s(529)
+s(528) =< s(526)
+
+  with precondition: [V3=0,V+V4+2=Out,V>=0,V4>=0] 
+
+
+#### Cost of chains of fun16(V3,V,V4,Out):
+* Chain [33]: 6*s(533)+4*s(536)+8*s(537)+15
+  Such that:aux(62) =< 1
+aux(63) =< V
+aux(64) =< V+1
+s(533) =< aux(62)
+s(536) =< aux(64)
+s(537) =< aux(63)
+
+  with precondition: [V3=0,V4=0,V+2=Out,V>=0] 
+
+* Chain [32]: 7*s(548)+25*s(549)+2*s(558)+10*s(559)+8*s(560)+4*s(561)+4*s(563)+8*s(564)+14
+  Such that:aux(65) =< V
+aux(66) =< V+1
+aux(67) =< V4
+aux(68) =< V4+1
+s(563) =< aux(66)
+s(548) =< aux(68)
+s(564) =< aux(65)
+s(549) =< aux(67)
+s(553) =< aux(67)+1
+s(554) =< aux(67)
+s(555) =< s(549)*aux(67)
+s(556) =< s(549)*s(553)
+s(557) =< s(549)*s(554)
+s(558) =< s(549)*s(553)
+s(559) =< s(556)
+s(560) =< s(557)
+s(561) =< s(555)
+
+  with precondition: [V3=0,V+V4+2=Out,V>=0,V4>=1] 
+
+
+#### Cost of chains of fun15(V3,V,V4,Out):
+* Chain [36]: 10*s(575)+6*s(578)+12*s(579)+23
+  Such that:aux(70) =< 1
+aux(71) =< V
+aux(72) =< V+1
+s(575) =< aux(70)
+s(578) =< aux(72)
+s(579) =< aux(71)
+
+  with precondition: [V3=0,V4=0,V+2=Out,V>=0] 
+
+* Chain [35]: 11*s(590)+33*s(591)+6*s(593)+12*s(594)+2*s(611)+10*s(612)+8*s(613)+4*s(614)+104
+  Such that:aux(73) =< 1
+aux(74) =< 2
+aux(75) =< V
+aux(76) =< V+1
+s(590) =< aux(74)
+s(593) =< aux(76)
+s(594) =< aux(75)
+s(591) =< aux(73)
+s(606) =< aux(73)+1
+s(607) =< aux(73)
+s(608) =< s(591)*aux(73)
+s(609) =< s(591)*s(606)
+s(610) =< s(591)*s(607)
+s(611) =< s(591)*s(606)
+s(612) =< s(609)
+s(613) =< s(610)
+s(614) =< s(608)
+
+  with precondition: [V3=0,V4=1,V+3=Out,V>=0] 
+
+* Chain [34]: 11*s(616)+47*s(617)+37*s(623)+78*s(624)+61*s(629)+40*s(636)+30*s(637)+34*s(638)+112*s(639)+8*s(645)+40*s(646)+32*s(647)+16*s(648)+88*s(649)+58*s(650)+4*s(654)+20*s(655)+16*s(656)+8*s(657)+4*s(661)+20*s(662)+16*s(663)+8*s(664)+12*s(665)+56*s(666)+4*s(670)+20*s(671)+16*s(672)+8*s(673)+6*s(675)+12*s(676)+2*s(693)+8*s(695)+4*s(696)+21
+  Such that:s(618) =< 1
+s(620) =< V4/2
+s(621) =< 2/3*V4
+aux(77) =< V
+aux(78) =< V+1
+aux(79) =< V4
+aux(80) =< V4+1
+s(675) =< aux(78)
+s(616) =< aux(80)
+s(676) =< aux(77)
+s(617) =< aux(79)
+s(626) =< aux(79)+1
+s(627) =< aux(79)
+s(690) =< s(617)*aux(79)
+s(635) =< s(617)*s(626)
+s(692) =< s(617)*s(627)
+s(693) =< s(617)*s(626)
+s(666) =< s(635)
+s(695) =< s(692)
+s(696) =< s(690)
+s(623) =< aux(79)
+s(624) =< aux(79)
+s(623) =< s(620)
+s(624) =< s(620)
+s(624) =< s(621)
+s(625) =< aux(79)+2
+s(628) =< s(624)+s(624)+s(623)+s(618)
+s(629) =< s(624)+s(624)+s(623)+s(618)
+s(630) =< s(624)*s(625)
+s(631) =< s(624)*s(626)
+s(632) =< s(623)*s(626)
+s(633) =< s(623)*s(627)
+s(634) =< s(617)*s(625)
+s(636) =< s(628)
+s(637) =< s(621)
+s(638) =< s(630)
+s(639) =< s(631)
+s(640) =< s(626)+1
+s(641) =< s(626)
+s(642) =< s(639)*s(626)
+s(643) =< s(639)*s(640)
+s(644) =< s(639)*s(641)
+s(645) =< s(639)*s(640)
+s(646) =< s(643)
+s(647) =< s(644)
+s(648) =< s(642)
+s(649) =< s(632)
+s(650) =< s(633)
+s(651) =< s(650)*aux(79)
+s(652) =< s(650)*s(626)
+s(653) =< s(650)*s(627)
+s(654) =< s(650)*s(626)
+s(655) =< s(652)
+s(656) =< s(653)
+s(657) =< s(651)
+s(658) =< s(649)*s(626)
+s(659) =< s(649)*s(640)
+s(660) =< s(649)*s(641)
+s(661) =< s(649)*s(640)
+s(662) =< s(659)
+s(663) =< s(660)
+s(664) =< s(658)
+s(665) =< s(634)
+s(667) =< s(666)*s(626)
+s(668) =< s(666)*s(640)
+s(669) =< s(666)*s(641)
+s(670) =< s(666)*s(640)
+s(671) =< s(668)
+s(672) =< s(669)
+s(673) =< s(667)
+
+  with precondition: [V3=0,V+V4+2=Out,V>=0,V4>=2] 
+
+
+#### Cost of chains of fun14(V3,V,V4,Out):
+* Chain [42]: 22*s(698)+31
+  Such that:aux(82) =< 1
+s(698) =< aux(82)
+
+  with precondition: [V3=0,V=0,V4=0,Out=2] 
+
+* Chain [41]: 47*s(713)+13*s(719)+2*s(734)+10*s(735)+8*s(736)+4*s(737)+112
+  Such that:aux(84) =< 1
+aux(85) =< 2
+s(713) =< aux(84)
+s(719) =< aux(85)
+s(729) =< aux(84)+1
+s(730) =< aux(84)
+s(731) =< s(713)*aux(84)
+s(732) =< s(713)*s(729)
+s(733) =< s(713)*s(730)
+s(734) =< s(713)*s(729)
+s(735) =< s(732)
+s(736) =< s(733)
+s(737) =< s(731)
+
+  with precondition: [V3=0,V=0,V4=1,Out=3] 
+
+* Chain [40]: 10*s(739)+13*s(745)+51*s(746)+2*s(763)+56*s(764)+8*s(765)+4*s(766)+37*s(767)+78*s(768)+61*s(771)+40*s(777)+30*s(778)+34*s(779)+112*s(780)+8*s(786)+40*s(787)+32*s(788)+16*s(789)+88*s(790)+58*s(791)+4*s(795)+20*s(796)+16*s(797)+8*s(798)+4*s(802)+20*s(803)+16*s(804)+8*s(805)+12*s(806)+4*s(810)+20*s(811)+16*s(812)+8*s(813)+29
+  Such that:s(748) =< V4/2
+s(749) =< 2/3*V4
+aux(87) =< 1
+aux(88) =< V4
+aux(89) =< V4+1
+s(739) =< aux(87)
+s(745) =< aux(89)
+s(746) =< aux(88)
+s(758) =< aux(88)+1
+s(759) =< aux(88)
+s(760) =< s(746)*aux(88)
+s(761) =< s(746)*s(758)
+s(762) =< s(746)*s(759)
+s(763) =< s(746)*s(758)
+s(764) =< s(761)
+s(765) =< s(762)
+s(766) =< s(760)
+s(767) =< aux(88)
+s(768) =< aux(88)
+s(767) =< s(748)
+s(768) =< s(748)
+s(768) =< s(749)
+s(769) =< aux(88)+2
+s(770) =< s(768)+s(768)+s(767)+aux(87)
+s(771) =< s(768)+s(768)+s(767)+aux(87)
+s(772) =< s(768)*s(769)
+s(773) =< s(768)*s(758)
+s(774) =< s(767)*s(758)
+s(775) =< s(767)*s(759)
+s(776) =< s(746)*s(769)
+s(777) =< s(770)
+s(778) =< s(749)
+s(779) =< s(772)
+s(780) =< s(773)
+s(781) =< s(758)+1
+s(782) =< s(758)
+s(783) =< s(780)*s(758)
+s(784) =< s(780)*s(781)
+s(785) =< s(780)*s(782)
+s(786) =< s(780)*s(781)
+s(787) =< s(784)
+s(788) =< s(785)
+s(789) =< s(783)
+s(790) =< s(774)
+s(791) =< s(775)
+s(792) =< s(791)*aux(88)
+s(793) =< s(791)*s(758)
+s(794) =< s(791)*s(759)
+s(795) =< s(791)*s(758)
+s(796) =< s(793)
+s(797) =< s(794)
+s(798) =< s(792)
+s(799) =< s(790)*s(758)
+s(800) =< s(790)*s(781)
+s(801) =< s(790)*s(782)
+s(802) =< s(790)*s(781)
+s(803) =< s(800)
+s(804) =< s(801)
+s(805) =< s(799)
+s(806) =< s(776)
+s(807) =< s(764)*s(758)
+s(808) =< s(764)*s(781)
+s(809) =< s(764)*s(782)
+s(810) =< s(764)*s(781)
+s(811) =< s(808)
+s(812) =< s(809)
+s(813) =< s(807)
+
+  with precondition: [V3=0,V=0,V4+2=Out,V4>=2] 
+
+* Chain [39]: 11*s(815)+33*s(816)+2*s(825)+10*s(826)+8*s(827)+4*s(828)+12*s(833)+30
+  Such that:aux(90) =< 1
+aux(91) =< V
+aux(92) =< V+1
+s(833) =< aux(90)
+s(815) =< aux(92)
+s(816) =< aux(91)
+s(820) =< aux(91)+1
+s(821) =< aux(91)
+s(822) =< s(816)*aux(91)
+s(823) =< s(816)*s(820)
+s(824) =< s(816)*s(821)
+s(825) =< s(816)*s(820)
+s(826) =< s(823)
+s(827) =< s(824)
+s(828) =< s(822)
+
+  with precondition: [V3=0,V4=0,V+2=Out,V>=1] 
+
+* Chain [38]: 11*s(842)+33*s(843)+2*s(852)+10*s(853)+8*s(854)+4*s(855)+13*s(860)+37*s(861)+2*s(875)+10*s(876)+8*s(877)+4*s(878)+111
+  Such that:aux(93) =< 1
+aux(94) =< 2
+aux(95) =< V
+aux(96) =< V+1
+s(860) =< aux(94)
+s(842) =< aux(96)
+s(843) =< aux(95)
+s(861) =< aux(93)
+s(870) =< aux(93)+1
+s(871) =< aux(93)
+s(872) =< s(861)*aux(93)
+s(873) =< s(861)*s(870)
+s(874) =< s(861)*s(871)
+s(875) =< s(861)*s(870)
+s(876) =< s(873)
+s(877) =< s(874)
+s(878) =< s(872)
+s(847) =< aux(95)+1
+s(848) =< aux(95)
+s(849) =< s(843)*aux(95)
+s(850) =< s(843)*s(847)
+s(851) =< s(843)*s(848)
+s(852) =< s(843)*s(847)
+s(853) =< s(850)
+s(854) =< s(851)
+s(855) =< s(849)
+
+  with precondition: [V3=0,V4=1,V+3=Out,V>=1] 
+
+* Chain [37]: 11*s(880)+33*s(881)+2*s(890)+10*s(891)+8*s(892)+4*s(893)+13*s(898)+51*s(899)+2*s(916)+56*s(917)+8*s(918)+4*s(919)+37*s(920)+78*s(921)+61*s(924)+40*s(930)+30*s(931)+34*s(932)+112*s(933)+8*s(939)+40*s(940)+32*s(941)+16*s(942)+88*s(943)+58*s(944)+4*s(948)+20*s(949)+16*s(950)+8*s(951)+4*s(955)+20*s(956)+16*s(957)+8*s(958)+12*s(959)+4*s(963)+20*s(964)+16*s(965)+8*s(966)+28
+  Such that:s(900) =< 1
+s(901) =< V4/2
+s(902) =< 2/3*V4
+aux(97) =< V
+aux(98) =< V+1
+aux(99) =< V4
+aux(100) =< V4+1
+s(880) =< aux(98)
+s(898) =< aux(100)
+s(881) =< aux(97)
+s(899) =< aux(99)
+s(911) =< aux(99)+1
+s(912) =< aux(99)
+s(913) =< s(899)*aux(99)
+s(914) =< s(899)*s(911)
+s(915) =< s(899)*s(912)
+s(916) =< s(899)*s(911)
+s(917) =< s(914)
+s(918) =< s(915)
+s(919) =< s(913)
+s(920) =< aux(99)
+s(921) =< aux(99)
+s(920) =< s(901)
+s(921) =< s(901)
+s(921) =< s(902)
+s(922) =< aux(99)+2
+s(923) =< s(921)+s(921)+s(920)+s(900)
+s(924) =< s(921)+s(921)+s(920)+s(900)
+s(925) =< s(921)*s(922)
+s(926) =< s(921)*s(911)
+s(927) =< s(920)*s(911)
+s(928) =< s(920)*s(912)
+s(929) =< s(899)*s(922)
+s(930) =< s(923)
+s(931) =< s(902)
+s(932) =< s(925)
+s(933) =< s(926)
+s(934) =< s(911)+1
+s(935) =< s(911)
+s(936) =< s(933)*s(911)
+s(937) =< s(933)*s(934)
+s(938) =< s(933)*s(935)
+s(939) =< s(933)*s(934)
+s(940) =< s(937)
+s(941) =< s(938)
+s(942) =< s(936)
+s(943) =< s(927)
+s(944) =< s(928)
+s(945) =< s(944)*aux(99)
+s(946) =< s(944)*s(911)
+s(947) =< s(944)*s(912)
+s(948) =< s(944)*s(911)
+s(949) =< s(946)
+s(950) =< s(947)
+s(951) =< s(945)
+s(952) =< s(943)*s(911)
+s(953) =< s(943)*s(934)
+s(954) =< s(943)*s(935)
+s(955) =< s(943)*s(934)
+s(956) =< s(953)
+s(957) =< s(954)
+s(958) =< s(952)
+s(959) =< s(929)
+s(960) =< s(917)*s(911)
+s(961) =< s(917)*s(934)
+s(962) =< s(917)*s(935)
+s(963) =< s(917)*s(934)
+s(964) =< s(961)
+s(965) =< s(962)
+s(966) =< s(960)
+s(885) =< aux(97)+1
+s(886) =< aux(97)
+s(887) =< s(881)*aux(97)
+s(888) =< s(881)*s(885)
+s(889) =< s(881)*s(886)
+s(890) =< s(881)*s(885)
+s(891) =< s(888)
+s(892) =< s(889)
+s(893) =< s(887)
+
+  with precondition: [V3=0,V+V4+2=Out,V>=1,V4>=2] 
+
+
+#### Cost of chains of start(V3,V,V4):
+* Chain [43]: 996*s(968)+244*s(977)+44*s(987)+220*s(988)+176*s(989)+88*s(990)+151*s(998)+597*s(999)+18*s(1008)+734*s(1009)+72*s(1010)+36*s(1011)+518*s(1023)+1092*s(1024)+854*s(1029)+560*s(1036)+420*s(1037)+476*s(1038)+1568*s(1039)+112*s(1045)+560*s(1046)+448*s(1047)+224*s(1048)+1232*s(1049)+812*s(1050)+56*s(1054)+280*s(1055)+224*s(1056)+112*s(1057)+56*s(1061)+280*s(1062)+224*s(1063)+112*s(1064)+168*s(1065)+56*s(1070)+280*s(1071)+224*s(1072)+112*s(1073)+175*s(1242)+769*s(1243)+38*s(1255)+880*s(1256)+152*s(1257)+76*s(1258)+555*s(1300)+1170*s(1301)+915*s(1306)+600*s(1313)+450*s(1314)+510*s(1315)+1680*s(1316)+120*s(1322)+600*s(1323)+480*s(1324)+240*s(1325)+1320*s(1326)+870*s(1327)+60*s(1331)+300*s(1332)+240*s(1333)+120*s(1334)+60*s(1338)+300*s(1339)+240*s(1340)+120*s(1341)+180*s(1342)+60*s(1347)+300*s(1348)+240*s(1349)+120*s(1350)+31*s(4080)+37*s(4081)+78*s(4082)+61*s(4087)+40*s(4094)+30*s(4095)+34*s(4096)+112*s(4097)+8*s(4103)+40*s(4104)+32*s(4105)+16*s(4106)+88*s(4107)+58*s(4108)+4*s(4112)+20*s(4113)+16*s(4114)+8*s(4115)+4*s(4119)+20*s(4120)+16*s(4121)+8*s(4122)+12*s(4123)+56*s(4124)+4*s(4128)+20*s(4129)+16*s(4130)+8*s(4131)+3*s(4132)+2*s(4140)+8*s(4142)+4*s(4143)+196
+  Such that:s(4078) =< V3/2
+s(4079) =< 2/3*V3
+aux(227) =< 1
+aux(228) =< 2
+aux(229) =< V3
+aux(230) =< V3+1
+aux(231) =< V
+aux(232) =< V+1
+aux(233) =< V/2
+aux(234) =< 2/3*V
+aux(235) =< V4
+aux(236) =< V4+1
+aux(237) =< V4/2
+aux(238) =< 2/3*V4
+s(968) =< aux(227)
+s(977) =< aux(228)
+s(4132) =< aux(230)
+s(998) =< aux(232)
+s(1242) =< aux(236)
+s(982) =< aux(227)+1
+s(983) =< aux(227)
+s(984) =< s(968)*aux(227)
+s(985) =< s(968)*s(982)
+s(986) =< s(968)*s(983)
+s(987) =< s(968)*s(982)
+s(988) =< s(985)
+s(989) =< s(986)
+s(990) =< s(984)
+s(999) =< aux(231)
+s(1023) =< aux(231)
+s(1024) =< aux(231)
+s(1023) =< aux(233)
+s(1024) =< aux(233)
+s(1024) =< aux(234)
+s(1025) =< aux(231)+2
+s(1003) =< aux(231)+1
+s(1004) =< aux(231)
+s(1028) =< s(1024)+s(1024)+s(1023)+aux(227)
+s(1029) =< s(1024)+s(1024)+s(1023)+aux(227)
+s(1030) =< s(1024)*s(1025)
+s(1031) =< s(1024)*s(1003)
+s(1032) =< s(1023)*s(1003)
+s(1033) =< s(1023)*s(1004)
+s(1034) =< s(999)*s(1025)
+s(1006) =< s(999)*s(1003)
+s(1036) =< s(1028)
+s(1037) =< aux(234)
+s(1038) =< s(1030)
+s(1039) =< s(1031)
+s(1040) =< s(1003)+1
+s(1041) =< s(1003)
+s(1042) =< s(1039)*s(1003)
+s(1043) =< s(1039)*s(1040)
+s(1044) =< s(1039)*s(1041)
+s(1045) =< s(1039)*s(1040)
+s(1046) =< s(1043)
+s(1047) =< s(1044)
+s(1048) =< s(1042)
+s(1049) =< s(1032)
+s(1050) =< s(1033)
+s(1051) =< s(1050)*aux(231)
+s(1052) =< s(1050)*s(1003)
+s(1053) =< s(1050)*s(1004)
+s(1054) =< s(1050)*s(1003)
+s(1055) =< s(1052)
+s(1056) =< s(1053)
+s(1057) =< s(1051)
+s(1058) =< s(1049)*s(1003)
+s(1059) =< s(1049)*s(1040)
+s(1060) =< s(1049)*s(1041)
+s(1061) =< s(1049)*s(1040)
+s(1062) =< s(1059)
+s(1063) =< s(1060)
+s(1064) =< s(1058)
+s(1065) =< s(1034)
+s(1009) =< s(1006)
+s(1067) =< s(1009)*s(1003)
+s(1068) =< s(1009)*s(1040)
+s(1069) =< s(1009)*s(1041)
+s(1070) =< s(1009)*s(1040)
+s(1071) =< s(1068)
+s(1072) =< s(1069)
+s(1073) =< s(1067)
+s(1005) =< s(999)*aux(231)
+s(1007) =< s(999)*s(1004)
+s(1008) =< s(999)*s(1003)
+s(1010) =< s(1007)
+s(1011) =< s(1005)
+s(1243) =< aux(235)
+s(1250) =< aux(235)+1
+s(1251) =< aux(235)
+s(1252) =< s(1243)*aux(235)
+s(1253) =< s(1243)*s(1250)
+s(1254) =< s(1243)*s(1251)
+s(1255) =< s(1243)*s(1250)
+s(1256) =< s(1253)
+s(1257) =< s(1254)
+s(1258) =< s(1252)
+s(1300) =< aux(235)
+s(1301) =< aux(235)
+s(1300) =< aux(237)
+s(1301) =< aux(237)
+s(1301) =< aux(238)
+s(1302) =< aux(235)+2
+s(1305) =< s(1301)+s(1301)+s(1300)+aux(227)
+s(1306) =< s(1301)+s(1301)+s(1300)+aux(227)
+s(1307) =< s(1301)*s(1302)
+s(1308) =< s(1301)*s(1250)
+s(1309) =< s(1300)*s(1250)
+s(1310) =< s(1300)*s(1251)
+s(1311) =< s(1243)*s(1302)
+s(1313) =< s(1305)
+s(1314) =< aux(238)
+s(1315) =< s(1307)
+s(1316) =< s(1308)
+s(1317) =< s(1250)+1
+s(1318) =< s(1250)
+s(1319) =< s(1316)*s(1250)
+s(1320) =< s(1316)*s(1317)
+s(1321) =< s(1316)*s(1318)
+s(1322) =< s(1316)*s(1317)
+s(1323) =< s(1320)
+s(1324) =< s(1321)
+s(1325) =< s(1319)
+s(1326) =< s(1309)
+s(1327) =< s(1310)
+s(1328) =< s(1327)*aux(235)
+s(1329) =< s(1327)*s(1250)
+s(1330) =< s(1327)*s(1251)
+s(1331) =< s(1327)*s(1250)
+s(1332) =< s(1329)
+s(1333) =< s(1330)
+s(1334) =< s(1328)
+s(1335) =< s(1326)*s(1250)
+s(1336) =< s(1326)*s(1317)
+s(1337) =< s(1326)*s(1318)
+s(1338) =< s(1326)*s(1317)
+s(1339) =< s(1336)
+s(1340) =< s(1337)
+s(1341) =< s(1335)
+s(1342) =< s(1311)
+s(1344) =< s(1256)*s(1250)
+s(1345) =< s(1256)*s(1317)
+s(1346) =< s(1256)*s(1318)
+s(1347) =< s(1256)*s(1317)
+s(1348) =< s(1345)
+s(1349) =< s(1346)
+s(1350) =< s(1344)
+s(4080) =< aux(229)
+s(4081) =< aux(229)
+s(4082) =< aux(229)
+s(4081) =< s(4078)
+s(4082) =< s(4078)
+s(4082) =< s(4079)
+s(4083) =< aux(229)+2
+s(4084) =< aux(229)+1
+s(4085) =< aux(229)
+s(4086) =< s(4082)+s(4082)+s(4081)+aux(227)
+s(4087) =< s(4082)+s(4082)+s(4081)+aux(227)
+s(4088) =< s(4082)*s(4083)
+s(4089) =< s(4082)*s(4084)
+s(4090) =< s(4081)*s(4084)
+s(4091) =< s(4081)*s(4085)
+s(4092) =< s(4080)*s(4083)
+s(4093) =< s(4080)*s(4084)
+s(4094) =< s(4086)
+s(4095) =< s(4079)
+s(4096) =< s(4088)
+s(4097) =< s(4089)
+s(4098) =< s(4084)+1
+s(4099) =< s(4084)
+s(4100) =< s(4097)*s(4084)
+s(4101) =< s(4097)*s(4098)
+s(4102) =< s(4097)*s(4099)
+s(4103) =< s(4097)*s(4098)
+s(4104) =< s(4101)
+s(4105) =< s(4102)
+s(4106) =< s(4100)
+s(4107) =< s(4090)
+s(4108) =< s(4091)
+s(4109) =< s(4108)*aux(229)
+s(4110) =< s(4108)*s(4084)
+s(4111) =< s(4108)*s(4085)
+s(4112) =< s(4108)*s(4084)
+s(4113) =< s(4110)
+s(4114) =< s(4111)
+s(4115) =< s(4109)
+s(4116) =< s(4107)*s(4084)
+s(4117) =< s(4107)*s(4098)
+s(4118) =< s(4107)*s(4099)
+s(4119) =< s(4107)*s(4098)
+s(4120) =< s(4117)
+s(4121) =< s(4118)
+s(4122) =< s(4116)
+s(4123) =< s(4092)
+s(4124) =< s(4093)
+s(4125) =< s(4124)*s(4084)
+s(4126) =< s(4124)*s(4098)
+s(4127) =< s(4124)*s(4099)
+s(4128) =< s(4124)*s(4098)
+s(4129) =< s(4126)
+s(4130) =< s(4127)
+s(4131) =< s(4125)
+s(4137) =< s(4080)*aux(229)
+s(4139) =< s(4080)*s(4085)
+s(4140) =< s(4080)*s(4084)
+s(4142) =< s(4139)
+s(4143) =< s(4137)
+
+  with precondition: [] 
+
+
+Closed-form bounds of start(V3,V,V4): 
+-------------------------------------
+* Chain [43] with precondition: [] 
+    - Upper bound: nat(V3)*1087+5502+nat(V3)*878*nat(V3)+nat(V3)*240*nat(V3)*nat(V3)+nat(V)*15321+nat(V)*12172*nat(V)+nat(V)*3360*nat(V)*nat(V)+nat(V4)*16657+nat(V4)*13266*nat(V4)+nat(V4)*3600*nat(V4)*nat(V4)+nat(2/3*V3)*30+nat(2/3*V)*420+nat(2/3*V4)*450+nat(V3+1)*3+nat(V+1)*151+nat(V4+1)*175 
+    - Complexity: n^3 
+
+### Maximum cost of start(V3,V,V4): nat(V3)*1087+5502+nat(V3)*878*nat(V3)+nat(V3)*240*nat(V3)*nat(V3)+nat(V)*15321+nat(V)*12172*nat(V)+nat(V)*3360*nat(V)*nat(V)+nat(V4)*16657+nat(V4)*13266*nat(V4)+nat(V4)*3600*nat(V4)*nat(V4)+nat(2/3*V3)*30+nat(2/3*V)*420+nat(2/3*V4)*450+nat(V3+1)*3+nat(V+1)*151+nat(V4+1)*175 
+Asymptotic class: n^3 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 105 ms.
+* Invariants computed in 38 ms.
+   - Backward Invariants 16 ms.
+   - Transitive Invariants 7 ms.
+* Refinement performed in 1031 ms.
+* Termination proved in 12 ms.
+* Upper bounds computed in 19656 ms.
+   - Equation cost structures 18939 ms.
+   - Phase cost structures 1139 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 68 ms.
+* Total analysis performed in 20933 ms.
+

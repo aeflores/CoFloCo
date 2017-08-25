@@ -1,0 +1,196 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [eql/2]
+1. recursive  : [nesteql/2]
+2. non_recursive  : [goal/2]
+3. non_recursive  : [number17/2]
+4. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into eql/2
+1. SCC is partially evaluated into nesteql/2
+2. SCC is completely evaluated into other SCCs
+3. SCC is completely evaluated into other SCCs
+4. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations eql/2 
+* CE 9 is refined into CE [10] 
+* CE 8 is refined into CE [11] 
+
+
+#### Refined cost equations eql/2 
+* CE 10: eql(V,Out) = 1+ eql(V,Out)
+     [V>=1] 
+* CE 11: eql(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of eql/2 
+* CEs [11] --> Loop 6 
+* CEs [10] --> Loop 7 
+
+#### Loops of eql/2 
+* Loop 6: eql(V,Out) [Out=0,V=0] 
+* Loop 7: eql(V,Out)->  eql(V,Out)
+                  [V>=1] 
+
+### Ranking functions of CR eql(V,Out) 
+
+#### Partial ranking functions of CR eql(V,Out) 
+
+
+### Resulting Chains:eql(V,Out) 
+* [[7]]...
+* [6]
+
+
+### Merging Chains  eql/2 into  External patterns of execution 
+* [[6]] --> 1 
+* [[[7]]] --> 2 
+
+
+### Specialization of cost equations nesteql/2 
+* CE 7 is refined into CE [12] 
+* CE 6 is refined into CE [13] 
+
+
+#### Refined cost equations nesteql/2 
+* CE 12: nesteql(V,Out) = 1+ eql(V,W):2
+     [V>=1] 
+* CE 13: nesteql(V,Out) = 1
+     [Out=17,V=0] 
+
+### Cost equations --> "Loop" of nesteql/2 
+* CEs [13] --> Loop 8 
+* CEs [12] --> Loop 9 
+
+#### Loops of nesteql/2 
+* Loop 8: nesteql(V,Out) [Out=17,V=0] 
+* Loop 9: nesteql(V,Out) [V>=1] 
+
+### Ranking functions of CR nesteql(V,Out) 
+
+#### Partial ranking functions of CR nesteql(V,Out) 
+
+
+### Resulting Chains:nesteql(V,Out) 
+* [9]...
+* [8]
+
+
+### Merging Chains  nesteql/2 into  External patterns of execution 
+* [[8]] --> 1 
+* [[9]] --> 2 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [14,15] 
+* CE 3 is refined into CE [16,17] 
+* CE 4 is refined into CE [18] 
+* CE 5 is refined into CE [19,20] 
+
+
+#### Refined cost equations start/1 
+* CE 14: start(V) = 0+ nesteql(W,X):1
+     [X=17,W=0,V=0] 
+* CE 15: start(V) = 0+ nesteql(V,W):2
+     [V>=1] 
+* CE 16: start(V) = 0+ eql(W,X):1
+     [X=0,W=0,V=0] 
+* CE 17: start(V) = 0+ eql(V,W):2
+     [V>=1] 
+* CE 18: start(V) = 1
+     [V>=0] 
+* CE 19: start(V) = 1+ nesteql(W,X):1
+     [X=17,W=0,V=0] 
+* CE 20: start(V) = 1+ nesteql(V,W):2
+     [V>=1] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [15,17,20] --> Loop 10 
+* CEs [14,16,18,19] --> Loop 11 
+
+#### Loops of start/1 
+* Loop 10: start(V) [V>=1] 
+* Loop 11: start(V) [V>=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [11]
+* [10]...
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[11]] --> 1 
+* [[10]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [7] 
+
+ * loop 7:eql(V,Out) -> [eql(V',Out')] 
+1
+#### Cost of phase [7]:eql(V,Out) -> [eql(V',Out')] 
+1*it(7)+0
+#### Cost of chains of eql(V,Out):
+* Chain [[7]]...: 1*it(7)+0
+  with precondition: [V>=1] 
+
+* Chain [6]: 1
+  with precondition: [V=0,Out=0] 
+
+
+#### Cost of chains of nesteql(V,Out):
+* Chain [9]...: 1*s(1)+1
+  with precondition: [V>=1] 
+
+* Chain [8]: 1
+  with precondition: [V=0,Out=17] 
+
+
+#### Cost of chains of start(V):
+* Chain [11]: 2
+  with precondition: [V>=0] 
+
+* Chain [10]...: 1*aux(1)+0
+  with precondition: [V>=1] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [11] with precondition: [V>=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [10]... with precondition: [V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 3 ms.
+   - Backward Invariants 2 ms.
+   - Transitive Invariants 0 ms.
+* Refinement performed in 10 ms.
+* Termination proved in 0 ms.
+* Upper bounds computed in 6 ms.
+   - Equation cost structures 4 ms.
+   - Phase cost structures 1 ms.
+   - Chain cost structures 1 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 34 ms.
+

@@ -1,0 +1,157 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [quot/4]
+1. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into quot/4
+1. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations quot/4 
+* CE 3 is refined into CE [7] 
+* CE 6 is refined into CE [8] 
+* CE 4 is refined into CE [9] 
+* CE 5 is refined into CE [10] 
+
+
+#### Refined cost equations quot/4 
+* CE 7: quot(V,V1,V4,Out) = 1
+     [V4>=1,V1>=1,Out=0,V=0] 
+* CE 8: quot(V,V1,V4,Out) = 0
+     [V4>=0,V1>=0,V>=0,Out=0] 
+* CE 9: quot(V,V1,V4,Out) = 1+ quot(W4,X4,V4,Out)
+     [X4>=0,W4>=0,V4>=0,X4+1=V1,W4+1=V] 
+* CE 10: quot(V,V1,V4,Out) = 1+ quot(V,V4,V4,W4)
+     [V4>=1,V>=0,W4+1=Out,V1=0] 
+
+### Cost equations --> "Loop" of quot/4 
+* CEs [9] --> Loop 5 
+* CEs [10] --> Loop 6 
+* CEs [7,8] --> Loop 7 
+
+#### Loops of quot/4 
+* Loop 5: quot(V,V1,V4,Out)->  quot(V',V1',V4,Out)
+                  [V4>=0,V1>=1,V>=1,V1=V1'+1,V=V'+1] 
+* Loop 6: quot(V,V1,V4,Out)->  quot(V,V4,V4,A')
+                  [V4>=1,V>=0,Out=A'+1,V1=0] 
+* Loop 7: quot(V,V1,V4,Out) [V4>=0,V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR quot(V,V1,V4,Out) 
+
+#### Partial ranking functions of CR quot(V,V1,V4,Out) 
+* Partial RF of phase [5,6]:
+  - RF of loop [5:1]:
+    V
+    V1 depends on loops [6:1] 
+  - RF of loop [6:1]:
+    -V1+1 depends on loops [5:1] 
+
+
+### Resulting Chains:quot(V,V1,V4,Out) 
+* [[5,6],7]
+* [7]
+
+
+### Merging Chains  quot/4 into  External patterns of execution 
+* [[7]] --> 1 
+* [[7,[5,6]]] --> 2 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [11,12] 
+
+
+#### Refined cost equations start/3 
+* CE 11: start(V,V1,V4) = 0+ quot(V,V1,V4,W4):1
+     [V4>=0,V1>=0,V>=0,W4=0] 
+* CE 12: start(V,V1,V4) = 0+ quot(V,V1,V4,W4):2
+     [V1+W4>=1,V1+V4>=1,V+W4>=1,V+V4>=1,W4>=0,V4>=0,V1>=0,V>=0] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [11,12] --> Loop 8 
+
+#### Loops of start/3 
+* Loop 8: start(V,V1,V4) [V4>=0,V1>=0,V>=0] 
+
+### Ranking functions of CR start(V,V1,V4) 
+
+#### Partial ranking functions of CR start(V,V1,V4) 
+
+
+### Resulting Chains:start(V,V1,V4) 
+* [8]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[8]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5,6] 
+
+ * loop 5:quot(V,V1,V4,Out) -> [quot(V',V1',V4',Out')] 
+1
+ * loop 6:quot(V,V1,V4,Out) -> [quot(V',V1',V4',Out')] 
+1
+#### Cost of phase [5,6]:quot(V,V1,V4,Out) -> [quot(V',V1',V4',Out')] 
+1*it(5)+1*it(6)+0
+  Such that:it(5) =< V
+it(5) =< V-V'
+aux(5) =< -V1+1
+aux(6) =< -V1+V1'
+it(6) =< it(5)+aux(6)
+it(6) =< it(5)+aux(5)
+
+#### Cost of chains of quot(V,V1,V4,Out):
+* Chain [[5,6],7]: 1*it(5)+1*it(6)+1
+  Such that:it(5) =< V
+aux(5) =< -V1+1
+it(6) =< it(5)+aux(5)
+
+  with precondition: [V>=0,V1>=0,V4>=0,Out>=0,V+V4>=1,Out+V>=1,V1+V4>=1,Out+V1>=1] 
+
+* Chain [7]: 1
+  with precondition: [Out=0,V>=0,V1>=0,V4>=0] 
+
+
+#### Cost of chains of start(V,V1,V4):
+* Chain [8]: 1*s(1)+1*s(3)+1
+  Such that:s(1) =< V
+s(2) =< -V1+1
+s(3) =< s(1)+s(2)
+
+  with precondition: [V>=0,V1>=0,V4>=0] 
+
+
+Closed-form bounds of start(V,V1,V4): 
+-------------------------------------
+* Chain [8] with precondition: [V>=0,V1>=0,V4>=0] 
+    - Upper bound: 2*V+1+nat(-V1+1) 
+    - Complexity: n 
+
+### Maximum cost of start(V,V1,V4): 2*V+1+nat(-V1+1) 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 11 ms.
+   - Backward Invariants 4 ms.
+   - Transitive Invariants 4 ms.
+* Refinement performed in 18 ms.
+* Termination proved in 4 ms.
+* Upper bounds computed in 31 ms.
+   - Equation cost structures 7 ms.
+   - Phase cost structures 16 ms.
+   - Chain cost structures 8 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 81 ms.
+

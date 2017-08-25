@@ -1,0 +1,150 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [m4/1]
+1. recursive : [m0/1,m1/1,m6/1]
+2. non_recursive : [m3/0]
+3. non_recursive : [m5/1]
+4. non_recursive : [m2/1]
+5. non_recursive : [arrayReverse/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into m0/1
+2. SCC is completely evaluated into other SCCs
+3. SCC is completely evaluated into other SCCs
+4. SCC is completely evaluated into other SCCs
+5. SCC is partially evaluated into arrayReverse/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/1 
+* CE 4 is refined into CE [5] 
+* CE 3 is refined into CE [6] 
+
+
+#### Refined cost equations m0/1 
+* CE 5: m0(A) = 14+ m0(B)
+     [B>=0,B+1=A] 
+* CE 6: m0(A) = 2
+     [] 
+
+### Cost equations --> "Loop" of m0/1 
+* CEs [6] --> Loop 4 
+* CEs [5] --> Loop 5 
+
+#### Loops of m0/1 
+* Loop 4: m0(A) [] 
+* Loop 5: m0(A)->  m0(A')
+                  [A'>=0,A'+1=A] 
+
+### Ranking functions of CR m0(A) 
+* RF of phase [5]: [A]
+
+#### Partial ranking functions of CR m0(A) 
+* Partial RF of phase [5]:
+  - RF of loop [5:1]:
+    A
+
+
+### Resulting Chains:m0(A) 
+* [[5],4]
+* [4]
+
+
+### Specialization of cost equations arrayReverse/1 
+* CE 2 is refined into CE [7,8] 
+
+
+#### Refined cost equations arrayReverse/1 
+* CE 7: arrayReverse(A) = 10+ m0(A):[[5],4]
+     [A>=1] 
+* CE 8: arrayReverse(A) = 10+ m0(A):[4]
+     [] 
+
+### Cost equations --> "Loop" of arrayReverse/1 
+* CEs [7] --> Loop 6 
+* CEs [8] --> Loop 7 
+
+#### Loops of arrayReverse/1 
+* Loop 6: arrayReverse(A) [A>=1] 
+* Loop 7: arrayReverse(A) [] 
+
+### Ranking functions of CR arrayReverse(A) 
+
+#### Partial ranking functions of CR arrayReverse(A) 
+
+
+### Resulting Chains:arrayReverse(A) 
+* [7]
+* [6]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5] 
+
+ * loop 5:m0(A) -> [m0(A')] 
+14
+#### Cost of phase [5]:m0(A) -> [m0(A')] 
+14*it(5)+0
+  Such that:it(5) =< A
+it(5) =< A-A'
+it(5) >= A-A'
+
+#### Cost of chains of m0(A):
+* Chain [[5],4]: 14*it(5)+2
+  Such that:it(5) =< A
+it(5) >= 1
+
+  with precondition: [A>=1] 
+
+* Chain [4]: 2
+  with precondition: [] 
+
+
+#### Cost of chains of arrayReverse(A):
+* Chain [7]: 12
+  with precondition: [] 
+
+* Chain [6]: 14*s(1)+12
+  Such that:s(1) =< A
+s(1) >= 1
+
+  with precondition: [A>=1] 
+
+
+Closed-form bounds of arrayReverse(A): 
+-------------------------------------
+* Chain [7] with precondition: [] 
+    - Lower bound: 12 
+    - Complexity: constant
+ * Chain [6] with precondition: [A>=1] 
+    - Lower bound: 26 
+    - Complexity: constant
+ 
+### Partitioned lower bound of arrayReverse(A): 
+* 12 
+ if []
+Possible lower bounds : [12]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 10 ms.
+* Invariants computed in 6 ms.
+   - Backward Invariants 2 ms.
+   - Transitive Invariants 3 ms.
+* Refinement performed in 9 ms.
+* Termination proved in 3 ms.
+* Upper bounds computed in 16 ms.
+   - Equation cost structures 4 ms.
+   - Phase cost structures 4 ms.
+   - Chain cost structures 4 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 69 ms.
+

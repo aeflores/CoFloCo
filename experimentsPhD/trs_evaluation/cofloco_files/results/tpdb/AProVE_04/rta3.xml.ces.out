@@ -1,0 +1,186 @@
+
+Preprocessing Cost Relations
+=====================================
+0. SCC does not have a single cut point : [ack/3,f/3]  
+ Merged into ackf/3
+
+#### Computed strongly connected components 
+1. non_recursive  : [start/2]
+0. recursive [multiple] : [ackf/3]
+
+#### Obtained direct recursion through partial evaluation 
+1. SCC is partially evaluated into start/2
+0. SCC is partially evaluated into ackf/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations ackf/3 
+* CE 9 is refined into CE [10] 
+* CE 8 is refined into CE [11] 
+* CE 6 is refined into CE [12] 
+* CE 7 is refined into CE [13] 
+* CE 4 is refined into CE [14] 
+* CE 5 is refined into CE [15] 
+* CE 3 is refined into CE [16] 
+
+
+#### Refined cost equations ackf/3 
+* CE 10: ackf(A,B,C) = 1+ ackf(A,B,C)
+     [B>=0,A>=0] 
+* CE 11: ackf(A,B,C) = 1+ ackf(D,A,C)
+     [D>=0,A>=0,D+1=B] 
+* CE 12: ackf(A,B,C) = 1+ ackf(D,D,C)
+     [D>=0,B>=0,D+1=A] 
+* CE 13: ackf(A,B,C) = 1+ ackf(D,E,C)
+     [D>=0,B>=0,D+1=E,D+1=A] 
+* CE 14: ackf(A,B,C) = 1+ ackf(D,E,C)
+     [D>=0,D+1=A,E=1,B=0] 
+* CE 15: ackf(A,B,C) = 1+ ackf(D,E,F)+ ackf(G,F,C)
+     [G>=0,E>=0,G+1=D,E+1=B,G+1=A] 
+* CE 16: ackf(A,B,C) = 1
+     [B>=0,B+1=C,A=0] 
+
+### Cost equations --> "Loop" of ackf/3 
+* CEs [16] --> Loop 9 
+* CEs [15] --> Loop 10 
+* CEs [10] --> Loop 11 
+* CEs [11] --> Loop 12 
+* CEs [12] --> Loop 13 
+* CEs [13] --> Loop 14 
+* CEs [14] --> Loop 15 
+
+#### Loops of ackf/3 
+* Loop 9: ackf(A,B,C) [B>=0,B+1=C,A=0] 
+* Loop 10: ackf(A,B,C)->  ackf(A',B',C')  ackf(A'2,C',C)
+                  [A'2>=0,B'>=0,A'2+1=A',B'+1=B,A'2+1=A] 
+* Loop 11: ackf(A,B,C)->  ackf(A,B,C)
+                  [B>=0,A>=0] 
+* Loop 12: ackf(A,B,C)->  ackf(A',A,C)
+                  [B>=1,A>=0,B=A'+1] 
+* Loop 13: ackf(A,B,C)->  ackf(A',B',C)
+                  [B>=0,A>=1,A=B'+1,A=A'+1] 
+* Loop 14: ackf(A,B,C)->  ackf(A',A,C)
+                  [B>=0,A>=1,A=A'+1] 
+* Loop 15: ackf(A,B,C)->  ackf(A',B',C)
+                  [A>=1,A=A'+1,B'=1,B=0] 
+
+### Ranking functions of CR ackf(A,B,C) 
+
+#### Partial ranking functions of CR ackf(A,B,C) 
+* Partial RF of phase [10,11,12,13,14,15]:
+  - RF of loop [10:1]:
+    B depends on loops [10:2,12:1,13:1,14:1,15:1] 
+  - RF of loop [10:2,13:1,14:1,15:1]:
+    A depends on loops [12:1] 
+  - RF of loop [12:1]:
+    A+B depends on loops [10:2,13:1,14:1] 
+  - RF of loop [15:1]:
+    -B+1 depends on loops [10:1,10:2,12:1,13:1,14:1] 
+
+
+### Resulting Chains:ackf(A,B,C) 
+* [multiple([10,11,12,13,14,15],[[],[9]])]...
+* [9]
+
+
+### Merging Chains  ackf/3 into  External patterns of execution 
+* [[9]] --> 1 
+* [[multiple([10,11,12,13,14,15],[[],[9]])]] --> 2 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [17,18] 
+
+
+#### Refined cost equations start/2 
+* CE 17: start(V1,V) = 0+ ackf(W1,X1,Y1):1
+     [Y1>=1,Y1=X1+1,Y1=V+1,W1=0,V1=0] 
+* CE 18: start(V1,V) = 0+ ackf(V1,V,W1):2
+     [V>=0,V1>=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [18] --> Loop 16 
+* CEs [17] --> Loop 17 
+
+#### Loops of start/2 
+* Loop 16: start(V1,V) [V>=0,V1>=0] 
+* Loop 17: start(V1,V) [V>=0,V1=0] 
+
+### Ranking functions of CR start(V1,V) 
+
+#### Partial ranking functions of CR start(V1,V) 
+
+
+### Resulting Chains:start(V1,V) 
+* [17]
+* [16]...
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[17]] --> 1 
+* [[16]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [10,11,12,13,14,15] 
+
+ * loop 10:ackf(A,B,C) -> [ackf(A',B',C'),ackf(A'2,B'2,C'2)] 
+1
+ * loop 11:ackf(A,B,C) -> [ackf(A',B',C')] 
+1
+ * loop 12:ackf(A,B,C) -> [ackf(A',B',C')] 
+1
+ * loop 13:ackf(A,B,C) -> [ackf(A',B',C')] 
+1
+ * loop 14:ackf(A,B,C) -> [ackf(A',B',C')] 
+1
+ * loop 15:ackf(A,B,C) -> [ackf(A',B',C')] 
+1
+#### Cost of phase [10,11,12,13,14,15]:ackf(A,B,C) -> [] 
+3*it(10)+3*it(13)+1*it([9])+0
+#### Cost of chains of ackf(A,B,C):
+* Chain [multiple([10,11,12,13,14,15],[[],[9]])]...: 3*it(10)+3*it(13)+1*it([9])+0
+  with precondition: [B>=0,A>=0] 
+
+* Chain [9]: 1
+  with precondition: [A=0,B+1=C,B>=0] 
+
+
+#### Cost of chains of start(V1,V):
+* Chain [17]: 1
+  with precondition: [V1=0,V>=0] 
+
+* Chain [16]...: 7*s(1)+0
+  with precondition: [V1>=0,V>=0] 
+
+
+Closed-form bounds of start(V1,V): 
+-------------------------------------
+* Chain [17] with precondition: [V1=0,V>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [16]... with precondition: [V1>=0,V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V1,V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 8 ms.
+* Invariants computed in 13 ms.
+   - Backward Invariants 1 ms.
+   - Transitive Invariants 5 ms.
+* Refinement performed in 34 ms.
+* Termination proved in 12 ms.
+* Upper bounds computed in 49 ms.
+   - Equation cost structures 6 ms.
+   - Phase cost structures 46 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 132 ms.
+

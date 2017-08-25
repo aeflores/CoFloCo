@@ -1,0 +1,1657 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [a/1]
+1. recursive  : [double/2]
+2. recursive  : [droplast/2]
+3. recursive  : [le/3]
+4. recursive  : [if/5,loop/4]
+5. recursive  : [last/2]
+6. non_recursive  : [log/2]
+7. non_recursive  : [isempty/2]
+8. recursive  : [ifmap/4,mapIter/3]
+9. non_recursive  : [maplog/2]
+10. non_recursive  : [start/4]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into a/1
+1. SCC is partially evaluated into double/2
+2. SCC is partially evaluated into droplast/2
+3. SCC is partially evaluated into le/3
+4. SCC is partially evaluated into loop/4
+5. SCC is partially evaluated into last/2
+6. SCC is partially evaluated into log/2
+7. SCC is partially evaluated into isempty/2
+8. SCC is partially evaluated into mapIter/3
+9. SCC is completely evaluated into other SCCs
+10. SCC is partially evaluated into start/4
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations a/1 
+* CE 45 is refined into CE [46] 
+* CE 44 is refined into CE [47] 
+
+
+#### Refined cost equations a/1 
+* CE 46: a(Out) = 1
+     [Out=1] 
+* CE 47: a(Out) = 1
+     [Out=0] 
+
+### Cost equations --> "Loop" of a/1 
+* CEs [46] --> Loop 28 
+* CEs [47] --> Loop 29 
+
+#### Loops of a/1 
+* Loop 28: a(Out) [Out=1] 
+* Loop 29: a(Out) [Out=0] 
+
+### Ranking functions of CR a(Out) 
+
+#### Partial ranking functions of CR a(Out) 
+
+
+### Resulting Chains:a(Out) 
+* [29]
+* [28]
+
+
+### Merging Chains  a/1 into  External patterns of execution 
+* [[29]] --> 1 
+* [[28]] --> 2 
+
+
+### Specialization of cost equations double/2 
+* CE 30 is refined into CE [48] 
+* CE 32 is refined into CE [49] 
+* CE 31 is refined into CE [50] 
+
+
+#### Refined cost equations double/2 
+* CE 48: double(V,Out) = 1
+     [Out=0,V=0] 
+* CE 49: double(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 50: double(V,Out) = 1+ double(W,X)
+     [W>=0,X+2=Out,W+1=V] 
+
+### Cost equations --> "Loop" of double/2 
+* CEs [50] --> Loop 30 
+* CEs [48,49] --> Loop 31 
+
+#### Loops of double/2 
+* Loop 30: double(V,Out)->  double(V',Out')
+                  [V'>=0,Out=Out'+2,V'+1=V] 
+* Loop 31: double(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR double(V,Out) 
+* RF of phase [30]: [V]
+
+#### Partial ranking functions of CR double(V,Out) 
+* Partial RF of phase [30]:
+  - RF of loop [30:1]:
+    V
+
+
+### Resulting Chains:double(V,Out) 
+* [[30],31]
+* [31]
+
+
+### Merging Chains  double/2 into  External patterns of execution 
+* [[31]] --> 1 
+* [[31,[30]]] --> 2 
+
+
+### Specialization of cost equations droplast/2 
+* CE 16 is refined into CE [51] 
+* CE 17 is refined into CE [52] 
+* CE 19 is refined into CE [53] 
+* CE 18 is refined into CE [54] 
+
+
+#### Refined cost equations droplast/2 
+* CE 51: droplast(V,Out) = 1
+     [Out=0,V=0] 
+* CE 52: droplast(V,Out) = 1
+     [V>=1,Out=0] 
+* CE 53: droplast(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 54: droplast(V,Out) = 1+ droplast(W,X)
+     [V>=W+1,W>=1,V+X=Out+W] 
+
+### Cost equations --> "Loop" of droplast/2 
+* CEs [54] --> Loop 32 
+* CEs [51,52,53] --> Loop 33 
+
+#### Loops of droplast/2 
+* Loop 32: droplast(V,Out)->  droplast(V',Out')
+                  [V>=V'+1,V'>=1,V+Out'=Out+V'] 
+* Loop 33: droplast(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR droplast(V,Out) 
+* RF of phase [32]: [V-1]
+
+#### Partial ranking functions of CR droplast(V,Out) 
+* Partial RF of phase [32]:
+  - RF of loop [32:1]:
+    V-1
+
+
+### Resulting Chains:droplast(V,Out) 
+* [[32],33]
+* [33]
+
+
+### Merging Chains  droplast/2 into  External patterns of execution 
+* [[33]] --> 1 
+* [[33,[32]]] --> 2 
+
+
+### Specialization of cost equations le/3 
+* CE 40 is refined into CE [55] 
+* CE 37 is refined into CE [56] 
+* CE 38 is refined into CE [57] 
+* CE 39 is refined into CE [58] 
+
+
+#### Refined cost equations le/3 
+* CE 55: le(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 56: le(V,V1,Out) = 1
+     [V>=1,Out=1,V1=0] 
+* CE 57: le(V,V1,Out) = 1
+     [V1>=0,Out=2,V=0] 
+* CE 58: le(V,V1,Out) = 1+ le(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V1,W1+1=V] 
+
+### Cost equations --> "Loop" of le/3 
+* CEs [58] --> Loop 34 
+* CEs [55] --> Loop 35 
+* CEs [56] --> Loop 36 
+* CEs [57] --> Loop 37 
+
+#### Loops of le/3 
+* Loop 34: le(V,V1,Out)->  le(V',V1',Out)
+                  [V1'>=0,V'>=0,V1'+1=V1,V'+1=V] 
+* Loop 35: le(V,V1,Out) [V1>=0,V>=0,Out=0] 
+* Loop 36: le(V,V1,Out) [V>=1,Out=1,V1=0] 
+* Loop 37: le(V,V1,Out) [V1>=0,Out=2,V=0] 
+
+### Ranking functions of CR le(V,V1,Out) 
+* RF of phase [34]: [V,V1]
+
+#### Partial ranking functions of CR le(V,V1,Out) 
+* Partial RF of phase [34]:
+  - RF of loop [34:1]:
+    V
+    V1
+
+
+### Resulting Chains:le(V,V1,Out) 
+* [[34],37]
+* [[34],36]
+* [[34],35]
+* [37]
+* [36]
+* [35]
+
+
+### Merging Chains  le/3 into  External patterns of execution 
+* [[37]] --> 1 
+* [[36]] --> 2 
+* [[35],[35,[34]]] --> 3 
+* [[36,[34]]] --> 4 
+* [[37,[34]]] --> 5 
+
+
+### Specialization of cost equations loop/4 
+* CE 35 is refined into CE [59,60] 
+* CE 33 is refined into CE [61,62,63,64] 
+* CE 36 is refined into CE [65] 
+* CE 34 is refined into CE [66,67] 
+
+
+#### Refined cost equations loop/4 
+* CE 59: loop(A,B,C,C) = 2+ le(D,B,E):1
+     [B>=1,C>=0,E=2,D=0,A=0] 
+* CE 60: loop(A,B,C,C) = 2+ le(A,B,D):5
+     [B>=A,A>=1,C>=0,D=2] 
+* CE 61: loop(V,V1,V11,Out) = 1+ le(W11,V1,X11):1
+     [V1>=1,V11>=0,X11=2,W11=0,Out=0,V=0] 
+* CE 62: loop(V,V1,V11,Out) = 1+ le(V,V1,W11):3
+     [V1>=1,V>=0,V11>=0,W11=0,Out=0] 
+* CE 63: loop(V,V1,V11,Out) = 1+ le(V,V1,W11):4
+     [V>=V1+1,V1>=1,V11>=0,W11=1,Out=0] 
+* CE 64: loop(V,V1,V11,Out) = 1+ le(V,V1,W11):5
+     [V1>=V,V>=1,V11>=0,W11=2,Out=0] 
+* CE 65: loop(V,V1,V11,Out) = 0
+     [V11>=0,V1>=0,V>=0,Out=0] 
+* CE 66: loop(V,V1,V11,Out) = 2+ le(V,V1,W11):4+ double(V1,X11):1+ loop(V,Y11,Z11,Out)
+     [V>=V1+1,V1>=1,V11>=0,V11+1=Z11,Y11=0,X11=0,W11=1] 
+* CE 67: loop(V,V1,V11,Out) = 2+ le(V,V1,W11):4+ double(V1,X11):2+ loop(V,X11,Y11,Out)
+     [2*V1>=X11,V>=V1+1,X11>=2,V11>=0,V11+1=Y11,W11=1] 
+
+### Cost equations --> "Loop" of loop/4 
+* CEs [67] --> Loop 38 
+* CEs [66] --> Loop 39 
+* CEs [60] --> Loop 40 
+* CEs [59] --> Loop 41 
+* CEs [61,62,63,64,65] --> Loop 42 
+
+#### Loops of loop/4 
+* Loop 38: loop(V,V1,V11,Out)->  loop(V,V1',V11',Out)
+                  [2*V1>=V1',V>=V1+1,V1'>=2,V11>=0,V11+1=V11'] 
+* Loop 39: loop(V,V1,V11,Out)->  loop(V,V1',V11',Out)
+                  [V>=V1+1,V11>=0,V1>=1,V11+1=V11',V1'=0] 
+* Loop 40: loop(A,B,C,C) [B>=A,C>=0,A>=1] 
+* Loop 41: loop(A,B,C,C) [C>=0,B>=1,A=0] 
+* Loop 42: loop(V,V1,V11,Out) [V11>=0,V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR loop(V,V1,V11,Out) 
+
+#### Partial ranking functions of CR loop(V,V1,V11,Out) 
+
+
+### Resulting Chains:loop(V,V1,V11,Out) 
+* [[38]]...
+* [[38],42]
+* [[38],40]
+* [[38],39,42]
+* [42]
+* [41]
+* [40]
+* [39,42]
+
+
+### Merging Chains  loop/4 into  External patterns of execution 
+* [[41]] --> 1 
+* [[42,39],[42],[42,39,[38]],[42,[38]]] --> 2 
+* [[40]] --> 3 
+* [[40,[38]]] --> 4 
+* [[[38]]] --> 5 
+
+
+### Specialization of cost equations last/2 
+* CE 21 is refined into CE [68] 
+* CE 23 is refined into CE [69] 
+* CE 20 is refined into CE [70] 
+* CE 22 is refined into CE [71] 
+
+
+#### Refined cost equations last/2 
+* CE 68: last(V,Out) = 1
+     [Out>=0,Out+1=V] 
+* CE 69: last(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 70: last(V,Out) = 1
+     [Out=1,V=0] 
+* CE 71: last(V,Out) = 1+ last(W,Out)
+     [V>=W+1,W>=1] 
+
+### Cost equations --> "Loop" of last/2 
+* CEs [71] --> Loop 43 
+* CEs [68] --> Loop 44 
+* CEs [69] --> Loop 45 
+* CEs [70] --> Loop 46 
+
+#### Loops of last/2 
+* Loop 43: last(V,Out)->  last(V',Out)
+                  [V>=V'+1,V'>=1] 
+* Loop 44: last(V,Out) [V>=1,V=Out+1] 
+* Loop 45: last(V,Out) [V>=0,Out=0] 
+* Loop 46: last(V,Out) [Out=1,V=0] 
+
+### Ranking functions of CR last(V,Out) 
+* RF of phase [43]: [V-1]
+
+#### Partial ranking functions of CR last(V,Out) 
+* Partial RF of phase [43]:
+  - RF of loop [43:1]:
+    V-1
+
+
+### Resulting Chains:last(V,Out) 
+* [[43],45]
+* [[43],44]
+* [46]
+* [45]
+* [44]
+
+
+### Merging Chains  last/2 into  External patterns of execution 
+* [[46]] --> 1 
+* [[45],[45,[43]]] --> 2 
+* [[44]] --> 3 
+* [[44,[43]]] --> 4 
+
+
+### Specialization of cost equations log/2 
+* CE 25 is refined into CE [72,73,74,75] 
+* CE 26 is refined into CE [76] 
+* CE 24 is refined into CE [77] 
+
+
+#### Refined cost equations log/2 
+* CE 72: log(V,Out) = 1+ loop(V,W,X,Y):2
+     [V>=1,Y=0,X=0,W=1,Out=0] 
+* CE 73: log(V,Out) = 1+ loop(W,X,Y,Z):3
+     [Z=0,Y=0,X=1,W=1,Out=0,V=1] 
+* CE 74: log(V,Out) = 1+ loop(V,W,X,Out):4
+     [Out>=1,V>=2,X=0,W=1] 
+* CE 75: log(V,Out) = 1+ loop(V,W,X,Out):5
+     [V>=2,X=0,W=1] 
+* CE 76: log(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 77: log(V,Out) = 1
+     [Out=2,V=0] 
+
+### Cost equations --> "Loop" of log/2 
+* CEs [74] --> Loop 47 
+* CEs [72,73,76] --> Loop 48 
+* CEs [77] --> Loop 49 
+* CEs [75] --> Loop 50 
+
+#### Loops of log/2 
+* Loop 47: log(V,Out) [Out>=1,V>=2] 
+* Loop 48: log(V,Out) [V>=0,Out=0] 
+* Loop 49: log(V,Out) [Out=2,V=0] 
+* Loop 50: log(V,Out) [V>=2] 
+
+### Ranking functions of CR log(V,Out) 
+
+#### Partial ranking functions of CR log(V,Out) 
+
+
+### Resulting Chains:log(V,Out) 
+* [50]...
+* [49]
+* [48]
+* [47]
+
+
+### Merging Chains  log/2 into  External patterns of execution 
+* [[49]] --> 1 
+* [[48]] --> 2 
+* [[47]] --> 3 
+* [[50]] --> 4 
+
+
+### Specialization of cost equations isempty/2 
+* CE 42 is refined into CE [78] 
+* CE 43 is refined into CE [79] 
+* CE 41 is refined into CE [80] 
+
+
+#### Refined cost equations isempty/2 
+* CE 78: isempty(V,Out) = 1
+     [V>=1,Out=1] 
+* CE 79: isempty(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 80: isempty(V,Out) = 1
+     [Out=2,V=0] 
+
+### Cost equations --> "Loop" of isempty/2 
+* CEs [78] --> Loop 51 
+* CEs [79] --> Loop 52 
+* CEs [80] --> Loop 53 
+
+#### Loops of isempty/2 
+* Loop 51: isempty(V,Out) [V>=1,Out=1] 
+* Loop 52: isempty(V,Out) [V>=0,Out=0] 
+* Loop 53: isempty(V,Out) [Out=2,V=0] 
+
+### Ranking functions of CR isempty(V,Out) 
+
+#### Partial ranking functions of CR isempty(V,Out) 
+
+
+### Resulting Chains:isempty(V,Out) 
+* [53]
+* [52]
+* [51]
+
+
+### Merging Chains  isempty/2 into  External patterns of execution 
+* [[53]] --> 1 
+* [[52]] --> 2 
+* [[51]] --> 3 
+
+
+### Specialization of cost equations mapIter/3 
+* CE 29 is refined into CE [81] 
+* CE 27 is refined into CE [82,83,84] 
+* CE 28 is refined into CE [85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103] 
+
+
+#### Refined cost equations mapIter/3 
+* CE 81: mapIter(A,B,B) = 2+ isempty(C,D):1
+     [B>=0,D=2,C=0,A=0] 
+* CE 82: mapIter(V,V1,Out) = 1+ isempty(W1,X1):1
+     [V1>=0,X1=2,W1=0,Out=0,V=0] 
+* CE 83: mapIter(V,V1,Out) = 1+ isempty(V,W1):2
+     [V>=0,V1>=0,W1=0,Out=0] 
+* CE 84: mapIter(V,V1,Out) = 1+ isempty(V,W1):3
+     [V>=1,V1>=0,W1=1,Out=0] 
+* CE 85: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):1+ last(V,Y1):2+ log(Z1,A2):1+ mapIter(B2,C2,Out)
+     [V>=1,V1>=0,V1+3=C2,B2=0,A2=2,Z1=0,Y1=0,X1=0,W1=1] 
+* CE 86: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):1+ last(V,Y1):2+ log(Z1,A2):2+ mapIter(B2,C2,Out)
+     [V>=1,V1>=0,V1+1=C2,B2=0,A2=0,Z1=0,Y1=0,X1=0,W1=1] 
+* CE 87: mapIter(V,V1,Out) = 2+ isempty(W1,X1):3+ droplast(Y1,Z1):1+ last(A2,B2):3+ log(C2,D2):1+ mapIter(E2,F2,Out)
+     [V1>=0,V1+3=F2,E2=0,D2=2,C2=0,B2=0,A2=1,Z1=0,Y1=1,X1=1,W1=1,V=1] 
+* CE 88: mapIter(V,V1,Out) = 2+ isempty(W1,X1):3+ droplast(Y1,Z1):1+ last(A2,B2):3+ log(B2,C2):2+ mapIter(D2,E2,Out)
+     [B2>=0,V1>=0,V1+1=E2,B2+1=A2,B2+1=Y1,B2+1=W1,B2+1=V,D2=0,C2=0,Z1=0,X1=1] 
+* CE 89: mapIter(V,V1,Out) = 2+ isempty(W1,X1):3+ droplast(Y1,Z1):1+ last(A2,B2):3+ log(B2,C2):3+ mapIter(D2,E2,Out)
+     [C2>=1,B2>=2,V1>=0,V1+C2+1=E2,B2+1=A2,B2+1=Y1,B2+1=W1,B2+1=V,D2=0,Z1=0,X1=1] 
+* CE 90: mapIter(V,V1,Out) = 2+ isempty(W1,X1):3+ droplast(Y1,Z1):1+ last(A2,B2):3+ log(B2,C2):4
+     [B2>=2,V1>=0,V1+C2+1=D2,B2+1=A2,B2+1=Y1,B2+1=W1,B2+1=V,E2=0,Z1=0,X1=1] 
+* CE 91: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):1+ last(V,Y1):4+ log(Z1,A2):1+ mapIter(B2,C2,Out)
+     [V>=2,V1>=0,V1+3=C2,B2=0,A2=2,Z1=0,Y1=0,X1=0,W1=1] 
+* CE 92: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):1+ last(V,Y1):4+ log(Y1,Z1):2+ mapIter(A2,B2,Out)
+     [V>=Y1+2,Y1>=0,V1>=0,V1+1=B2,A2=0,Z1=0,X1=0,W1=1] 
+* CE 93: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):1+ last(V,Y1):4+ log(Y1,Z1):3+ mapIter(A2,B2,Out)
+     [V>=Y1+2,Z1>=1,Y1>=2,V1>=0,V1+Z1+1=B2,A2=0,X1=0,W1=1] 
+* CE 94: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):1+ last(V,Y1):4+ log(Y1,Z1):4
+     [V>=Y1+2,Y1>=2,V1>=0,V1+Z1+1=A2,B2=0,X1=0,W1=1] 
+* CE 95: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):2+ last(V,Y1):2+ log(Z1,A2):1+ mapIter(X1,B2,Out)
+     [V>=X1+1,X1>=1,V1>=0,V1+3=B2,A2=2,Z1=0,Y1=0,W1=1] 
+* CE 96: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):2+ last(V,Y1):2+ log(Z1,A2):2+ mapIter(X1,B2,Out)
+     [V>=X1+1,X1>=1,V1>=0,V1+1=B2,A2=0,Z1=0,Y1=0,W1=1] 
+* CE 97: mapIter(V,V1,Out) = 2+ isempty(W1,X1):3+ droplast(Y1,Z1):2+ last(A2,B2):3+ log(B2,C2):2+ mapIter(Z1,D2,Out)
+     [B2>=Z1,Z1>=1,V1>=0,V1+1=D2,B2+1=A2,B2+1=Y1,B2+1=W1,B2+1=V,C2=0,X1=1] 
+* CE 98: mapIter(V,V1,Out) = 2+ isempty(W1,X1):3+ droplast(Y1,Z1):2+ last(A2,B2):3+ log(B2,C2):3+ mapIter(Z1,D2,Out)
+     [B2>=Z1,C2>=1,B2>=2,Z1>=1,V1>=0,V1+C2+1=D2,B2+1=A2,B2+1=Y1,B2+1=W1,B2+1=V,X1=1] 
+* CE 99: mapIter(V,V1,Out) = 2+ isempty(W1,X1):3+ droplast(Y1,Z1):2+ last(A2,B2):3+ log(B2,C2):4
+     [B2>=Z1,B2>=2,Z1>=1,V1>=0,V1+C2+1=D2,B2+1=A2,B2+1=Y1,B2+1=W1,B2+1=V,X1=1] 
+* CE 100: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):2+ last(V,Y1):4+ log(Z1,A2):1+ mapIter(X1,B2,Out)
+     [V>=X1+1,X1>=1,V1>=0,V1+3=B2,A2=2,Z1=0,Y1=0,W1=1] 
+* CE 101: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):2+ last(V,Y1):4+ log(Y1,Z1):2+ mapIter(X1,A2,Out)
+     [V>=Y1+2,V>=X1+1,Y1>=0,X1>=1,V1>=0,V1+1=A2,Z1=0,W1=1] 
+* CE 102: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):2+ last(V,Y1):4+ log(Y1,Z1):3+ mapIter(X1,A2,Out)
+     [V>=Y1+2,V>=X1+1,Z1>=1,Y1>=2,X1>=1,V1>=0,V1+Z1+1=A2,W1=1] 
+* CE 103: mapIter(V,V1,Out) = 2+ isempty(V,W1):3+ droplast(V,X1):2+ last(V,Y1):4+ log(Y1,Z1):4
+     [V>=Y1+2,V>=X1+1,Y1>=2,X1>=1,V1>=0,V1+Z1+1=A2,W1=1] 
+
+### Cost equations --> "Loop" of mapIter/3 
+* CEs [90,94,99,103] --> Loop 54 
+* CEs [98,102] --> Loop 55 
+* CEs [96,97,101] --> Loop 56 
+* CEs [95,100] --> Loop 57 
+* CEs [89,93] --> Loop 58 
+* CEs [86,88,92] --> Loop 59 
+* CEs [85,87,91] --> Loop 60 
+* CEs [81] --> Loop 61 
+* CEs [82,83,84] --> Loop 62 
+
+#### Loops of mapIter/3 
+* Loop 54: mapIter(V,V1,Out) [V1>=0,V>=3] 
+* Loop 55: mapIter(V,V1,Out)->  mapIter(V',V1',Out)
+                  [V>=V'+1,V1'>=V1+2,V'>=1,V1>=0,V>=3] 
+* Loop 56: mapIter(V,V1,Out)->  mapIter(V',V1',Out)
+                  [V>=V'+1,V'>=1,V1>=0,V1+1=V1'] 
+* Loop 57: mapIter(V,V1,Out)->  mapIter(V',V1',Out)
+                  [V>=V'+1,V'>=1,V1>=0,V1+3=V1'] 
+* Loop 58: mapIter(V,V1,Out)->  mapIter(V',V1',Out)
+                  [V1'>=V1+2,V1>=0,V>=3,V'=0] 
+* Loop 59: mapIter(V,V1,Out)->  mapIter(V',V1',Out)
+                  [V1>=0,V>=1,V1+1=V1',V'=0] 
+* Loop 60: mapIter(V,V1,Out)->  mapIter(V',V1',Out)
+                  [V1>=0,V>=1,V1+3=V1',V'=0] 
+* Loop 61: mapIter(A,B,B) [B>=0,A=0] 
+* Loop 62: mapIter(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR mapIter(V,V1,Out) 
+* RF of phase [55,56,57]: [V-1]
+
+#### Partial ranking functions of CR mapIter(V,V1,Out) 
+* Partial RF of phase [55,56,57]:
+  - RF of loop [55:1]:
+    V-2
+  - RF of loop [56:1,57:1]:
+    V-1
+
+
+### Resulting Chains:mapIter(V,V1,Out) 
+* [[55,56,57],62]
+* [[55,56,57],60,62]
+* [[55,56,57],60,61]
+* [[55,56,57],59,62]
+* [[55,56,57],59,61]
+* [[55,56,57],58,62]
+* [[55,56,57],58,61]
+* [[55,56,57],54]...
+* [62]
+* [61]
+* [60,62]
+* [60,61]
+* [59,62]
+* [59,61]
+* [58,62]
+* [58,61]
+* [54]...
+
+
+### Merging Chains  mapIter/3 into  External patterns of execution 
+* [[61]] --> 1 
+* [[62,58],[62,59],[62,60],[62],[62,58,[55,56,57]],[62,59,[55,56,57]],[62,60,[55,56,57]],[62,[55,56,57]]] --> 2 
+* [[61,59]] --> 3 
+* [[61,60]] --> 4 
+* [[61,58],[61,58,[55,56,57]],[61,59,[55,56,57]],[61,60,[55,56,57]]] --> 5 
+* [[54]] --> 6 
+* [[54,[55,56,57]]] --> 7 
+
+
+### Specialization of cost equations start/4 
+* CE 2 is refined into CE [104] 
+* CE 3 is refined into CE [105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168] 
+* CE 4 is refined into CE [169] 
+* CE 5 is refined into CE [170,171,172,173,174,175] 
+* CE 6 is refined into CE [176,177,178,179,180] 
+* CE 7 is refined into CE [181,182] 
+* CE 8 is refined into CE [183,184,185,186] 
+* CE 9 is refined into CE [187,188,189,190,191] 
+* CE 10 is refined into CE [192,193,194,195,196,197,198] 
+* CE 11 is refined into CE [199,200,201,202,203,204,205] 
+* CE 12 is refined into CE [206,207,208] 
+* CE 13 is refined into CE [209,210,211,212] 
+* CE 14 is refined into CE [213,214] 
+* CE 15 is refined into CE [215,216] 
+
+
+#### Refined cost equations start/4 
+* CE 104: start(V,V1,V11,V15) = 0
+     [V11>=0,V1>=0,V>=0] 
+* CE 105: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):1+ log(A16,B16):2+ mapIter(C16,D16,D16):1
+     [D16>=1,D16=V11+1,C16=0,B16=0,A16=1,Z15=1,Y15=0,X15=0,W15=0,V1=0,V=1] 
+* CE 106: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):1+ log(A16,B16):2+ mapIter(C16,D16,E16):2
+     [D16>=1,D16=V11+1,E16=0,C16=0,B16=0,A16=1,Z15=1,Y15=0,X15=0,W15=0,V1=0,V=1] 
+* CE 107: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):2+ log(Y15,Z15):1+ mapIter(A16,B16,B16):1
+     [B16>=3,V1>=0,B16=V11+3,A16=0,Z15=2,Y15=0,X15=0,W15=0,V=1] 
+* CE 108: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):2+ log(Y15,Z15):1+ mapIter(A16,B16,C16):2
+     [B16>=3,V1>=0,B16=V11+3,C16=0,A16=0,Z15=2,Y15=0,X15=0,W15=0,V=1] 
+* CE 109: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):2+ log(Y15,Z15):2+ mapIter(A16,B16,B16):1
+     [B16>=1,V1>=0,B16=V11+1,A16=0,Z15=0,Y15=0,X15=0,W15=0,V=1] 
+* CE 110: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):2+ log(Y15,Z15):2+ mapIter(A16,B16,C16):2
+     [B16>=1,V1>=0,B16=V11+1,C16=0,A16=0,Z15=0,Y15=0,X15=0,W15=0,V=1] 
+* CE 111: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):3+ log(A16,B16):1+ mapIter(C16,D16,D16):1
+     [D16>=3,D16=V11+3,C16=0,B16=2,A16=0,Z15=0,Y15=1,X15=0,W15=1,V1=1,V=1] 
+* CE 112: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):3+ log(A16,B16):1+ mapIter(C16,D16,E16):2
+     [D16>=3,D16=V11+3,E16=0,C16=0,B16=2,A16=0,Z15=0,Y15=1,X15=0,W15=1,V1=1,V=1] 
+* CE 113: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):3+ log(Z15,A16):2+ mapIter(B16,C16,C16):1
+     [C16>=1,Z15>=0,Z15+1=Y15,Z15+1=W15,C16=V11+1,Z15+1=V1,B16=0,A16=0,X15=0,V=1] 
+* CE 114: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):3+ log(Z15,A16):2+ mapIter(B16,C16,D16):2
+     [C16>=1,Z15>=0,Z15+1=Y15,Z15+1=W15,C16=V11+1,Z15+1=V1,D16=0,B16=0,A16=0,X15=0,V=1] 
+* CE 115: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):3+ log(Z15,A16):3+ mapIter(B16,C16,C16):1
+     [C16>=A16+1,A16>=1,Z15>=2,C16=V11+A16+1,Z15+1=Y15,Z15+1=W15,Z15+1=V1,B16=0,X15=0,V=1] 
+* CE 116: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):3+ log(Z15,A16):3+ mapIter(B16,C16,D16):2
+     [C16>=A16+1,A16>=1,Z15>=2,C16=V11+A16+1,Z15+1=Y15,Z15+1=W15,Z15+1=V1,D16=0,B16=0,X15=0,V=1] 
+* CE 117: start(V,V1,V11,V15) = 1+ droplast(W15,X15):1+ last(Y15,Z15):3+ log(Z15,A16):4
+     [Z15>=2,V11>=0,V11+A16+1=B16,Z15+1=Y15,Z15+1=W15,Z15+1=V1,C16=0,X15=0,V=1] 
+* CE 118: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):4+ log(Y15,Z15):1+ mapIter(A16,B16,B16):1
+     [B16>=3,V1>=2,B16=V11+3,A16=0,Z15=2,Y15=0,X15=0,W15=0,V=1] 
+* CE 119: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):4+ log(Y15,Z15):1+ mapIter(A16,B16,C16):2
+     [B16>=3,V1>=2,B16=V11+3,C16=0,A16=0,Z15=2,Y15=0,X15=0,W15=0,V=1] 
+* CE 120: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):4+ log(X15,Y15):2+ mapIter(Z15,A16,A16):1
+     [V1>=X15+2,A16>=1,X15>=0,A16=V11+1,Z15=0,Y15=0,W15=0,V=1] 
+* CE 121: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):4+ log(X15,Y15):2+ mapIter(Z15,A16,B16):2
+     [V1>=X15+2,A16>=1,X15>=0,A16=V11+1,B16=0,Z15=0,Y15=0,W15=0,V=1] 
+* CE 122: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):4+ log(X15,Y15):3+ mapIter(Z15,A16,A16):1
+     [A16>=Y15+1,V1>=X15+2,Y15>=1,X15>=2,A16=V11+Y15+1,Z15=0,W15=0,V=1] 
+* CE 123: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):4+ log(X15,Y15):3+ mapIter(Z15,A16,B16):2
+     [A16>=Y15+1,V1>=X15+2,Y15>=1,X15>=2,A16=V11+Y15+1,B16=0,Z15=0,W15=0,V=1] 
+* CE 124: start(V,V1,V11,V15) = 1+ droplast(V1,W15):1+ last(V1,X15):4+ log(X15,Y15):4
+     [V1>=X15+2,X15>=2,V11>=0,V11+Y15+1=Z15,A16=0,W15=0,V=1] 
+* CE 125: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):1+ mapIter(W15,A16,B16):2
+     [V1>=W15+1,A16>=3,W15>=1,A16=V11+3,B16=0,Z15=2,Y15=0,X15=0,V=1] 
+* CE 126: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):1+ mapIter(W15,A16,B16):3
+     [V1>=W15+1,B16>=4,W15>=1,B16=A16+1,B16=V11+4,Z15=2,Y15=0,X15=0,V=1] 
+* CE 127: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):1+ mapIter(W15,A16,B16):4
+     [V1>=W15+1,B16>=6,W15>=1,B16=A16+3,B16=V11+6,Z15=2,Y15=0,X15=0,V=1] 
+* CE 128: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):1+ mapIter(W15,A16,B16):5
+     [B16>=A16+2,V1>=W15+1,A16>=3,W15>=2,A16=V11+3,Z15=2,Y15=0,X15=0,V=1] 
+* CE 129: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):1+ mapIter(W15,A16,B16):6
+     [V1>=W15+1,A16>=3,W15>=3,A16=V11+3,Z15=2,Y15=0,X15=0,V=1] 
+* CE 130: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):1+ mapIter(W15,A16,B16):7
+     [V1>=W15+1,A16>=3,W15>=4,A16=V11+3,Z15=2,Y15=0,X15=0,V=1] 
+* CE 131: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):2+ mapIter(W15,A16,B16):2
+     [V1>=W15+1,A16>=1,W15>=1,A16=V11+1,B16=0,Z15=0,Y15=0,X15=0,V=1] 
+* CE 132: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):2+ mapIter(W15,A16,B16):3
+     [V1>=W15+1,B16>=2,W15>=1,B16=A16+1,B16=V11+2,Z15=0,Y15=0,X15=0,V=1] 
+* CE 133: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):2+ mapIter(W15,A16,B16):4
+     [V1>=W15+1,B16>=4,W15>=1,B16=A16+3,B16=V11+4,Z15=0,Y15=0,X15=0,V=1] 
+* CE 134: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):2+ mapIter(W15,A16,B16):5
+     [B16>=A16+2,V1>=W15+1,A16>=1,W15>=2,A16=V11+1,Z15=0,Y15=0,X15=0,V=1] 
+* CE 135: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):2+ mapIter(W15,A16,B16):6
+     [V1>=W15+1,A16>=1,W15>=3,A16=V11+1,Z15=0,Y15=0,X15=0,V=1] 
+* CE 136: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):2+ log(Y15,Z15):2+ mapIter(W15,A16,B16):7
+     [V1>=W15+1,A16>=1,W15>=4,A16=V11+1,Z15=0,Y15=0,X15=0,V=1] 
+* CE 137: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):2+ mapIter(X15,B16,C16):2
+     [Z15>=X15,B16>=1,X15>=1,Z15+1=Y15,Z15+1=W15,B16=V11+1,Z15+1=V1,C16=0,A16=0,V=1] 
+* CE 138: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):2+ mapIter(X15,B16,C16):3
+     [Z15>=X15,C16>=2,X15>=1,C16=B16+1,Z15+1=Y15,Z15+1=W15,C16=V11+2,Z15+1=V1,A16=0,V=1] 
+* CE 139: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):2+ mapIter(X15,B16,C16):4
+     [Z15>=X15,C16>=4,X15>=1,C16=B16+3,Z15+1=Y15,Z15+1=W15,C16=V11+4,Z15+1=V1,A16=0,V=1] 
+* CE 140: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):2+ mapIter(X15,B16,C16):5
+     [C16>=B16+2,Z15>=X15,B16>=1,X15>=2,Z15+1=Y15,Z15+1=W15,B16=V11+1,Z15+1=V1,A16=0,V=1] 
+* CE 141: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):2+ mapIter(X15,B16,C16):6
+     [Z15>=X15,B16>=1,X15>=3,Z15+1=Y15,Z15+1=W15,B16=V11+1,Z15+1=V1,A16=0,V=1] 
+* CE 142: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):2+ mapIter(X15,B16,C16):7
+     [Z15>=X15,B16>=1,X15>=4,Z15+1=Y15,Z15+1=W15,B16=V11+1,Z15+1=V1,A16=0,V=1] 
+* CE 143: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):3+ mapIter(X15,B16,C16):2
+     [Z15>=X15,B16>=A16+1,X15>=1,A16>=1,Z15>=2,B16=V11+A16+1,Z15+1=Y15,Z15+1=W15,Z15+1=V1,C16=0,V=1] 
+* CE 144: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):3+ mapIter(X15,B16,C16):3
+     [Z15>=X15,C16>=A16+2,X15>=1,A16>=1,Z15>=2,C16=V11+A16+2,C16=B16+1,Z15+1=Y15,Z15+1=W15,Z15+1=V1,V=1] 
+* CE 145: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):3+ mapIter(X15,B16,C16):4
+     [Z15>=X15,C16>=A16+4,X15>=1,A16>=1,Z15>=2,C16=V11+A16+4,C16=B16+3,Z15+1=Y15,Z15+1=W15,Z15+1=V1,V=1] 
+* CE 146: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):3+ mapIter(X15,B16,C16):5
+     [C16>=B16+2,Z15>=X15,B16>=A16+1,X15>=2,A16>=1,B16=V11+A16+1,Z15+1=Y15,Z15+1=W15,Z15+1=V1,V=1] 
+* CE 147: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):3+ mapIter(X15,B16,C16):6
+     [Z15>=X15,B16>=A16+1,X15>=3,A16>=1,B16=V11+A16+1,Z15+1=Y15,Z15+1=W15,Z15+1=V1,V=1] 
+* CE 148: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):3+ mapIter(X15,B16,C16):7
+     [Z15>=X15,B16>=A16+1,X15>=4,A16>=1,B16=V11+A16+1,Z15+1=Y15,Z15+1=W15,Z15+1=V1,V=1] 
+* CE 149: start(V,V1,V11,V15) = 1+ droplast(W15,X15):2+ last(Y15,Z15):3+ log(Z15,A16):4
+     [Z15>=X15,Z15>=2,X15>=1,V11>=0,V11+A16+1=B16,Z15+1=Y15,Z15+1=W15,Z15+1=V1,V=1] 
+* CE 150: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(Y15,Z15):1+ mapIter(W15,A16,B16):2
+     [V1>=W15+1,A16>=3,W15>=1,A16=V11+3,B16=0,Z15=2,Y15=0,X15=0,V=1] 
+* CE 151: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(Y15,Z15):1+ mapIter(W15,A16,B16):3
+     [V1>=W15+1,B16>=4,W15>=1,B16=A16+1,B16=V11+4,Z15=2,Y15=0,X15=0,V=1] 
+* CE 152: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(Y15,Z15):1+ mapIter(W15,A16,B16):4
+     [V1>=W15+1,B16>=6,W15>=1,B16=A16+3,B16=V11+6,Z15=2,Y15=0,X15=0,V=1] 
+* CE 153: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(Y15,Z15):1+ mapIter(W15,A16,B16):5
+     [B16>=A16+2,V1>=W15+1,A16>=3,W15>=2,A16=V11+3,Z15=2,Y15=0,X15=0,V=1] 
+* CE 154: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(Y15,Z15):1+ mapIter(W15,A16,B16):6
+     [V1>=W15+1,A16>=3,W15>=3,A16=V11+3,Z15=2,Y15=0,X15=0,V=1] 
+* CE 155: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(Y15,Z15):1+ mapIter(W15,A16,B16):7
+     [V1>=W15+1,A16>=3,W15>=4,A16=V11+3,Z15=2,Y15=0,X15=0,V=1] 
+* CE 156: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):2+ mapIter(W15,Z15,A16):2
+     [V1>=W15+1,V1>=X15+2,Z15>=1,W15>=1,X15>=0,Z15=V11+1,A16=0,Y15=0,V=1] 
+* CE 157: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):2+ mapIter(W15,Z15,A16):3
+     [V1>=W15+1,V1>=X15+2,A16>=2,W15>=1,X15>=0,A16=Z15+1,A16=V11+2,Y15=0,V=1] 
+* CE 158: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):2+ mapIter(W15,Z15,A16):4
+     [V1>=W15+1,V1>=X15+2,A16>=4,W15>=1,X15>=0,A16=Z15+3,A16=V11+4,Y15=0,V=1] 
+* CE 159: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):2+ mapIter(W15,Z15,A16):5
+     [A16>=Z15+2,V1>=W15+1,V1>=X15+2,Z15>=1,W15>=2,X15>=0,Z15=V11+1,Y15=0,V=1] 
+* CE 160: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):2+ mapIter(W15,Z15,A16):6
+     [V1>=W15+1,V1>=X15+2,Z15>=1,W15>=3,X15>=0,Z15=V11+1,Y15=0,V=1] 
+* CE 161: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):2+ mapIter(W15,Z15,A16):7
+     [V1>=W15+1,V1>=X15+2,Z15>=1,W15>=4,X15>=0,Z15=V11+1,Y15=0,V=1] 
+* CE 162: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):3+ mapIter(W15,Z15,A16):2
+     [V1>=W15+1,Z15>=Y15+1,V1>=X15+2,W15>=1,Y15>=1,X15>=2,Z15=V11+Y15+1,A16=0,V=1] 
+* CE 163: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):3+ mapIter(W15,Z15,A16):3
+     [V1>=W15+1,A16>=Y15+2,V1>=X15+2,W15>=1,Y15>=1,X15>=2,A16=V11+Y15+2,A16=Z15+1,V=1] 
+* CE 164: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):3+ mapIter(W15,Z15,A16):4
+     [V1>=W15+1,A16>=Y15+4,V1>=X15+2,W15>=1,Y15>=1,X15>=2,A16=V11+Y15+4,A16=Z15+3,V=1] 
+* CE 165: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):3+ mapIter(W15,Z15,A16):5
+     [A16>=Z15+2,V1>=W15+1,Z15>=Y15+1,V1>=X15+2,W15>=2,Y15>=1,X15>=2,Z15=V11+Y15+1,V=1] 
+* CE 166: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):3+ mapIter(W15,Z15,A16):6
+     [V1>=W15+1,Z15>=Y15+1,V1>=X15+2,W15>=3,Y15>=1,X15>=2,Z15=V11+Y15+1,V=1] 
+* CE 167: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):3+ mapIter(W15,Z15,A16):7
+     [V1>=W15+1,Z15>=Y15+1,V1>=X15+2,W15>=4,Y15>=1,X15>=2,Z15=V11+Y15+1,V=1] 
+* CE 168: start(V,V1,V11,V15) = 1+ droplast(V1,W15):2+ last(V1,X15):4+ log(X15,Y15):4
+     [V1>=X15+2,V1>=W15+1,X15>=2,W15>=1,V11>=0,V11+Y15+1=Z15,V=1] 
+* CE 169: start(V,V1,V11,V15) = 1
+     [V11>=0,V1>=0,V=2] 
+* CE 170: start(V,V1,V11,V15) = 1+ double(V11,W15):1+ loop(V1,X15,Y15,Z15):2
+     [Y15>=1,V1>=0,V11>=0,Y15=V15+1,Z15=0,X15=0,W15=0,V=1] 
+* CE 171: start(V,V1,V11,V15) = 1+ double(V11,W15):2+ loop(X15,W15,Y15,Y15):1
+     [2*V11>=W15,Y15>=1,W15>=2,Y15=V15+1,X15=0,V1=0,V=1] 
+* CE 172: start(V,V1,V11,V15) = 1+ double(V11,W15):2+ loop(V1,W15,X15,Y15):2
+     [2*V11>=W15,X15>=1,W15>=2,V1>=0,X15=V15+1,Y15=0,V=1] 
+* CE 173: start(V,V1,V11,V15) = 1+ double(V11,W15):2+ loop(V1,W15,X15,X15):3
+     [2*V11>=W15,W15>=V1,X15>=1,W15>=2,V1>=1,X15=V15+1,V=1] 
+* CE 174: start(V,V1,V11,V15) = 1+ double(V11,W15):2+ loop(V1,W15,X15,Y15):4
+     [Y15>=X15+1,2*V11>=W15,V1>=W15+1,X15>=1,W15>=2,X15=V15+1,V=1] 
+* CE 175: start(V,V1,V11,V15) = 1+ double(V11,W15):2+ loop(V1,W15,X15,Y15):5
+     [2*V11>=W15,V1>=W15+1,X15>=1,W15>=2,X15=V15+1,V=1] 
+* CE 176: start(V,V1,V11,V15) = 0+ le(W15,V1,X15):1
+     [V1>=0,X15=2,W15=0,V=0] 
+* CE 177: start(V,V1,V11,V15) = 0+ le(V,W15,X15):2
+     [V>=1,X15=1,W15=0,V1=0] 
+* CE 178: start(V,V1,V11,V15) = 0+ le(V,V1,W15):3
+     [V1>=0,V>=0,W15=0] 
+* CE 179: start(V,V1,V11,V15) = 0+ le(V,V1,W15):4
+     [V>=V1+1,V1>=1,W15=1] 
+* CE 180: start(V,V1,V11,V15) = 0+ le(V,V1,W15):5
+     [V1>=V,V>=1,W15=2] 
+* CE 181: start(V,V1,V11,V15) = 0+ double(V,W15):1
+     [V>=0,W15=0] 
+* CE 182: start(V,V1,V11,V15) = 0+ double(V,W15):2
+     [2*V>=W15,W15>=2] 
+* CE 183: start(V,V1,V11,V15) = 0+ log(W15,X15):1
+     [X15=2,W15=0,V=0] 
+* CE 184: start(V,V1,V11,V15) = 0+ log(V,W15):2
+     [V>=0,W15=0] 
+* CE 185: start(V,V1,V11,V15) = 0+ log(V,W15):3
+     [W15>=1,V>=2] 
+* CE 186: start(V,V1,V11,V15) = 0+ log(V,W15):4
+     [V>=2] 
+* CE 187: start(V,V1,V11,V15) = 0+ loop(W15,V1,V11,V11):1
+     [V11>=0,V1>=1,W15=0,V=0] 
+* CE 188: start(V,V1,V11,V15) = 0+ loop(V,V1,V11,W15):2
+     [V11>=0,V1>=0,V>=0,W15=0] 
+* CE 189: start(V,V1,V11,V15) = 0+ loop(V,V1,V11,V11):3
+     [V1>=V,V11>=0,V>=1] 
+* CE 190: start(V,V1,V11,V15) = 0+ loop(V,V1,V11,W15):4
+     [W15>=V11+1,V>=V1+1,V11>=0,V1>=1] 
+* CE 191: start(V,V1,V11,V15) = 0+ loop(V,V1,V11,W15):5
+     [V>=V1+1,V11>=0,V1>=1] 
+* CE 192: start(V,V1,V11,V15) = 1+ mapIter(W15,X15,Y15):1
+     [Y15=0,X15=0,W15=0,V=0] 
+* CE 193: start(V,V1,V11,V15) = 1+ mapIter(V,W15,X15):2
+     [V>=0,X15=0,W15=0] 
+* CE 194: start(V,V1,V11,V15) = 1+ mapIter(V,W15,X15):3
+     [V>=1,X15=1,W15=0] 
+* CE 195: start(V,V1,V11,V15) = 1+ mapIter(V,W15,X15):4
+     [V>=1,X15=3,W15=0] 
+* CE 196: start(V,V1,V11,V15) = 1+ mapIter(V,W15,X15):5
+     [X15>=2,V>=2,W15=0] 
+* CE 197: start(V,V1,V11,V15) = 1+ mapIter(V,W15,X15):6
+     [V>=3,W15=0] 
+* CE 198: start(V,V1,V11,V15) = 1+ mapIter(V,W15,X15):7
+     [V>=4,W15=0] 
+* CE 199: start(V,V1,V11,V15) = 0+ mapIter(W15,V1,V1):1
+     [V1>=0,W15=0,V=0] 
+* CE 200: start(V,V1,V11,V15) = 0+ mapIter(V,V1,W15):2
+     [V1>=0,V>=0,W15=0] 
+* CE 201: start(V,V1,V11,V15) = 0+ mapIter(V,W15,X15):3
+     [X15>=1,V>=1,X15=W15+1,X15=V1+1] 
+* CE 202: start(V,V1,V11,V15) = 0+ mapIter(V,W15,X15):4
+     [X15>=3,V>=1,X15=W15+3,X15=V1+3] 
+* CE 203: start(V,V1,V11,V15) = 0+ mapIter(V,V1,W15):5
+     [W15>=V1+2,V1>=0,V>=2] 
+* CE 204: start(V,V1,V11,V15) = 0+ mapIter(V,V1,W15):6
+     [V1>=0,V>=3] 
+* CE 205: start(V,V1,V11,V15) = 0+ mapIter(V,V1,W15):7
+     [V1>=0,V>=4] 
+* CE 206: start(V,V1,V11,V15) = 0+ isempty(W15,X15):1
+     [X15=2,W15=0,V=0] 
+* CE 207: start(V,V1,V11,V15) = 0+ isempty(V,W15):2
+     [V>=0,W15=0] 
+* CE 208: start(V,V1,V11,V15) = 0+ isempty(V,W15):3
+     [V>=1,W15=1] 
+* CE 209: start(V,V1,V11,V15) = 0+ last(W15,X15):1
+     [X15=1,W15=0,V=0] 
+* CE 210: start(V,V1,V11,V15) = 0+ last(V,W15):2
+     [V>=0,W15=0] 
+* CE 211: start(V,V1,V11,V15) = 0+ last(W15,X15):3
+     [X15>=0,X15+1=W15,X15+1=V] 
+* CE 212: start(V,V1,V11,V15) = 0+ last(V,W15):4
+     [V>=W15+2,W15>=0] 
+* CE 213: start(V,V1,V11,V15) = 0+ droplast(V,W15):1
+     [V>=0,W15=0] 
+* CE 214: start(V,V1,V11,V15) = 0+ droplast(V,W15):2
+     [V>=W15+1,W15>=1] 
+* CE 215: start(V,V1,V11,V15) = 0+ a(W15):1
+     [W15=0] 
+* CE 216: start(V,V1,V11,V15) = 0+ a(W15):2
+     [W15=1] 
+
+### Cost equations --> "Loop" of start/4 
+* CEs [104,105,106,107,108,109,110,111,112,113,114,115,116,118,119,120,121,122,123,125,126,127,128,131,132,133,134,137,138,139,140,143,144,145,146,150,151,152,153,156,157,158,159,162,163,164,165,169,170,171,172,173,174,176,177,178,179,180,181,182,183,184,185,187,188,189,190,192,193,194,195,196,199,200,201,202,203,206,207,208,209,210,211,212,213,214,215,216] --> Loop 63 
+* CEs [186,191,197,198,204,205] --> Loop 64 
+* CEs [117,124,129,130,135,136,141,142,147,148,149,154,155,160,161,166,167,168,175] --> Loop 65 
+
+#### Loops of start/4 
+* Loop 63: start(V,V1,V11,V15) [] 
+* Loop 64: start(V,V1,V11,V15) [V>=2] 
+* Loop 65: start(V,V1,V11,V15) [V11>=0,V1>=3,V=1] 
+
+### Ranking functions of CR start(V,V1,V11,V15) 
+
+#### Partial ranking functions of CR start(V,V1,V11,V15) 
+
+
+### Resulting Chains:start(V,V1,V11,V15) 
+* [65]...
+* [64]...
+* [63]
+
+
+### Merging Chains  start/4 into  External patterns of execution 
+* [[63]] --> 1 
+* [[65]] --> 2 
+* [[64]] --> 3 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of a(Out):
+* Chain [29]: 1
+  with precondition: [Out=0] 
+
+* Chain [28]: 1
+  with precondition: [Out=1] 
+
+
+#### Cost of loops [30] 
+
+ * loop 30:double(V,Out) -> [double(V',Out')] 
+1
+#### Cost of phase [30]:double(V,Out) -> [double(V',Out')] 
+1*it(30)+0
+  Such that:it(30) =< V
+it(30) =< V-V'
+
+#### Cost of chains of double(V,Out):
+* Chain [[30],31]: 1*it(30)+1
+  Such that:it(30) =< Out/2
+
+  with precondition: [Out>=2,2*V>=Out] 
+
+* Chain [31]: 1
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of loops [32] 
+
+ * loop 32:droplast(V,Out) -> [droplast(V',Out')] 
+1
+#### Cost of phase [32]:droplast(V,Out) -> [droplast(V',Out')] 
+1*it(32)+0
+  Such that:it(32) =< V
+it(32) =< V-V'
+
+#### Cost of chains of droplast(V,Out):
+* Chain [[32],33]: 1*it(32)+1
+  Such that:it(32) =< Out
+
+  with precondition: [Out>=1,V>=Out+1] 
+
+* Chain [33]: 1
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of loops [34] 
+
+ * loop 34:le(V,V1,Out) -> [le(V',V1',Out')] 
+1
+#### Cost of phase [34]:le(V,V1,Out) -> [le(V',V1',Out')] 
+1*it(34)+0
+  Such that:it(34) =< V
+it(34) =< V-V'
+it(34) =< V1
+it(34) =< V1-V1'
+
+#### Cost of phase [34]:le(V,V1,Out) -> [le(V',V1',Out')] 
+1*it(34)+0
+  Such that:it(34) =< V
+it(34) =< V-V'
+it(34) =< V1
+it(34) =< V1-V1'
+
+#### Cost of phase [34]:le(V,V1,Out) -> [le(V',V1',Out')] 
+1*it(34)+0
+  Such that:it(34) =< V
+it(34) =< V-V'
+it(34) =< V1
+it(34) =< V1-V1'
+
+#### Cost of chains of le(V,V1,Out):
+* Chain [[34],37]: 1*it(34)+1
+  Such that:it(34) =< V
+
+  with precondition: [Out=2,V>=1,V1>=V] 
+
+* Chain [[34],36]: 1*it(34)+1
+  Such that:it(34) =< V1
+
+  with precondition: [Out=1,V1>=1,V>=V1+1] 
+
+* Chain [[34],35]: 1*it(34)+0
+  Such that:it(34) =< V1
+
+  with precondition: [Out=0,V>=1,V1>=1] 
+
+* Chain [37]: 1
+  with precondition: [V=0,Out=2,V1>=0] 
+
+* Chain [36]: 1
+  with precondition: [V1=0,Out=1,V>=1] 
+
+* Chain [35]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of loops [38] 
+
+ * loop 38:loop(V,V1,V11,Out) -> [loop(V',V1',V11',Out')] 
+1*s(4)+1*s(5)+4
+  Such that:s(4) =< V1
+s(5) =< V1'/2
+
+#### Cost of phase [38]:loop(V,V1,V11,Out) -> [loop(V',V1',V11',Out')] 
+4*it(38)+1*s(6)+1*s(7)+0
+#### Cost of phase [38]:loop(V,V1,V11,Out) -> [loop(V',V1',V11',Out')] 
+4*it(38)+1*s(6)+1*s(7)+0
+#### Cost of phase [38]:loop(V,V1,V11,Out) -> [loop(V',V1',V11',Out')] 
+4*it(38)+1*s(6)+1*s(7)+0
+#### Cost of phase [38]:loop(V,V1,V11,Out) -> [loop(V',V1',V11',Out')] 
+4*it(38)+1*s(6)+1*s(7)+0
+#### Cost of chains of loop(V,V1,V11,Out):
+* Chain [[38]]...: 6*it(38)+0
+  with precondition: [V>=V1+1,V1>=1,V11>=0] 
+
+* Chain [[38],42]: 6*it(38)+2*s(8)+1*s(10)+2
+  Such that:s(10) =< V
+aux(3) =< 2*V
+s(8) =< aux(3)
+
+  with precondition: [Out=0,V1>=1,V11>=0,V>=V1+1] 
+
+* Chain [[38],40]: 6*it(38)+1*s(11)+3
+  Such that:s(11) =< V
+
+  with precondition: [V1>=1,V11>=0,V>=V1+1,Out>=V11+1] 
+
+* Chain [[38],39,42]: 6*it(38)+2*s(10)+6
+  Such that:aux(4) =< V
+s(10) =< aux(4)
+
+  with precondition: [Out=0,V>=3,V1>=1,V11>=0,V>=V1+1] 
+
+* Chain [42]: 2*s(8)+1*s(10)+2
+  Such that:s(10) =< V
+aux(3) =< V1
+s(8) =< aux(3)
+
+  with precondition: [Out=0,V>=0,V1>=0,V11>=0] 
+
+* Chain [41]: 3
+  with precondition: [V=0,V11=Out,V1>=1,V11>=0] 
+
+* Chain [40]: 1*s(11)+3
+  Such that:s(11) =< V
+
+  with precondition: [V11=Out,V>=1,V11>=0,V1>=V] 
+
+* Chain [39,42]: 1*s(10)+1*s(12)+6
+  Such that:s(10) =< V
+s(12) =< V1
+
+  with precondition: [Out=0,V1>=1,V11>=0,V>=V1+1] 
+
+
+#### Cost of loops [43] 
+
+ * loop 43:last(V,Out) -> [last(V',Out')] 
+1
+#### Cost of phase [43]:last(V,Out) -> [last(V',Out')] 
+1*it(43)+0
+  Such that:it(43) =< V
+it(43) =< V-V'
+
+#### Cost of phase [43]:last(V,Out) -> [last(V',Out')] 
+1*it(43)+0
+  Such that:it(43) =< V
+it(43) =< V-V'
+
+#### Cost of chains of last(V,Out):
+* Chain [[43],45]: 1*it(43)+0
+  Such that:it(43) =< V
+
+  with precondition: [Out=0,V>=2] 
+
+* Chain [[43],44]: 1*it(43)+1
+  Such that:it(43) =< V-Out
+
+  with precondition: [Out>=0,V>=Out+2] 
+
+* Chain [46]: 1
+  with precondition: [V=0,Out=1] 
+
+* Chain [45]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [44]: 1
+  with precondition: [V=Out+1,V>=1] 
+
+
+#### Cost of chains of log(V,Out):
+* Chain [50]...: 6*s(26)+1
+  with precondition: [V>=2] 
+
+* Chain [49]: 1
+  with precondition: [V=0,Out=2] 
+
+* Chain [48]: 5*s(30)+4*s(31)+2*s(32)+12*s(33)+7
+  Such that:s(28) =< V
+s(27) =< 2*V
+aux(7) =< 1
+s(31) =< aux(7)
+s(30) =< s(28)
+s(32) =< s(27)
+
+  with precondition: [Out=0,V>=0] 
+
+* Chain [47]: 1*s(35)+6*s(36)+4
+  Such that:s(35) =< V
+
+  with precondition: [V>=2,Out>=1] 
+
+
+#### Cost of chains of isempty(V,Out):
+* Chain [53]: 1
+  with precondition: [V=0,Out=2] 
+
+* Chain [52]: 0
+  with precondition: [Out=0,V>=0] 
+
+* Chain [51]: 1
+  with precondition: [Out=1,V>=1] 
+
+
+#### Cost of loops [55,56,57] 
+
+ * loop 55:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+2*s(47)+3*s(46)+12*s(48)+9
+  Such that:s(44) =< V
+s(45) =< V'
+s(46) =< s(44)
+s(47) =< s(45)
+
+ * loop 56:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+3*s(80)+11*s(79)+12*s(81)+36*s(84)+4*s(82)+1*s(83)+12
+  Such that:s(75) =< 1
+s(76) =< V
+s(77) =< 2*V
+s(78) =< V'
+s(79) =< s(76)
+s(80) =< s(78)
+s(81) =< s(75)
+s(82) =< s(77)
+s(83) =< s(76)
+s(83) =< s(77)
+
+ * loop 57:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+2*s(92)+2*s(91)+6
+  Such that:s(89) =< V
+s(90) =< V'
+s(91) =< s(89)
+s(92) =< s(90)
+
+#### Cost of phase [55,56,57]:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+27*it(55)+7*s(93)+3*s(94)+48*s(95)+11*s(99)+12*s(100)+4*s(102)+1*s(103)+2*s(109)+0
+  Such that:aux(28) =< V
+aux(29) =< V-V'
+aux(22) =< aux(28)
+it(55) =< aux(28)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(28)-1
+aux(23) =< aux(28)
+s(97) =< it(55)*aux(28)
+s(96) =< it(55)*aux(21)
+s(111) =< it(55)*aux(23)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(109) =< s(111)
+s(93) =< s(96)
+s(99) =< aux(24)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+#### Cost of phase [55,56,57]:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+27*it(55)+7*s(93)+3*s(94)+48*s(95)+11*s(99)+12*s(100)+4*s(102)+1*s(103)+2*s(109)+0
+  Such that:aux(28) =< V
+aux(29) =< V-V'
+aux(22) =< aux(28)
+it(55) =< aux(28)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(28)-1
+aux(23) =< aux(28)
+s(97) =< it(55)*aux(28)
+s(96) =< it(55)*aux(21)
+s(111) =< it(55)*aux(23)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(109) =< s(111)
+s(93) =< s(96)
+s(99) =< aux(24)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+#### Cost of phase [55,56,57]:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+27*it(55)+7*s(93)+3*s(94)+48*s(95)+11*s(99)+12*s(100)+4*s(102)+1*s(103)+2*s(109)+0
+  Such that:aux(28) =< V
+aux(29) =< V-V'
+aux(22) =< aux(28)
+it(55) =< aux(28)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(28)-1
+aux(23) =< aux(28)
+s(97) =< it(55)*aux(28)
+s(96) =< it(55)*aux(21)
+s(111) =< it(55)*aux(23)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(109) =< s(111)
+s(93) =< s(96)
+s(99) =< aux(24)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+#### Cost of phase [55,56,57]:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+27*it(55)+7*s(93)+3*s(94)+48*s(95)+11*s(99)+12*s(100)+4*s(102)+1*s(103)+2*s(109)+0
+  Such that:aux(28) =< V
+aux(29) =< V-V'
+aux(22) =< aux(28)
+it(55) =< aux(28)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(28)-1
+aux(23) =< aux(28)
+s(97) =< it(55)*aux(28)
+s(96) =< it(55)*aux(21)
+s(111) =< it(55)*aux(23)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(109) =< s(111)
+s(93) =< s(96)
+s(99) =< aux(24)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+#### Cost of phase [55,56,57]:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+27*it(55)+7*s(93)+3*s(94)+48*s(95)+11*s(99)+12*s(100)+4*s(102)+1*s(103)+2*s(109)+0
+  Such that:aux(28) =< V
+aux(29) =< V-V'
+aux(22) =< aux(28)
+it(55) =< aux(28)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(28)-1
+aux(23) =< aux(28)
+s(97) =< it(55)*aux(28)
+s(96) =< it(55)*aux(21)
+s(111) =< it(55)*aux(23)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(109) =< s(111)
+s(93) =< s(96)
+s(99) =< aux(24)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+#### Cost of phase [55,56,57]:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+27*it(55)+7*s(93)+3*s(94)+48*s(95)+11*s(99)+12*s(100)+4*s(102)+1*s(103)+2*s(109)+0
+  Such that:aux(28) =< V
+aux(29) =< V-V'
+aux(22) =< aux(28)
+it(55) =< aux(28)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(28)-1
+aux(23) =< aux(28)
+s(97) =< it(55)*aux(28)
+s(96) =< it(55)*aux(21)
+s(111) =< it(55)*aux(23)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(109) =< s(111)
+s(93) =< s(96)
+s(99) =< aux(24)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+#### Cost of phase [55,56,57]:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+27*it(55)+7*s(93)+3*s(94)+48*s(95)+11*s(99)+12*s(100)+4*s(102)+1*s(103)+2*s(109)+0
+  Such that:aux(28) =< V
+aux(29) =< V-V'
+aux(22) =< aux(28)
+it(55) =< aux(28)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(28)-1
+aux(23) =< aux(28)
+s(97) =< it(55)*aux(28)
+s(96) =< it(55)*aux(21)
+s(111) =< it(55)*aux(23)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(109) =< s(111)
+s(93) =< s(96)
+s(99) =< aux(24)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+#### Cost of phase [55,56,57]:mapIter(V,V1,Out) -> [mapIter(V',V1',Out')] 
+27*it(55)+7*s(93)+3*s(94)+48*s(95)+11*s(99)+12*s(100)+4*s(102)+1*s(103)+2*s(109)+0
+  Such that:aux(28) =< V
+aux(29) =< V-V'
+aux(22) =< aux(28)
+it(55) =< aux(28)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(28)-1
+aux(23) =< aux(28)
+s(97) =< it(55)*aux(28)
+s(96) =< it(55)*aux(21)
+s(111) =< it(55)*aux(23)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(109) =< s(111)
+s(93) =< s(96)
+s(99) =< aux(24)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+#### Cost of chains of mapIter(V,V1,Out):
+* Chain [[55,56,57],62]: 39*it(55)+7*s(93)+3*s(94)+48*s(95)+13*s(99)+4*s(102)+1*s(103)+2
+  Such that:aux(30) =< V
+it(55) =< aux(30)
+aux(21) =< aux(30)-1
+aux(23) =< aux(30)
+s(97) =< it(55)*aux(30)
+s(96) =< it(55)*aux(21)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(99) =< aux(24)
+s(93) =< s(96)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+  with precondition: [Out=0,V>=2,V1>=0] 
+
+* Chain [[55,56,57],60,62]: 41*it(55)+7*s(93)+3*s(94)+48*s(95)+13*s(99)+4*s(102)+1*s(103)+8
+  Such that:aux(32) =< V
+it(55) =< aux(32)
+aux(21) =< aux(32)-1
+aux(23) =< aux(32)
+s(97) =< it(55)*aux(32)
+s(96) =< it(55)*aux(21)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(99) =< aux(24)
+s(93) =< s(96)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+  with precondition: [Out=0,V>=2,V1>=0] 
+
+* Chain [[55,56,57],60,61]: 41*it(55)+7*s(93)+3*s(94)+48*s(95)+13*s(99)+4*s(102)+1*s(103)+9
+  Such that:aux(33) =< V
+it(55) =< aux(33)
+aux(21) =< aux(33)-1
+aux(23) =< aux(33)
+s(97) =< it(55)*aux(33)
+s(96) =< it(55)*aux(21)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(99) =< aux(24)
+s(93) =< s(96)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+  with precondition: [V>=2,V1>=0,Out>=V1+4] 
+
+* Chain [[55,56,57],59,62]: 27*it(55)+7*s(93)+3*s(94)+84*s(95)+13*s(99)+12*s(100)+4*s(102)+1*s(103)+11*s(114)+12*s(118)+4*s(127)+1*s(129)+14
+  Such that:aux(37) =< 1
+aux(40) =< V
+aux(41) =< 2*V
+aux(29) =< aux(40)
+aux(29) =< aux(41)
+s(114) =< aux(40)
+s(118) =< aux(37)
+s(127) =< aux(41)
+s(129) =< aux(40)
+s(129) =< aux(41)
+aux(22) =< aux(40)
+it(55) =< aux(40)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(40)-1
+aux(23) =< aux(40)
+s(97) =< it(55)*aux(40)
+s(96) =< it(55)*aux(21)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(99) =< aux(24)
+s(93) =< s(96)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+  with precondition: [Out=0,V>=2,V1>=0] 
+
+* Chain [[55,56,57],59,61]: 27*it(55)+7*s(93)+3*s(94)+84*s(95)+13*s(99)+12*s(100)+4*s(102)+1*s(103)+11*s(114)+12*s(118)+4*s(127)+1*s(129)+15
+  Such that:aux(37) =< 1
+aux(42) =< V
+aux(43) =< 2*V
+aux(29) =< aux(42)
+aux(29) =< aux(43)
+s(114) =< aux(42)
+s(118) =< aux(37)
+s(127) =< aux(43)
+s(129) =< aux(42)
+s(129) =< aux(43)
+aux(22) =< aux(42)
+it(55) =< aux(42)
+aux(22) =< aux(29)
+it(55) =< aux(29)
+aux(21) =< aux(42)-1
+aux(23) =< aux(42)
+s(97) =< it(55)*aux(42)
+s(96) =< it(55)*aux(21)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(99) =< aux(24)
+s(93) =< s(96)
+s(100) =< aux(22)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+  with precondition: [V>=2,V1>=0,Out>=V1+2] 
+
+* Chain [[55,56,57],58,62]: 42*it(55)+7*s(93)+3*s(94)+60*s(95)+13*s(99)+4*s(102)+1*s(103)+11
+  Such that:aux(46) =< V
+it(55) =< aux(46)
+aux(21) =< aux(46)-1
+aux(23) =< aux(46)
+s(97) =< it(55)*aux(46)
+s(96) =< it(55)*aux(21)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(99) =< aux(24)
+s(93) =< s(96)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+  with precondition: [Out=0,V>=4,V1>=0] 
+
+* Chain [[55,56,57],58,61]: 42*it(55)+7*s(93)+3*s(94)+60*s(95)+13*s(99)+4*s(102)+1*s(103)+12
+  Such that:aux(47) =< V
+it(55) =< aux(47)
+aux(21) =< aux(47)-1
+aux(23) =< aux(47)
+s(97) =< it(55)*aux(47)
+s(96) =< it(55)*aux(21)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(99) =< aux(24)
+s(93) =< s(96)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+  with precondition: [V>=4,V1>=0,Out>=V1+3] 
+
+* Chain [[55,56,57],54]...: 43*it(55)+7*s(93)+3*s(94)+72*s(95)+13*s(99)+4*s(102)+1*s(103)+6
+  Such that:aux(50) =< V
+it(55) =< aux(50)
+aux(21) =< aux(50)-1
+aux(23) =< aux(50)
+s(97) =< it(55)*aux(50)
+s(96) =< it(55)*aux(21)
+aux(24) =< it(55)*aux(23)
+s(104) =< aux(24)*2
+s(99) =< aux(24)
+s(93) =< s(96)
+s(102) =< s(104)
+s(103) =< aux(24)
+s(103) =< s(104)
+s(94) =< s(97)
+
+  with precondition: [V>=4,V1>=0] 
+
+* Chain [62]: 2
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+* Chain [61]: 3
+  with precondition: [V=0,V1=Out,V1>=0] 
+
+* Chain [60,62]: 2*s(112)+8
+  Such that:aux(31) =< V
+s(112) =< aux(31)
+
+  with precondition: [Out=0,V>=1,V1>=0] 
+
+* Chain [60,61]: 2*s(112)+9
+  Such that:aux(31) =< V
+s(112) =< aux(31)
+
+  with precondition: [Out=V1+3,V>=1,Out>=3] 
+
+* Chain [59,62]: 11*s(114)+12*s(118)+36*s(121)+4*s(127)+1*s(129)+14
+  Such that:aux(37) =< 1
+aux(38) =< V
+aux(39) =< 2*V
+s(114) =< aux(38)
+s(118) =< aux(37)
+s(127) =< aux(39)
+s(129) =< aux(38)
+s(129) =< aux(39)
+
+  with precondition: [Out=0,V>=1,V1>=0] 
+
+* Chain [59,61]: 11*s(114)+12*s(118)+36*s(121)+4*s(127)+1*s(129)+15
+  Such that:aux(37) =< 1
+aux(38) =< V
+aux(39) =< 2*V
+s(114) =< aux(38)
+s(118) =< aux(37)
+s(127) =< aux(39)
+s(129) =< aux(38)
+s(129) =< aux(39)
+
+  with precondition: [Out=V1+1,V>=1,Out>=1] 
+
+* Chain [58,62]: 3*s(137)+12*s(138)+11
+  Such that:aux(45) =< V
+s(137) =< aux(45)
+
+  with precondition: [Out=0,V>=3,V1>=0] 
+
+* Chain [58,61]: 3*s(137)+12*s(138)+12
+  Such that:aux(45) =< V
+s(137) =< aux(45)
+
+  with precondition: [V>=3,V1>=0,Out>=V1+2] 
+
+* Chain [54]...: 24*s(142)+4*s(143)+6
+  Such that:aux(49) =< V
+s(143) =< aux(49)
+
+  with precondition: [V>=3,V1>=0] 
+
+
+#### Cost of chains of start(V,V1,V11,V15):
+* Chain [65]...: 798*s(282)+379*s(283)+91*s(300)+49*s(301)+28*s(302)+7*s(303)+21*s(304)+24*s(311)+8*s(347)+2*s(421)+1*s(483)+16
+  Such that:s(483) =< V1/2
+aux(74) =< 1
+aux(75) =< V1
+aux(76) =< 2*V1
+s(283) =< aux(75)
+s(311) =< aux(74)
+s(294) =< aux(75)-1
+s(295) =< aux(75)
+s(296) =< s(283)*aux(75)
+s(297) =< s(283)*s(294)
+s(298) =< s(283)*s(295)
+s(299) =< s(298)*2
+s(300) =< s(298)
+s(301) =< s(297)
+s(302) =< s(299)
+s(303) =< s(298)
+s(303) =< s(299)
+s(304) =< s(296)
+s(347) =< aux(76)
+s(421) =< aux(75)
+s(421) =< aux(76)
+
+  with precondition: [V=1,V1>=3,V11>=0] 
+
+* Chain [64]...: 204*s(485)+94*s(488)+26*s(498)+14*s(499)+8*s(500)+2*s(501)+6*s(502)+7
+  Such that:aux(77) =< V
+s(488) =< aux(77)
+s(492) =< aux(77)-1
+s(493) =< aux(77)
+s(494) =< s(488)*aux(77)
+s(495) =< s(488)*s(492)
+s(496) =< s(488)*s(493)
+s(497) =< s(496)*2
+s(498) =< s(496)
+s(499) =< s(495)
+s(500) =< s(497)
+s(501) =< s(496)
+s(501) =< s(497)
+s(502) =< s(494)
+
+  with precondition: [V>=2] 
+
+* Chain [63]: 742*s(524)+4*s(526)+7722*s(527)+1954*s(567)+140*s(686)+34*s(797)+378*s(894)+182*s(901)+98*s(902)+168*s(903)+56*s(904)+14*s(905)+42*s(906)+455*s(911)+245*s(912)+140*s(913)+35*s(914)+105*s(915)+4*s(1556)+3*s(1562)+536*s(1572)+36*s(1579)+8*s(1599)+108*s(1602)+52*s(1609)+28*s(1610)+48*s(1611)+16*s(1612)+4*s(1613)+12*s(1614)+130*s(1619)+70*s(1620)+40*s(1621)+10*s(1622)+30*s(1623)+25
+  Such that:s(1560) =< 2*V11
+aux(147) =< 1
+aux(148) =< 2
+aux(149) =< V
+aux(150) =< 2*V
+aux(151) =< V1
+aux(152) =< 2*V1
+aux(153) =< V11
+s(1572) =< aux(149)
+s(567) =< aux(151)
+s(1556) =< aux(153)
+s(797) =< aux(151)
+s(797) =< aux(152)
+s(524) =< aux(147)
+s(686) =< aux(152)
+s(892) =< aux(151)
+s(892) =< aux(152)
+s(893) =< aux(151)
+s(894) =< aux(151)
+s(893) =< s(892)
+s(894) =< s(892)
+s(895) =< aux(151)-1
+s(896) =< aux(151)
+s(897) =< s(894)*aux(151)
+s(898) =< s(894)*s(895)
+s(899) =< s(894)*s(896)
+s(900) =< s(899)*2
+s(901) =< s(899)
+s(902) =< s(898)
+s(903) =< s(893)
+s(904) =< s(900)
+s(905) =< s(899)
+s(905) =< s(900)
+s(906) =< s(897)
+s(907) =< s(567)*aux(151)
+s(908) =< s(567)*s(895)
+s(909) =< s(567)*s(896)
+s(910) =< s(909)*2
+s(911) =< s(909)
+s(912) =< s(908)
+s(913) =< s(910)
+s(914) =< s(909)
+s(914) =< s(910)
+s(915) =< s(907)
+s(1579) =< aux(150)
+s(1599) =< aux(149)
+s(1599) =< aux(150)
+s(1600) =< aux(149)
+s(1600) =< aux(150)
+s(1601) =< aux(149)
+s(1602) =< aux(149)
+s(1601) =< s(1600)
+s(1602) =< s(1600)
+s(1603) =< aux(149)-1
+s(1604) =< aux(149)
+s(1605) =< s(1602)*aux(149)
+s(1606) =< s(1602)*s(1603)
+s(1607) =< s(1602)*s(1604)
+s(1608) =< s(1607)*2
+s(1609) =< s(1607)
+s(1610) =< s(1606)
+s(1611) =< s(1601)
+s(1612) =< s(1608)
+s(1613) =< s(1607)
+s(1613) =< s(1608)
+s(1614) =< s(1605)
+s(1615) =< s(1572)*aux(149)
+s(1616) =< s(1572)*s(1603)
+s(1617) =< s(1572)*s(1604)
+s(1618) =< s(1617)*2
+s(1619) =< s(1617)
+s(1620) =< s(1616)
+s(1621) =< s(1618)
+s(1622) =< s(1617)
+s(1622) =< s(1618)
+s(1623) =< s(1615)
+s(526) =< aux(148)
+s(1562) =< s(1560)
+
+  with precondition: [] 
+
+
+Closed-form bounds of start(V,V1,V11,V15): 
+-------------------------------------
+* Chain [65]... with precondition: [V=1,V1>=3,V11>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [64]... with precondition: [V>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [63] with precondition: [] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V1,V11,V15): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 122 ms.
+* Invariants computed in 173 ms.
+   - Backward Invariants 98 ms.
+   - Transitive Invariants 21 ms.
+* Refinement performed in 611 ms.
+* Termination proved in 26 ms.
+* Upper bounds computed in 2637 ms.
+   - Equation cost structures 2394 ms.
+   - Phase cost structures 81 ms.
+   - Chain cost structures 63 ms.
+   - Solving cost expressions 39 ms.
+* Total analysis performed in 3722 ms.
+

@@ -1,0 +1,1467 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [eq/3]
+1. non_recursive  : [or/3]
+2. recursive  : [union/3]
+3. recursive [non_tail,multiple] : [fun/6,fun1/6,reach/5]
+4. non_recursive  : [start/5]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into eq/3
+1. SCC is partially evaluated into or/3
+2. SCC is partially evaluated into union/3
+3. SCC is partially evaluated into reach/5
+4. SCC is partially evaluated into start/5
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations eq/3 
+* CE 16 is refined into CE [28] 
+* CE 15 is refined into CE [29] 
+* CE 14 is refined into CE [30] 
+* CE 13 is refined into CE [31] 
+
+
+#### Refined cost equations eq/3 
+* CE 28: eq(V1,V,Out) = 1+ eq(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+* CE 29: eq(V1,V,Out) = 1
+     [V1>=1,Out=1,V=0] 
+* CE 30: eq(V1,V,Out) = 1
+     [V>=1,Out=1,V1=0] 
+* CE 31: eq(V1,V,Out) = 1
+     [Out=2,V=0,V1=0] 
+
+### Cost equations --> "Loop" of eq/3 
+* CEs [29] --> Loop 17 
+* CEs [30] --> Loop 18 
+* CEs [31] --> Loop 19 
+* CEs [28] --> Loop 20 
+
+#### Loops of eq/3 
+* Loop 17: eq(V1,V,Out) [V1>=1,Out=1,V=0] 
+* Loop 18: eq(V1,V,Out) [V>=1,Out=1,V1=0] 
+* Loop 19: eq(V1,V,Out) [Out=2,V=0,V1=0] 
+* Loop 20: eq(V1,V,Out)->  eq(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+
+### Ranking functions of CR eq(V1,V,Out) 
+* RF of phase [20]: [V,V1]
+
+#### Partial ranking functions of CR eq(V1,V,Out) 
+* Partial RF of phase [20]:
+  - RF of loop [20:1]:
+    V
+    V1
+
+
+### Resulting Chains:eq(V1,V,Out) 
+* [[20],19]
+* [[20],18]
+* [[20],17]
+* [19]
+* [18]
+* [17]
+
+
+### Merging Chains  eq/3 into  External patterns of execution 
+* [[19]] --> 1 
+* [[18]] --> 2 
+* [[17]] --> 3 
+* [[18,[20]]] --> 4 
+* [[17,[20]]] --> 5 
+* [[19,[20]]] --> 6 
+
+
+### Specialization of cost equations or/3 
+* CE 27 is refined into CE [32] 
+* CE 25 is refined into CE [33] 
+* CE 26 is refined into CE [34] 
+
+
+#### Refined cost equations or/3 
+* CE 32: or(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 33: or(V1,V,Out) = 1
+     [V>=0,Out=2,V1=2] 
+* CE 34: or(A,B,B) = 1
+     [B>=0,A=1] 
+
+### Cost equations --> "Loop" of or/3 
+* CEs [32] --> Loop 21 
+* CEs [33] --> Loop 22 
+* CEs [34] --> Loop 23 
+
+#### Loops of or/3 
+* Loop 21: or(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 22: or(V1,V,Out) [V>=0,Out=2,V1=2] 
+* Loop 23: or(A,B,B) [B>=0,A=1] 
+
+### Ranking functions of CR or(V1,V,Out) 
+
+#### Partial ranking functions of CR or(V1,V,Out) 
+
+
+### Resulting Chains:or(V1,V,Out) 
+* [23]
+* [22]
+* [21]
+
+
+### Merging Chains  or/3 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+* [[21]] --> 3 
+
+
+### Specialization of cost equations union/3 
+* CE 24 is refined into CE [35] 
+* CE 23 is refined into CE [36] 
+
+
+#### Refined cost equations union/3 
+* CE 35: union(V1,V,Out) = 1+ union(W1,V,X1)
+     [V1+X1>=Out,Out>=X1+1,V>=0,V1+X1=Out+W1] 
+* CE 36: union(A,B,B) = 1
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of union/3 
+* CEs [36] --> Loop 24 
+* CEs [35] --> Loop 25 
+
+#### Loops of union/3 
+* Loop 24: union(A,B,B) [B>=0,A=0] 
+* Loop 25: union(V1,V,Out)->  union(V1',V,Out')
+                  [V1+Out'>=Out,Out>=Out'+1,V>=0,V1+Out'=Out+V1'] 
+
+### Ranking functions of CR union(V1,V,Out) 
+* RF of phase [25]: [V1]
+
+#### Partial ranking functions of CR union(V1,V,Out) 
+* Partial RF of phase [25]:
+  - RF of loop [25:1]:
+    V1
+
+
+### Resulting Chains:union(V1,V,Out) 
+* [[25],24]
+* [24]
+
+
+### Merging Chains  union/3 into  External patterns of execution 
+* [[24]] --> 1 
+* [[24,[25]]] --> 2 
+
+
+### Specialization of cost equations reach/5 
+* CE 19 is refined into CE [37,38,39,40] 
+* CE 17 is refined into CE [41,42,43,44,45,46,47,48,49,50,51,52] 
+* CE 20 is refined into CE [53,54,55,56,57,58] 
+* CE 22 is refined into CE [59] 
+* CE 21 is refined into CE [60,61,62,63] 
+* CE 18 is refined into CE [64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111] 
+
+
+#### Refined cost equations reach/5 
+* CE 37: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):1
+     [V17>=0,V16>=1,B18=2,A18=0,Z17=0,Y17=2,X17=0,W17=0,Out=2,V=0,V1=0] 
+* CE 38: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,V,Z17):6
+     [V16>=V+1,V>=1,V17>=0,Z17=2,Y17=2,X17=0,W17=0,Out=2,V1=0] 
+* CE 39: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):1
+     [V16>=V1+1,V1>=1,V17>=0,Z17=2,Y17=0,X17=0,W17=2,Out=2,V=0] 
+* CE 40: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,V,X17):6
+     [V16>=V+1,V16>=V1+1,V>=1,V1>=1,V17>=0,X17=2,W17=2,Out=2] 
+* CE 41: reach(V1,V,V16,V17,Out) = 2+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):1
+     [V17>=0,V16>=1,B18=2,A18=0,Z17=0,Y17=2,X17=0,W17=0,Out=0,V=0,V1=0] 
+* CE 42: reach(V1,V,V16,V17,Out) = 2+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):2
+     [V16>=A18+1,A18>=1,V17>=0,B18=1,Z17=0,Y17=2,X17=0,W17=0,Out=0,V=0,V1=0] 
+* CE 43: reach(V1,V,V16,V17,Out) = 2+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):3
+     [V>=1,V17>=0,V16>=1,A18=1,Z17=0,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 44: reach(V1,V,V16,V17,Out) = 2+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):4
+     [V16>=Z17+1,Z17>=V+1,V>=1,V17>=0,A18=1,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 45: reach(V1,V,V16,V17,Out) = 2+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):5
+     [V>=Z17+1,V16>=Z17+1,Z17>=1,V17>=0,A18=1,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 46: reach(V1,V,V16,V17,Out) = 2+ eq(W17,X17,Y17):1+ eq(V,V,Z17):6
+     [V16>=V+1,V>=1,V17>=0,Z17=2,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 47: reach(V1,V,V16,V17,Out) = 2+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):1
+     [V16>=V1+1,V1>=1,V17>=0,Z17=2,Y17=0,X17=0,W17=2,Out=0,V=0] 
+* CE 48: reach(V1,V,V16,V17,Out) = 2+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):2
+     [V16>=Y17+1,V16>=V1+1,Y17>=1,V1>=1,V17>=0,Z17=1,X17=0,W17=2,Out=0,V=0] 
+* CE 49: reach(V1,V,V16,V17,Out) = 2+ eq(V1,V1,W17):6+ eq(V,X17,Y17):3
+     [V16>=V1+1,V>=1,V1>=1,V17>=0,Y17=1,X17=0,W17=2,Out=0] 
+* CE 50: reach(V1,V,V16,V17,Out) = 2+ eq(V1,V1,W17):6+ eq(V,X17,Y17):4
+     [V16>=X17+1,X17>=V+1,V16>=V1+1,V>=1,V1>=1,V17>=0,Y17=1,W17=2,Out=0] 
+* CE 51: reach(V1,V,V16,V17,Out) = 2+ eq(V1,V1,W17):6+ eq(V,X17,Y17):5
+     [V>=X17+1,V16>=X17+1,V16>=V1+1,X17>=1,V1>=1,V17>=0,Y17=1,W17=2,Out=0] 
+* CE 52: reach(V1,V,V16,V17,Out) = 2+ eq(V1,V1,W17):6+ eq(V,V,X17):6
+     [V16>=V+1,V16>=V1+1,V>=1,V1>=1,V17>=0,X17=2,W17=2,Out=0] 
+* CE 53: reach(V1,V,V16,V17,Out) = 1+ eq(W17,X17,Y17):1
+     [V17>=0,V16>=1,V>=0,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 54: reach(V1,V,V16,V17,Out) = 1+ eq(W17,X17,Y17):2
+     [V16>=X17+1,X17>=1,V17>=0,V>=0,Y17=1,W17=0,Out=0,V1=0] 
+* CE 55: reach(V1,V,V16,V17,Out) = 1+ eq(V1,W17,X17):3
+     [V1>=1,V17>=0,V16>=1,V>=0,X17=1,W17=0,Out=0] 
+* CE 56: reach(V1,V,V16,V17,Out) = 1+ eq(V1,W17,X17):4
+     [V16>=W17+1,W17>=V1+1,V1>=1,V17>=0,V>=0,X17=1,Out=0] 
+* CE 57: reach(V1,V,V16,V17,Out) = 1+ eq(V1,W17,X17):5
+     [V1>=W17+1,V16>=W17+1,W17>=1,V17>=0,V>=0,X17=1,Out=0] 
+* CE 58: reach(V1,V,V16,V17,Out) = 1+ eq(V1,V1,W17):6
+     [V16>=V1+1,V1>=1,V17>=0,V>=0,W17=2,Out=0] 
+* CE 59: reach(V1,V,V16,V17,Out) = 1
+     [V17>=0,V>=0,V1>=0,Out=1,V16=0] 
+* CE 60: reach(V1,V,V16,V17,Out) = 2+ eq(W17,X17,Y17):2+ reach(Z17,V,A18,B18,Out)
+     [V16>=A18+1,V16>=X17+1,A18>=0,X17>=1,V17>=0,V>=0,A18+B18=V16+V17,Z17=0,Y17=1,W17=0,V1=0] 
+* CE 61: reach(V1,V,V16,V17,Out) = 2+ eq(V1,W17,X17):3+ reach(V1,V,Y17,Z17,Out)
+     [V16>=Y17+1,Y17>=0,V1>=1,V17>=0,V>=0,Y17+Z17=V16+V17,X17=1,W17=0] 
+* CE 62: reach(V1,V,V16,V17,Out) = 2+ eq(V1,W17,X17):4+ reach(V1,V,Y17,Z17,Out)
+     [V16>=Y17+1,V16>=W17+1,W17>=V1+1,Y17>=0,V1>=1,V17>=0,V>=0,Y17+Z17=V16+V17,X17=1] 
+* CE 63: reach(V1,V,V16,V17,Out) = 2+ eq(V1,W17,X17):5+ reach(V1,V,Y17,Z17,Out)
+     [V16>=Y17+1,V1>=W17+1,V16>=W17+1,Y17>=0,W17>=1,V17>=0,V>=0,Y17+Z17=V16+V17,X17=1] 
+* CE 64: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):2+ reach(C18,D18,E18,V17,F18)+ union(G18,V17,V17):1+ reach(H18,I18,V17,J18,Out)+ or(K18,Out,Out):1
+     [V16>=H18+1,V16>=A18+1,H18>=0,Out>=0,V17>=0,A18>=1,J18=0,I18=0,F18=1,E18=0,D18=0,C18=0,K18=1,G18=0,B18=1,Z17=0,Y17=2,X17=0,W17=0,V=0,V1=0] 
+* CE 65: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):2+ reach(C18,D18,E18,V17,F18)+ union(G18,V17,V17):1+ reach(H18,I18,V17,J18,K18)+ or(L18,K18,M18):2
+     [V16>=H18+1,V16>=A18+1,H18>=0,K18>=0,V17>=0,A18>=1,J18=0,I18=0,F18=2,E18=0,D18=0,C18=0,M18=2,L18=2,G18=0,B18=1,Z17=0,Y17=2,X17=0,W17=0,Out=2,V=0,V1=0] 
+* CE 66: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):2+ reach(C18,D18,E18,V17,F18)+ union(G18,V17,V17):1+ reach(H18,I18,V17,J18,K18)+ or(F18,K18,L18):3
+     [V16>=H18+1,V16>=A18+1,H18>=0,K18>=0,F18>=0,V17>=0,A18>=1,J18=0,I18=0,E18=0,D18=0,C18=0,L18=0,G18=0,B18=1,Z17=0,Y17=2,X17=0,W17=0,Out=0,V=0,V1=0] 
+* CE 67: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):2+ reach(C18,D18,E18,F18,G18)+ union(E18,H18,I18):2+ reach(J18,K18,I18,L18,Out)+ or(M18,Out,Out):1
+     [V16>=E18+J18+1,I18>=E18,V16>=A18+1,J18>=0,Out>=0,E18>=1,A18>=1,I18=E18+F18,I18=E18+H18,I18=V17+E18,L18=0,K18=0,G18=1,D18=0,C18=0,M18=1,B18=1,Z17=0,Y17=2,X17=0,W17=0,V=0,V1=0] 
+* CE 68: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):2+ reach(C18,D18,E18,F18,G18)+ union(E18,H18,I18):2+ reach(J18,K18,I18,L18,M18)+ or(N18,M18,O18):2
+     [V16>=E18+J18+1,I18>=E18,V16>=A18+1,J18>=0,M18>=0,E18>=1,A18>=1,I18=E18+F18,I18=E18+H18,I18=V17+E18,L18=0,K18=0,G18=2,D18=0,C18=0,O18=2,N18=2,B18=1,Z17=0,Y17=2,X17=0,W17=0,Out=2,V=0,V1=0] 
+* CE 69: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(Z17,A18,B18):2+ reach(C18,D18,E18,F18,G18)+ union(E18,H18,I18):2+ reach(J18,K18,I18,L18,M18)+ or(G18,M18,N18):3
+     [V16>=E18+J18+1,I18>=E18,V16>=A18+1,J18>=0,M18>=0,G18>=0,E18>=1,A18>=1,I18=E18+F18,I18=E18+H18,I18=V17+E18,L18=0,K18=0,D18=0,C18=0,N18=0,B18=1,Z17=0,Y17=2,X17=0,W17=0,Out=0,V=0,V1=0] 
+* CE 70: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):3+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,Out)+ or(H18,Out,Out):1
+     [V16>=F18+1,F18>=0,Out>=0,V17>=0,V>=1,G18=0,D18=1,C18=0,B18=0,H18=1,E18=0,A18=1,Z17=0,Y17=2,X17=0,W17=0,V1=0] 
+* CE 71: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):3+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,H18)+ or(I18,H18,J18):2
+     [V16>=F18+1,F18>=0,H18>=0,V17>=0,V>=1,G18=0,D18=2,C18=0,B18=0,J18=2,I18=2,E18=0,A18=1,Z17=0,Y17=2,X17=0,W17=0,Out=2,V1=0] 
+* CE 72: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):3+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,H18)+ or(D18,H18,I18):3
+     [V16>=F18+1,F18>=0,H18>=0,D18>=0,V17>=0,V>=1,G18=0,C18=0,B18=0,I18=0,E18=0,A18=1,Z17=0,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 73: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):3+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,Out)+ or(J18,Out,Out):1
+     [V16>=C18+H18+1,G18>=C18,H18>=0,Out>=0,C18>=1,V>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,E18=1,B18=0,J18=1,A18=1,Z17=0,Y17=2,X17=0,W17=0,V1=0] 
+* CE 74: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):3+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,J18)+ or(K18,J18,L18):2
+     [V16>=C18+H18+1,G18>=C18,H18>=0,J18>=0,C18>=1,V>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,E18=2,B18=0,L18=2,K18=2,A18=1,Z17=0,Y17=2,X17=0,W17=0,Out=2,V1=0] 
+* CE 75: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):3+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,J18)+ or(E18,J18,K18):3
+     [V16>=C18+H18+1,G18>=C18,H18>=0,J18>=0,E18>=0,C18>=1,V>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,B18=0,K18=0,A18=1,Z17=0,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 76: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):4+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,Out)+ or(H18,Out,Out):1
+     [V16>=F18+1,V16>=Z17+1,Z17>=V+1,F18>=0,Out>=0,V17>=0,V>=1,G18=0,D18=1,C18=0,B18=0,H18=1,E18=0,A18=1,Y17=2,X17=0,W17=0,V1=0] 
+* CE 77: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):4+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,H18)+ or(I18,H18,J18):2
+     [V16>=F18+1,V16>=Z17+1,Z17>=V+1,F18>=0,H18>=0,V17>=0,V>=1,G18=0,D18=2,C18=0,B18=0,J18=2,I18=2,E18=0,A18=1,Y17=2,X17=0,W17=0,Out=2,V1=0] 
+* CE 78: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):4+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,H18)+ or(D18,H18,I18):3
+     [V16>=F18+1,V16>=Z17+1,Z17>=V+1,F18>=0,H18>=0,D18>=0,V17>=0,V>=1,G18=0,C18=0,B18=0,I18=0,E18=0,A18=1,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 79: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):4+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,Out)+ or(J18,Out,Out):1
+     [V16>=C18+H18+1,G18>=C18,V16>=Z17+1,Z17>=V+1,H18>=0,Out>=0,C18>=1,V>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,E18=1,B18=0,J18=1,A18=1,Y17=2,X17=0,W17=0,V1=0] 
+* CE 80: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):4+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,J18)+ or(K18,J18,L18):2
+     [V16>=C18+H18+1,G18>=C18,V16>=Z17+1,Z17>=V+1,H18>=0,J18>=0,C18>=1,V>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,E18=2,B18=0,L18=2,K18=2,A18=1,Y17=2,X17=0,W17=0,Out=2,V1=0] 
+* CE 81: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):4+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,J18)+ or(E18,J18,K18):3
+     [V16>=C18+H18+1,G18>=C18,V16>=Z17+1,Z17>=V+1,H18>=0,J18>=0,E18>=0,C18>=1,V>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,B18=0,K18=0,A18=1,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 82: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):5+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,Out)+ or(H18,Out,Out):1
+     [V16>=F18+1,V>=Z17+1,V16>=Z17+1,F18>=0,Out>=0,V17>=0,Z17>=1,G18=0,D18=1,C18=0,B18=0,H18=1,E18=0,A18=1,Y17=2,X17=0,W17=0,V1=0] 
+* CE 83: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):5+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,H18)+ or(I18,H18,J18):2
+     [V16>=F18+1,V>=Z17+1,V16>=Z17+1,F18>=0,H18>=0,V17>=0,Z17>=1,G18=0,D18=2,C18=0,B18=0,J18=2,I18=2,E18=0,A18=1,Y17=2,X17=0,W17=0,Out=2,V1=0] 
+* CE 84: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):5+ reach(B18,V,C18,V17,D18)+ union(E18,V17,V17):1+ reach(F18,V,V17,G18,H18)+ or(D18,H18,I18):3
+     [V16>=F18+1,V>=Z17+1,V16>=Z17+1,F18>=0,H18>=0,D18>=0,V17>=0,Z17>=1,G18=0,C18=0,B18=0,I18=0,E18=0,A18=1,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 85: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):5+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,Out)+ or(J18,Out,Out):1
+     [V16>=C18+H18+1,G18>=C18,V>=Z17+1,V16>=Z17+1,H18>=0,Out>=0,C18>=1,Z17>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,E18=1,B18=0,J18=1,A18=1,Y17=2,X17=0,W17=0,V1=0] 
+* CE 86: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):5+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,J18)+ or(K18,J18,L18):2
+     [V16>=C18+H18+1,G18>=C18,V>=Z17+1,V16>=Z17+1,H18>=0,J18>=0,C18>=1,Z17>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,E18=2,B18=0,L18=2,K18=2,A18=1,Y17=2,X17=0,W17=0,Out=2,V1=0] 
+* CE 87: reach(V1,V,V16,V17,Out) = 3+ eq(W17,X17,Y17):1+ eq(V,Z17,A18):5+ reach(B18,V,C18,D18,E18)+ union(C18,F18,G18):2+ reach(H18,V,G18,I18,J18)+ or(E18,J18,K18):3
+     [V16>=C18+H18+1,G18>=C18,V>=Z17+1,V16>=Z17+1,H18>=0,J18>=0,E18>=0,C18>=1,Z17>=1,G18=C18+D18,G18=C18+F18,G18=V17+C18,I18=0,B18=0,K18=0,A18=1,Y17=2,X17=0,W17=0,Out=0,V1=0] 
+* CE 88: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):2+ reach(V1,A18,B18,V17,C18)+ union(D18,V17,V17):1+ reach(E18,F18,V17,G18,Out)+ or(H18,Out,Out):1
+     [V16>=E18+1,V16>=Y17+1,V16>=V1+1,E18>=0,Out>=0,V17>=0,Y17>=1,V1>=1,G18=0,F18=0,C18=1,B18=0,A18=0,H18=1,D18=0,Z17=1,X17=0,W17=2,V=0] 
+* CE 89: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):2+ reach(V1,A18,B18,V17,C18)+ union(D18,V17,V17):1+ reach(E18,F18,V17,G18,H18)+ or(I18,H18,J18):2
+     [V16>=E18+1,V16>=Y17+1,V16>=V1+1,E18>=0,H18>=0,V17>=0,Y17>=1,V1>=1,G18=0,F18=0,C18=2,B18=0,A18=0,J18=2,I18=2,D18=0,Z17=1,X17=0,W17=2,Out=2,V=0] 
+* CE 90: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):2+ reach(V1,A18,B18,V17,C18)+ union(D18,V17,V17):1+ reach(E18,F18,V17,G18,H18)+ or(C18,H18,I18):3
+     [V16>=E18+1,V16>=Y17+1,V16>=V1+1,E18>=0,H18>=0,C18>=0,V17>=0,Y17>=1,V1>=1,G18=0,F18=0,B18=0,A18=0,I18=0,D18=0,Z17=1,X17=0,W17=2,Out=0,V=0] 
+* CE 91: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):2+ reach(V1,A18,B18,C18,D18)+ union(B18,E18,F18):2+ reach(G18,H18,F18,I18,Out)+ or(J18,Out,Out):1
+     [V16>=B18+G18+1,F18>=B18,V16>=Y17+1,V16>=V1+1,G18>=0,Out>=0,B18>=1,Y17>=1,V1>=1,F18=B18+C18,F18=B18+E18,F18=V17+B18,I18=0,H18=0,D18=1,A18=0,J18=1,Z17=1,X17=0,W17=2,V=0] 
+* CE 92: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):2+ reach(V1,A18,B18,C18,D18)+ union(B18,E18,F18):2+ reach(G18,H18,F18,I18,J18)+ or(K18,J18,L18):2
+     [V16>=B18+G18+1,F18>=B18,V16>=Y17+1,V16>=V1+1,G18>=0,J18>=0,B18>=1,Y17>=1,V1>=1,F18=B18+C18,F18=B18+E18,F18=V17+B18,I18=0,H18=0,D18=2,A18=0,L18=2,K18=2,Z17=1,X17=0,W17=2,Out=2,V=0] 
+* CE 93: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(X17,Y17,Z17):2+ reach(V1,A18,B18,C18,D18)+ union(B18,E18,F18):2+ reach(G18,H18,F18,I18,J18)+ or(D18,J18,K18):3
+     [V16>=B18+G18+1,F18>=B18,V16>=Y17+1,V16>=V1+1,G18>=0,J18>=0,D18>=0,B18>=1,Y17>=1,V1>=1,F18=B18+C18,F18=B18+E18,F18=V17+B18,I18=0,H18=0,A18=0,K18=0,Z17=1,X17=0,W17=2,Out=0,V=0] 
+* CE 94: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):3+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,Out)+ or(E18,Out,Out):1
+     [V16>=C18+1,V16>=V1+1,C18>=0,Out>=0,V17>=0,V>=1,V1>=1,D18=0,A18=1,Z17=0,E18=1,B18=0,Y17=1,X17=0,W17=2] 
+* CE 95: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):3+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,E18)+ or(F18,E18,G18):2
+     [V16>=C18+1,V16>=V1+1,C18>=0,E18>=0,V17>=0,V>=1,V1>=1,D18=0,A18=2,Z17=0,G18=2,F18=2,B18=0,Y17=1,X17=0,W17=2,Out=2] 
+* CE 96: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):3+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,E18)+ or(A18,E18,F18):3
+     [V16>=C18+1,V16>=V1+1,C18>=0,E18>=0,A18>=0,V17>=0,V>=1,V1>=1,D18=0,Z17=0,F18=0,B18=0,Y17=1,X17=0,W17=2,Out=0] 
+* CE 97: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):3+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,Out)+ or(G18,Out,Out):1
+     [V16>=Z17+E18+1,D18>=Z17,V16>=V1+1,E18>=0,Out>=0,Z17>=1,V>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,B18=1,G18=1,Y17=1,X17=0,W17=2] 
+* CE 98: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):3+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,G18)+ or(H18,G18,I18):2
+     [V16>=Z17+E18+1,D18>=Z17,V16>=V1+1,E18>=0,G18>=0,Z17>=1,V>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,B18=2,I18=2,H18=2,Y17=1,X17=0,W17=2,Out=2] 
+* CE 99: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):3+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,G18)+ or(B18,G18,H18):3
+     [V16>=Z17+E18+1,D18>=Z17,V16>=V1+1,E18>=0,G18>=0,B18>=0,Z17>=1,V>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,H18=0,Y17=1,X17=0,W17=2,Out=0] 
+* CE 100: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):4+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,Out)+ or(E18,Out,Out):1
+     [V16>=C18+1,V16>=X17+1,X17>=V+1,V16>=V1+1,C18>=0,Out>=0,V17>=0,V>=1,V1>=1,D18=0,A18=1,Z17=0,E18=1,B18=0,Y17=1,W17=2] 
+* CE 101: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):4+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,E18)+ or(F18,E18,G18):2
+     [V16>=C18+1,V16>=X17+1,X17>=V+1,V16>=V1+1,C18>=0,E18>=0,V17>=0,V>=1,V1>=1,D18=0,A18=2,Z17=0,G18=2,F18=2,B18=0,Y17=1,W17=2,Out=2] 
+* CE 102: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):4+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,E18)+ or(A18,E18,F18):3
+     [V16>=C18+1,V16>=X17+1,X17>=V+1,V16>=V1+1,C18>=0,E18>=0,A18>=0,V17>=0,V>=1,V1>=1,D18=0,Z17=0,F18=0,B18=0,Y17=1,W17=2,Out=0] 
+* CE 103: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):4+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,Out)+ or(G18,Out,Out):1
+     [V16>=Z17+E18+1,D18>=Z17,V16>=X17+1,X17>=V+1,V16>=V1+1,E18>=0,Out>=0,Z17>=1,V>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,B18=1,G18=1,Y17=1,W17=2] 
+* CE 104: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):4+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,G18)+ or(H18,G18,I18):2
+     [V16>=Z17+E18+1,D18>=Z17,V16>=X17+1,X17>=V+1,V16>=V1+1,E18>=0,G18>=0,Z17>=1,V>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,B18=2,I18=2,H18=2,Y17=1,W17=2,Out=2] 
+* CE 105: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):4+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,G18)+ or(B18,G18,H18):3
+     [V16>=Z17+E18+1,D18>=Z17,V16>=X17+1,X17>=V+1,V16>=V1+1,E18>=0,G18>=0,B18>=0,Z17>=1,V>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,H18=0,Y17=1,W17=2,Out=0] 
+* CE 106: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):5+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,Out)+ or(E18,Out,Out):1
+     [V16>=C18+1,V>=X17+1,V16>=X17+1,V16>=V1+1,C18>=0,Out>=0,V17>=0,X17>=1,V1>=1,D18=0,A18=1,Z17=0,E18=1,B18=0,Y17=1,W17=2] 
+* CE 107: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):5+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,E18)+ or(F18,E18,G18):2
+     [V16>=C18+1,V>=X17+1,V16>=X17+1,V16>=V1+1,C18>=0,E18>=0,V17>=0,X17>=1,V1>=1,D18=0,A18=2,Z17=0,G18=2,F18=2,B18=0,Y17=1,W17=2,Out=2] 
+* CE 108: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):5+ reach(V1,V,Z17,V17,A18)+ union(B18,V17,V17):1+ reach(C18,V,V17,D18,E18)+ or(A18,E18,F18):3
+     [V16>=C18+1,V>=X17+1,V16>=X17+1,V16>=V1+1,C18>=0,E18>=0,A18>=0,V17>=0,X17>=1,V1>=1,D18=0,Z17=0,F18=0,B18=0,Y17=1,W17=2,Out=0] 
+* CE 109: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):5+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,Out)+ or(G18,Out,Out):1
+     [V16>=Z17+E18+1,D18>=Z17,V>=X17+1,V16>=X17+1,V16>=V1+1,E18>=0,Out>=0,Z17>=1,X17>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,B18=1,G18=1,Y17=1,W17=2] 
+* CE 110: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):5+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,G18)+ or(H18,G18,I18):2
+     [V16>=Z17+E18+1,D18>=Z17,V>=X17+1,V16>=X17+1,V16>=V1+1,E18>=0,G18>=0,Z17>=1,X17>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,B18=2,I18=2,H18=2,Y17=1,W17=2,Out=2] 
+* CE 111: reach(V1,V,V16,V17,Out) = 3+ eq(V1,V1,W17):6+ eq(V,X17,Y17):5+ reach(V1,V,Z17,A18,B18)+ union(Z17,C18,D18):2+ reach(E18,V,D18,F18,G18)+ or(B18,G18,H18):3
+     [V16>=Z17+E18+1,D18>=Z17,V>=X17+1,V16>=X17+1,V16>=V1+1,E18>=0,G18>=0,B18>=0,Z17>=1,X17>=1,V1>=1,D18=Z17+A18,D18=Z17+C18,D18=V17+Z17,F18=0,H18=0,Y17=1,W17=2,Out=0] 
+
+### Cost equations --> "Loop" of reach/5 
+* CEs [97,103,109] --> Loop 26 
+* CEs [94,100,106] --> Loop 27 
+* CEs [98,104,110] --> Loop 28 
+* CEs [95,101,107] --> Loop 29 
+* CEs [99,105,111] --> Loop 30 
+* CEs [96,102,108] --> Loop 31 
+* CEs [91] --> Loop 32 
+* CEs [88] --> Loop 33 
+* CEs [92] --> Loop 34 
+* CEs [89] --> Loop 35 
+* CEs [93] --> Loop 36 
+* CEs [90] --> Loop 37 
+* CEs [73,79,85] --> Loop 38 
+* CEs [70,76,82] --> Loop 39 
+* CEs [74,80,86] --> Loop 40 
+* CEs [71,77,83] --> Loop 41 
+* CEs [75,81,87] --> Loop 42 
+* CEs [72,78,84] --> Loop 43 
+* CEs [67] --> Loop 44 
+* CEs [64] --> Loop 45 
+* CEs [68] --> Loop 46 
+* CEs [65] --> Loop 47 
+* CEs [69] --> Loop 48 
+* CEs [66] --> Loop 49 
+* CEs [61,62,63] --> Loop 50 
+* CEs [60] --> Loop 51 
+* CEs [40] --> Loop 52 
+* CEs [59] --> Loop 53 
+* CEs [39] --> Loop 54 
+* CEs [47,48,49,50,51,52,55,56,57,58] --> Loop 55 
+* CEs [38] --> Loop 56 
+* CEs [37] --> Loop 57 
+* CEs [41,42,43,44,45,46,53,54] --> Loop 58 
+
+#### Loops of reach/5 
+* Loop 26: reach(V1,V,V16,V17,Out)->  reach(V1,V,V16',V17,Out')  reach(V1'2,V,V16'2,V17'2,Out)
+                  [V16>=V16'+V1'2+1,V16>=V1+1,V1'2>=0,V16'>=1,Out>=0,V17>=0,V>=1,V1>=1,V17+V16'=V16'2,V17'2=0,Out'=1] 
+* Loop 27: reach(V1,V,V16,V17,Out)->  reach(V1,V,V16',V17,Out')  reach(A'2,V,V17,B'2,Out)
+                  [V16>=A'2+1,V16>=V1+1,A'2>=0,Out>=0,V17>=0,V>=1,V1>=1,B'2=0,Out'=1,V16'=0] 
+* Loop 28: reach(V1,V,V16,V17,Out)->  reach(V1,V,V16',V17,Out')  reach(V1'2,V,V16'2,V17'2,Out'2)
+                  [V16>=V16'+V1'2+1,V16>=V1+1,Out'2>=0,V1'2>=0,V16'>=1,V17>=0,V>=1,V1>=1,V17+V16'=V16'2,V17'2=0,Out'=2,Out=2] 
+* Loop 29: reach(V1,V,V16,V17,Out)->  reach(V1,V,V16',V17,Out')  reach(A'2,V,V17,B'2,C'2)
+                  [V16>=A'2+1,V16>=V1+1,C'2>=0,A'2>=0,V17>=0,V>=1,V1>=1,B'2=0,Out'=2,V16'=0,Out=2] 
+* Loop 30: reach(V1,V,V16,V17,Out)->  reach(V1,V,V16',V17,Out')  reach(V1'2,V,V16'2,V17'2,Out'2)
+                  [V16>=V16'+V1'2+1,V16>=V1+1,Out'2>=0,V1'2>=0,Out'>=0,V16'>=1,V17>=0,V>=1,V1>=1,V17+V16'=V16'2,V17'2=0,Out=0] 
+* Loop 31: reach(V1,V,V16,V17,Out)->  reach(V1,V,V16',V17,Out')  reach(A'2,V,V17,B'2,C'2)
+                  [V16>=A'2+1,V16>=V1+1,C'2>=0,A'2>=0,Out'>=0,V17>=0,V>=1,V1>=1,B'2=0,V16'=0,Out=0] 
+* Loop 32: reach(V1,V,V16,V17,Out)->  reach(V1,V',V16',V17,Out')  reach(V1'2,V'2,V16'2,V17'2,Out)
+                  [V16>=V16'+V1'2+1,V16>=V1+1,V1'2>=0,V16'>=1,Out>=0,V17>=0,V1>=1,V17+V16'=V16'2,V17'2=0,V'2=0,Out'=1,V'=0,V=0] 
+* Loop 33: reach(V1,V,V16,V17,Out)->  reach(V1,V',V16',V17,Out')  reach(A'2,B'2,V17,C'2,Out)
+                  [V16>=A'2+1,V16>=V1+1,A'2>=0,Out>=0,V17>=0,V1>=1,C'2=0,B'2=0,Out'=1,V16'=0,V'=0,V=0] 
+* Loop 34: reach(V1,V,V16,V17,Out)->  reach(V1,V',V16',V17,Out')  reach(V1'2,V'2,V16'2,V17'2,Out'2)
+                  [V16>=V16'+V1'2+1,V16>=V1+1,Out'2>=0,V1'2>=0,V16'>=1,V17>=0,V1>=1,V17+V16'=V16'2,V17'2=0,V'2=0,Out'=2,V'=0,Out=2,V=0] 
+* Loop 35: reach(V1,V,V16,V17,Out)->  reach(V1,V',V16',V17,Out')  reach(A'2,B'2,V17,C'2,D'2)
+                  [V16>=A'2+1,V16>=V1+1,D'2>=0,A'2>=0,V17>=0,V1>=1,C'2=0,B'2=0,Out'=2,V16'=0,V'=0,Out=2,V=0] 
+* Loop 36: reach(V1,V,V16,V17,Out)->  reach(V1,V',V16',V17,Out')  reach(V1'2,V'2,V16'2,V17'2,Out'2)
+                  [V16>=V16'+V1'2+1,V16>=V1+1,Out'2>=0,V1'2>=0,Out'>=0,V16'>=1,V17>=0,V1>=1,V17+V16'=V16'2,V17'2=0,V'2=0,V'=0,Out=0,V=0] 
+* Loop 37: reach(V1,V,V16,V17,Out)->  reach(V1,V',V16',V17,Out')  reach(A'2,B'2,V17,C'2,D'2)
+                  [V16>=A'2+1,V16>=V1+1,D'2>=0,A'2>=0,Out'>=0,V17>=0,V1>=1,C'2=0,B'2=0,V16'=0,V'=0,Out=0,V=0] 
+* Loop 38: reach(V1,V,V16,V17,Out)->  reach(V1',V,V16',V17,Out')  reach(V1'2,V,V16'2,V17'2,Out)
+                  [V16>=V16'+V1'2+1,V1'2>=0,V16'>=1,Out>=0,V17>=0,V>=1,V17+V16'=V16'2,V17'2=0,Out'=1,V1'=0,V1=0] 
+* Loop 39: reach(V1,V,V16,V17,Out)->  reach(V1',V,V16',V17,Out')  reach(A'2,V,V17,B'2,Out)
+                  [V16>=A'2+1,A'2>=0,Out>=0,V17>=0,V>=1,B'2=0,Out'=1,V16'=0,V1'=0,V1=0] 
+* Loop 40: reach(V1,V,V16,V17,Out)->  reach(V1',V,V16',V17,Out')  reach(V1'2,V,V16'2,V17'2,Out'2)
+                  [V16>=V16'+V1'2+1,Out'2>=0,V1'2>=0,V16'>=1,V17>=0,V>=1,V17+V16'=V16'2,V17'2=0,Out'=2,V1'=0,Out=2,V1=0] 
+* Loop 41: reach(V1,V,V16,V17,Out)->  reach(V1',V,V16',V17,Out')  reach(A'2,V,V17,B'2,C'2)
+                  [V16>=A'2+1,C'2>=0,A'2>=0,V17>=0,V>=1,B'2=0,Out'=2,V16'=0,V1'=0,Out=2,V1=0] 
+* Loop 42: reach(V1,V,V16,V17,Out)->  reach(V1',V,V16',V17,Out')  reach(V1'2,V,V16'2,V17'2,Out'2)
+                  [V16>=V16'+V1'2+1,Out'2>=0,V1'2>=0,Out'>=0,V16'>=1,V17>=0,V>=1,V17+V16'=V16'2,V17'2=0,V1'=0,Out=0,V1=0] 
+* Loop 43: reach(V1,V,V16,V17,Out)->  reach(V1',V,V16',V17,Out')  reach(A'2,V,V17,B'2,C'2)
+                  [V16>=A'2+1,C'2>=0,A'2>=0,Out'>=0,V17>=0,V>=1,B'2=0,V16'=0,V1'=0,Out=0,V1=0] 
+* Loop 44: reach(V1,V,V16,V17,Out)->  reach(V1',V',V16',V17,Out')  reach(V1'2,V'2,V16'2,V17'2,Out)
+                  [V16>=V16'+V1'2+1,V1'2>=0,V16'>=1,Out>=0,V17>=0,V17+V16'=V16'2,V17'2=0,V'2=0,Out'=1,V'=0,V1'=0,V=0,V1=0] 
+* Loop 45: reach(V1,V,V16,V17,Out)->  reach(V1',V',V16',V17,Out')  reach(A'2,B'2,V17,C'2,Out)
+                  [V16>=A'2+1,A'2>=0,Out>=0,V17>=0,V16>=2,C'2=0,B'2=0,Out'=1,V16'=0,V'=0,V1'=0,V=0,V1=0] 
+* Loop 46: reach(V1,V,V16,V17,Out)->  reach(V1',V',V16',V17,Out')  reach(V1'2,V'2,V16'2,V17'2,Out'2)
+                  [V16>=V16'+V1'2+1,Out'2>=0,V1'2>=0,V16'>=1,V17>=0,V17+V16'=V16'2,V17'2=0,V'2=0,Out'=2,V'=0,V1'=0,Out=2,V=0,V1=0] 
+* Loop 47: reach(V1,V,V16,V17,Out)->  reach(V1',V',V16',V17,Out')  reach(A'2,B'2,V17,C'2,D'2)
+                  [V16>=A'2+1,D'2>=0,A'2>=0,V17>=0,V16>=2,C'2=0,B'2=0,Out'=2,V16'=0,V'=0,V1'=0,Out=2,V=0,V1=0] 
+* Loop 48: reach(V1,V,V16,V17,Out)->  reach(V1',V',V16',V17,Out')  reach(V1'2,V'2,V16'2,V17'2,Out'2)
+                  [V16>=V16'+V1'2+1,Out'2>=0,V1'2>=0,Out'>=0,V16'>=1,V17>=0,V17+V16'=V16'2,V17'2=0,V'2=0,V'=0,V1'=0,Out=0,V=0,V1=0] 
+* Loop 49: reach(V1,V,V16,V17,Out)->  reach(V1',V',V16',V17,Out')  reach(A'2,B'2,V17,C'2,D'2)
+                  [V16>=A'2+1,D'2>=0,A'2>=0,Out'>=0,V17>=0,V16>=2,C'2=0,B'2=0,V16'=0,V'=0,V1'=0,Out=0,V=0,V1=0] 
+* Loop 50: reach(V1,V,V16,V17,Out)->  reach(V1,V,V16',V17',Out)
+                  [V16>=V16'+1,V16'>=0,V17>=0,V>=0,V1>=1,V16+V17=V16'+V17'] 
+* Loop 51: reach(V1,V,V16,V17,Out)->  reach(V1',V,V16',V17',Out)
+                  [V16>=V16'+1,V16'>=0,V17>=0,V16>=2,V>=0,V16+V17=V16'+V17',V1'=0,V1=0] 
+* Loop 52: reach(V1,V,V16,V17,Out) [V16>=V+1,V16>=V1+1,V17>=0,V>=1,V1>=1,Out=2] 
+* Loop 53: reach(V1,V,V16,V17,Out) [V17>=0,V>=0,V1>=0,Out=1,V16=0] 
+* Loop 54: reach(V1,V,V16,V17,Out) [V16>=V1+1,V17>=0,V1>=1,Out=2,V=0] 
+* Loop 55: reach(V1,V,V16,V17,Out) [V17>=0,V16>=1,V>=0,V1>=1,Out=0] 
+* Loop 56: reach(V1,V,V16,V17,Out) [V16>=V+1,V17>=0,V>=1,Out=2,V1=0] 
+* Loop 57: reach(V1,V,V16,V17,Out) [V17>=0,V16>=1,Out=2,V=0,V1=0] 
+* Loop 58: reach(V1,V,V16,V17,Out) [V17>=0,V16>=1,V>=0,Out=0,V1=0] 
+
+### Ranking functions of CR reach(V1,V,V16,V17,Out) 
+
+#### Partial ranking functions of CR reach(V1,V,V16,V17,Out) 
+* Partial RF of phase [26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51]:
+  - RF of loop [26:1,28:1,30:1,32:1,34:1,36:1]:
+    -V1+V16 depends on loops [26:2,27:2,28:2,29:2,30:2,31:2,32:2,33:2,34:2,35:2,36:2,37:2,38:2,39:2,40:2,41:2,42:2,43:2,44:2,45:2,46:2,47:2,48:2,49:2] 
+  - RF of loop [26:1,28:1,30:1,32:1,34:1,36:1,38:1,40:1,42:1,44:1,45:1,46:1,47:1,48:1,49:1,51:1]:
+    V16-1 depends on loops [26:2,27:2,28:2,29:2,30:2,31:2,32:2,33:2,34:2,35:2,36:2,37:2,38:2,39:2,40:2,41:2,42:2,43:2,44:2,45:2,46:2,47:2,48:2,49:2] 
+  - RF of loop [26:2,27:2,28:2,29:2,30:2,31:2,32:2,33:2,34:2,35:2,36:2,37:2]:
+    V1/2+V16/2+V17/2-1
+  - RF of loop [26:2,27:2,28:2,29:2,30:2,31:2,32:2,33:2,34:2,35:2,36:2,37:2,38:2,40:2,42:2,44:2,45:2,46:2,47:2,48:2,49:2]:
+    V16+V17-1
+  - RF of loop [27:1,29:1,31:1,33:1,35:1,37:1]:
+    -V1/2+V16/2 depends on loops [26:2,27:2,28:2,29:2,30:2,31:2,32:2,33:2,34:2,35:2,36:2,37:2,38:2,39:2,40:2,41:2,42:2,43:2,44:2,45:2,46:2,47:2,48:2,49:2] 
+    V16/2-1/2 depends on loops [26:2,27:2,28:2,29:2,30:2,31:2,32:2,33:2,34:2,35:2,36:2,37:2,38:2,39:2,40:2,41:2,42:2,43:2,44:2,45:2,46:2,47:2,48:2,49:2] 
+  - RF of loop [27:2,29:2,31:2,33:2,35:2,37:2]:
+    -V1+V16+V17 depends on loops [26:2,28:2,30:2,32:2,34:2,36:2] 
+  - RF of loop [27:2,29:2,31:2,33:2,35:2,37:2,45:2,47:2,49:2]:
+    V16/2+V17/2-1/2
+  - RF of loop [38:2,40:2,42:2,44:2,45:2,46:2,47:2,48:2,49:2]:
+    V1+V16+V17-1
+  - RF of loop [39:1,41:1,43:1,50:1]:
+    V16 depends on loops [26:2,27:2,28:2,29:2,30:2,31:2,32:2,33:2,34:2,35:2,36:2,37:2,38:2,39:2,40:2,41:2,42:2,43:2,44:2,45:2,46:2,47:2,48:2,49:2] 
+  - RF of loop [39:2,41:2,43:2]:
+    V1+V16+V17
+    V16+V17
+
+
+### Resulting Chains:reach(V1,V,V16,V17,Out) 
+* [58]
+* [57]
+* [56]
+* [55]
+* [54]
+* [53]
+* [52]
+* [multiple([26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51],[[58],[57],[56],[55],[54],[53],[52]])]
+
+
+### Merging Chains  reach/5 into  External patterns of execution 
+* [[57]] --> 1 
+* [[58]] --> 2 
+* [[56],[multiple([26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51],[[58],[57],[56],[55],[54],[53],[52]])]] --> 3 
+* [[54]] --> 4 
+* [[53]] --> 5 
+* [[55]] --> 6 
+* [[52]] --> 7 
+
+
+### Specialization of cost equations start/5 
+* CE 2 is refined into CE [112,113,114,115,116,117] 
+* CE 4 is refined into CE [118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288] 
+* CE 6 is refined into CE [289,290] 
+* CE 7 is refined into CE [291] 
+* CE 3 is refined into CE [292] 
+* CE 5 is refined into CE [293,294,295,296,297,298,299,300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,350,351,352,353,354,355,356,357,358,359,360,361,362,363,364] 
+* CE 8 is refined into CE [365,366,367,368,369,370,371] 
+* CE 9 is refined into CE [372,373,374,375,376,377] 
+* CE 10 is refined into CE [378,379,380] 
+* CE 11 is refined into CE [381,382] 
+* CE 12 is refined into CE [383,384,385,386,387,388,389] 
+
+
+#### Refined cost equations start/5 
+* CE 112: start(V1,V,V16,V17,V30) = 1+ eq(W30,X30,Y30):1
+     [V30>=0,V17>=1,V>=0,Y30=2,X30=0,W30=0,V16=0,V1=2] 
+* CE 113: start(V1,V,V16,V17,V30) = 1+ eq(W30,X30,Y30):2
+     [V17>=X30+1,X30>=1,V30>=0,V>=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 114: start(V1,V,V16,V17,V30) = 1+ eq(V16,W30,X30):3
+     [V16>=1,V30>=0,V17>=1,V>=0,X30=1,W30=0,V1=2] 
+* CE 115: start(V1,V,V16,V17,V30) = 1+ eq(V16,W30,X30):4
+     [V17>=W30+1,W30>=V16+1,V16>=1,V30>=0,V>=0,X30=1,V1=2] 
+* CE 116: start(V1,V,V16,V17,V30) = 1+ eq(V16,W30,X30):5
+     [V16>=W30+1,V17>=W30+1,W30>=1,V30>=0,V>=0,X30=1,V1=2] 
+* CE 117: start(V1,V,V16,V17,V30) = 1+ eq(V16,V16,W30):6
+     [V17>=V16+1,V16>=1,V30>=0,V>=0,W30=2,V1=2] 
+* CE 118: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):1+ or(K31,L31,M31):2
+     [F31>=B31,V17>=B31+1,V17>=X30+1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=2,L31=2,K31=2,J31=2,I31=0,H31=0,G31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 119: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):1+ or(K31,L31,M31):3
+     [F31>=B31,V17>=B31+1,V17>=X30+1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=0,L31=2,K31=2,J31=2,I31=0,H31=0,G31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 120: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):2+ or(K31,L31,M31):2
+     [F31>=B31,V17>=B31+1,V17>=X30+1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=2,L31=0,K31=2,J31=0,I31=0,H31=0,G31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 121: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):2+ or(K31,L31,M31):3
+     [F31>=B31,V17>=B31+1,V17>=X30+1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=0,L31=0,K31=2,J31=0,I31=0,H31=0,G31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 122: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):3+ or(K31,J31,L31):2
+     [V17>=B31+G31+1,F31+J31>=2,F31+G31>=2,F31>=J31,F31>=B31,V17>=X30+1,J31>=0,G31>=0,B31>=1,X30>=1,2>=J31,F31=B31+E31,F31=B31+C31,F31=V30+B31,L31=2,K31=2,I31=0,H31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 123: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):3+ or(K31,J31,L31):3
+     [V17>=B31+G31+1,F31+J31>=2,F31+G31>=2,F31>=J31,F31>=B31,V17>=X30+1,J31>=0,G31>=0,B31>=1,X30>=1,2>=J31,F31=B31+E31,F31=B31+C31,F31=V30+B31,L31=0,K31=2,I31=0,H31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 124: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):4+ or(K31,L31,M31):2
+     [V17>=B31+G31+1,F31>=G31+1,F31>=B31,V17>=X30+1,G31>=1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=2,L31=2,K31=2,J31=2,I31=0,H31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 125: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):4+ or(K31,L31,M31):3
+     [V17>=B31+G31+1,F31>=G31+1,F31>=B31,V17>=X30+1,G31>=1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=0,L31=2,K31=2,J31=2,I31=0,H31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 126: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):6+ or(K31,L31,M31):2
+     [V17>=B31+G31+1,F31>=B31,V17>=X30+1,G31>=1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=2,L31=0,K31=2,J31=0,I31=0,H31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 127: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):1+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):6+ or(K31,L31,M31):3
+     [V17>=B31+G31+1,F31>=B31,V17>=X30+1,G31>=1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=0,L31=0,K31=2,J31=0,I31=0,H31=0,D31=2,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 128: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):2+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):1+ or(K31,L31,M31):3
+     [F31>=B31,V17>=B31+1,V17>=X30+1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=0,L31=2,K31=0,J31=2,I31=0,H31=0,G31=0,D31=0,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 129: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):2+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):2+ or(K31,L31,M31):3
+     [F31>=B31,V17>=B31+1,V17>=X30+1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=0,L31=0,K31=0,J31=0,I31=0,H31=0,G31=0,D31=0,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 130: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):2+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):3+ or(K31,J31,L31):3
+     [V17>=B31+G31+1,F31+J31>=2,F31+G31>=2,F31>=J31,F31>=B31,V17>=X30+1,J31>=0,G31>=0,B31>=1,X30>=1,2>=J31,F31=B31+E31,F31=B31+C31,F31=V30+B31,L31=0,K31=0,I31=0,H31=0,D31=0,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 131: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):2+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):4+ or(K31,L31,M31):3
+     [V17>=B31+G31+1,F31>=G31+1,F31>=B31,V17>=X30+1,G31>=1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=0,L31=2,K31=0,J31=2,I31=0,H31=0,D31=0,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 132: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(Z30,A31,B31,C31,D31):2+ union(B31,E31,F31):2+ reach(G31,H31,F31,I31,J31):6+ or(K31,L31,M31):3
+     [V17>=B31+G31+1,F31>=B31,V17>=X30+1,G31>=1,B31>=1,X30>=1,F31=B31+E31,F31=B31+C31,F31=V30+B31,M31=0,L31=0,K31=0,J31=0,I31=0,H31=0,D31=0,A31=0,Z30=0,Y30=1,W30=0,V16=0,V=0,V1=2] 
+* CE 133: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):1+ or(J31,K31,L31):1
+     [V+A31>=2,E31>=A31,V17>=A31+1,V17>=X30+1,A31>=1,V>=0,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=2,J31=1,I31=2,H31=0,G31=0,F31=0,C31=1,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 134: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):1+ or(J31,K31,L31):2
+     [E31>=A31,V17>=A31+1,V17>=X30+1,A31>=2,V>=0,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=2,J31=2,I31=2,H31=0,G31=0,F31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 135: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):1+ or(C31,J31,K31):3
+     [A31+C31>=2,V+A31>=2,A31>=C31,E31>=A31,V17>=A31+1,V17>=X30+1,C31>=0,V>=0,X30>=1,2>=C31,E31=A31+D31,E31=A31+B31,E31=V30+A31,K31=0,J31=2,I31=2,H31=0,G31=0,F31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 136: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):2+ or(J31,K31,L31):1
+     [V+A31>=2,E31>=A31,V17>=A31+1,V17>=X30+1,A31>=1,V>=0,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=0,J31=1,I31=0,H31=0,G31=0,F31=0,C31=1,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 137: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):2+ or(J31,K31,L31):2
+     [E31>=A31,V17>=A31+1,V17>=X30+1,A31>=2,V>=0,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=0,J31=2,I31=0,H31=0,G31=0,F31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 138: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):2+ or(C31,J31,K31):3
+     [A31+C31>=2,V+A31>=2,A31>=C31,E31>=A31,V17>=A31+1,V17>=X30+1,C31>=0,V>=0,X30>=1,2>=C31,E31=A31+D31,E31=A31+B31,E31=V30+A31,K31=0,J31=0,I31=0,H31=0,G31=0,F31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 139: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):3+ or(J31,I31,I31):1
+     [V17>=A31+F31+1,E31+I31>=2,E31+F31>=2,V+A31>=2,E31>=I31,E31>=A31,V17>=X30+1,I31>=0,F31>=0,A31>=1,V>=0,X30>=1,2>=I31,E31=A31+D31,E31=A31+B31,E31=V30+A31,J31=1,H31=0,G31=0,C31=1,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 140: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):3+ or(J31,I31,K31):2
+     [V17>=A31+F31+1,E31>=A31,V17>=X30+1,I31>=0,F31>=0,A31>=2,V>=0,X30>=1,2>=I31,E31=A31+D31,E31=A31+B31,E31=V30+A31,K31=2,J31=2,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 141: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):3+ or(C31,I31,J31):3
+     [V17>=A31+F31+1,E31+I31>=2,E31+F31>=2,A31+C31>=2,V+A31>=2,E31>=I31,A31>=C31,E31>=A31,V17>=X30+1,I31>=0,C31>=0,F31>=0,V>=0,X30>=1,2>=I31,2>=C31,E31=A31+D31,E31=A31+B31,E31=V30+A31,J31=0,H31=0,G31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 142: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):4+ or(J31,K31,L31):1
+     [V17>=A31+F31+1,V+A31>=2,E31>=F31+1,E31>=A31,V17>=X30+1,F31>=1,A31>=1,V>=0,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=2,J31=1,I31=2,H31=0,G31=0,C31=1,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 143: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):4+ or(J31,K31,L31):2
+     [V17>=A31+F31+1,E31>=F31+1,E31>=A31,V17>=X30+1,F31>=1,A31>=2,V>=0,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=2,J31=2,I31=2,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 144: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):4+ or(C31,J31,K31):3
+     [V17>=A31+F31+1,A31+C31>=2,V+A31>=2,A31>=C31,E31>=F31+1,E31>=A31,V17>=X30+1,C31>=0,F31>=1,V>=0,X30>=1,2>=C31,E31=A31+D31,E31=A31+B31,E31=V30+A31,K31=0,J31=2,I31=2,H31=0,G31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 145: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):6+ or(J31,K31,L31):1
+     [V17>=A31+F31+1,V+A31>=2,E31>=A31,V17>=X30+1,F31>=1,A31>=1,V>=0,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=0,J31=1,I31=0,H31=0,G31=0,C31=1,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 146: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):6+ or(J31,K31,L31):2
+     [V17>=A31+F31+1,E31>=A31,V17>=X30+1,F31>=1,A31>=2,V>=0,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=0,J31=2,I31=0,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 147: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):3+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):6+ or(C31,J31,K31):3
+     [V17>=A31+F31+1,A31+C31>=2,V+A31>=2,A31>=C31,E31>=A31,V17>=X30+1,C31>=0,F31>=1,V>=0,X30>=1,2>=C31,E31=A31+D31,E31=A31+B31,E31=V30+A31,K31=0,J31=0,I31=0,H31=0,G31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 148: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):1+ or(J31,K31,L31):2
+     [E31>=A31,V17>=A31+1,A31>=V+1,V17>=X30+1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=2,J31=2,I31=2,H31=0,G31=0,F31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 149: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):1+ or(J31,K31,L31):3
+     [E31>=A31,V17>=A31+1,A31>=V+1,V17>=X30+1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=2,J31=2,I31=2,H31=0,G31=0,F31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 150: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):2+ or(J31,K31,L31):2
+     [E31>=A31,V17>=A31+1,A31>=V+1,V17>=X30+1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=0,J31=2,I31=0,H31=0,G31=0,F31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 151: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):2+ or(J31,K31,L31):3
+     [E31>=A31,V17>=A31+1,A31>=V+1,V17>=X30+1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=0,J31=2,I31=0,H31=0,G31=0,F31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 152: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):3+ or(J31,I31,K31):2
+     [V17>=A31+F31+1,E31>=A31,A31>=V+1,V17>=X30+1,I31>=0,F31>=0,V>=1,X30>=1,2>=I31,E31=A31+D31,E31=A31+B31,E31=V30+A31,K31=2,J31=2,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 153: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):3+ or(J31,I31,K31):3
+     [V17>=A31+F31+1,E31>=A31,A31>=V+1,V17>=X30+1,I31>=0,F31>=0,V>=1,X30>=1,2>=I31,E31=A31+D31,E31=A31+B31,E31=V30+A31,K31=0,J31=2,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 154: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):4+ or(J31,K31,L31):2
+     [V17>=A31+F31+1,E31>=F31+1,E31>=A31,A31>=V+1,V17>=X30+1,F31>=1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=2,J31=2,I31=2,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 155: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):4+ or(J31,K31,L31):3
+     [V17>=A31+F31+1,E31>=F31+1,E31>=A31,A31>=V+1,V17>=X30+1,F31>=1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=2,J31=2,I31=2,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 156: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):6+ or(J31,K31,L31):2
+     [V17>=A31+F31+1,E31>=A31,A31>=V+1,V17>=X30+1,F31>=1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=2,K31=0,J31=2,I31=0,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 157: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):4+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):6+ or(J31,K31,L31):3
+     [V17>=A31+F31+1,E31>=A31,A31>=V+1,V17>=X30+1,F31>=1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=0,J31=2,I31=0,H31=0,G31=0,C31=2,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 158: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):1+ or(H31,I31,J31):1
+     [V17>=X30+1,V30>=1,V>=0,X30>=1,J31=2,I31=2,H31=1,G31=2,F31=0,E31=0,D31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 159: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):1+ or(H31,I31,J31):3
+     [V17>=X30+1,V30>=1,V>=0,X30>=1,J31=0,I31=2,H31=1,G31=2,F31=0,E31=0,D31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 160: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):2+ or(H31,I31,J31):1
+     [V17>=X30+1,V30>=1,V>=0,X30>=1,J31=0,I31=0,H31=1,G31=0,F31=0,E31=0,D31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 161: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):2+ or(H31,I31,J31):3
+     [V17>=X30+1,V30>=1,V>=0,X30>=1,J31=0,I31=0,H31=1,G31=0,F31=0,E31=0,D31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 162: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):3+ or(H31,G31,G31):1
+     [V30+G31>=2,V30+D31>=2,V30>=G31,V17>=D31+1,V17>=X30+1,G31>=0,D31>=0,V>=0,X30>=1,2>=G31,H31=1,F31=0,E31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 163: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):3+ or(H31,G31,I31):3
+     [V30+G31>=2,V30+D31>=2,V30>=G31,V17>=D31+1,V17>=X30+1,G31>=0,D31>=0,V>=0,X30>=1,2>=G31,I31=0,H31=1,F31=0,E31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 164: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):4+ or(H31,I31,J31):1
+     [V30>=D31+1,V17>=D31+1,V17>=X30+1,D31>=1,V>=0,X30>=1,J31=2,I31=2,H31=1,G31=2,F31=0,E31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 165: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):4+ or(H31,I31,J31):3
+     [V30>=D31+1,V17>=D31+1,V17>=X30+1,D31>=1,V>=0,X30>=1,J31=0,I31=2,H31=1,G31=2,F31=0,E31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 166: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):5+ union(D31,E31,F31):1+ reach(G31,H31,I31,J31,K31):5+ or(L31,M31,N31):1
+     [V17>=G31+1,V17>=X30+1,G31>=0,V>=0,X30>=1,N31=1,M31=1,L31=1,K31=1,J31=0,I31=0,H31=0,F31=0,E31=0,D31=0,C31=1,B31=0,A31=0,Z30=0,Y30=1,W30=0,V30=0,V16=0,V1=2] 
+* CE 167: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):5+ union(D31,E31,F31):1+ reach(G31,H31,I31,J31,K31):5+ or(L31,M31,N31):3
+     [V17>=G31+1,V17>=X30+1,G31>=0,V>=0,X30>=1,N31=0,M31=1,L31=1,K31=1,J31=0,I31=0,H31=0,F31=0,E31=0,D31=0,C31=1,B31=0,A31=0,Z30=0,Y30=1,W30=0,V30=0,V16=0,V1=2] 
+* CE 168: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):6+ or(H31,I31,J31):1
+     [V17>=D31+1,V17>=X30+1,V30>=1,D31>=1,V>=0,X30>=1,J31=0,I31=0,H31=1,G31=0,F31=0,E31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 169: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,V30,B31):5+ union(C31,V30,V30):1+ reach(D31,E31,V30,F31,G31):6+ or(H31,I31,J31):3
+     [V17>=D31+1,V17>=X30+1,V30>=1,D31>=1,V>=0,X30>=1,J31=0,I31=0,H31=1,G31=0,F31=0,E31=0,C31=0,B31=1,A31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 170: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):6+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):1+ or(J31,K31,L31):3
+     [E31>=A31,V17>=A31+1,V17>=X30+1,A31>=1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=2,J31=0,I31=2,H31=0,G31=0,F31=0,C31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 171: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):6+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):2+ or(J31,K31,L31):3
+     [E31>=A31,V17>=A31+1,V17>=X30+1,A31>=1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=0,J31=0,I31=0,H31=0,G31=0,F31=0,C31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 172: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):6+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):3+ or(J31,I31,K31):3
+     [V17>=A31+F31+1,E31+I31>=2,E31+F31>=2,E31>=I31,E31>=A31,V17>=X30+1,I31>=0,F31>=0,A31>=1,V>=1,X30>=1,2>=I31,E31=A31+D31,E31=A31+B31,E31=V30+A31,K31=0,J31=0,H31=0,G31=0,C31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 173: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):6+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):4+ or(J31,K31,L31):3
+     [V17>=A31+F31+1,E31>=F31+1,E31>=A31,V17>=X30+1,F31>=1,A31>=1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=2,J31=0,I31=2,H31=0,G31=0,C31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 174: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):2+ reach(V,Z30,A31,B31,C31):6+ union(A31,D31,E31):2+ reach(F31,G31,E31,H31,I31):6+ or(J31,K31,L31):3
+     [V17>=A31+F31+1,E31>=A31,V17>=X30+1,F31>=1,A31>=1,V>=1,X30>=1,E31=A31+D31,E31=A31+B31,E31=V30+A31,L31=0,K31=0,J31=0,I31=0,H31=0,G31=0,C31=0,Z30=0,Y30=1,W30=0,V16=0,V1=2] 
+* CE 175: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):2+ or(H31,I31,J31):3
+     [D31>=Z30,V17>=Z30+1,V16>=1,Z30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=0,H31=0,G31=0,F31=0,E31=0,B31=0,Y30=0,X30=1,W30=0,V=0,V1=2] 
+* CE 176: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):3+ or(H31,G31,I31):3
+     [V17>=Z30+E31+1,D31>=G31,D31>=Z30,G31>=0,V16>=1,E31>=0,Z30>=1,2>=G31,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,I31=0,H31=0,F31=0,B31=0,Y30=0,X30=1,W30=0,V=0,V1=2] 
+* CE 177: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):6+ or(H31,I31,J31):3
+     [V17>=Z30+E31+1,D31>=Z30,V16>=1,E31>=1,Z30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=0,H31=0,G31=0,F31=0,B31=0,Y30=0,X30=1,W30=0,V=0,V1=2] 
+* CE 178: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):7+ or(H31,I31,J31):3
+     [V17>=Z30+E31+1,D31>=V16+1,D31>=E31+1,D31>=Z30,V16>=1,E31>=1,Z30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=2,H31=0,G31=2,F31=0,B31=0,Y30=0,X30=1,W30=0,V=0,V1=2] 
+* CE 179: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):1
+     [C31>=Y30,V17>=Y30+1,V16>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=1,F31=0,E31=0,D31=0,A31=1,X30=1,W30=0,V1=2] 
+* CE 180: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):2
+     [C31>=Y30,V17>=Y30+1,C31>=2,V16>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 181: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(A31,G31,H31):3
+     [C31>=A31,C31>=Y30,V17>=Y30+1,A31>=0,V16>=1,Y30>=1,V>=0,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,F31=0,E31=0,D31=0,X30=1,W30=0,V1=2] 
+* CE 182: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,F31):1
+     [V17>=Y30+D31+1,C31>=F31,C31>=Y30,F31>=0,V16>=1,D31>=0,Y30>=1,V>=0,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,G31=1,E31=0,A31=1,X30=1,W30=0,V1=2] 
+* CE 183: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):2
+     [V17>=Y30+D31+1,C31>=Y30,F31>=0,C31>=2,V16>=1,D31>=0,Y30>=1,V>=0,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=2,G31=2,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 184: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(A31,F31,G31):3
+     [V17>=Y30+D31+1,C31>=F31,C31>=A31,C31>=Y30,F31>=0,A31>=0,V16>=1,D31>=0,Y30>=1,V>=0,2>=F31,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,G31=0,E31=0,X30=1,W30=0,V1=2] 
+* CE 185: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):1
+     [V17>=Y30+D31+1,C31>=Y30,V16>=1,D31>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=1,F31=0,E31=0,A31=1,X30=1,W30=0,V1=2] 
+* CE 186: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,C31>=Y30,C31>=2,V16>=1,D31>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 187: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(A31,G31,H31):3
+     [V17>=Y30+D31+1,C31>=A31,C31>=Y30,A31>=0,V16>=1,D31>=1,Y30>=1,V>=0,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,F31=0,E31=0,X30=1,W30=0,V1=2] 
+* CE 188: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):1
+     [V17>=Y30+D31+1,C31>=V16+1,C31>=D31+1,C31>=Y30,V16>=1,D31>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=1,F31=2,E31=0,A31=1,X30=1,W30=0,V1=2] 
+* CE 189: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,C31>=V16+1,C31>=D31+1,C31>=Y30,V16>=1,D31>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 190: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(A31,G31,H31):3
+     [V17>=Y30+D31+1,C31>=V16+1,C31>=D31+1,C31>=Y30,A31>=0,V16>=1,D31>=1,Y30>=1,V>=0,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=2,F31=2,E31=0,X30=1,W30=0,V1=2] 
+* CE 191: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):2+ or(E31,F31,G31):1
+     [V30>=1,V16>=1,V>=0,V17>=1,G31=0,F31=0,E31=1,D31=0,C31=0,B31=0,A31=0,Z30=1,Y30=0,X30=1,W30=0,V1=2] 
+* CE 192: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):2+ or(E31,F31,G31):3
+     [V30>=1,V16>=1,V>=0,V17>=1,G31=0,F31=0,E31=1,D31=0,C31=0,B31=0,A31=0,Z30=1,Y30=0,X30=1,W30=0,V1=2] 
+* CE 193: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):3+ or(E31,D31,D31):1
+     [V30>=D31,V17>=B31+1,D31>=0,V30>=1,V16>=1,B31>=0,V>=0,2>=D31,E31=1,C31=0,A31=0,Z30=1,Y30=0,X30=1,W30=0,V1=2] 
+* CE 194: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):3+ or(E31,D31,F31):3
+     [V30>=D31,V17>=B31+1,D31>=0,V30>=1,V16>=1,B31>=0,V>=0,2>=D31,F31=0,E31=1,C31=0,A31=0,Z30=1,Y30=0,X30=1,W30=0,V1=2] 
+* CE 195: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):5+ union(B31,C31,D31):1+ reach(E31,V16,F31,G31,H31):5+ or(I31,J31,K31):1
+     [V17>=E31+1,V16>=1,E31>=0,V>=0,K31=1,J31=1,I31=1,H31=1,G31=0,F31=0,D31=0,C31=0,B31=0,A31=1,Z30=0,Y30=0,X30=1,W30=0,V30=0,V1=2] 
+* CE 196: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):5+ union(B31,C31,D31):1+ reach(E31,V16,F31,G31,H31):5+ or(I31,J31,K31):3
+     [V17>=E31+1,V16>=1,E31>=0,V>=0,K31=0,J31=1,I31=1,H31=1,G31=0,F31=0,D31=0,C31=0,B31=0,A31=1,Z30=0,Y30=0,X30=1,W30=0,V30=0,V1=2] 
+* CE 197: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):6+ or(E31,F31,G31):1
+     [V17>=B31+1,V30>=1,V16>=1,B31>=1,V>=0,G31=0,F31=0,E31=1,D31=0,C31=0,A31=0,Z30=1,Y30=0,X30=1,W30=0,V1=2] 
+* CE 198: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):6+ or(E31,F31,G31):3
+     [V17>=B31+1,V30>=1,V16>=1,B31>=1,V>=0,G31=0,F31=0,E31=1,D31=0,C31=0,A31=0,Z30=1,Y30=0,X30=1,W30=0,V1=2] 
+* CE 199: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):7+ or(E31,F31,G31):1
+     [V30>=V16+1,V30>=B31+1,V17>=B31+1,V16>=1,B31>=1,V>=0,G31=2,F31=2,E31=1,D31=2,C31=0,A31=0,Z30=1,Y30=0,X30=1,W30=0,V1=2] 
+* CE 200: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):7+ or(E31,F31,G31):3
+     [V30>=V16+1,V30>=B31+1,V17>=B31+1,V16>=1,B31>=1,V>=0,G31=0,F31=2,E31=1,D31=2,C31=0,A31=0,Z30=1,Y30=0,X30=1,W30=0,V1=2] 
+* CE 201: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):3
+     [C31>=Y30,V17>=Y30+1,V16>=1,Y30>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=0,F31=0,E31=0,D31=0,A31=0,X30=1,W30=0,V1=2] 
+* CE 202: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):3
+     [V17>=Y30+D31+1,C31>=F31,C31>=Y30,F31>=0,V16>=1,D31>=0,Y30>=1,V>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,E31=0,A31=0,X30=1,W30=0,V1=2] 
+* CE 203: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,C31>=Y30,V16>=1,D31>=1,Y30>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=0,F31=0,E31=0,A31=0,X30=1,W30=0,V1=2] 
+* CE 204: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,C31>=V16+1,C31>=D31+1,C31>=Y30,V16>=1,D31>=1,Y30>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=2,G31=0,F31=2,E31=0,A31=0,X30=1,W30=0,V1=2] 
+* CE 205: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):2
+     [Y30>=V16+1,C31>=Y30,V17>=Y30+1,Y30>=V+1,V16>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 206: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):3
+     [Y30>=V16+1,C31>=Y30,V17>=Y30+1,Y30>=V+1,V16>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 207: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=Y30,Y30>=V+1,F31>=0,V16>=1,D31>=0,V>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=2,G31=2,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 208: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=Y30,Y30>=V+1,F31>=0,V16>=1,D31>=0,V>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=2,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 209: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=Y30,Y30>=V+1,V16>=1,D31>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 210: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=Y30,Y30>=V+1,V16>=1,D31>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 211: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=D31+1,C31>=Y30,Y30>=V+1,V16>=1,D31>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 212: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):3+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=D31+1,C31>=Y30,Y30>=V+1,V16>=1,D31>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,W30=0,V1=2] 
+* CE 213: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):2+ or(H31,I31,J31):3
+     [W30>=V16+1,D31>=Z30,V17>=Z30+1,V17>=W30+1,V16>=1,Z30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=0,H31=0,G31=0,F31=0,E31=0,B31=0,Y30=0,X30=1,V=0,V1=2] 
+* CE 214: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):3+ or(H31,G31,I31):3
+     [V17>=Z30+E31+1,D31>=G31,W30>=V16+1,D31>=Z30,V17>=W30+1,G31>=0,V16>=1,E31>=0,Z30>=1,2>=G31,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,I31=0,H31=0,F31=0,B31=0,Y30=0,X30=1,V=0,V1=2] 
+* CE 215: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):6+ or(H31,I31,J31):3
+     [V17>=Z30+E31+1,W30>=V16+1,D31>=Z30,V17>=W30+1,V16>=1,E31>=1,Z30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=0,H31=0,G31=0,F31=0,B31=0,Y30=0,X30=1,V=0,V1=2] 
+* CE 216: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):7+ or(H31,I31,J31):3
+     [V17>=Z30+E31+1,D31>=V16+1,W30>=V16+1,D31>=E31+1,D31>=Z30,V17>=W30+1,V16>=1,E31>=1,Z30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=2,H31=0,G31=2,F31=0,B31=0,Y30=0,X30=1,V=0,V1=2] 
+* CE 217: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):1
+     [W30>=V16+1,C31>=Y30,V17>=Y30+1,V17>=W30+1,V16>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=1,F31=0,E31=0,D31=0,A31=1,X30=1,V1=2] 
+* CE 218: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):2
+     [W30>=V16+1,C31>=Y30,V17>=Y30+1,V17>=W30+1,C31>=2,V16>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,V1=2] 
+* CE 219: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(A31,G31,H31):3
+     [C31>=A31,W30>=V16+1,C31>=Y30,V17>=Y30+1,V17>=W30+1,A31>=0,V16>=1,Y30>=1,V>=0,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,F31=0,E31=0,D31=0,X30=1,V1=2] 
+* CE 220: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,F31):1
+     [V17>=Y30+D31+1,C31>=F31,W30>=V16+1,C31>=Y30,V17>=W30+1,F31>=0,V16>=1,D31>=0,Y30>=1,V>=0,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,G31=1,E31=0,A31=1,X30=1,V1=2] 
+* CE 221: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):2
+     [V17>=Y30+D31+1,W30>=V16+1,C31>=Y30,V17>=W30+1,F31>=0,C31>=2,V16>=1,D31>=0,Y30>=1,V>=0,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=2,G31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 222: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(A31,F31,G31):3
+     [V17>=Y30+D31+1,C31>=F31,C31>=A31,W30>=V16+1,C31>=Y30,V17>=W30+1,F31>=0,A31>=0,V16>=1,D31>=0,Y30>=1,V>=0,2>=F31,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,G31=0,E31=0,X30=1,V1=2] 
+* CE 223: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):1
+     [V17>=Y30+D31+1,W30>=V16+1,C31>=Y30,V17>=W30+1,V16>=1,D31>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=1,F31=0,E31=0,A31=1,X30=1,V1=2] 
+* CE 224: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,W30>=V16+1,C31>=Y30,V17>=W30+1,C31>=2,V16>=1,D31>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,V1=2] 
+* CE 225: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(A31,G31,H31):3
+     [V17>=Y30+D31+1,C31>=A31,W30>=V16+1,C31>=Y30,V17>=W30+1,A31>=0,V16>=1,D31>=1,Y30>=1,V>=0,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,F31=0,E31=0,X30=1,V1=2] 
+* CE 226: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):1
+     [V17>=Y30+D31+1,C31>=V16+1,W30>=V16+1,C31>=D31+1,C31>=Y30,V17>=W30+1,V16>=1,D31>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=1,F31=2,E31=0,A31=1,X30=1,V1=2] 
+* CE 227: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,C31>=V16+1,W30>=V16+1,C31>=D31+1,C31>=Y30,V17>=W30+1,V16>=1,D31>=1,Y30>=1,V>=0,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 228: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(A31,G31,H31):3
+     [V17>=Y30+D31+1,C31>=V16+1,W30>=V16+1,C31>=D31+1,C31>=Y30,V17>=W30+1,A31>=0,V16>=1,D31>=1,Y30>=1,V>=0,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=2,F31=2,E31=0,X30=1,V1=2] 
+* CE 229: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):2+ or(E31,F31,G31):1
+     [W30>=V16+1,V17>=W30+1,V30>=1,V16>=1,V>=0,G31=0,F31=0,E31=1,D31=0,C31=0,B31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 230: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):2+ or(E31,F31,G31):3
+     [W30>=V16+1,V17>=W30+1,V30>=1,V16>=1,V>=0,G31=0,F31=0,E31=1,D31=0,C31=0,B31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 231: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):3+ or(E31,D31,D31):1
+     [V30>=D31,W30>=V16+1,V17>=B31+1,V17>=W30+1,D31>=0,V30>=1,V16>=1,B31>=0,V>=0,2>=D31,E31=1,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 232: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):3+ or(E31,D31,F31):3
+     [V30>=D31,W30>=V16+1,V17>=B31+1,V17>=W30+1,D31>=0,V30>=1,V16>=1,B31>=0,V>=0,2>=D31,F31=0,E31=1,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 233: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):5+ union(B31,C31,D31):1+ reach(E31,V16,F31,G31,H31):5+ or(I31,J31,K31):1
+     [W30>=V16+1,V17>=E31+1,V17>=W30+1,V16>=1,E31>=0,V>=0,K31=1,J31=1,I31=1,H31=1,G31=0,F31=0,D31=0,C31=0,B31=0,A31=1,Z30=0,Y30=0,X30=1,V30=0,V1=2] 
+* CE 234: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):5+ union(B31,C31,D31):1+ reach(E31,V16,F31,G31,H31):5+ or(I31,J31,K31):3
+     [W30>=V16+1,V17>=E31+1,V17>=W30+1,V16>=1,E31>=0,V>=0,K31=0,J31=1,I31=1,H31=1,G31=0,F31=0,D31=0,C31=0,B31=0,A31=1,Z30=0,Y30=0,X30=1,V30=0,V1=2] 
+* CE 235: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):6+ or(E31,F31,G31):1
+     [W30>=V16+1,V17>=B31+1,V17>=W30+1,V30>=1,V16>=1,B31>=1,V>=0,G31=0,F31=0,E31=1,D31=0,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 236: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):6+ or(E31,F31,G31):3
+     [W30>=V16+1,V17>=B31+1,V17>=W30+1,V30>=1,V16>=1,B31>=1,V>=0,G31=0,F31=0,E31=1,D31=0,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 237: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):7+ or(E31,F31,G31):1
+     [V30>=V16+1,W30>=V16+1,V30>=B31+1,V17>=B31+1,V17>=W30+1,V16>=1,B31>=1,V>=0,G31=2,F31=2,E31=1,D31=2,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 238: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):7+ or(E31,F31,G31):3
+     [V30>=V16+1,W30>=V16+1,V30>=B31+1,V17>=B31+1,V17>=W30+1,V16>=1,B31>=1,V>=0,G31=0,F31=2,E31=1,D31=2,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 239: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):3
+     [W30>=V16+1,C31>=Y30,V17>=Y30+1,V17>=W30+1,V16>=1,Y30>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=0,F31=0,E31=0,D31=0,A31=0,X30=1,V1=2] 
+* CE 240: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):3
+     [V17>=Y30+D31+1,C31>=F31,W30>=V16+1,C31>=Y30,V17>=W30+1,F31>=0,V16>=1,D31>=0,Y30>=1,V>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,E31=0,A31=0,X30=1,V1=2] 
+* CE 241: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,W30>=V16+1,C31>=Y30,V17>=W30+1,V16>=1,D31>=1,Y30>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=0,F31=0,E31=0,A31=0,X30=1,V1=2] 
+* CE 242: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,C31>=V16+1,W30>=V16+1,C31>=D31+1,C31>=Y30,V17>=W30+1,V16>=1,D31>=1,Y30>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=2,G31=0,F31=2,E31=0,A31=0,X30=1,V1=2] 
+* CE 243: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):2
+     [Y30>=V16+1,W30>=V16+1,C31>=Y30,V17>=Y30+1,Y30>=V+1,V17>=W30+1,V16>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,V1=2] 
+* CE 244: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):3
+     [Y30>=V16+1,W30>=V16+1,C31>=Y30,V17>=Y30+1,Y30>=V+1,V17>=W30+1,V16>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,V1=2] 
+* CE 245: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,W30>=V16+1,C31>=Y30,Y30>=V+1,V17>=W30+1,F31>=0,V16>=1,D31>=0,V>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=2,G31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 246: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,W30>=V16+1,C31>=Y30,Y30>=V+1,V17>=W30+1,F31>=0,V16>=1,D31>=0,V>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 247: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,W30>=V16+1,C31>=Y30,Y30>=V+1,V17>=W30+1,V16>=1,D31>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,V1=2] 
+* CE 248: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,W30>=V16+1,C31>=Y30,Y30>=V+1,V17>=W30+1,V16>=1,D31>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,V1=2] 
+* CE 249: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,W30>=V16+1,C31>=D31+1,C31>=Y30,Y30>=V+1,V17>=W30+1,V16>=1,D31>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 250: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):4+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,W30>=V16+1,C31>=D31+1,C31>=Y30,Y30>=V+1,V17>=W30+1,V16>=1,D31>=1,V>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 251: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):2+ or(H31,I31,J31):3
+     [D31>=Z30,V17>=Z30+1,V16>=W30+1,V17>=W30+1,Z30>=1,W30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=0,H31=0,G31=0,F31=0,E31=0,B31=0,Y30=0,X30=1,V=0,V1=2] 
+* CE 252: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):3+ or(H31,G31,I31):3
+     [V17>=Z30+E31+1,D31>=G31,D31>=Z30,V16>=W30+1,V17>=W30+1,G31>=0,E31>=0,Z30>=1,W30>=1,2>=G31,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,I31=0,H31=0,F31=0,B31=0,Y30=0,X30=1,V=0,V1=2] 
+* CE 253: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):6+ or(H31,I31,J31):3
+     [V17>=Z30+E31+1,D31>=Z30,V16>=W30+1,V17>=W30+1,E31>=1,Z30>=1,W30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=0,H31=0,G31=0,F31=0,B31=0,Y30=0,X30=1,V=0,V1=2] 
+* CE 254: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(Y30,V16,Z30,A31,B31):2+ union(Z30,C31,D31):2+ reach(E31,V16,D31,F31,G31):7+ or(H31,I31,J31):3
+     [V17>=Z30+E31+1,D31>=V16+1,D31>=E31+1,D31>=Z30,V16>=W30+1,V17>=W30+1,E31>=1,Z30>=1,W30>=1,D31=Z30+C31,D31=Z30+A31,D31=V30+Z30,J31=0,I31=2,H31=0,G31=2,F31=0,B31=0,Y30=0,X30=1,V=0,V1=2] 
+* CE 255: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):1
+     [C31>=Y30,V17>=Y30+1,V16>=W30+1,V17>=W30+1,Y30>=1,V>=0,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=1,F31=0,E31=0,D31=0,A31=1,X30=1,V1=2] 
+* CE 256: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):2
+     [C31>=Y30,V17>=Y30+1,V16>=W30+1,V17>=W30+1,C31>=2,Y30>=1,V>=0,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,V1=2] 
+* CE 257: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(A31,G31,H31):3
+     [C31>=A31,C31>=Y30,V17>=Y30+1,V16>=W30+1,V17>=W30+1,A31>=0,Y30>=1,V>=0,W30>=1,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,F31=0,E31=0,D31=0,X30=1,V1=2] 
+* CE 258: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,F31):1
+     [V17>=Y30+D31+1,C31>=F31,C31>=Y30,V16>=W30+1,V17>=W30+1,F31>=0,D31>=0,Y30>=1,V>=0,W30>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,G31=1,E31=0,A31=1,X30=1,V1=2] 
+* CE 259: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):2
+     [V17>=Y30+D31+1,C31>=Y30,V16>=W30+1,V17>=W30+1,F31>=0,C31>=2,D31>=0,Y30>=1,V>=0,W30>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=2,G31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 260: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(A31,F31,G31):3
+     [V17>=Y30+D31+1,C31>=F31,C31>=A31,C31>=Y30,V16>=W30+1,V17>=W30+1,F31>=0,A31>=0,D31>=0,Y30>=1,V>=0,W30>=1,2>=F31,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,G31=0,E31=0,X30=1,V1=2] 
+* CE 261: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):1
+     [V17>=Y30+D31+1,C31>=Y30,V16>=W30+1,V17>=W30+1,D31>=1,Y30>=1,V>=0,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=1,F31=0,E31=0,A31=1,X30=1,V1=2] 
+* CE 262: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,C31>=Y30,V16>=W30+1,V17>=W30+1,C31>=2,D31>=1,Y30>=1,V>=0,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,V1=2] 
+* CE 263: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(A31,G31,H31):3
+     [V17>=Y30+D31+1,C31>=A31,C31>=Y30,V16>=W30+1,V17>=W30+1,A31>=0,D31>=1,Y30>=1,V>=0,W30>=1,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,F31=0,E31=0,X30=1,V1=2] 
+* CE 264: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):1
+     [V17>=Y30+D31+1,C31>=V16+1,C31>=D31+1,C31>=Y30,V16>=W30+1,V17>=W30+1,D31>=1,Y30>=1,V>=0,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=1,F31=2,E31=0,A31=1,X30=1,V1=2] 
+* CE 265: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,C31>=V16+1,C31>=D31+1,C31>=Y30,V16>=W30+1,V17>=W30+1,D31>=1,Y30>=1,V>=0,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 266: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):3+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(A31,G31,H31):3
+     [V17>=Y30+D31+1,C31>=V16+1,C31>=D31+1,C31>=Y30,V16>=W30+1,V17>=W30+1,A31>=0,D31>=1,Y30>=1,V>=0,W30>=1,2>=A31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=2,F31=2,E31=0,X30=1,V1=2] 
+* CE 267: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):2+ or(E31,F31,G31):1
+     [V16>=W30+1,V17>=W30+1,V30>=1,V>=0,W30>=1,G31=0,F31=0,E31=1,D31=0,C31=0,B31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 268: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):2+ or(E31,F31,G31):3
+     [V16>=W30+1,V17>=W30+1,V30>=1,V>=0,W30>=1,G31=0,F31=0,E31=1,D31=0,C31=0,B31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 269: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):3+ or(E31,D31,D31):1
+     [V30>=D31,V17>=B31+1,V16>=W30+1,V17>=W30+1,D31>=0,V30>=1,B31>=0,V>=0,W30>=1,2>=D31,E31=1,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 270: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):3+ or(E31,D31,F31):3
+     [V30>=D31,V17>=B31+1,V16>=W30+1,V17>=W30+1,D31>=0,V30>=1,B31>=0,V>=0,W30>=1,2>=D31,F31=0,E31=1,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 271: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):5+ union(B31,C31,D31):1+ reach(E31,V16,F31,G31,H31):5+ or(I31,J31,K31):1
+     [V17>=E31+1,V16>=W30+1,V17>=W30+1,E31>=0,V>=0,W30>=1,K31=1,J31=1,I31=1,H31=1,G31=0,F31=0,D31=0,C31=0,B31=0,A31=1,Z30=0,Y30=0,X30=1,V30=0,V1=2] 
+* CE 272: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):5+ union(B31,C31,D31):1+ reach(E31,V16,F31,G31,H31):5+ or(I31,J31,K31):3
+     [V17>=E31+1,V16>=W30+1,V17>=W30+1,E31>=0,V>=0,W30>=1,K31=0,J31=1,I31=1,H31=1,G31=0,F31=0,D31=0,C31=0,B31=0,A31=1,Z30=0,Y30=0,X30=1,V30=0,V1=2] 
+* CE 273: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):6+ or(E31,F31,G31):1
+     [V17>=B31+1,V16>=W30+1,V17>=W30+1,V30>=1,B31>=1,V>=0,W30>=1,G31=0,F31=0,E31=1,D31=0,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 274: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):6+ or(E31,F31,G31):3
+     [V17>=B31+1,V16>=W30+1,V17>=W30+1,V30>=1,B31>=1,V>=0,W30>=1,G31=0,F31=0,E31=1,D31=0,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 275: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):7+ or(E31,F31,G31):1
+     [V30>=V16+1,V30>=B31+1,V17>=B31+1,V16>=W30+1,V17>=W30+1,B31>=1,V>=0,W30>=1,G31=2,F31=2,E31=1,D31=2,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 276: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,V30,Z30):5+ union(A31,V30,V30):1+ reach(B31,V16,V30,C31,D31):7+ or(E31,F31,G31):3
+     [V30>=V16+1,V30>=B31+1,V17>=B31+1,V16>=W30+1,V17>=W30+1,B31>=1,V>=0,W30>=1,G31=0,F31=2,E31=1,D31=2,C31=0,A31=0,Z30=1,Y30=0,X30=1,V1=2] 
+* CE 277: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):3
+     [C31>=Y30,V17>=Y30+1,V16>=W30+1,V17>=W30+1,Y30>=1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=0,F31=0,E31=0,D31=0,A31=0,X30=1,V1=2] 
+* CE 278: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):3
+     [V17>=Y30+D31+1,C31>=F31,C31>=Y30,V16>=W30+1,V17>=W30+1,F31>=0,D31>=0,Y30>=1,V>=1,W30>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=0,E31=0,A31=0,X30=1,V1=2] 
+* CE 279: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,C31>=Y30,V16>=W30+1,V17>=W30+1,D31>=1,Y30>=1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=0,F31=0,E31=0,A31=0,X30=1,V1=2] 
+* CE 280: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):6+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,C31>=V16+1,C31>=D31+1,C31>=Y30,V16>=W30+1,V17>=W30+1,D31>=1,Y30>=1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=2,G31=0,F31=2,E31=0,A31=0,X30=1,V1=2] 
+* CE 281: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):2
+     [Y30>=V16+1,C31>=Y30,V17>=Y30+1,Y30>=V+1,V16>=W30+1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,V1=2] 
+* CE 282: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):2+ or(G31,H31,I31):3
+     [Y30>=V16+1,C31>=Y30,V17>=Y30+1,Y30>=V+1,V16>=W30+1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=2,F31=0,E31=0,D31=0,A31=2,X30=1,V1=2] 
+* CE 283: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=Y30,Y30>=V+1,V16>=W30+1,F31>=0,D31>=0,V>=1,W30>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=2,G31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 284: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):3+ or(G31,F31,H31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=Y30,Y30>=V+1,V16>=W30+1,F31>=0,D31>=0,V>=1,W30>=1,2>=F31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,H31=0,G31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 285: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=Y30,Y30>=V+1,V16>=W30+1,D31>=1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,V1=2] 
+* CE 286: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):6+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=Y30,Y30>=V+1,V16>=W30+1,D31>=1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=0,G31=2,F31=0,E31=0,A31=2,X30=1,V1=2] 
+* CE 287: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):2
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=D31+1,C31>=Y30,Y30>=V+1,V16>=W30+1,D31>=1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 288: start(V1,V,V16,V17,V30) = 2+ eq(V16,W30,X30):5+ reach(V,V16,Y30,Z30,A31):7+ union(Y30,B31,C31):2+ reach(D31,V16,C31,E31,F31):7+ or(G31,H31,I31):3
+     [V17>=Y30+D31+1,Y30>=V16+1,C31>=D31+1,C31>=Y30,Y30>=V+1,V16>=W30+1,D31>=1,V>=1,W30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=2,G31=2,F31=2,E31=0,A31=2,X30=1,V1=2] 
+* CE 289: start(V1,V,V16,V17,V30) = 2+ eq(W30,X30,Y30):1
+     [V30>=0,V17>=1,V>=0,Y30=2,X30=0,W30=0,V16=0,V1=2] 
+* CE 290: start(V1,V,V16,V17,V30) = 2+ eq(V16,V16,W30):6
+     [V17>=V16+1,V16>=1,V30>=0,V>=0,W30=2,V1=2] 
+* CE 291: start(V1,V,V16,V17,V30) = 1
+     [V30>=0,V17>=1,V16>=0,V>=0,V1=2] 
+* CE 292: start(V1,V,V16,V17,V30) = 0
+     [V30>=0,V17>=0,V16>=0,V>=0,V1>=0] 
+* CE 293: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):1+ or(H31,I31,J31):2
+     [C31>=Y30,V17>=Y30+1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=2,I31=2,H31=2,G31=2,F31=0,E31=0,D31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 294: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):1+ or(H31,I31,J31):3
+     [C31>=Y30,V17>=Y30+1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=0,I31=2,H31=2,G31=2,F31=0,E31=0,D31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 295: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):2+ or(H31,I31,J31):2
+     [C31>=Y30,V17>=Y30+1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=2,I31=0,H31=2,G31=0,F31=0,E31=0,D31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 296: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):2+ or(H31,I31,J31):3
+     [C31>=Y30,V17>=Y30+1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=0,I31=0,H31=2,G31=0,F31=0,E31=0,D31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 297: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):3+ or(H31,G31,I31):2
+     [V17>=Y30+D31+1,C31+G31>=2,C31+D31>=2,C31>=G31,C31>=Y30,G31>=0,D31>=0,Y30>=1,2>=G31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=2,H31=2,F31=0,E31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 298: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):3+ or(H31,G31,I31):3
+     [V17>=Y30+D31+1,C31+G31>=2,C31+D31>=2,C31>=G31,C31>=Y30,G31>=0,D31>=0,Y30>=1,2>=G31,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,I31=0,H31=2,F31=0,E31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 299: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):4+ or(H31,I31,J31):2
+     [V17>=Y30+D31+1,C31>=D31+1,C31>=Y30,D31>=1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=2,I31=2,H31=2,G31=2,F31=0,E31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 300: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):4+ or(H31,I31,J31):3
+     [V17>=Y30+D31+1,C31>=D31+1,C31>=Y30,D31>=1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=0,I31=2,H31=2,G31=2,F31=0,E31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 301: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):6+ or(H31,I31,J31):2
+     [V17>=Y30+D31+1,C31>=Y30,D31>=1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=2,I31=0,H31=2,G31=0,F31=0,E31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 302: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):6+ or(H31,I31,J31):3
+     [V17>=Y30+D31+1,C31>=Y30,D31>=1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=0,I31=0,H31=2,G31=0,F31=0,E31=0,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 303: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):2+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):1+ or(H31,I31,J31):3
+     [C31>=Y30,V17>=Y30+1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=0,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,A31=0,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 304: start(V1,V,V16,V17,V30) = 1+ reach(W30,V16,X30,Y30,Z30):2+ union(X30,A31,B31):2+ reach(C31,V16,B31,D31,E31):2+ or(F31,G31,H31):3
+     [B31>=X30,V17>=X30+1,V16>=0,X30>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,H31=0,G31=0,F31=0,E31=0,D31=0,C31=0,Z30=0,W30=0,V=0,V1=1] 
+* CE 305: start(V1,V,V16,V17,V30) = 1+ reach(W30,V16,X30,Y30,Z30):2+ union(X30,A31,B31):2+ reach(C31,V16,B31,D31,E31):3+ or(F31,E31,G31):3
+     [V16+B31+E31>=2,V16+B31+C31>=2,V17>=X30+C31+1,B31>=E31,B31>=X30,E31>=0,V16>=0,C31>=0,X30>=1,2>=E31,B31=X30+A31,B31=X30+Y30,B31=V30+X30,G31=0,F31=0,D31=0,Z30=0,W30=0,V=0,V1=1] 
+* CE 306: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):2+ union(Y30,B31,C31):2+ reach(D31,E31,C31,F31,G31):4+ or(H31,I31,J31):3
+     [V17>=Y30+D31+1,C31>=D31+1,C31>=Y30,D31>=1,Y30>=1,C31=Y30+B31,C31=Y30+Z30,C31=V30+Y30,J31=0,I31=2,H31=0,G31=2,F31=0,E31=0,A31=0,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 307: start(V1,V,V16,V17,V30) = 1+ reach(W30,V16,X30,Y30,Z30):2+ union(X30,A31,B31):2+ reach(C31,V16,B31,D31,E31):6+ or(F31,G31,H31):3
+     [V17>=X30+C31+1,B31>=X30,V16>=0,C31>=1,X30>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,H31=0,G31=0,F31=0,E31=0,D31=0,Z30=0,W30=0,V=0,V1=1] 
+* CE 308: start(V1,V,V16,V17,V30) = 1+ reach(W30,V16,X30,Y30,Z30):2+ union(X30,A31,B31):2+ reach(C31,V16,B31,D31,E31):7+ or(F31,G31,H31):3
+     [V17>=X30+C31+1,B31>=V16+1,B31>=C31+1,B31>=X30,V16>=1,C31>=1,X30>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,H31=0,G31=2,F31=0,E31=2,D31=0,Z30=0,W30=0,V=0,V1=1] 
+* CE 309: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):3+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):1+ or(G31,H31,I31):1
+     [V+X30>=2,B31>=X30,V17>=X30+1,X30>=1,V>=0,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=2,H31=2,G31=1,F31=2,E31=0,D31=0,C31=0,Z30=1,W30=0,V16=0,V1=1] 
+* CE 310: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):3+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):1+ or(G31,H31,I31):2
+     [B31>=X30,V17>=X30+1,X30>=2,V>=0,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=2,H31=2,G31=2,F31=2,E31=0,D31=0,C31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 311: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):3+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):1+ or(Z30,G31,H31):3
+     [X30+Z30>=2,V+X30>=2,X30>=Z30,B31>=X30,V17>=X30+1,Z30>=0,V>=0,2>=Z30,B31=X30+A31,B31=X30+Y30,B31=V30+X30,H31=0,G31=2,F31=2,E31=0,D31=0,C31=0,W30=0,V16=0,V1=1] 
+* CE 312: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):2+ or(E31,F31,G31):1
+     [V+V16+W30>=2,A31>=W30,V17>=W30+1,V16>=0,W30>=1,V>=0,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=0,F31=0,E31=1,D31=0,C31=0,B31=0,Y30=1,V1=1] 
+* CE 313: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):2+ or(E31,F31,G31):2
+     [V16+W30>=2,A31>=W30,V17>=W30+1,A31>=2,V16>=0,W30>=1,V>=0,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=2,F31=0,E31=2,D31=0,C31=0,B31=0,Y30=2,V1=1] 
+* CE 314: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):2+ or(Y30,E31,F31):3
+     [V16+W30+Y30>=2,V+V16+W30>=2,V16+W30>=Y30,A31>=Y30,A31>=W30,V17>=W30+1,Y30>=0,V16>=0,W30>=1,V>=0,2>=Y30,A31=W30+Z30,A31=W30+X30,A31=V30+W30,F31=0,E31=0,D31=0,C31=0,B31=0,V1=1] 
+* CE 315: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):3+ or(E31,D31,D31):1
+     [V16+A31+D31>=2,V16+A31+B31>=2,V+V16+W30>=2,V17>=W30+B31+1,A31>=D31,A31>=W30,D31>=0,V16>=0,B31>=0,W30>=1,V>=0,2>=D31,A31=W30+Z30,A31=W30+X30,A31=V30+W30,E31=1,C31=0,Y30=1,V1=1] 
+* CE 316: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):3+ or(E31,D31,F31):2
+     [V17>=W30+B31+1,V16+W30>=2,A31>=W30,D31>=0,A31>=2,V16>=0,B31>=0,W30>=1,V>=0,2>=D31,A31=W30+Z30,A31=W30+X30,A31=V30+W30,F31=2,E31=2,C31=0,Y30=2,V1=1] 
+* CE 317: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):3+ or(Y30,D31,E31):3
+     [V16+A31+D31>=2,V16+A31+B31>=2,V16+W30+Y30>=2,V+V16+W30>=2,V16+W30>=Y30,V17>=W30+B31+1,A31>=D31,A31>=Y30,A31>=W30,D31>=0,Y30>=0,V16>=0,B31>=0,W30>=1,V>=0,2>=D31,2>=Y30,A31=W30+Z30,A31=W30+X30,A31=V30+W30,E31=0,C31=0,V1=1] 
+* CE 318: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):3+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):4+ or(G31,H31,I31):1
+     [V17>=X30+C31+1,V+X30>=2,B31>=C31+1,B31>=X30,C31>=1,X30>=1,V>=0,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=2,H31=2,G31=1,F31=2,E31=0,D31=0,Z30=1,W30=0,V16=0,V1=1] 
+* CE 319: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):3+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):4+ or(G31,H31,I31):2
+     [V17>=X30+C31+1,B31>=C31+1,B31>=X30,C31>=1,X30>=2,V>=0,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=2,H31=2,G31=2,F31=2,E31=0,D31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 320: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):3+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):4+ or(Z30,G31,H31):3
+     [V17>=X30+C31+1,X30+Z30>=2,V+X30>=2,X30>=Z30,B31>=C31+1,B31>=X30,Z30>=0,C31>=1,V>=0,2>=Z30,B31=X30+A31,B31=X30+Y30,B31=V30+X30,H31=0,G31=2,F31=2,E31=0,D31=0,W30=0,V16=0,V1=1] 
+* CE 321: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):6+ or(E31,F31,G31):1
+     [V+V16+W30>=2,V17>=W30+B31+1,A31>=W30,V16>=0,B31>=1,W30>=1,V>=0,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=0,F31=0,E31=1,D31=0,C31=0,Y30=1,V1=1] 
+* CE 322: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):6+ or(E31,F31,G31):2
+     [V17>=W30+B31+1,V16+W30>=2,A31>=W30,A31>=2,V16>=0,B31>=1,W30>=1,V>=0,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=2,F31=0,E31=2,D31=0,C31=0,Y30=2,V1=1] 
+* CE 323: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):6+ or(Y30,E31,F31):3
+     [V16+W30+Y30>=2,V+V16+W30>=2,V16+W30>=Y30,V17>=W30+B31+1,A31>=Y30,A31>=W30,Y30>=0,V16>=0,B31>=1,W30>=1,V>=0,2>=Y30,A31=W30+Z30,A31=W30+X30,A31=V30+W30,F31=0,E31=0,D31=0,C31=0,V1=1] 
+* CE 324: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):7+ or(E31,F31,G31):1
+     [V17>=W30+B31+1,A31>=V16+1,A31>=B31+1,A31>=W30,V16>=1,B31>=1,W30>=1,V>=0,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=2,F31=2,E31=1,D31=2,C31=0,Y30=1,V1=1] 
+* CE 325: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):7+ or(E31,F31,G31):2
+     [V17>=W30+B31+1,A31>=V16+1,A31>=B31+1,A31>=W30,V16>=1,B31>=1,W30>=1,V>=0,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=2,F31=2,E31=2,D31=2,C31=0,Y30=2,V1=1] 
+* CE 326: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):7+ or(Y30,E31,F31):3
+     [V17>=W30+B31+1,A31>=V16+1,A31>=B31+1,A31>=W30,Y30>=0,V16>=1,B31>=1,W30>=1,V>=0,2>=Y30,A31=W30+Z30,A31=W30+X30,A31=V30+W30,F31=0,E31=2,D31=2,C31=0,V1=1] 
+* CE 327: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):1+ or(G31,H31,I31):2
+     [B31>=X30,V17>=X30+1,X30>=V+1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=2,H31=2,G31=2,F31=2,E31=0,D31=0,C31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 328: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):1+ or(G31,H31,I31):3
+     [B31>=X30,V17>=X30+1,X30>=V+1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=0,H31=2,G31=2,F31=2,E31=0,D31=0,C31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 329: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):2+ or(G31,H31,I31):2
+     [B31>=X30,V17>=X30+1,X30>=V+1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,C31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 330: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):2+ or(G31,H31,I31):3
+     [B31>=X30,V17>=X30+1,X30>=V+1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=0,H31=0,G31=2,F31=0,E31=0,D31=0,C31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 331: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):3+ or(G31,F31,H31):2
+     [V17>=X30+C31+1,B31>=X30,X30>=V+1,F31>=0,C31>=0,V>=1,2>=F31,B31=X30+A31,B31=X30+Y30,B31=V30+X30,H31=2,G31=2,E31=0,D31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 332: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):3+ or(G31,F31,H31):3
+     [V17>=X30+C31+1,B31>=X30,X30>=V+1,F31>=0,C31>=0,V>=1,2>=F31,B31=X30+A31,B31=X30+Y30,B31=V30+X30,H31=0,G31=2,E31=0,D31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 333: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):4+ or(G31,H31,I31):2
+     [V17>=X30+C31+1,B31>=C31+1,B31>=X30,X30>=V+1,C31>=1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=2,H31=2,G31=2,F31=2,E31=0,D31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 334: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):4+ or(G31,H31,I31):3
+     [V17>=X30+C31+1,B31>=C31+1,B31>=X30,X30>=V+1,C31>=1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=0,H31=2,G31=2,F31=2,E31=0,D31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 335: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):6+ or(G31,H31,I31):2
+     [V17>=X30+C31+1,B31>=X30,X30>=V+1,C31>=1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=2,H31=0,G31=2,F31=0,E31=0,D31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 336: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):6+ or(G31,H31,I31):3
+     [V17>=X30+C31+1,B31>=X30,X30>=V+1,C31>=1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=0,H31=0,G31=2,F31=0,E31=0,D31=0,Z30=2,W30=0,V16=0,V1=1] 
+* CE 337: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,V30,Y30):5+ union(Z30,V30,V30):1+ reach(A31,B31,V30,C31,D31):1+ or(E31,F31,G31):1
+     [V30>=1,V>=0,V17>=1,G31=2,F31=2,E31=1,D31=2,C31=0,B31=0,A31=0,Z30=0,Y30=1,X30=0,W30=0,V16=0,V1=1] 
+* CE 338: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,V30,Y30):5+ union(Z30,V30,V30):1+ reach(A31,B31,V30,C31,D31):1+ or(E31,F31,G31):3
+     [V30>=1,V>=0,V17>=1,G31=0,F31=2,E31=1,D31=2,C31=0,B31=0,A31=0,Z30=0,Y30=1,X30=0,W30=0,V16=0,V1=1] 
+* CE 339: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,V30,X30):5+ union(Y30,V30,V30):1+ reach(Z30,V16,V30,A31,B31):2+ or(C31,D31,E31):1
+     [V30>=1,V16>=0,V>=0,V17>=1,E31=0,D31=0,C31=1,B31=0,A31=0,Z30=0,Y30=0,X30=1,W30=0,V1=1] 
+* CE 340: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,V30,X30):5+ union(Y30,V30,V30):1+ reach(Z30,V16,V30,A31,B31):2+ or(C31,D31,E31):3
+     [V30>=1,V16>=0,V>=0,V17>=1,E31=0,D31=0,C31=1,B31=0,A31=0,Z30=0,Y30=0,X30=1,W30=0,V1=1] 
+* CE 341: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,V30,X30):5+ union(Y30,V30,V30):1+ reach(Z30,V16,V30,A31,B31):3+ or(C31,B31,B31):1
+     [V16+V30+B31>=2,V16+V30+Z30>=2,V30>=B31,V17>=Z30+1,B31>=0,V30>=1,V16>=0,Z30>=0,V>=0,2>=B31,C31=1,A31=0,Y30=0,X30=1,W30=0,V1=1] 
+* CE 342: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,V30,X30):5+ union(Y30,V30,V30):1+ reach(Z30,V16,V30,A31,B31):3+ or(C31,B31,D31):3
+     [V16+V30+B31>=2,V16+V30+Z30>=2,V30>=B31,V17>=Z30+1,B31>=0,V30>=1,V16>=0,Z30>=0,V>=0,2>=B31,D31=0,C31=1,A31=0,Y30=0,X30=1,W30=0,V1=1] 
+* CE 343: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,V30,Y30):5+ union(Z30,V30,V30):1+ reach(A31,B31,V30,C31,D31):4+ or(E31,F31,G31):1
+     [V30>=A31+1,V17>=A31+1,A31>=1,V>=0,G31=2,F31=2,E31=1,D31=2,C31=0,B31=0,Z30=0,Y30=1,X30=0,W30=0,V16=0,V1=1] 
+* CE 344: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,V30,Y30):5+ union(Z30,V30,V30):1+ reach(A31,B31,V30,C31,D31):4+ or(E31,F31,G31):3
+     [V30>=A31+1,V17>=A31+1,A31>=1,V>=0,G31=0,F31=2,E31=1,D31=2,C31=0,B31=0,Z30=0,Y30=1,X30=0,W30=0,V16=0,V1=1] 
+* CE 345: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):5+ union(Z30,A31,B31):1+ reach(C31,V16,D31,E31,F31):5+ or(G31,H31,I31):1
+     [V17>=C31+1,V16>=0,C31>=0,V>=0,I31=1,H31=1,G31=1,F31=1,E31=0,D31=0,B31=0,A31=0,Z30=0,Y30=1,X30=0,W30=0,V30=0,V1=1] 
+* CE 346: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):5+ union(Z30,A31,B31):1+ reach(C31,V16,D31,E31,F31):5+ or(G31,H31,I31):3
+     [V17>=C31+1,V16>=0,C31>=0,V>=0,I31=0,H31=1,G31=1,F31=1,E31=0,D31=0,B31=0,A31=0,Z30=0,Y30=1,X30=0,W30=0,V30=0,V1=1] 
+* CE 347: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,V30,X30):5+ union(Y30,V30,V30):1+ reach(Z30,V16,V30,A31,B31):6+ or(C31,D31,E31):1
+     [V17>=Z30+1,V30>=1,V16>=0,Z30>=1,V>=0,E31=0,D31=0,C31=1,B31=0,A31=0,Y30=0,X30=1,W30=0,V1=1] 
+* CE 348: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,V30,X30):5+ union(Y30,V30,V30):1+ reach(Z30,V16,V30,A31,B31):6+ or(C31,D31,E31):3
+     [V17>=Z30+1,V30>=1,V16>=0,Z30>=1,V>=0,E31=0,D31=0,C31=1,B31=0,A31=0,Y30=0,X30=1,W30=0,V1=1] 
+* CE 349: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,V30,X30):5+ union(Y30,V30,V30):1+ reach(Z30,V16,V30,A31,B31):7+ or(C31,D31,E31):1
+     [V30>=V16+1,V30>=Z30+1,V17>=Z30+1,V16>=1,Z30>=1,V>=0,E31=2,D31=2,C31=1,B31=2,A31=0,Y30=0,X30=1,W30=0,V1=1] 
+* CE 350: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,V30,X30):5+ union(Y30,V30,V30):1+ reach(Z30,V16,V30,A31,B31):7+ or(C31,D31,E31):3
+     [V30>=V16+1,V30>=Z30+1,V17>=Z30+1,V16>=1,Z30>=1,V>=0,E31=0,D31=2,C31=1,B31=2,A31=0,Y30=0,X30=1,W30=0,V1=1] 
+* CE 351: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):6+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):1+ or(G31,H31,I31):3
+     [B31>=X30,V17>=X30+1,X30>=1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=0,H31=2,G31=0,F31=2,E31=0,D31=0,C31=0,Z30=0,W30=0,V16=0,V1=1] 
+* CE 352: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):6+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):2+ or(E31,F31,G31):3
+     [A31>=W30,V17>=W30+1,V16>=0,W30>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=0,F31=0,E31=0,D31=0,C31=0,B31=0,Y30=0,V1=1] 
+* CE 353: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):6+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):3+ or(E31,D31,F31):3
+     [V16+A31+D31>=2,V16+A31+B31>=2,V17>=W30+B31+1,A31>=D31,A31>=W30,D31>=0,V16>=0,B31>=0,W30>=1,V>=1,2>=D31,A31=W30+Z30,A31=W30+X30,A31=V30+W30,F31=0,E31=0,C31=0,Y30=0,V1=1] 
+* CE 354: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):6+ union(X30,A31,B31):2+ reach(C31,D31,B31,E31,F31):4+ or(G31,H31,I31):3
+     [V17>=X30+C31+1,B31>=C31+1,B31>=X30,C31>=1,X30>=1,V>=1,B31=X30+A31,B31=X30+Y30,B31=V30+X30,I31=0,H31=2,G31=0,F31=2,E31=0,D31=0,Z30=0,W30=0,V16=0,V1=1] 
+* CE 355: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):6+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):6+ or(E31,F31,G31):3
+     [V17>=W30+B31+1,A31>=W30,V16>=0,B31>=1,W30>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=0,F31=0,E31=0,D31=0,C31=0,Y30=0,V1=1] 
+* CE 356: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):6+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):7+ or(E31,F31,G31):3
+     [V17>=W30+B31+1,A31>=V16+1,A31>=B31+1,A31>=W30,V16>=1,B31>=1,W30>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=0,F31=2,E31=0,D31=2,C31=0,Y30=0,V1=1] 
+* CE 357: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):2+ or(E31,F31,G31):2
+     [W30>=V16+1,A31>=W30,V17>=W30+1,W30>=V+1,V16>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=2,F31=0,E31=2,D31=0,C31=0,B31=0,Y30=2,V1=1] 
+* CE 358: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):2+ or(E31,F31,G31):3
+     [W30>=V16+1,A31>=W30,V17>=W30+1,W30>=V+1,V16>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=0,F31=0,E31=2,D31=0,C31=0,B31=0,Y30=2,V1=1] 
+* CE 359: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):3+ or(E31,D31,F31):2
+     [V17>=W30+B31+1,W30>=V16+1,A31>=W30,W30>=V+1,D31>=0,V16>=1,B31>=0,V>=1,2>=D31,A31=W30+Z30,A31=W30+X30,A31=V30+W30,F31=2,E31=2,C31=0,Y30=2,V1=1] 
+* CE 360: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):3+ or(E31,D31,F31):3
+     [V17>=W30+B31+1,W30>=V16+1,A31>=W30,W30>=V+1,D31>=0,V16>=1,B31>=0,V>=1,2>=D31,A31=W30+Z30,A31=W30+X30,A31=V30+W30,F31=0,E31=2,C31=0,Y30=2,V1=1] 
+* CE 361: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):6+ or(E31,F31,G31):2
+     [V17>=W30+B31+1,W30>=V16+1,A31>=W30,W30>=V+1,V16>=1,B31>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=2,F31=0,E31=2,D31=0,C31=0,Y30=2,V1=1] 
+* CE 362: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):6+ or(E31,F31,G31):3
+     [V17>=W30+B31+1,W30>=V16+1,A31>=W30,W30>=V+1,V16>=1,B31>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=0,F31=0,E31=2,D31=0,C31=0,Y30=2,V1=1] 
+* CE 363: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):7+ or(E31,F31,G31):2
+     [V17>=W30+B31+1,W30>=V16+1,A31>=B31+1,A31>=W30,W30>=V+1,V16>=1,B31>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=2,F31=2,E31=2,D31=2,C31=0,Y30=2,V1=1] 
+* CE 364: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7+ union(W30,Z30,A31):2+ reach(B31,V16,A31,C31,D31):7+ or(E31,F31,G31):3
+     [V17>=W30+B31+1,W30>=V16+1,A31>=B31+1,A31>=W30,W30>=V+1,V16>=1,B31>=1,V>=1,A31=W30+Z30,A31=W30+X30,A31=V30+W30,G31=0,F31=2,E31=2,D31=2,C31=0,Y30=2,V1=1] 
+* CE 365: start(V1,V,V16,V17,V30) = 1+ reach(W30,X30,Y30,Z30,A31):1
+     [Y30+Z30>=V17,V17>=Y30+1,Y30>=1,Y30+Z30=V17+V30,A31=2,X30=0,W30=0,V16=0,V=0,V1=1] 
+* CE 366: start(V1,V,V16,V17,V30) = 1+ reach(W30,V16,X30,Y30,Z30):2
+     [X30+Y30>=V17,V17>=X30+1,X30>=1,V16>=0,X30+Y30=V17+V30,Z30=0,W30=0,V=0,V1=1] 
+* CE 367: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):3
+     [V16+W30+Y30>=2,V+V16+W30>=2,V16+W30>=Y30,W30+X30>=V17,V17>=W30+1,Y30>=0,W30>=1,V16>=0,V>=0,2>=Y30,W30+X30=V17+V30,V1=1] 
+* CE 368: start(V1,V,V16,V17,V30) = 1+ reach(V,W30,X30,Y30,Z30):4
+     [X30+Y30>=V17,V17>=X30+1,X30>=V+1,V>=1,X30+Y30=V17+V30,Z30=2,W30=0,V16=0,V1=1] 
+* CE 369: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):5
+     [X30>=V17,V16>=0,V>=0,V17>=1,X30=V17+V30,Y30=1,W30=0,V1=1] 
+* CE 370: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):6
+     [W30+X30>=V17,V17>=W30+1,W30>=1,V16>=0,V>=1,W30+X30=V17+V30,Y30=0,V1=1] 
+* CE 371: start(V1,V,V16,V17,V30) = 1+ reach(V,V16,W30,X30,Y30):7
+     [W30+X30>=V17,V17>=W30+1,W30>=V16+1,W30>=V+1,V16>=1,V>=1,W30+X30=V17+V30,Y30=2,V1=1] 
+* CE 372: start(V1,V,V16,V17,V30) = 0+ eq(W30,X30,Y30):1
+     [Y30=2,X30=0,W30=0,V=0,V1=0] 
+* CE 373: start(V1,V,V16,V17,V30) = 0+ eq(W30,V,X30):2
+     [V>=1,X30=1,W30=0,V1=0] 
+* CE 374: start(V1,V,V16,V17,V30) = 0+ eq(V1,W30,X30):3
+     [V1>=1,X30=1,W30=0,V=0] 
+* CE 375: start(V1,V,V16,V17,V30) = 0+ eq(V1,V,W30):4
+     [V>=V1+1,V1>=1,W30=1] 
+* CE 376: start(V1,V,V16,V17,V30) = 0+ eq(V1,V,W30):5
+     [V1>=V+1,V>=1,W30=1] 
+* CE 377: start(A,A,B,C,D) = 0+ eq(A,A,E):6
+     [A>=1,E=2] 
+* CE 378: start(V1,V,V16,V17,V30) = 0+ or(W30,V,V):1
+     [V>=0,W30=1,V1=1] 
+* CE 379: start(V1,V,V16,V17,V30) = 0+ or(W30,V,X30):2
+     [V>=0,X30=2,W30=2,V1=2] 
+* CE 380: start(V1,V,V16,V17,V30) = 0+ or(V1,V,W30):3
+     [V>=0,V1>=0,W30=0] 
+* CE 381: start(V1,V,V16,V17,V30) = 0+ union(W30,V,V):1
+     [V>=0,W30=0,V1=0] 
+* CE 382: start(V1,V,V16,V17,V30) = 0+ union(V1,W30,X30):2
+     [X30>=V1,V1>=1,X30=V1+W30,X30=V1+V] 
+* CE 383: start(V1,V,V16,V17,V30) = 0+ reach(W30,X30,V16,V17,Y30):1
+     [V17>=0,V16>=1,Y30=2,X30=0,W30=0,V=0,V1=0] 
+* CE 384: start(V1,V,V16,V17,V30) = 0+ reach(W30,V,V16,V17,X30):2
+     [V17>=0,V16>=1,V>=0,X30=0,W30=0,V1=0] 
+* CE 385: start(V1,V,V16,V17,V30) = 0+ reach(V1,V,V16,V17,W30):3
+     [V+V16+W30>=2,V1+V+V16>=2,V16+V17>=W30,V+V16>=W30,W30>=0,V17>=0,V16>=1,V>=0,V1>=0,2>=W30] 
+* CE 386: start(V1,V,V16,V17,V30) = 0+ reach(V1,W30,V16,V17,X30):4
+     [V16>=V1+1,V17>=0,V1>=1,X30=2,W30=0,V=0] 
+* CE 387: start(V1,V,V16,V17,V30) = 0+ reach(V1,V,W30,V17,X30):5
+     [V17>=0,V>=0,V1>=0,X30=1,W30=0,V16=0] 
+* CE 388: start(V1,V,V16,V17,V30) = 0+ reach(V1,V,V16,V17,W30):6
+     [V17>=0,V16>=1,V>=0,V1>=1,W30=0] 
+* CE 389: start(V1,V,V16,V17,V30) = 0+ reach(V1,V,V16,V17,W30):7
+     [V16>=V+1,V16>=V1+1,V17>=0,V>=1,V1>=1,W30=2] 
+
+### Cost equations --> "Loop" of start/5 
+* CEs [377] --> Loop 59 
+* CEs [195,196,233,234,271,272] --> Loop 60 
+* CEs [166,167] --> Loop 61 
+* CEs [175,176,177,178,213,214,215,216,251,252,253,254,374,386] --> Loop 62 
+* CEs [112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,168,169,170,171,172,173,174,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,379] --> Loop 63 
+* CEs [345,346] --> Loop 64 
+* CEs [309,310,311,318,319,320,327,328,329,330,331,332,333,334,335,336,351,354,368] --> Loop 65 
+* CEs [337,338,343,344,387] --> Loop 66 
+* CEs [293,294,295,296,297,298,299,300,301,302,303,304,305,306,307,308,312,313,314,315,316,317,321,322,323,324,325,326,339,340,341,342,347,348,349,350,352,353,355,356,357,358,359,360,361,362,363,364,365,366,367,369,370,371,378] --> Loop 67 
+* CEs [292,372,373,375,376,380,381,382,383,384,385,388,389] --> Loop 68 
+
+#### Loops of start/5 
+* Loop 59: start(A,A,B,C,D) [A>=1] 
+* Loop 60: start(V1,V,V16,V17,V30) [V17>=1,V16>=1,V>=0,V30=0,V1=2] 
+* Loop 61: start(V1,V,V16,V17,V30) [V17>=2,V>=0,V30=0,V16=0,V1=2] 
+* Loop 62: start(V1,V,V16,V17,V30) [V1>=1,V=0] 
+* Loop 63: start(V1,V,V16,V17,V30) [V>=0,V1=2] 
+* Loop 64: start(V1,V,V16,V17,V30) [V17>=1,V16>=0,V>=0,V30=0,V1=1] 
+* Loop 65: start(V1,V,V16,V17,V30) [V+V17>=3,V30>=0,V17>=2,V>=0,V16=0,V1=1] 
+* Loop 66: start(V1,V,V16,V17,V30) [V17>=0,V>=0,V1>=0,V16=0] 
+* Loop 67: start(V1,V,V16,V17,V30) [V>=0,V1=1] 
+* Loop 68: start(V1,V,V16,V17,V30) [V>=0,V1>=0] 
+
+### Ranking functions of CR start(V1,V,V16,V17,V30) 
+
+#### Partial ranking functions of CR start(V1,V,V16,V17,V30) 
+
+
+### Resulting Chains:start(V1,V,V16,V17,V30) 
+* [68]
+* [67]
+* [66]
+* [65]
+* [64]
+* [63]
+* [62]
+* [61]
+* [60]
+* [59]
+
+
+### Merging Chains  start/5 into  External patterns of execution 
+* [[65],[67],[68]] --> 1 
+* [[64]] --> 2 
+* [[61],[63]] --> 3 
+* [[60]] --> 4 
+* [[62]] --> 5 
+* [[66]] --> 6 
+* [[59]] --> 7 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [20] 
+
+ * loop 20:eq(V1,V,Out) -> [eq(V1',V',Out')] 
+1
+#### Cost of phase [20]:eq(V1,V,Out) -> [eq(V1',V',Out')] 
+1*it(20)+0
+  Such that:it(20) =< V1
+it(20) =< V1-V1'
+it(20) =< V
+it(20) =< V-V'
+
+#### Cost of phase [20]:eq(V1,V,Out) -> [eq(V1',V',Out')] 
+1*it(20)+0
+  Such that:it(20) =< V1
+it(20) =< V1-V1'
+it(20) =< V
+it(20) =< V-V'
+
+#### Cost of phase [20]:eq(V1,V,Out) -> [eq(V1',V',Out')] 
+1*it(20)+0
+  Such that:it(20) =< V1
+it(20) =< V1-V1'
+it(20) =< V
+it(20) =< V-V'
+
+#### Cost of chains of eq(V1,V,Out):
+* Chain [[20],19]: 1*it(20)+1
+  Such that:it(20) =< V1
+
+  with precondition: [Out=2,V1=V,V1>=1] 
+
+* Chain [[20],18]: 1*it(20)+1
+  Such that:it(20) =< V1
+
+  with precondition: [Out=1,V1>=1,V>=V1+1] 
+
+* Chain [[20],17]: 1*it(20)+1
+  Such that:it(20) =< V
+
+  with precondition: [Out=1,V>=1,V1>=V+1] 
+
+* Chain [19]: 1
+  with precondition: [V1=0,V=0,Out=2] 
+
+* Chain [18]: 1
+  with precondition: [V1=0,Out=1,V>=1] 
+
+* Chain [17]: 1
+  with precondition: [V=0,Out=1,V1>=1] 
+
+
+#### Cost of chains of or(V1,V,Out):
+* Chain [23]: 1
+  with precondition: [V1=1,V=Out,V>=0] 
+
+* Chain [22]: 1
+  with precondition: [V1=2,Out=2,V>=0] 
+
+* Chain [21]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [25] 
+
+ * loop 25:union(V1,V,Out) -> [union(V1',V',Out')] 
+1
+#### Cost of phase [25]:union(V1,V,Out) -> [union(V1',V',Out')] 
+1*it(25)+0
+  Such that:it(25) =< V1
+it(25) =< V1-V1'
+
+#### Cost of chains of union(V1,V,Out):
+* Chain [[25],24]: 1*it(25)+1
+  Such that:it(25) =< -V+Out
+
+  with precondition: [V+V1=Out,V1>=1,V>=0] 
+
+* Chain [24]: 1
+  with precondition: [V1=0,V=Out,V>=0] 
+
+
+#### Cost of loops [26,27,28,30,31,32,33,34,36,37,38,39,40,42,43,44,45,46,48,49,50,51] 
+
+ * loop 26:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(28)+3*s(34)+2*s(33)+1*s(30)+1*s(29)+7
+  Such that:s(28) =< V1
+s(29) =< V16
+s(30) =< V'
+s(31) =< V1'
+s(32) =< V16'
+s(33) =< s(31)
+s(34) =< s(32)
+
+ * loop 27:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+3*s(43)+1*s(41)+1*s(40)+7
+  Such that:s(40) =< V16
+s(41) =< V'2
+s(42) =< V1
+s(43) =< s(42)
+
+ * loop 28:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(52)+3*s(58)+2*s(57)+1*s(54)+1*s(53)+7
+  Such that:s(52) =< V1
+s(53) =< V16
+s(54) =< V'
+s(55) =< V1'
+s(56) =< V16'
+s(57) =< s(55)
+s(58) =< s(56)
+
+ * loop 30:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(67)+3*s(73)+2*s(72)+1*s(69)+1*s(68)+6
+  Such that:s(67) =< V1
+s(68) =< V16
+s(69) =< V'
+s(70) =< V1'
+s(71) =< V16'
+s(72) =< s(70)
+s(73) =< s(71)
+
+ * loop 31:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+3*s(82)+1*s(80)+1*s(79)+6
+  Such that:s(79) =< V16
+s(80) =< V'2
+s(81) =< V1
+s(82) =< s(81)
+
+ * loop 32:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(85)+1*s(86)+7
+  Such that:s(85) =< V1
+s(86) =< -V17'+V16'2
+
+ * loop 33:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(88)+7
+  Such that:s(88) =< V1
+
+ * loop 34:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(91)+1*s(92)+7
+  Such that:s(91) =< V1
+s(92) =< -V17'+V16'2
+
+ * loop 36:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(95)+1*s(96)+6
+  Such that:s(95) =< V1
+s(96) =< -V17'+V16'2
+
+ * loop 37:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(98)+6
+  Such that:s(98) =< V1
+
+ * loop 38:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(105)+1*s(108)+1*s(107)+1*s(104)+1*s(106)+7
+  Such that:s(104) =< V16
+s(105) =< -V17+V16'2
+s(106) =< V16'
+s(107) =< -V17'+V16'2
+s(108) =< V'2
+
+ * loop 39:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(111)+1*s(112)+7
+  Such that:s(111) =< V
+s(112) =< V16
+
+ * loop 40:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(119)+1*s(122)+1*s(121)+1*s(118)+1*s(120)+7
+  Such that:s(118) =< V16
+s(119) =< -V17+V16'2
+s(120) =< V16'
+s(121) =< -V17'+V16'2
+s(122) =< V'2
+
+ * loop 42:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(129)+1*s(132)+1*s(131)+1*s(128)+1*s(130)+6
+  Such that:s(128) =< V16
+s(129) =< -V17+V16'2
+s(130) =< V16'
+s(131) =< -V17'+V16'2
+s(132) =< V'2
+
+ * loop 43:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(135)+1*s(136)+6
+  Such that:s(135) =< V
+s(136) =< V16
+
+ * loop 44:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(138)+7
+  Such that:s(138) =< -V17+V16'2
+
+ * loop 45:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+7
+ * loop 46:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(140)+7
+  Such that:s(140) =< -V17+V16'2
+
+ * loop 48:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+1*s(142)+6
+  Such that:s(142) =< -V17+V16'2
+
+ * loop 49:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out'),reach(V1'2,V'2,V16'2,V17'2,Out'2)] 
+6
+ * loop 50:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out')] 
+1*s(146)+1*s(145)+3
+  Such that:s(145) =< V16
+s(146) =< V1'
+
+ * loop 51:reach(V1,V,V16,V17,Out) -> [reach(V1',V',V16',V17',Out')] 
+3
+#### Cost of phase [26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51]:reach(V1,V,V16,V17,Out) -> [] 
+132*it(26)+34*it(50)+1*it([53])+1*s(147)+9*s(148)+12*s(149)+1*s(150)+1*s(151)+9*s(155)+9*s(156)+7*s(158)+15*s(177)+1*s(206)+1*s(207)+6*s(208)+1*s(210)+9*s(211)+2*s(215)+1*s(217)+0
+#### Cost of chains of reach(V1,V,V16,V17,Out):
+* Chain [58]: 3*s(1)+4
+  Such that:aux(1) =< V
+s(1) =< aux(1)
+
+  with precondition: [V1=0,Out=0,V>=0,V16>=1,V17>=0] 
+
+* Chain [57]: 5
+  with precondition: [V1=0,V=0,Out=2,V16>=1,V17>=0] 
+
+* Chain [56]: 1*s(4)+5
+  Such that:s(4) =< V
+
+  with precondition: [V1=0,Out=2,V>=1,V17>=0,V16>=V+1] 
+
+* Chain [55]: 9*s(5)+3*s(9)+4
+  Such that:aux(2) =< V1
+aux(3) =< V
+s(5) =< aux(2)
+s(9) =< aux(3)
+
+  with precondition: [Out=0,V1>=1,V>=0,V16>=1,V17>=0] 
+
+* Chain [54]: 1*s(17)+5
+  Such that:s(17) =< V1
+
+  with precondition: [V=0,Out=2,V1>=1,V17>=0,V16>=V1+1] 
+
+* Chain [53]: 1
+  with precondition: [V16=0,Out=1,V1>=0,V>=0,V17>=0] 
+
+* Chain [52]: 1*s(18)+1*s(19)+5
+  Such that:s(18) =< V1
+s(19) =< V
+
+  with precondition: [Out=2,V1>=1,V>=1,V17>=0,V16>=V1+1,V16>=V+1] 
+
+* Chain [multiple([26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51],[[58],[57],[56],[55],[54],[53],[52]])]: 132*it(26)+34*it(50)+1*it([53])+1*s(147)+9*s(148)+12*s(149)+1*s(150)+1*s(151)+9*s(155)+9*s(156)+7*s(158)+15*s(177)+1*s(206)+1*s(207)+6*s(208)+1*s(210)+9*s(211)+2*s(215)+1*s(217)+0
+  with precondition: [2>=Out,V1>=0,V>=0,V16>=1,V17>=0,Out>=0,V+V16>=Out,V16+V17>=Out,V+V1+V16>=2,Out+V+V16>=2] 
+
+
+#### Cost of chains of start(V1,V,V16,V17,V30):
+* Chain [68]: 12*s(238)+9*s(239)+252*s(244)+5
+  Such that:aux(223) =< V1
+aux(224) =< V
+s(238) =< aux(223)
+s(239) =< aux(224)
+
+  with precondition: [V1>=0,V>=0] 
+
+* Chain [67]: 151*s(251)+6048*s(261)+124*s(283)+54*s(396)+13
+  Such that:aux(272) =< V
+aux(273) =< V16
+aux(274) =< V17
+s(396) =< aux(272)
+s(283) =< aux(273)
+s(251) =< aux(274)
+
+  with precondition: [V1=1,V>=0] 
+
+* Chain [66]: 2*s(478)+9
+  Such that:aux(275) =< V30
+s(478) =< aux(275)
+
+  with precondition: [V16=0,V1>=0,V>=0,V17>=0] 
+
+* Chain [65]: 2016*s(481)+42*s(482)+29*s(501)+13
+  Such that:aux(284) =< V
+aux(285) =< V17
+s(501) =< aux(284)
+s(482) =< aux(285)
+
+  with precondition: [V1=1,V16=0,V>=0,V17>=2,V30>=0,V+V17>=3] 
+
+* Chain [64]: 5
+  with precondition: [V1=1,V30=0,V>=0,V16>=0,V17>=1] 
+
+* Chain [63]: 348*s(551)+471*s(554)+21672*s(564)+187*s(678)+4*s(724)+15
+  Such that:aux(441) =< V
+aux(442) =< V16
+aux(443) =< V17
+aux(444) =< V30
+s(678) =< aux(441)
+s(551) =< aux(442)
+s(554) =< aux(443)
+s(724) =< aux(444)
+
+  with precondition: [V1=2,V>=0] 
+
+* Chain [62]: 67*s(1314)+43*s(1315)+756*s(1322)+1*s(1387)+13
+  Such that:s(1387) =< V1
+aux(464) =< V16
+aux(465) =< V17
+s(1315) =< aux(465)
+s(1314) =< aux(464)
+
+  with precondition: [V=0,V1>=1] 
+
+* Chain [61]: 7
+  with precondition: [V1=2,V16=0,V30=0,V>=0,V17>=2] 
+
+* Chain [60]: 2*s(1388)+2*s(1390)+7
+  Such that:aux(466) =< V16
+aux(467) =< V17
+s(1388) =< aux(466)
+s(1390) =< aux(467)
+
+  with precondition: [V1=2,V30=0,V>=0,V16>=1,V17>=1] 
+
+* Chain [59]: 1*s(1392)+1
+  Such that:s(1392) =< V
+
+  with precondition: [V1=V,V1>=1] 
+
+
+Closed-form bounds of start(V1,V,V16,V17,V30): 
+-------------------------------------
+* Chain [68] with precondition: [V1>=0,V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [67] with precondition: [V1=1,V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [66] with precondition: [V16=0,V1>=0,V>=0,V17>=0] 
+    - Upper bound: nat(V30)*2+9 
+    - Complexity: n 
+* Chain [65] with precondition: [V1=1,V16=0,V>=0,V17>=2,V30>=0,V+V17>=3] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [64] with precondition: [V1=1,V30=0,V>=0,V16>=0,V17>=1] 
+    - Upper bound: 5 
+    - Complexity: constant 
+* Chain [63] with precondition: [V1=2,V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [62] with precondition: [V=0,V1>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [61] with precondition: [V1=2,V16=0,V30=0,V>=0,V17>=2] 
+    - Upper bound: 7 
+    - Complexity: constant 
+* Chain [60] with precondition: [V1=2,V30=0,V>=0,V16>=1,V17>=1] 
+    - Upper bound: 2*V16+2*V17+7 
+    - Complexity: n 
+* Chain [59] with precondition: [V1=V,V1>=1] 
+    - Upper bound: V+1 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V,V16,V17,V30): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 57 ms.
+* Invariants computed in 574 ms.
+   - Backward Invariants 41 ms.
+   - Transitive Invariants 437 ms.
+* Refinement performed in 2350 ms.
+* Termination proved in 466 ms.
+* Upper bounds computed in 3513 ms.
+   - Equation cost structures 1509 ms.
+   - Phase cost structures 2220 ms.
+   - Chain cost structures 11 ms.
+   - Solving cost expressions 3 ms.
+* Total analysis performed in 7010 ms.
+

@@ -1,0 +1,202 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [implies/3]
+1. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into implies/3
+1. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations implies/3 
+* CE 3 is refined into CE [7] 
+* CE 6 is refined into CE [8] 
+* CE 4 is refined into CE [9] 
+* CE 5 is refined into CE [10] 
+
+
+#### Refined cost equations implies/3 
+* CE 7: implies(V,V1,Out) = 1
+     [V1>=0,V>=1,V+V1=Out] 
+* CE 8: implies(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 9: implies(V,V1,Out) = 1+ implies(W1,X1,Out)
+     [V+V1>=X1+1,X1>=V,V>=1,V+V1=W1+X1+1] 
+* CE 10: implies(V,V1,Out) = 1+ implies(V,W1,X1)
+     [V1+X1>=Out,Out>=X1+1,V>=0,V1+X1=Out+W1] 
+
+### Cost equations --> "Loop" of implies/3 
+* CEs [9] --> Loop 6 
+* CEs [10] --> Loop 7 
+* CEs [7] --> Loop 8 
+* CEs [8] --> Loop 9 
+
+#### Loops of implies/3 
+* Loop 6: implies(V,V1,Out)->  implies(V',V1',Out)
+                  [V1>=V'+1,V'>=0,V>=1,V'+V1'+1=V+V1] 
+* Loop 7: implies(V,V1,Out)->  implies(V,V1',Out')
+                  [V1>=V1'+1,V1'>=0,V>=0,Out+V1'=V1+Out'] 
+* Loop 8: implies(V,V1,Out) [V1>=0,V>=1,V+V1=Out] 
+* Loop 9: implies(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR implies(V,V1,Out) 
+* RF of phase [6,7]: [V+V1]
+
+#### Partial ranking functions of CR implies(V,V1,Out) 
+* Partial RF of phase [6,7]:
+  - RF of loop [6:1]:
+    V+V1-1
+  - RF of loop [7:1]:
+    V1 depends on loops [6:1] 
+
+
+### Resulting Chains:implies(V,V1,Out) 
+* [[6,7],9]
+* [[6,7],8]
+* [9]
+* [8]
+
+
+### Merging Chains  implies/3 into  External patterns of execution 
+* [[9]] --> 1 
+* [[8]] --> 2 
+* [[8,[6,7]],[9,[6,7]]] --> 3 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [11,12,13] 
+
+
+#### Refined cost equations start/2 
+* CE 11: start(V,V1) = 0+ implies(V,V1,W1):1
+     [V1>=0,V>=0,W1=0] 
+* CE 12: start(V,V1) = 0+ implies(V,W1,X1):2
+     [X1>=V,V>=1,X1=V+W1,X1=V+V1] 
+* CE 13: start(V,V1) = 0+ implies(V,V1,W1):3
+     [V+V1>=W1,V+W1>=1,W1>=0,V1>=1,V>=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [11,12,13] --> Loop 10 
+
+#### Loops of start/2 
+* Loop 10: start(V,V1) [V1>=0,V>=0] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [10]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[10]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6,7] 
+
+ * loop 6:implies(V,V1,Out) -> [implies(V',V1',Out')] 
+1
+ * loop 7:implies(V,V1,Out) -> [implies(V',V1',Out')] 
+1
+#### Cost of phase [6,7]:implies(V,V1,Out) -> [implies(V',V1',Out')] 
+1*it(6)+1*it(7)+0
+  Such that:aux(2) =< V1
+aux(4) =< V1-V1'
+aux(7) =< V+V1
+aux(8) =< V+V1-V'-V1'
+it(6) =< aux(7)
+it(7) =< aux(7)
+it(6) =< aux(8)
+it(7) =< aux(8)
+aux(1) =< it(6)*aux(7)
+it(7) =< aux(1)+aux(2)
+it(7) =< aux(1)+aux(4)
+
+#### Cost of phase [6,7]:implies(V,V1,Out) -> [implies(V',V1',Out')] 
+1*it(6)+1*it(7)+0
+  Such that:aux(2) =< V1
+aux(4) =< V1-V1'
+aux(7) =< V+V1
+aux(8) =< V+V1-V'-V1'
+it(6) =< aux(7)
+it(7) =< aux(7)
+it(6) =< aux(8)
+it(7) =< aux(8)
+aux(1) =< it(6)*aux(7)
+it(7) =< aux(1)+aux(2)
+it(7) =< aux(1)+aux(4)
+
+#### Cost of chains of implies(V,V1,Out):
+* Chain [[6,7],9]: 1*it(6)+1*it(7)+0
+  Such that:aux(9) =< V+V1
+aux(10) =< V1
+it(6) =< aux(9)
+it(7) =< aux(9)
+aux(1) =< it(6)*aux(9)
+it(7) =< aux(1)+aux(10)
+
+  with precondition: [V>=0,V1>=1,Out>=0,Out+V>=1,V+V1>=Out] 
+
+* Chain [[6,7],8]: 1*it(6)+1*it(7)+1
+  Such that:aux(11) =< V+V1
+aux(12) =< V1
+it(6) =< aux(11)
+it(7) =< aux(11)
+aux(1) =< it(6)*aux(11)
+it(7) =< aux(1)+aux(12)
+
+  with precondition: [V>=1,V1>=1,Out>=2,V+V1>=Out] 
+
+* Chain [9]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+* Chain [8]: 1
+  with precondition: [V+V1=Out,V>=1,V1>=0] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [10]: 2*s(13)+2*s(14)+1
+  Such that:s(11) =< V+V1
+s(12) =< V1
+s(13) =< s(11)
+s(14) =< s(11)
+s(15) =< s(13)*s(11)
+s(14) =< s(15)+s(12)
+
+  with precondition: [V>=0,V1>=0] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [10] with precondition: [V>=0,V1>=0] 
+    - Upper bound: 4*V+4*V1+1 
+    - Complexity: n 
+
+### Maximum cost of start(V,V1): 4*V+4*V1+1 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 4 ms.
+* Invariants computed in 14 ms.
+   - Backward Invariants 9 ms.
+   - Transitive Invariants 3 ms.
+* Refinement performed in 19 ms.
+* Termination proved in 4 ms.
+* Upper bounds computed in 40 ms.
+   - Equation cost structures 7 ms.
+   - Phase cost structures 17 ms.
+   - Chain cost structures 16 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 92 ms.
+

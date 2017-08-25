@@ -1,0 +1,392 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [revapp/3]
+1. recursive  : [selects/4]
+2. non_recursive  : [select/2]
+3. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into revapp/3
+1. SCC is partially evaluated into selects/4
+2. SCC is partially evaluated into select/2
+3. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations revapp/3 
+* CE 10 is refined into CE [11] 
+* CE 9 is refined into CE [12] 
+
+
+#### Refined cost equations revapp/3 
+* CE 11: revapp(A,B,B) = 1
+     [B>=0,A=0] 
+* CE 12: revapp(V2,V1,Out) = 1+ revapp(W2,X2,Out)
+     [V2+V1>=X2,X2>=V1+1,V1>=0,V2+V1=W2+X2] 
+
+### Cost equations --> "Loop" of revapp/3 
+* CEs [12] --> Loop 8 
+* CEs [11] --> Loop 9 
+
+#### Loops of revapp/3 
+* Loop 8: revapp(V2,V1,Out)->  revapp(V2',V1',Out)
+                  [V2+V1>=V1',V1'>=V1+1,V1>=0,V2+V1=V2'+V1'] 
+* Loop 9: revapp(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR revapp(V2,V1,Out) 
+* RF of phase [8]: [V2]
+
+#### Partial ranking functions of CR revapp(V2,V1,Out) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    V2
+
+
+### Resulting Chains:revapp(V2,V1,Out) 
+* [[8],9]
+* [9]
+
+
+### Merging Chains  revapp/3 into  External patterns of execution 
+* [[9]] --> 1 
+* [[9,[8]]] --> 2 
+
+
+### Specialization of cost equations selects/4 
+* CE 6 is refined into CE [13,14] 
+* CE 5 is refined into CE [15,16] 
+
+
+#### Refined cost equations selects/4 
+* CE 13: selects(V2,V1,V3,Out) = 1+ revapp(W3,X3,Y3):1
+     [V2>=0,V2+2=Out,Y3=0,X3=0,W3=0,V3=0,V1=0] 
+* CE 14: selects(V2,V1,V3,Out) = 1+ revapp(V1,W3,V1):2
+     [V1>=1,V2>=0,V2+V1+2=Out,W3=0,V3=0] 
+* CE 15: selects(V2,V1,V3,Out) = 1+ revapp(W3,V3,V3):1+ selects(X3,Y3,Z3,A4)
+     [V3>=Z3+1,Z3>=0,V2>=0,V2+V3+A4+2=Out,V3=X3+Z3+1,V2+1=Y3,W3=0,V1=0] 
+* CE 16: selects(V2,V1,V3,Out) = 1+ revapp(V1,W3,X3):2+ selects(Y3,Z3,A4,B4)
+     [X3>=V1+A4+1,A4>=0,V1>=1,V2>=0,X3=V1+Y3+A4+1,V2+X3+B4+2=Out,V2+V1+1=Z3,X3=V1+W3,X3=V1+V3] 
+
+### Cost equations --> "Loop" of selects/4 
+* CEs [16] --> Loop 10 
+* CEs [15] --> Loop 11 
+* CEs [14] --> Loop 12 
+* CEs [13] --> Loop 13 
+
+#### Loops of selects/4 
+* Loop 10: selects(V2,V1,V3,Out)->  selects(V2',V1',V3',Out')
+                  [V3>=V2'+1,V2'>=0,V1>=1,V2>=0,V2+V1+V3+Out'+2=Out,V2+V1+1=V1',V2'+V3'+1=V3] 
+* Loop 11: selects(V2,V1,V3,Out)->  selects(V2',V1',V3',Out')
+                  [V3>=V2'+1,V2'>=0,V2>=0,V2+V3+Out'+2=Out,V2'+V3'+1=V3,V2+1=V1',V1=0] 
+* Loop 12: selects(V2,V1,V3,Out) [V1>=1,V2>=0,V2+V1+2=Out,V3=0] 
+* Loop 13: selects(V2,V1,V3,Out) [V2>=0,V2+2=Out,V3=0,V1=0] 
+
+### Ranking functions of CR selects(V2,V1,V3,Out) 
+* RF of phase [10]: [V2+V3,V3]
+
+#### Partial ranking functions of CR selects(V2,V1,V3,Out) 
+* Partial RF of phase [10]:
+  - RF of loop [10:1]:
+    V2+V3
+    V3
+
+
+### Resulting Chains:selects(V2,V1,V3,Out) 
+* [[10],12]
+* [13]
+* [12]
+* [11,[10],12]
+* [11,12]
+
+
+### Merging Chains  selects/4 into  External patterns of execution 
+* [[13]] --> 1 
+* [[12,11]] --> 2 
+* [[12,[10],11]] --> 3 
+* [[12]] --> 4 
+* [[12,[10]]] --> 5 
+
+
+### Specialization of cost equations select/2 
+* CE 7 is refined into CE [17,18,19] 
+* CE 8 is refined into CE [20] 
+
+
+#### Refined cost equations select/2 
+* CE 17: select(V2,Out) = 1+ selects(W2,X2,Y2,Out):1
+     [Out>=2,Out=W2+2,Out=V2+1,Y2=0,X2=0] 
+* CE 18: select(V2,Out) = 1+ selects(W2,X2,Y2,Out):2
+     [Out>=2*W2+6,W2>=0,Out=2*W2+2*Y2+4,Out=2*V2+2,X2=0] 
+* CE 19: select(V2,Out) = 1+ selects(W2,X2,Y2,Out):3
+     [Out>=3*W2+3*Y2+6,Y2>=2,W2>=0,W2+Y2+1=V2,X2=0] 
+* CE 20: select(V2,Out) = 1
+     [Out=0,V2=0] 
+
+### Cost equations --> "Loop" of select/2 
+* CEs [19] --> Loop 14 
+* CEs [18] --> Loop 15 
+* CEs [17] --> Loop 16 
+* CEs [20] --> Loop 17 
+
+#### Loops of select/2 
+* Loop 14: select(V2,Out) [Out>=3*V2+3,V2>=3] 
+* Loop 15: select(V2,Out) [V2>=2,2*V2+2=Out] 
+* Loop 16: select(V2,Out) [V2>=1,V2+1=Out] 
+* Loop 17: select(V2,Out) [Out=0,V2=0] 
+
+### Ranking functions of CR select(V2,Out) 
+
+#### Partial ranking functions of CR select(V2,Out) 
+
+
+### Resulting Chains:select(V2,Out) 
+* [17]
+* [16]
+* [15]
+* [14]
+
+
+### Merging Chains  select/2 into  External patterns of execution 
+* [[17]] --> 1 
+* [[16]] --> 2 
+* [[15]] --> 3 
+* [[14]] --> 4 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [21,22,23,24,25] 
+* CE 3 is refined into CE [26,27,28,29] 
+* CE 4 is refined into CE [30,31] 
+
+
+#### Refined cost equations start/3 
+* CE 21: start(V2,V1,V3) = 0+ selects(W3,X3,Y3,Z3):1
+     [Z3>=2,Z3=W3+2,Z3=V2+2,Y3=0,X3=0,V3=0,V1=0] 
+* CE 22: start(V2,V1,V3) = 0+ selects(V2,W3,X3,Y3):2
+     [Y3>=2*V2+6,V2>=0,Y3=2*V2+2*X3+4,Y3=2*V2+2*V3+4,W3=0,V1=0] 
+* CE 23: start(V2,V1,V3) = 0+ selects(V2,W3,V3,X3):3
+     [X3>=3*V2+3*V3+6,V3>=2,V2>=0,W3=0,V1=0] 
+* CE 24: start(V2,V1,V3) = 0+ selects(V2,W3,X3,Y3):4
+     [Y3>=V2+3,V2>=0,Y3=V2+W3+2,Y3=V2+V1+2,X3=0,V3=0] 
+* CE 25: start(V2,V1,V3) = 0+ selects(V2,V1,V3,W3):5
+     [W3>=2*V2+2*V1+2*V3+4,V3>=1,V1>=1,V2>=0] 
+* CE 26: start(V2,V1,V3) = 0+ select(W3,X3):1
+     [X3=0,W3=0,V2=0] 
+* CE 27: start(V2,V1,V3) = 0+ select(W3,X3):2
+     [X3>=2,X3=W3+1,X3=V2+1] 
+* CE 28: start(V2,V1,V3) = 0+ select(W3,X3):3
+     [X3>=6,X3=2*W3+2,X3=2*V2+2] 
+* CE 29: start(V2,V1,V3) = 0+ select(V2,W3):4
+     [W3>=3*V2+3,V2>=3] 
+* CE 30: start(V2,V1,V3) = 0+ revapp(W3,V1,V1):1
+     [V1>=0,W3=0,V2=0] 
+* CE 31: start(V2,V1,V3) = 0+ revapp(V2,W3,X3):2
+     [X3>=V2,V2>=1,X3=V2+W3,X3=V2+V1] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [27,28,29,31] --> Loop 18 
+* CEs [25] --> Loop 19 
+* CEs [24] --> Loop 20 
+* CEs [22,23] --> Loop 21 
+* CEs [21] --> Loop 22 
+* CEs [26,30] --> Loop 23 
+
+#### Loops of start/3 
+* Loop 18: start(V2,V1,V3) [V2>=1] 
+* Loop 19: start(V2,V1,V3) [V3>=1,V1>=1,V2>=0] 
+* Loop 20: start(V2,V1,V3) [V1>=1,V2>=0,V3=0] 
+* Loop 21: start(V2,V1,V3) [V3>=1,V2>=0,V1=0] 
+* Loop 22: start(V2,V1,V3) [V2>=0,V3=0,V1=0] 
+* Loop 23: start(V2,V1,V3) [V2=0] 
+
+### Ranking functions of CR start(V2,V1,V3) 
+
+#### Partial ranking functions of CR start(V2,V1,V3) 
+
+
+### Resulting Chains:start(V2,V1,V3) 
+* [23]
+* [22]
+* [21]
+* [20]
+* [19]
+* [18]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+* [[21]] --> 3 
+* [[20]] --> 4 
+* [[19]] --> 5 
+* [[18]] --> 6 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [8] 
+
+ * loop 8:revapp(V2,V1,Out) -> [revapp(V2',V1',Out')] 
+1
+#### Cost of phase [8]:revapp(V2,V1,Out) -> [revapp(V2',V1',Out')] 
+1*it(8)+0
+  Such that:it(8) =< V2
+it(8) =< V2-V2'
+
+#### Cost of chains of revapp(V2,V1,Out):
+* Chain [[8],9]: 1*it(8)+1
+  Such that:it(8) =< -V1+Out
+
+  with precondition: [V1+V2=Out,V2>=1,V1>=0] 
+
+* Chain [9]: 1
+  with precondition: [V2=0,V1=Out,V1>=0] 
+
+
+#### Cost of loops [10] 
+
+ * loop 10:selects(V2,V1,V3,Out) -> [selects(V2',V1',V3',Out')] 
+1*s(3)+2
+  Such that:s(3) =< -V2+V1'
+
+#### Cost of phase [10]:selects(V2,V1,V3,Out) -> [selects(V2',V1',V3',Out')] 
+2*it(10)+1*s(4)+0
+  Such that:aux(1) =< V2+V1+V3
+it(10) =< V2+V3
+it(10) =< V2+V3-V2'-V3'
+it(10) =< V3
+it(10) =< V3-V3'
+s(4) =< it(10)*aux(1)
+
+#### Cost of chains of selects(V2,V1,V3,Out):
+* Chain [[10],12]: 2*it(10)+1*s(1)+1*s(4)+2
+  Such that:it(10) =< V3
+aux(2) =< V2+V1+V3
+s(1) =< aux(2)
+s(4) =< it(10)*aux(2)
+
+  with precondition: [V2>=0,V1>=1,V3>=1,Out>=2*V1+2*V2+2*V3+4] 
+
+* Chain [13]: 2
+  with precondition: [V1=0,V3=0,V2+2=Out,V2>=0] 
+
+* Chain [12]: 1*s(1)+2
+  Such that:s(1) =< V1
+
+  with precondition: [V3=0,V1+V2+2=Out,V2>=0,V1>=1] 
+
+* Chain [11,[10],12]: 2*it(10)+1*s(1)+1*s(4)+4
+  Such that:aux(2) =< V2+V3
+it(10) =< V3
+s(1) =< aux(2)
+s(4) =< it(10)*aux(2)
+
+  with precondition: [V1=0,V2>=0,V3>=2,Out>=3*V2+3*V3+6] 
+
+* Chain [11,12]: 1*s(1)+4
+  Such that:s(1) =< -V3+Out/2
+
+  with precondition: [V1=0,2*V2+2*V3+4=Out,V3>=1,Out>=2*V3+4] 
+
+
+#### Cost of chains of select(V2,Out):
+* Chain [17]: 1
+  with precondition: [V2=0,Out=0] 
+
+* Chain [16]: 3
+  with precondition: [V2+1=Out,V2>=1] 
+
+* Chain [15]: 1*s(5)+5
+  Such that:s(5) =< V2
+
+  with precondition: [2*V2+2=Out,V2>=2] 
+
+* Chain [14]: 3*s(7)+1*s(9)+5
+  Such that:aux(3) =< V2
+s(7) =< aux(3)
+s(9) =< s(7)*aux(3)
+
+  with precondition: [V2>=3,Out>=3*V2+3] 
+
+
+#### Cost of chains of start(V2,V1,V3):
+* Chain [23]: 1
+  with precondition: [V2=0] 
+
+* Chain [22]: 2
+  with precondition: [V1=0,V3=0,V2>=0] 
+
+* Chain [21]: 1*s(10)+2*s(12)+1*s(13)+1*s(14)+4
+  Such that:s(10) =< V2+2
+s(11) =< V2+V3
+s(12) =< V3
+s(13) =< s(11)
+s(14) =< s(12)*s(11)
+
+  with precondition: [V1=0,V2>=0,V3>=1] 
+
+* Chain [20]: 1*s(15)+2
+  Such that:s(15) =< V1
+
+  with precondition: [V3=0,V2>=0,V1>=1] 
+
+* Chain [19]: 2*s(16)+1*s(18)+1*s(19)+2
+  Such that:s(17) =< V2+V1+V3
+s(16) =< V3
+s(18) =< s(17)
+s(19) =< s(16)*s(17)
+
+  with precondition: [V2>=0,V1>=1,V3>=1] 
+
+* Chain [18]: 5*s(20)+1*s(23)+5
+  Such that:aux(4) =< V2
+s(20) =< aux(4)
+s(23) =< s(20)*aux(4)
+
+  with precondition: [V2>=1] 
+
+
+Closed-form bounds of start(V2,V1,V3): 
+-------------------------------------
+* Chain [23] with precondition: [V2=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [22] with precondition: [V1=0,V3=0,V2>=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [21] with precondition: [V1=0,V2>=0,V3>=1] 
+    - Upper bound: 2*V3+4+ (V2+V3)*V3+ (V2+V3)+ (V2+2) 
+    - Complexity: n^2 
+* Chain [20] with precondition: [V3=0,V2>=0,V1>=1] 
+    - Upper bound: V1+2 
+    - Complexity: n 
+* Chain [19] with precondition: [V2>=0,V1>=1,V3>=1] 
+    - Upper bound: 2*V3+2+ (V2+V1+V3)*V3+ (V2+V1+V3) 
+    - Complexity: n^2 
+* Chain [18] with precondition: [V2>=1] 
+    - Upper bound: 5*V2+5+V2*V2 
+    - Complexity: n^2 
+
+### Maximum cost of start(V2,V1,V3): max([max([1,nat(V1)+1,5*V2+4+V2*V2]),nat(V3)*2+1+max([nat(V2+V1+V3)*nat(V3)+nat(V2+V1+V3),nat(V2+V3)*nat(V3)+2+nat(V2+V3)+ (V2+2)])])+1 
+Asymptotic class: n^2 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 6 ms.
+* Invariants computed in 26 ms.
+   - Backward Invariants 11 ms.
+   - Transitive Invariants 3 ms.
+* Refinement performed in 46 ms.
+* Termination proved in 5 ms.
+* Upper bounds computed in 53 ms.
+   - Equation cost structures 17 ms.
+   - Phase cost structures 15 ms.
+   - Chain cost structures 10 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 156 ms.
+

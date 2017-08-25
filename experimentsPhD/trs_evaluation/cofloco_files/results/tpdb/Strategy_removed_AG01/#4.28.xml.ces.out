@@ -1,0 +1,297 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [half/2]
+1. recursive  : [bits/2]
+2. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into half/2
+1. SCC is partially evaluated into bits/2
+2. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations half/2 
+* CE 6 is refined into CE [9] 
+* CE 5 is refined into CE [10] 
+* CE 4 is refined into CE [11] 
+
+
+#### Refined cost equations half/2 
+* CE 9: half(V,Out) = 1+ half(W,X)
+     [W>=0,X+1=Out,W+2=V] 
+* CE 10: half(V,Out) = 1
+     [Out=0,V=1] 
+* CE 11: half(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of half/2 
+* CEs [10] --> Loop 7 
+* CEs [11] --> Loop 8 
+* CEs [9] --> Loop 9 
+
+#### Loops of half/2 
+* Loop 7: half(V,Out) [Out=0,V=1] 
+* Loop 8: half(V,Out) [Out=0,V=0] 
+* Loop 9: half(V,Out)->  half(V',Out')
+                  [V'>=0,Out=Out'+1,V'+2=V] 
+
+### Ranking functions of CR half(V,Out) 
+* RF of phase [9]: [V-1]
+
+#### Partial ranking functions of CR half(V,Out) 
+* Partial RF of phase [9]:
+  - RF of loop [9:1]:
+    V-1
+
+
+### Resulting Chains:half(V,Out) 
+* [[9],8]
+* [[9],7]
+* [8]
+* [7]
+
+
+### Merging Chains  half/2 into  External patterns of execution 
+* [[8]] --> 1 
+* [[7]] --> 2 
+* [[8,[9]]] --> 3 
+* [[7,[9]]] --> 4 
+
+
+### Specialization of cost equations bits/2 
+* CE 8 is refined into CE [12,13,14] 
+* CE 7 is refined into CE [15] 
+
+
+#### Refined cost equations bits/2 
+* CE 12: bits(V,Out) = 1+ half(W,X):2+ bits(Y,Z)
+     [Z+1=Out,Y=0,X=0,W=1,V=1] 
+* CE 13: bits(V,Out) = 1+ half(W,X):3+ bits(X,Y)
+     [X>=1,2*X=W,Y+1=Out,2*X=V] 
+* CE 14: bits(V,Out) = 1+ half(W,X):4+ bits(X,Y)
+     [X>=1,2*X+1=W,Y+1=Out,2*X+1=V] 
+* CE 15: bits(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of bits/2 
+* CEs [15] --> Loop 10 
+* CEs [14] --> Loop 11 
+* CEs [13] --> Loop 12 
+* CEs [12] --> Loop 13 
+
+#### Loops of bits/2 
+* Loop 10: bits(V,Out) [Out=0,V=0] 
+* Loop 11: bits(V,Out)->  bits(V',Out')
+                  [V>=3,Out=Out'+1,V=2*V'+1] 
+* Loop 12: bits(V,Out)->  bits(V',Out')
+                  [V>=2,Out=Out'+1,V=2*V'] 
+* Loop 13: bits(V,Out)->  bits(V',Out')
+                  [Out=Out'+1,V'=0,V=1] 
+
+### Ranking functions of CR bits(V,Out) 
+* RF of phase [11,12]: [V-1]
+
+#### Partial ranking functions of CR bits(V,Out) 
+* Partial RF of phase [11,12]:
+  - RF of loop [11:1]:
+    V/2-1
+  - RF of loop [12:1]:
+    V-1
+
+
+### Resulting Chains:bits(V,Out) 
+* [[11,12],13,10]
+* [13,10]
+* [10]
+
+
+### Merging Chains  bits/2 into  External patterns of execution 
+* [[10]] --> 1 
+* [[10,13]] --> 2 
+* [[10,13,[11,12]]] --> 3 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [16,17,18,19] 
+* CE 3 is refined into CE [20,21,22] 
+
+
+#### Refined cost equations start/1 
+* CE 16: start(V) = 0+ half(W,X):1
+     [X=0,W=0,V=0] 
+* CE 17: start(V) = 0+ half(W,X):2
+     [X=0,W=1,V=1] 
+* CE 18: start(V) = 0+ half(W,X):3
+     [X>=1,2*X=W,2*X=V] 
+* CE 19: start(V) = 0+ half(W,X):4
+     [X>=1,2*X+1=W,2*X+1=V] 
+* CE 20: start(V) = 0+ bits(W,X):1
+     [X=0,W=0,V=0] 
+* CE 21: start(V) = 0+ bits(W,X):2
+     [X=1,W=1,V=1] 
+* CE 22: start(V) = 0+ bits(V,W):3
+     [V+2>=2*W,W>=2] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [18,19,22] --> Loop 14 
+* CEs [17,21] --> Loop 15 
+* CEs [16,20] --> Loop 16 
+
+#### Loops of start/1 
+* Loop 14: start(V) [V>=2] 
+* Loop 15: start(V) [V=1] 
+* Loop 16: start(V) [V=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [16]
+* [15]
+* [14]
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[16]] --> 1 
+* [[15]] --> 2 
+* [[14]] --> 3 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [9] 
+
+ * loop 9:half(V,Out) -> [half(V',Out')] 
+1
+#### Cost of phase [9]:half(V,Out) -> [half(V',Out')] 
+1*it(9)+0
+  Such that:it(9) =< V
+it(9) =< V-V'
+
+#### Cost of phase [9]:half(V,Out) -> [half(V',Out')] 
+1*it(9)+0
+  Such that:it(9) =< V
+it(9) =< V-V'
+
+#### Cost of chains of half(V,Out):
+* Chain [[9],8]: 1*it(9)+1
+  Such that:it(9) =< 2*Out
+
+  with precondition: [V=2*Out,V>=2] 
+
+* Chain [[9],7]: 1*it(9)+1
+  Such that:it(9) =< 2*Out
+
+  with precondition: [V=2*Out+1,V>=3] 
+
+* Chain [8]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [7]: 1
+  with precondition: [V=1,Out=0] 
+
+
+#### Cost of loops [11,12] 
+
+ * loop 11:bits(V,Out) -> [bits(V',Out')] 
+1*s(2)+2
+  Such that:s(2) =< 2*V'
+
+ * loop 12:bits(V,Out) -> [bits(V',Out')] 
+1*s(4)+2
+  Such that:s(4) =< 2*V'
+
+#### Cost of phase [11,12]:bits(V,Out) -> [bits(V',Out')] 
+2*it(11)+2*it(12)+2*s(5)+0
+  Such that:it(11) =< V/2
+it(11) =< V/2-V'/2
+aux(1) =< V
+aux(2) =< V-V'
+aux(3) =< 2*V
+aux(4) =< 2*V-2*V'
+it(11) =< aux(1)
+it(12) =< aux(1)
+it(11) =< aux(2)
+it(12) =< aux(2)
+it(12) =< aux(3)
+s(5) =< aux(3)
+it(12) =< aux(4)
+s(5) =< aux(4)
+
+#### Cost of chains of bits(V,Out):
+* Chain [[11,12],13,10]: 2*it(11)+2*it(12)+2*s(5)+3
+  Such that:it(11) =< V/2
+aux(5) =< V
+aux(6) =< 2*V
+it(11) =< aux(5)
+it(12) =< aux(5)
+it(12) =< aux(6)
+s(5) =< aux(6)
+
+  with precondition: [Out>=2,V+2>=2*Out] 
+
+* Chain [13,10]: 3
+  with precondition: [V=1,Out=1] 
+
+* Chain [10]: 1
+  with precondition: [V=0,Out=0] 
+
+
+#### Cost of chains of start(V):
+* Chain [16]: 1
+  with precondition: [V=0] 
+
+* Chain [15]: 3
+  with precondition: [V=1] 
+
+* Chain [14]: 2*s(7)+2*s(9)+2*s(12)+2*s(13)+3
+  Such that:s(11) =< 2*V
+s(9) =< V/2
+aux(7) =< V
+s(7) =< aux(7)
+s(9) =< aux(7)
+s(12) =< aux(7)
+s(12) =< s(11)
+s(13) =< s(11)
+
+  with precondition: [V>=2] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [16] with precondition: [V=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [15] with precondition: [V=1] 
+    - Upper bound: 3 
+    - Complexity: constant 
+* Chain [14] with precondition: [V>=2] 
+    - Upper bound: 9*V+3 
+    - Complexity: n 
+
+### Maximum cost of start(V): 9*V+3 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 10 ms.
+* Invariants computed in 45 ms.
+   - Backward Invariants 20 ms.
+   - Transitive Invariants 10 ms.
+* Refinement performed in 63 ms.
+* Termination proved in 11 ms.
+* Upper bounds computed in 110 ms.
+   - Equation cost structures 25 ms.
+   - Phase cost structures 56 ms.
+   - Chain cost structures 24 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 269 ms.
+

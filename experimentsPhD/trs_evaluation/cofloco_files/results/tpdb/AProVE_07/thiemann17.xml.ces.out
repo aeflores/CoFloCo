@@ -1,0 +1,733 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [empty/2]
+1. non_recursive  : [head/2]
+2. recursive  : [sum/3]
+3. non_recursive  : [tail/2]
+4. recursive  : [if/4,if2/3,weight/2]
+5. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into empty/2
+1. SCC is partially evaluated into head/2
+2. SCC is partially evaluated into sum/3
+3. SCC is partially evaluated into tail/2
+4. SCC is partially evaluated into weight/2
+5. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations empty/2 
+* CE 29 is refined into CE [31] 
+* CE 30 is refined into CE [32] 
+* CE 28 is refined into CE [33] 
+
+
+#### Refined cost equations empty/2 
+* CE 31: empty(V1,Out) = 1
+     [V1>=1,Out=1] 
+* CE 32: empty(V1,Out) = 0
+     [V1>=0,Out=0] 
+* CE 33: empty(V1,Out) = 1
+     [Out=2,V1=0] 
+
+### Cost equations --> "Loop" of empty/2 
+* CEs [31] --> Loop 18 
+* CEs [32] --> Loop 19 
+* CEs [33] --> Loop 20 
+
+#### Loops of empty/2 
+* Loop 18: empty(V1,Out) [V1>=1,Out=1] 
+* Loop 19: empty(V1,Out) [V1>=0,Out=0] 
+* Loop 20: empty(V1,Out) [Out=2,V1=0] 
+
+### Ranking functions of CR empty(V1,Out) 
+
+#### Partial ranking functions of CR empty(V1,Out) 
+
+
+### Resulting Chains:empty(V1,Out) 
+* [20]
+* [19]
+* [18]
+
+
+### Merging Chains  empty/2 into  External patterns of execution 
+* [[20]] --> 1 
+* [[19]] --> 2 
+* [[18]] --> 3 
+
+
+### Specialization of cost equations head/2 
+* CE 26 is refined into CE [34] 
+* CE 27 is refined into CE [35] 
+
+
+#### Refined cost equations head/2 
+* CE 34: head(V1,Out) = 1
+     [V1>=Out+1,Out>=0] 
+* CE 35: head(V1,Out) = 0
+     [V1>=0,Out=0] 
+
+### Cost equations --> "Loop" of head/2 
+* CEs [34] --> Loop 21 
+* CEs [35] --> Loop 22 
+
+#### Loops of head/2 
+* Loop 21: head(V1,Out) [V1>=Out+1,Out>=0] 
+* Loop 22: head(V1,Out) [V1>=0,Out=0] 
+
+### Ranking functions of CR head(V1,Out) 
+
+#### Partial ranking functions of CR head(V1,Out) 
+
+
+### Resulting Chains:head(V1,Out) 
+* [22]
+* [21]
+
+
+### Merging Chains  head/2 into  External patterns of execution 
+* [[22]] --> 1 
+* [[21]] --> 2 
+
+
+### Specialization of cost equations sum/3 
+* CE 20 is refined into CE [36] 
+* CE 19 is refined into CE [37] 
+* CE 17 is refined into CE [38] 
+* CE 18 is refined into CE [39] 
+
+
+#### Refined cost equations sum/3 
+* CE 36: sum(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 37: sum(A,B,B) = 1
+     [B>=0,A=0] 
+* CE 38: sum(V1,V,Out) = 1+ sum(W1,X1,Out)
+     [V>=1,V1>=2,V+1=X1,V1=W1+1] 
+* CE 39: sum(V1,V,Out) = 1+ sum(W1,V,Out)
+     [W1>=0,V>=0,W1+1=V1] 
+
+### Cost equations --> "Loop" of sum/3 
+* CEs [38] --> Loop 23 
+* CEs [39] --> Loop 24 
+* CEs [36] --> Loop 25 
+* CEs [37] --> Loop 26 
+
+#### Loops of sum/3 
+* Loop 23: sum(V1,V,Out)->  sum(V1',V',Out)
+                  [V>=1,V1>=2,V+1=V',V1=V1'+1] 
+* Loop 24: sum(V1,V,Out)->  sum(V1',V,Out)
+                  [V>=0,V1>=1,V1=V1'+1] 
+* Loop 25: sum(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 26: sum(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR sum(V1,V,Out) 
+* RF of phase [23,24]: [V1]
+
+#### Partial ranking functions of CR sum(V1,V,Out) 
+* Partial RF of phase [23,24]:
+  - RF of loop [23:1]:
+    V1-1
+  - RF of loop [24:1]:
+    V1
+
+
+### Resulting Chains:sum(V1,V,Out) 
+* [[23,24],26]
+* [[23,24],25]
+* [26]
+* [25]
+
+
+### Merging Chains  sum/3 into  External patterns of execution 
+* [[26]] --> 1 
+* [[25],[25,[23,24]]] --> 2 
+* [[26,[23,24]]] --> 3 
+
+
+### Specialization of cost equations tail/2 
+* CE 15 is refined into CE [40] 
+* CE 14 is refined into CE [41] 
+* CE 16 is refined into CE [42] 
+
+
+#### Refined cost equations tail/2 
+* CE 40: tail(V1,Out) = 1
+     [V1>=Out+1,Out>=0] 
+* CE 41: tail(V1,Out) = 1
+     [Out=0,V1=0] 
+* CE 42: tail(V1,Out) = 0
+     [V1>=0,Out=0] 
+
+### Cost equations --> "Loop" of tail/2 
+* CEs [40] --> Loop 27 
+* CEs [41,42] --> Loop 28 
+
+#### Loops of tail/2 
+* Loop 27: tail(V1,Out) [V1>=Out+1,Out>=0] 
+* Loop 28: tail(V1,Out) [V1>=0,Out=0] 
+
+### Ranking functions of CR tail(V1,Out) 
+
+#### Partial ranking functions of CR tail(V1,Out) 
+
+
+### Resulting Chains:tail(V1,Out) 
+* [28]
+* [27]
+
+
+### Merging Chains  tail/2 into  External patterns of execution 
+* [[28]] --> 1 
+* [[27]] --> 2 
+
+
+### Specialization of cost equations weight/2 
+* CE 25 is refined into CE [43,44] 
+* CE 21 is refined into CE [45,46,47,48,49] 
+* CE 23 is refined into CE [50,51,52,53] 
+* CE 24 is refined into CE [54,55,56,57,58,59,60,61,62,63,64,65] 
+* CE 22 is refined into CE [66,67,68,69,70,71] 
+
+
+#### Refined cost equations weight/2 
+* CE 43: weight(V1,Out) = 2+ empty(W1,X1):1+ tail(Y1,Z1):1+ empty(A2,B2):1
+     [B2=2,A2=0,Z1=0,Y1=0,X1=2,W1=0,Out=1,V1=0] 
+* CE 44: weight(V1,Out) = 2+ empty(W1,X1):1+ tail(Y1,Z1):1+ empty(A2,B2):2
+     [B2=0,A2=0,Z1=0,Y1=0,X1=2,W1=0,Out=1,V1=0] 
+* CE 45: weight(V1,Out) = 2+ empty(V1,W1):3+ tail(V1,X1):1+ empty(Y1,Z1):1
+     [V1>=1,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 46: weight(V1,Out) = 2+ empty(V1,W1):3+ tail(V1,X1):1+ empty(Y1,Z1):2
+     [V1>=1,Z1=0,Y1=0,X1=0,W1=1,Out=0] 
+* CE 47: weight(V1,Out) = 2+ empty(V1,W1):3+ tail(V1,X1):2+ empty(Y1,Z1):1
+     [V1>=1,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 48: weight(V1,Out) = 2+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):2
+     [V1>=X1+1,X1>=0,Y1=0,W1=1,Out=0] 
+* CE 49: weight(V1,Out) = 2+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):3
+     [V1>=X1+1,X1>=1,Y1=1,W1=1,Out=0] 
+* CE 50: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):1+ empty(Y1,Z1):1+ head(V1,A2):1
+     [V1>=1,A2=0,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 51: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):1+ empty(Y1,Z1):1+ head(V1,Out):2
+     [V1>=Out+1,Out>=0,Z1=2,Y1=0,X1=0,W1=1] 
+* CE 52: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):2+ empty(Y1,Z1):1+ head(V1,A2):1
+     [V1>=1,A2=0,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 53: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):2+ empty(Y1,Z1):1+ head(V1,Out):2
+     [V1>=Out+1,Out>=0,Z1=2,Y1=0,X1=0,W1=1] 
+* CE 54: weight(V1,Out) = 1+ empty(W1,X1):1+ tail(Y1,Z1):1+ empty(A2,B2):1
+     [B2=2,A2=0,Z1=0,Y1=0,X1=2,W1=0,Out=0,V1=0] 
+* CE 55: weight(V1,Out) = 1+ empty(W1,X1):1+ tail(Y1,Z1):1+ empty(A2,B2):2
+     [B2=0,A2=0,Z1=0,Y1=0,X1=2,W1=0,Out=0,V1=0] 
+* CE 56: weight(V1,Out) = 1+ empty(V1,W1):2+ tail(V1,X1):1+ empty(Y1,Z1):1
+     [V1>=0,Z1=2,Y1=0,X1=0,W1=0,Out=0] 
+* CE 57: weight(V1,Out) = 1+ empty(V1,W1):2+ tail(V1,X1):1+ empty(Y1,Z1):2
+     [V1>=0,Z1=0,Y1=0,X1=0,W1=0,Out=0] 
+* CE 58: weight(V1,Out) = 1+ empty(V1,W1):2+ tail(V1,X1):2+ empty(Y1,Z1):1
+     [V1>=1,Z1=2,Y1=0,X1=0,W1=0,Out=0] 
+* CE 59: weight(V1,Out) = 1+ empty(V1,W1):2+ tail(V1,X1):2+ empty(X1,Y1):2
+     [V1>=X1+1,X1>=0,Y1=0,W1=0,Out=0] 
+* CE 60: weight(V1,Out) = 1+ empty(V1,W1):2+ tail(V1,X1):2+ empty(X1,Y1):3
+     [V1>=X1+1,X1>=1,Y1=1,W1=0,Out=0] 
+* CE 61: weight(V1,Out) = 1+ empty(V1,W1):3+ tail(V1,X1):1+ empty(Y1,Z1):1
+     [V1>=1,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 62: weight(V1,Out) = 1+ empty(V1,W1):3+ tail(V1,X1):1+ empty(Y1,Z1):2
+     [V1>=1,Z1=0,Y1=0,X1=0,W1=1,Out=0] 
+* CE 63: weight(V1,Out) = 1+ empty(V1,W1):3+ tail(V1,X1):2+ empty(Y1,Z1):1
+     [V1>=1,Z1=2,Y1=0,X1=0,W1=1,Out=0] 
+* CE 64: weight(V1,Out) = 1+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):2
+     [V1>=X1+1,X1>=0,Y1=0,W1=1,Out=0] 
+* CE 65: weight(V1,Out) = 1+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):3
+     [V1>=X1+1,X1>=1,Y1=1,W1=1,Out=0] 
+* CE 66: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):3+ tail(V1,Z1):1+ tail(A2,B2):1+ sum(V1,C2,D2):2+ weight(E2,Out)
+     [V1>=X1+1,X1>=1,E2=0,D2=0,C2=1,B2=0,A2=0,Z1=0,Y1=1,W1=1] 
+* CE 67: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):3+ tail(V1,Z1):1+ tail(A2,B2):1+ sum(V1,C2,D2):3+ weight(D2,Out)
+     [V1>=D2,V1>=X1+1,D2>=1,X1>=1,C2=1,B2=0,A2=0,Z1=0,Y1=1,W1=1] 
+* CE 68: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):3+ tail(V1,Z1):2+ tail(Z1,A2):1+ sum(V1,B2,C2):2+ weight(D2,Out)
+     [V1>=Z1+1,V1>=X1+1,Z1>=0,X1>=1,D2=0,C2=0,B2=1,A2=0,Y1=1,W1=1] 
+* CE 69: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):3+ tail(V1,Z1):2+ tail(Z1,A2):1+ sum(V1,B2,C2):3+ weight(C2,Out)
+     [V1>=C2,V1>=Z1+1,V1>=X1+1,C2>=1,Z1>=0,X1>=1,B2=1,A2=0,Y1=1,W1=1] 
+* CE 70: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):3+ tail(V1,Z1):2+ tail(Z1,A2):2+ sum(V1,B2,C2):2+ weight(D2,Out)
+     [Z1>=B2,V1>=Z1+1,V1>=X1+1,B2>=1,X1>=1,B2=A2+1,D2=0,C2=0,Y1=1,W1=1] 
+* CE 71: weight(V1,Out) = 3+ empty(V1,W1):3+ tail(V1,X1):2+ empty(X1,Y1):3+ tail(V1,Z1):2+ tail(Z1,A2):2+ sum(V1,B2,C2):3+ weight(C2,Out)
+     [V1+B2>=C2+1,C2>=B2,Z1>=B2,V1>=Z1+1,V1>=X1+1,B2>=1,X1>=1,B2=A2+1,Y1=1,W1=1] 
+
+### Cost equations --> "Loop" of weight/2 
+* CEs [67,69,71] --> Loop 29 
+* CEs [66,68,70] --> Loop 30 
+* CEs [51,53] --> Loop 31 
+* CEs [43,44] --> Loop 32 
+* CEs [45,46,47,48,49,50,52,54,55,56,57,58,59,60,61,62,63,64,65] --> Loop 33 
+
+#### Loops of weight/2 
+* Loop 29: weight(V1,Out)->  weight(V1',Out)
+                  [2*V1>=V1'+2,V1'>=1,V1>=2] 
+* Loop 30: weight(V1,Out)->  weight(V1',Out)
+                  [V1>=2,V1'=0] 
+* Loop 31: weight(V1,Out) [V1>=Out+1,Out>=0] 
+* Loop 32: weight(V1,Out) [Out=1,V1=0] 
+* Loop 33: weight(V1,Out) [V1>=0,Out=0] 
+
+### Ranking functions of CR weight(V1,Out) 
+
+#### Partial ranking functions of CR weight(V1,Out) 
+
+
+### Resulting Chains:weight(V1,Out) 
+* [[29]]...
+* [[29],33]
+* [[29],31]
+* [[29],30,33]
+* [[29],30,32]
+* [33]
+* [32]
+* [31]
+* [30,33]
+* [30,32]
+
+
+### Merging Chains  weight/2 into  External patterns of execution 
+* [[32]] --> 1 
+* [[33,30],[33],[33,30,[29]],[33,[29]]] --> 2 
+* [[32,30],[32,30,[29]],[31,[29]]] --> 3 
+* [[31]] --> 4 
+* [[[29]]] --> 5 
+
+
+### Specialization of cost equations start/3 
+* CE 7 is refined into CE [72,73] 
+* CE 8 is refined into CE [74] 
+* CE 6 is refined into CE [75,76] 
+* CE 2 is refined into CE [77] 
+* CE 3 is refined into CE [78] 
+* CE 4 is refined into CE [79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98] 
+* CE 5 is refined into CE [99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118] 
+* CE 9 is refined into CE [119,120,121] 
+* CE 10 is refined into CE [122,123,124] 
+* CE 11 is refined into CE [125,126] 
+* CE 12 is refined into CE [127,128] 
+* CE 13 is refined into CE [129,130,131,132,133] 
+
+
+#### Refined cost equations start/3 
+* CE 72: start(V1,V,V16) = 1+ head(V,W16):1
+     [V>=0,W16=0,V1=2] 
+* CE 73: start(V1,V,V16) = 1+ head(V,W16):2
+     [V>=W16+1,W16>=0,V1=2] 
+* CE 74: start(V1,V,V16) = 1
+     [V16>=0,V>=0,V1=2] 
+* CE 75: start(V1,V,V16) = 2+ head(V16,W16):1
+     [V16>=0,W16=0,V=2,V1=1] 
+* CE 76: start(V1,V,V16) = 2+ head(V16,W16):2
+     [V16>=W16+1,W16>=0,V=2,V1=1] 
+* CE 77: start(V1,V,V16) = 1
+     [V16>=0,V>=0,V1=1] 
+* CE 78: start(V1,V,V16) = 0
+     [V>=0,V1>=0] 
+* CE 79: start(V1,V,V16) = 2+ tail(W16,X16):1+ tail(Y16,Z16):1+ sum(A17,B17,C17):1+ weight(D17,E17):2
+     [E17=0,D17=1,C17=1,B17=1,A17=0,Z16=0,Y16=0,X16=0,W16=0,V16=0,V=1,V1=1] 
+* CE 80: start(V1,V,V16) = 2+ tail(W16,X16):1+ tail(Y16,Z16):1+ sum(A17,B17,C17):1+ weight(D17,E17):4
+     [E17=0,D17=1,C17=1,B17=1,A17=0,Z16=0,Y16=0,X16=0,W16=0,V16=0,V=1,V1=1] 
+* CE 81: start(V1,V,V16) = 2+ tail(V16,W16):1+ tail(X16,Y16):1+ sum(V16,Z16,A17):2+ weight(B17,C17):1
+     [V16>=0,C17=1,B17=0,A17=0,Z16=1,Y16=0,X16=0,W16=0,V=1,V1=1] 
+* CE 82: start(V1,V,V16) = 2+ tail(V16,W16):1+ tail(X16,Y16):1+ sum(V16,Z16,A17):2+ weight(B17,C17):2
+     [V16>=0,C17=0,B17=0,A17=0,Z16=1,Y16=0,X16=0,W16=0,V=1,V1=1] 
+* CE 83: start(V1,V,V16) = 2+ tail(V16,W16):1+ tail(X16,Y16):1+ sum(V16,Z16,A17):3+ weight(A17,B17):2
+     [V16>=A17,A17>=1,B17=0,Z16=1,Y16=0,X16=0,W16=0,V=1,V1=1] 
+* CE 84: start(V1,V,V16) = 2+ tail(V16,W16):1+ tail(X16,Y16):1+ sum(V16,Z16,A17):3+ weight(A17,B17):3
+     [V16>=A17,B17>=0,A17>=2,Z16=1,Y16=0,X16=0,W16=0,V=1,V1=1] 
+* CE 85: start(V1,V,V16) = 2+ tail(V16,W16):1+ tail(X16,Y16):1+ sum(V16,Z16,A17):3+ weight(A17,B17):4
+     [A17>=B17+1,V16>=A17,B17>=0,Z16=1,Y16=0,X16=0,W16=0,V=1,V1=1] 
+* CE 86: start(V1,V,V16) = 2+ tail(V16,W16):1+ tail(X16,Y16):1+ sum(V16,Z16,A17):3+ weight(A17,B17):5
+     [V16>=A17,A17>=2,Z16=1,Y16=0,X16=0,W16=0,V=1,V1=1] 
+* CE 87: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):1+ sum(V16,Y16,Z16):2+ weight(A17,B17):1
+     [V16>=W16+1,W16>=0,B17=1,A17=0,Z16=0,Y16=1,X16=0,V=1,V1=1] 
+* CE 88: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):1+ sum(V16,Y16,Z16):2+ weight(A17,B17):2
+     [V16>=W16+1,W16>=0,B17=0,A17=0,Z16=0,Y16=1,X16=0,V=1,V1=1] 
+* CE 89: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):1+ sum(V16,Y16,Z16):3+ weight(Z16,A17):2
+     [V16>=Z16,V16>=W16+1,Z16>=1,W16>=0,A17=0,Y16=1,X16=0,V=1,V1=1] 
+* CE 90: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):1+ sum(V16,Y16,Z16):3+ weight(Z16,A17):3
+     [V16>=Z16,V16>=W16+1,A17>=0,Z16>=2,W16>=0,Y16=1,X16=0,V=1,V1=1] 
+* CE 91: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):1+ sum(V16,Y16,Z16):3+ weight(Z16,A17):4
+     [Z16>=A17+1,V16>=Z16,V16>=W16+1,A17>=0,W16>=0,Y16=1,X16=0,V=1,V1=1] 
+* CE 92: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):1+ sum(V16,Y16,Z16):3+ weight(Z16,A17):5
+     [V16>=Z16,V16>=W16+1,Z16>=2,W16>=0,Y16=1,X16=0,V=1,V1=1] 
+* CE 93: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):2+ sum(V16,Y16,Z16):2+ weight(A17,B17):1
+     [W16>=Y16,V16>=W16+1,Y16>=1,Y16=X16+1,B17=1,A17=0,Z16=0,V=1,V1=1] 
+* CE 94: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):2+ sum(V16,Y16,Z16):2+ weight(A17,B17):2
+     [W16>=Y16,V16>=W16+1,Y16>=1,Y16=X16+1,B17=0,A17=0,Z16=0,V=1,V1=1] 
+* CE 95: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):2+ sum(V16,Y16,Z16):3+ weight(Z16,A17):2
+     [V16+Y16>=Z16+1,Z16>=Y16,W16>=Y16,V16>=W16+1,Y16>=1,Y16=X16+1,A17=0,V=1,V1=1] 
+* CE 96: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):2+ sum(V16,Y16,Z16):3+ weight(Z16,A17):3
+     [V16+Y16>=Z16+1,Z16>=Y16,W16>=Y16,V16>=W16+1,A17>=0,Z16>=2,Y16>=1,Y16=X16+1,V=1,V1=1] 
+* CE 97: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):2+ sum(V16,Y16,Z16):3+ weight(Z16,A17):4
+     [V16+Y16>=Z16+1,Z16>=A17+1,Z16>=Y16,W16>=Y16,V16>=W16+1,A17>=0,Y16>=1,Y16=X16+1,V=1,V1=1] 
+* CE 98: start(V1,V,V16) = 2+ tail(V16,W16):2+ tail(W16,X16):2+ sum(V16,Y16,Z16):3+ weight(Z16,A17):5
+     [V16+Y16>=Z16+1,Z16>=Y16,W16>=Y16,V16>=W16+1,Z16>=2,Y16>=1,Y16=X16+1,V=1,V1=1] 
+* CE 99: start(V1,V,V16) = 1+ tail(W16,X16):1+ tail(Y16,Z16):1+ sum(A17,B17,C17):1+ weight(D17,E17):2
+     [E17=0,D17=1,C17=1,B17=1,A17=0,Z16=0,Y16=0,X16=0,W16=0,V=0,V1=1] 
+* CE 100: start(V1,V,V16) = 1+ tail(W16,X16):1+ tail(Y16,Z16):1+ sum(A17,B17,C17):1+ weight(D17,E17):4
+     [E17=0,D17=1,C17=1,B17=1,A17=0,Z16=0,Y16=0,X16=0,W16=0,V=0,V1=1] 
+* CE 101: start(V1,V,V16) = 1+ tail(V,W16):1+ tail(X16,Y16):1+ sum(V,Z16,A17):2+ weight(B17,C17):1
+     [V>=0,C17=1,B17=0,A17=0,Z16=1,Y16=0,X16=0,W16=0,V1=1] 
+* CE 102: start(V1,V,V16) = 1+ tail(V,W16):1+ tail(X16,Y16):1+ sum(V,Z16,A17):2+ weight(B17,C17):2
+     [V>=0,C17=0,B17=0,A17=0,Z16=1,Y16=0,X16=0,W16=0,V1=1] 
+* CE 103: start(V1,V,V16) = 1+ tail(V,W16):1+ tail(X16,Y16):1+ sum(V,Z16,A17):3+ weight(A17,B17):2
+     [V>=A17,A17>=1,B17=0,Z16=1,Y16=0,X16=0,W16=0,V1=1] 
+* CE 104: start(V1,V,V16) = 1+ tail(V,W16):1+ tail(X16,Y16):1+ sum(V,Z16,A17):3+ weight(A17,B17):3
+     [V>=A17,B17>=0,A17>=2,Z16=1,Y16=0,X16=0,W16=0,V1=1] 
+* CE 105: start(V1,V,V16) = 1+ tail(V,W16):1+ tail(X16,Y16):1+ sum(V,Z16,A17):3+ weight(A17,B17):4
+     [A17>=B17+1,V>=A17,B17>=0,Z16=1,Y16=0,X16=0,W16=0,V1=1] 
+* CE 106: start(V1,V,V16) = 1+ tail(V,W16):1+ tail(X16,Y16):1+ sum(V,Z16,A17):3+ weight(A17,B17):5
+     [V>=A17,A17>=2,Z16=1,Y16=0,X16=0,W16=0,V1=1] 
+* CE 107: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):1+ sum(V,Y16,Z16):2+ weight(A17,B17):1
+     [V>=W16+1,W16>=0,B17=1,A17=0,Z16=0,Y16=1,X16=0,V1=1] 
+* CE 108: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):1+ sum(V,Y16,Z16):2+ weight(A17,B17):2
+     [V>=W16+1,W16>=0,B17=0,A17=0,Z16=0,Y16=1,X16=0,V1=1] 
+* CE 109: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):1+ sum(V,Y16,Z16):3+ weight(Z16,A17):2
+     [V>=Z16,V>=W16+1,Z16>=1,W16>=0,A17=0,Y16=1,X16=0,V1=1] 
+* CE 110: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):1+ sum(V,Y16,Z16):3+ weight(Z16,A17):3
+     [V>=Z16,V>=W16+1,A17>=0,Z16>=2,W16>=0,Y16=1,X16=0,V1=1] 
+* CE 111: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):1+ sum(V,Y16,Z16):3+ weight(Z16,A17):4
+     [Z16>=A17+1,V>=Z16,V>=W16+1,A17>=0,W16>=0,Y16=1,X16=0,V1=1] 
+* CE 112: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):1+ sum(V,Y16,Z16):3+ weight(Z16,A17):5
+     [V>=Z16,V>=W16+1,Z16>=2,W16>=0,Y16=1,X16=0,V1=1] 
+* CE 113: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):2+ sum(V,Y16,Z16):2+ weight(A17,B17):1
+     [W16>=Y16,V>=W16+1,Y16>=1,Y16=X16+1,B17=1,A17=0,Z16=0,V1=1] 
+* CE 114: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):2+ sum(V,Y16,Z16):2+ weight(A17,B17):2
+     [W16>=Y16,V>=W16+1,Y16>=1,Y16=X16+1,B17=0,A17=0,Z16=0,V1=1] 
+* CE 115: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):2+ sum(V,Y16,Z16):3+ weight(Z16,A17):2
+     [V+Y16>=Z16+1,Z16>=Y16,W16>=Y16,V>=W16+1,Y16>=1,Y16=X16+1,A17=0,V1=1] 
+* CE 116: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):2+ sum(V,Y16,Z16):3+ weight(Z16,A17):3
+     [V+Y16>=Z16+1,Z16>=Y16,W16>=Y16,V>=W16+1,A17>=0,Z16>=2,Y16>=1,Y16=X16+1,V1=1] 
+* CE 117: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):2+ sum(V,Y16,Z16):3+ weight(Z16,A17):4
+     [V+Y16>=Z16+1,Z16>=A17+1,Z16>=Y16,W16>=Y16,V>=W16+1,A17>=0,Y16>=1,Y16=X16+1,V1=1] 
+* CE 118: start(V1,V,V16) = 1+ tail(V,W16):2+ tail(W16,X16):2+ sum(V,Y16,Z16):3+ weight(Z16,A17):5
+     [V+Y16>=Z16+1,Z16>=Y16,W16>=Y16,V>=W16+1,Z16>=2,Y16>=1,Y16=X16+1,V1=1] 
+* CE 119: start(V1,V,V16) = 0+ sum(W16,V,V):1
+     [V>=0,W16=0,V1=0] 
+* CE 120: start(V1,V,V16) = 0+ sum(V1,V,W16):2
+     [V>=0,V1>=0,W16=0] 
+* CE 121: start(V1,V,V16) = 0+ sum(V1,V,W16):3
+     [V1+V>=W16+1,W16>=V,V>=0] 
+* CE 122: start(V1,V,V16) = 0+ empty(W16,X16):1
+     [X16=2,W16=0,V1=0] 
+* CE 123: start(V1,V,V16) = 0+ empty(V1,W16):2
+     [V1>=0,W16=0] 
+* CE 124: start(V1,V,V16) = 0+ empty(V1,W16):3
+     [V1>=1,W16=1] 
+* CE 125: start(V1,V,V16) = 0+ tail(V1,W16):1
+     [V1>=0,W16=0] 
+* CE 126: start(V1,V,V16) = 0+ tail(V1,W16):2
+     [V1>=W16+1,W16>=0] 
+* CE 127: start(V1,V,V16) = 0+ head(V1,W16):1
+     [V1>=0,W16=0] 
+* CE 128: start(V1,V,V16) = 0+ head(V1,W16):2
+     [V1>=W16+1,W16>=0] 
+* CE 129: start(V1,V,V16) = 0+ weight(W16,X16):1
+     [X16=1,W16=0,V1=0] 
+* CE 130: start(V1,V,V16) = 0+ weight(V1,W16):2
+     [V1>=0,W16=0] 
+* CE 131: start(V1,V,V16) = 0+ weight(V1,W16):3
+     [W16>=0,V1>=2] 
+* CE 132: start(V1,V,V16) = 0+ weight(V1,W16):4
+     [V1>=W16+1,W16>=0] 
+* CE 133: start(V1,V,V16) = 0+ weight(V1,W16):5
+     [V1>=2] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [133] --> Loop 34 
+* CEs [106,112,118] --> Loop 35 
+* CEs [86,92,98] --> Loop 36 
+* CEs [72,73,74] --> Loop 37 
+* CEs [75,76] --> Loop 38 
+* CEs [79,80,81,82,83,84,85,87,88,89,90,91,93,94,95,96,97] --> Loop 39 
+* CEs [77,99,100,101,102,103,104,105,107,108,109,110,111,113,114,115,116,117] --> Loop 40 
+* CEs [78,119,120,121,122,123,124,125,126,127,128,129,130,131,132] --> Loop 41 
+
+#### Loops of start/3 
+* Loop 34: start(V1,V,V16) [V1>=2] 
+* Loop 35: start(V1,V,V16) [V>=2,V1=1] 
+* Loop 36: start(V1,V,V16) [V16>=2,V=1,V1=1] 
+* Loop 37: start(V1,V,V16) [V>=0,V1=2] 
+* Loop 38: start(V1,V,V16) [V16>=0,V=2,V1=1] 
+* Loop 39: start(V1,V,V16) [V16>=0,V=1,V1=1] 
+* Loop 40: start(V1,V,V16) [V>=0,V1=1] 
+* Loop 41: start(V1,V,V16) [V1>=0] 
+
+### Ranking functions of CR start(V1,V,V16) 
+
+#### Partial ranking functions of CR start(V1,V,V16) 
+
+
+### Resulting Chains:start(V1,V,V16) 
+* [41]
+* [40]
+* [39]
+* [38]
+* [37]
+* [36]...
+* [35]...
+* [34]...
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[39],[40],[41]] --> 1 
+* [[38]] --> 2 
+* [[37]] --> 3 
+* [[36]] --> 4 
+* [[35]] --> 5 
+* [[34]] --> 6 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of empty(V1,Out):
+* Chain [20]: 1
+  with precondition: [V1=0,Out=2] 
+
+* Chain [19]: 0
+  with precondition: [Out=0,V1>=0] 
+
+* Chain [18]: 1
+  with precondition: [Out=1,V1>=1] 
+
+
+#### Cost of chains of head(V1,Out):
+* Chain [22]: 0
+  with precondition: [Out=0,V1>=0] 
+
+* Chain [21]: 1
+  with precondition: [Out>=0,V1>=Out+1] 
+
+
+#### Cost of loops [23,24] 
+
+ * loop 23:sum(V1,V,Out) -> [sum(V1',V',Out')] 
+1
+ * loop 24:sum(V1,V,Out) -> [sum(V1',V',Out')] 
+1
+#### Cost of phase [23,24]:sum(V1,V,Out) -> [sum(V1',V',Out')] 
+2*it(23)+0
+  Such that:aux(1) =< V1
+aux(2) =< V1-V1'
+it(23) =< aux(1)
+it(23) =< aux(2)
+
+#### Cost of phase [23,24]:sum(V1,V,Out) -> [sum(V1',V',Out')] 
+2*it(23)+0
+  Such that:aux(1) =< V1
+aux(2) =< V1-V1'
+it(23) =< aux(1)
+it(23) =< aux(2)
+
+#### Cost of chains of sum(V1,V,Out):
+* Chain [[23,24],26]: 2*it(23)+1
+  Such that:aux(3) =< V1
+it(23) =< aux(3)
+
+  with precondition: [V>=0,Out>=V,V+V1>=Out+1] 
+
+* Chain [[23,24],25]: 2*it(23)+0
+  Such that:aux(4) =< V1
+it(23) =< aux(4)
+
+  with precondition: [Out=0,V1>=1,V>=0] 
+
+* Chain [26]: 1
+  with precondition: [V1=0,V=Out,V>=0] 
+
+* Chain [25]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of chains of tail(V1,Out):
+* Chain [28]: 1
+  with precondition: [Out=0,V1>=0] 
+
+* Chain [27]: 1
+  with precondition: [Out>=0,V1>=Out+1] 
+
+
+#### Cost of loops [29] 
+
+ * loop 29:weight(V1,Out) -> [weight(V1',Out')] 
+6*s(10)+9
+  Such that:s(9) =< V1
+s(10) =< s(9)
+
+#### Cost of phase [29]:weight(V1,Out) -> [weight(V1',Out')] 
+9*it(29)+6*s(11)+0
+#### Cost of phase [29]:weight(V1,Out) -> [weight(V1',Out')] 
+9*it(29)+6*s(11)+0
+#### Cost of phase [29]:weight(V1,Out) -> [weight(V1',Out')] 
+9*it(29)+6*s(11)+0
+#### Cost of phase [29]:weight(V1,Out) -> [weight(V1',Out')] 
+9*it(29)+6*s(11)+0
+#### Cost of loops [29] 
+
+ * loop 29:weight(V1,Out) -> [weight(V1',Out')] 
+6*s(10)+9
+  Such that:s(9) =< V1
+s(10) =< s(9)
+
+#### Cost of phase [29]:weight(V1,Out) -> [] 
+9*it(29)+14*it([30,33])+6*s(11)+6*s(19)+0
+  Such that:it([30,33]) =< 1
+
+#### Cost of phase [29]:weight(V1,Out) -> [weight(V1',Out')] 
+9*it(29)+6*s(11)+0
+#### Cost of loops [29] 
+
+ * loop 29:weight(V1,Out) -> [weight(V1',Out')] 
+6*s(10)+9
+  Such that:s(9) =< V1
+s(10) =< s(9)
+
+#### Cost of phase [29]:weight(V1,Out) -> [] 
+9*it(29)+13*it([30,32])+6*s(11)+6*s(21)+0
+  Such that:it([30,32]) =< 1
+
+#### Cost of chains of weight(V1,Out):
+* Chain [[29]]...: 15*it(29)+0
+  with precondition: [V1>=2] 
+
+* Chain [[29],33]: 15*it(29)+6
+  with precondition: [Out=0,V1>=2] 
+
+* Chain [[29],31]: 15*it(29)+7
+  with precondition: [V1>=2,Out>=0] 
+
+* Chain [[29],30,33]: 9*it(29)+14*it([30,33])+6*s(11)+6*s(19)+0
+  Such that:it([30,33]) =< 1
+
+  with precondition: [Out=0,V1>=2] 
+
+* Chain [[29],30,32]: 9*it(29)+13*it([30,32])+6*s(11)+6*s(21)+0
+  Such that:it([30,32]) =< 1
+
+  with precondition: [Out=1,V1>=2] 
+
+* Chain [33]: 6
+  with precondition: [Out=0,V1>=0] 
+
+* Chain [32]: 5
+  with precondition: [V1=0,Out=1] 
+
+* Chain [31]: 7
+  with precondition: [Out>=0,V1>=Out+1] 
+
+* Chain [30,33]: 6*s(14)+14
+  Such that:aux(10) =< V1
+s(14) =< aux(10)
+
+  with precondition: [Out=0,V1>=2] 
+
+* Chain [30,32]: 6*s(14)+13
+  Such that:aux(10) =< V1
+s(14) =< aux(10)
+
+  with precondition: [Out=1,V1>=2] 
+
+
+#### Cost of chains of start(V1,V,V16):
+* Chain [41]: 16*s(38)+27*s(41)+72*s(44)+14
+  Such that:aux(29) =< 1
+aux(30) =< V1
+s(41) =< aux(29)
+s(38) =< aux(30)
+
+  with precondition: [V1>=0] 
+
+* Chain [40]: 143*s(49)+360*s(52)+54*s(54)+12*s(109)+18
+  Such that:aux(36) =< 1
+aux(37) =< V
+aux(38) =< 2*V
+s(49) =< aux(36)
+s(54) =< aux(37)
+s(109) =< aux(38)
+
+  with precondition: [V1=1,V>=0] 
+
+* Chain [39]: 143*s(119)+360*s(122)+54*s(124)+12*s(179)+19
+  Such that:aux(44) =< 1
+aux(45) =< V16
+aux(46) =< 2*V16
+s(119) =< aux(44)
+s(124) =< aux(45)
+s(179) =< aux(46)
+
+  with precondition: [V1=1,V=1,V16>=0] 
+
+* Chain [38]: 3
+  with precondition: [V1=1,V=2,V16>=0] 
+
+* Chain [37]: 2
+  with precondition: [V1=2,V>=0] 
+
+* Chain [36]...: 6*s(190)+45*s(191)+5
+  Such that:aux(47) =< V16
+s(190) =< aux(47)
+
+  with precondition: [V1=1,V=1,V16>=2] 
+
+* Chain [35]...: 6*s(199)+45*s(200)+4
+  Such that:aux(48) =< V
+s(199) =< aux(48)
+
+  with precondition: [V1=1,V>=2] 
+
+* Chain [34]...: 15*s(207)+0
+  with precondition: [V1>=2] 
+
+
+Closed-form bounds of start(V1,V,V16): 
+-------------------------------------
+* Chain [41] with precondition: [V1>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [40] with precondition: [V1=1,V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [39] with precondition: [V1=1,V=1,V16>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [38] with precondition: [V1=1,V=2,V16>=0] 
+    - Upper bound: 3 
+    - Complexity: constant 
+* Chain [37] with precondition: [V1=2,V>=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [36]... with precondition: [V1=1,V=1,V16>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [35]... with precondition: [V1=1,V>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [34]... with precondition: [V1>=2] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V1,V,V16): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 30 ms.
+* Invariants computed in 27 ms.
+   - Backward Invariants 15 ms.
+   - Transitive Invariants 4 ms.
+* Refinement performed in 208 ms.
+* Termination proved in 3 ms.
+* Upper bounds computed in 164 ms.
+   - Equation cost structures 99 ms.
+   - Phase cost structures 48 ms.
+   - Chain cost structures 10 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 461 ms.
+

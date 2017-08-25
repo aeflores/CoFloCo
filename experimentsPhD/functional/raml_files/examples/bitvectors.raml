@@ -1,0 +1,119 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/bitvectors.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   A library for bit vectors.
+ *    
+ *   A bit vector is an integer list of 0's and 1's.  The first value in
+ *   the list is the least significant bit.  For example [1,0] is 1 and
+ *   [0,1] is 2.  We interpret the empty list as zero., i.e., [] =
+ *   [0].
+ *
+ *   We a assume an arbitrary but fixed word length (e.g. 32 bit) for the
+ *   vectors.
+ *    
+ *   The library contains the following functions.
+ *    
+ *     - add(b1,b2): addition b1+b2 of two bit vectors b1 b2.  Can produce an
+ *          overflow.
+ *    
+ *     - sub(b1,b2): subtraction of b2 from b1 (b1-b2).  Returns [0,...,0] if the
+ *               result is negative.
+ *
+ *     - compare(b1,b2): -1 if b1 is less then b2, 0 if b1 is equal to b2,
+                and 1 if b1 is greater then b2.
+ *    
+ *     - leq(b1,b2): b1 < b2 ?
+ *    
+ *     - mult(b1,b2): multiplication of two bit vectors
+ *    
+ *     - Div(b1,b2): division of b1 by b2.  The result is undefined in case
+ *               of division by zero. (The function name is upper case
+ *               since div is a RAML key word.)
+ *)
+
+
+
+let rec bitToInt' b n =
+	match b with
+	| [] -> 0
+	| x::xs -> (Raml.tick(1.0); x*n + (bitToInt' xs n*n));;
+
+let bitToInt b =
+	bitToInt' b 1;;
+
+let sum x y r =
+	(Raml.tick(1.0); 
+	let s = x + y + r in
+	if (s = 0) then (0, 0)
+	else if (s = 1) then (1, 0)
+	else if (s = 2) then (0, 1)
+	else (1, 1));;
+
+let rec add' b1 b2 r =
+	match b1 with
+	| [] -> []
+	| x::xs ->
+		match b2 with
+		| [] -> []
+		| y::ys ->
+			let (z, r') = sum x y r in
+			(Raml.tick(1.0); z::add' xs ys r');;
+
+let add b1 b2 =
+	add' b1 b2 0;;
+
+let rec mult b1 b2 =
+	match b1 with
+	| [] -> []
+	| x::xs ->
+		let zs = 0::(mult xs b2) in
+		(Raml.tick(1.0); 
+		if (x = 1) then add b2 zs
+		else zs);;
+
+let diff x y r =
+	(Raml.tick(1.0); (x + y + r mod 2, if (x - y - r < 0) then 1 else 0));;
+
+let rec sub' b1 b2 r =
+	match b1 with
+	| [] -> ([], r)
+	| x::xs ->
+		match b2 with
+		| [] -> ([], r)
+		| y::ys ->
+			let (z, r') = diff x y r in
+			let (zs, s) = sub' xs ys r' in
+			(Raml.tick(1.0); if (s = 1) then (0::zs, s)
+			else (z::zs, s));;
+
+let sub b1 b2 =
+	(Raml.tick(1.0); let (b, _) = sub' b1 b2 0 in b);;
+
+let rec compare b1 b2 =
+	match b1 with
+	| [] -> 0
+	| x::xs ->
+		match b2 with
+		| [] -> 0
+		| y::ys ->
+			let r = compare xs ys in
+			(Raml.tick(1.0); 
+			if (r = 0) then
+				if ((x:int) < (y:int)) then 0-1
+				else if ((y:int) < (x:int)) then 1
+				else 0
+			else r);;
+
+let leq b1 b2 =
+	(Raml.tick(1.0); compare b1 b2 < 1);;
+()

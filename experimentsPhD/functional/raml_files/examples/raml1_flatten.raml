@@ -1,0 +1,53 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   tests/flatten.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   Flatten and sort a binary tree.
+ *)
+
+
+
+type tree =
+	  Leaf
+	| Node of int list * tree * tree
+
+let rec append l1 l2 =
+	match l1 with
+	| [] -> l2
+	| x::xs -> (Raml.tick(1.0); x::(append xs l2));;
+
+let rec flatten t =
+	match t with
+	| Leaf -> []
+	| Node(l, t1, t2) -> (Raml.tick(1.0); append l (append (flatten t1) (flatten t2)));;
+
+let rec insert x l = 
+	match l with
+	| [] -> [x]
+	| y::ys ->
+		(Raml.tick(1.0); 
+		if ((y:int) < (x:int)) then y::insert x ys
+		else x::y::ys);;
+
+let rec insertionsort l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); insert x (insertionsort xs));;
+
+let rec flattensort t =
+	insertionsort (flatten t);;
+
+let t =
+  Node ([1;2;3], Node ([-20;-30;40], Node([9;19;2],Leaf,Leaf), Leaf), Node ([4],Leaf,Leaf))
+in
+flattensort (Node ([0;41;2;90],t,t))
+

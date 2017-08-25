@@ -1,0 +1,188 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive : [zip3/3]
+2. recursive : [group3/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into zip3/3
+2. SCC is completely evaluated into other SCCs
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations zip3/3 
+* CE 5 is refined into CE [6] 
+* CE 4 is refined into CE [7] 
+* CE 3 is refined into CE [8] 
+* CE 2 is refined into CE [9] 
+
+
+#### Refined cost equations zip3/3 
+* CE 6: zip3(L1,L2,L3) = 1+ zip3(M3,N3,O3)
+     [L3>=1,L2>=1,L1>=1,L3=O3+1,L2=N3+1,L1=M3+1] 
+* CE 7: zip3(L1,L2,L3) = 0
+     [L2>=1,L1>=1,L3=0] 
+* CE 8: zip3(L1,L2,L3) = 0
+     [L1>=1,L2=0] 
+* CE 9: zip3(L1,L2,L3) = 0
+     [L1=0] 
+
+### Cost equations --> "Loop" of zip3/3 
+* CEs [7] --> Loop 5 
+* CEs [8] --> Loop 6 
+* CEs [9] --> Loop 7 
+* CEs [6] --> Loop 8 
+
+#### Loops of zip3/3 
+* Loop 5: zip3(L1,L2,L3) [L2>=1,L1>=1,L3=0] 
+* Loop 6: zip3(L1,L2,L3) [L1>=1,L2=0] 
+* Loop 7: zip3(L1,L2,L3) [L1=0] 
+* Loop 8: zip3(L1,L2,L3)->  zip3(L1',L2',L3')
+                  [L3>=1,L2>=1,L1>=1,L3=L3'+1,L2=L2'+1,L1=L1'+1] 
+
+### Ranking functions of CR zip3(L1,L2,L3) 
+* RF of phase [8]: [L1,L2,L3]
+
+#### Partial ranking functions of CR zip3(L1,L2,L3) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    L1
+    L2
+    L3
+
+
+### Resulting Chains:zip3(L1,L2,L3) 
+* [[8],7]
+* [[8],6]
+* [[8],5]
+* [7]
+* [6]
+* [5]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [8] 
+
+ * loop 8:zip3(L1,L2,L3) -> [zip3(L1',L2',L3')] 
+1
+#### Cost of phase [8]:zip3(L1,L2,L3) -> [zip3(L1',L2',L3')] 
+1*it(8)+0
+  Such that:it(8) =< L1
+it(8) =< L1-L1'
+it(8) =< L2
+it(8) =< L2-L2'
+it(8) =< L3
+it(8) =< L3-L3'
+it(8) >= L1-L1'
+it(8) >= L2-L2'
+it(8) >= L3-L3'
+
+#### Cost of phase [8]:zip3(L1,L2,L3) -> [zip3(L1',L2',L3')] 
+1*it(8)+0
+  Such that:it(8) =< L1
+it(8) =< L1-L1'
+it(8) =< L2
+it(8) =< L2-L2'
+it(8) =< L3
+it(8) =< L3-L3'
+it(8) >= L1-L1'
+it(8) >= L2-L2'
+it(8) >= L3-L3'
+
+#### Cost of phase [8]:zip3(L1,L2,L3) -> [zip3(L1',L2',L3')] 
+1*it(8)+0
+  Such that:it(8) =< L1
+it(8) =< L1-L1'
+it(8) =< L2
+it(8) =< L2-L2'
+it(8) =< L3
+it(8) =< L3-L3'
+it(8) >= L1-L1'
+it(8) >= L2-L2'
+it(8) >= L3-L3'
+
+#### Cost of chains of zip3(L1,L2,L3):
+* Chain [[8],7]: 1*it(8)+0
+  Such that:it(8) =< L1
+it(8) >= L1
+
+  with precondition: [L1>=1,L2>=L1,L3>=L1] 
+
+* Chain [[8],6]: 1*it(8)+0
+  Such that:it(8) =< L2
+it(8) >= L2
+
+  with precondition: [L2>=1,L1>=L2+1,L3>=L2] 
+
+* Chain [[8],5]: 1*it(8)+0
+  Such that:it(8) =< L3
+it(8) >= L3
+
+  with precondition: [L3>=1,L1>=L3+1,L2>=L3+1] 
+
+* Chain [7]: 0
+  with precondition: [L1=0] 
+
+* Chain [6]: 0
+  with precondition: [L2=0,L1>=1] 
+
+* Chain [5]: 0
+  with precondition: [L3=0,L1>=1,L2>=1] 
+
+
+Closed-form bounds of zip3(L1,L2,L3): 
+-------------------------------------
+* Chain [[8],7] with precondition: [L1>=1,L2>=L1,L3>=L1] 
+    - Lower bound: L1 
+    - Complexity: n
+ * Chain [[8],6] with precondition: [L2>=1,L1>=L2+1,L3>=L2] 
+    - Lower bound: L2 
+    - Complexity: n
+ * Chain [[8],5] with precondition: [L3>=1,L1>=L3+1,L2>=L3+1] 
+    - Lower bound: L3 
+    - Complexity: n
+ * Chain [7] with precondition: [L1=0] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [6] with precondition: [L2=0,L1>=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [5] with precondition: [L3=0,L1>=1,L2>=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ 
+### Partitioned lower bound of zip3(L1,L2,L3): 
+* L1 
+ if [L1>=1,L2>=L1,L3>=L1]
+* L2 
+ if [L2>=1,L1>=L2+1,L3>=L2]
+* L3 
+ if [L3>=1,L2>=L1,L1>=L3+1]
+ or [L3>=1,L1>=L2+1,L2>=L3+1]
+* 0 
+ if [L3=0,L1>=1,L2>=1]
+ or [L2=0,L1>=1]
+ or [L1=0]
+Possible lower bounds : [L1,L2,L3,0]
+Maximum lower bound complexity: n
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 8 ms.
+* Invariants computed in 40 ms.
+   - Backward Invariants 30 ms.
+   - Transitive Invariants 5 ms.
+* Refinement performed in 25 ms.
+* Termination proved in 8 ms.
+* Upper bounds computed in 109 ms.
+   - Equation cost structures 7 ms.
+   - Phase cost structures 13 ms.
+   - Chain cost structures 49 ms.
+   - Solving cost expressions 4 ms.
+* Total analysis performed in 217 ms.
+

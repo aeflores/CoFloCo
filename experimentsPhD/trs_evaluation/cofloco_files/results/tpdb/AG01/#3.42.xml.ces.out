@@ -1,0 +1,483 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [half/2]
+1. recursive  : [lastbit/2]
+2. recursive [non_tail] : [conv/2]
+3. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into half/2
+1. SCC is partially evaluated into lastbit/2
+2. SCC is partially evaluated into conv/2
+3. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations half/2 
+* CE 7 is refined into CE [13] 
+* CE 6 is refined into CE [14] 
+* CE 5 is refined into CE [15] 
+
+
+#### Refined cost equations half/2 
+* CE 13: half(V,Out) = 1+ half(W,X)
+     [W>=0,X+1=Out,W+2=V] 
+* CE 14: half(V,Out) = 1
+     [Out=0,V=1] 
+* CE 15: half(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of half/2 
+* CEs [14] --> Loop 10 
+* CEs [15] --> Loop 11 
+* CEs [13] --> Loop 12 
+
+#### Loops of half/2 
+* Loop 10: half(V,Out) [Out=0,V=1] 
+* Loop 11: half(V,Out) [Out=0,V=0] 
+* Loop 12: half(V,Out)->  half(V',Out')
+                  [V'>=0,Out=Out'+1,V'+2=V] 
+
+### Ranking functions of CR half(V,Out) 
+* RF of phase [12]: [V-1]
+
+#### Partial ranking functions of CR half(V,Out) 
+* Partial RF of phase [12]:
+  - RF of loop [12:1]:
+    V-1
+
+
+### Resulting Chains:half(V,Out) 
+* [[12],11]
+* [[12],10]
+* [11]
+* [10]
+
+
+### Merging Chains  half/2 into  External patterns of execution 
+* [[11]] --> 1 
+* [[10]] --> 2 
+* [[11,[12]]] --> 3 
+* [[10,[12]]] --> 4 
+
+
+### Specialization of cost equations lastbit/2 
+* CE 10 is refined into CE [16] 
+* CE 9 is refined into CE [17] 
+* CE 8 is refined into CE [18] 
+
+
+#### Refined cost equations lastbit/2 
+* CE 16: lastbit(V,Out) = 1+ lastbit(W,Out)
+     [W>=0,W+2=V] 
+* CE 17: lastbit(V,Out) = 1
+     [Out=1,V=1] 
+* CE 18: lastbit(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of lastbit/2 
+* CEs [17] --> Loop 13 
+* CEs [18] --> Loop 14 
+* CEs [16] --> Loop 15 
+
+#### Loops of lastbit/2 
+* Loop 13: lastbit(V,Out) [Out=1,V=1] 
+* Loop 14: lastbit(V,Out) [Out=0,V=0] 
+* Loop 15: lastbit(V,Out)->  lastbit(V',Out)
+                  [V'>=0,V'+2=V] 
+
+### Ranking functions of CR lastbit(V,Out) 
+* RF of phase [15]: [V-1]
+
+#### Partial ranking functions of CR lastbit(V,Out) 
+* Partial RF of phase [15]:
+  - RF of loop [15:1]:
+    V-1
+
+
+### Resulting Chains:lastbit(V,Out) 
+* [[15],14]
+* [[15],13]
+* [14]
+* [13]
+
+
+### Merging Chains  lastbit/2 into  External patterns of execution 
+* [[14]] --> 1 
+* [[13]] --> 2 
+* [[14,[15]]] --> 3 
+* [[13,[15]]] --> 4 
+
+
+### Specialization of cost equations conv/2 
+* CE 12 is refined into CE [19,20,21,22,23] 
+* CE 11 is refined into CE [24] 
+
+
+#### Refined cost equations conv/2 
+* CE 19: conv(V,Out) = 1+ half(W,X):2+ conv(Y,Z)+ lastbit(A1,B1):2
+     [Z+2=Out,Y=0,B1=1,A1=1,X=0,W=1,V=1] 
+* CE 20: conv(V,Out) = 1+ half(V,W):3+ conv(X,Y)+ lastbit(V,Z):3
+     [V>=2,Y+1=Out,V=2*X,V=2*W,Z=0] 
+* CE 21: conv(V,Out) = 1+ half(V,W):3+ conv(X,Y)+ lastbit(V,Z):4
+     [V>=3,Y+2=Out,V=2*X,V=2*W,Z=1] 
+* CE 22: conv(V,Out) = 1+ half(V,W):4+ conv(X,Y)+ lastbit(V,Z):3
+     [V>=3,Y+1=Out,V=2*X+1,V=2*W+1,Z=0] 
+* CE 23: conv(V,Out) = 1+ half(V,W):4+ conv(X,Y)+ lastbit(V,Z):4
+     [V>=3,Y+2=Out,V=2*X+1,V=2*W+1,Z=1] 
+* CE 24: conv(V,Out) = 1
+     [Out=1,V=0] 
+
+### Cost equations --> "Loop" of conv/2 
+* CEs [24] --> Loop 16 
+* CEs [23] --> Loop 17 
+* CEs [22] --> Loop 18 
+* CEs [21] --> Loop 19 
+* CEs [20] --> Loop 20 
+* CEs [19] --> Loop 21 
+
+#### Loops of conv/2 
+* Loop 16: conv(V,Out) [Out=1,V=0] 
+* Loop 17: conv(V,Out)->  conv(V',Out')
+                  [V>=3,Out=Out'+2,V=2*V'+1] 
+* Loop 18: conv(V,Out)->  conv(V',Out')
+                  [V>=3,Out=Out'+1,V=2*V'+1] 
+* Loop 19: conv(V,Out)->  conv(V',Out')
+                  [V>=3,Out=Out'+2,V=2*V'] 
+* Loop 20: conv(V,Out)->  conv(V',Out')
+                  [V>=2,Out=Out'+1,V=2*V'] 
+* Loop 21: conv(V,Out)->  conv(V',Out')
+                  [Out=Out'+2,V'=0,V=1] 
+
+### Ranking functions of CR conv(V,Out) 
+* RF of phase [17,18,19,20]: [V-1]
+
+#### Partial ranking functions of CR conv(V,Out) 
+* Partial RF of phase [17,18,19,20]:
+  - RF of loop [17:1,18:1]:
+    V/2-1
+  - RF of loop [19:1]:
+    2*V-5
+  - RF of loop [20:1]:
+    V-1
+
+
+### Resulting Chains:conv(V,Out) 
+* [[17,18,19,20],21,16]
+* [21,16]
+* [16]
+
+
+### Merging Chains  conv/2 into  External patterns of execution 
+* [[16]] --> 1 
+* [[16,21]] --> 2 
+* [[16,21,[17,18,19,20]]] --> 3 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [25,26,27,28] 
+* CE 3 is refined into CE [29,30,31,32] 
+* CE 4 is refined into CE [33,34,35] 
+
+
+#### Refined cost equations start/1 
+* CE 25: start(V) = 0+ half(W,X):1
+     [X=0,W=0,V=0] 
+* CE 26: start(V) = 0+ half(W,X):2
+     [X=0,W=1,V=1] 
+* CE 27: start(V) = 0+ half(W,X):3
+     [X>=1,2*X=W,2*X=V] 
+* CE 28: start(V) = 0+ half(W,X):4
+     [X>=1,2*X+1=W,2*X+1=V] 
+* CE 29: start(V) = 0+ lastbit(W,X):1
+     [X=0,W=0,V=0] 
+* CE 30: start(V) = 0+ lastbit(W,X):2
+     [X=1,W=1,V=1] 
+* CE 31: start(V) = 0+ lastbit(V,W):3
+     [V>=2,W=0] 
+* CE 32: start(V) = 0+ lastbit(V,W):4
+     [V>=3,W=1] 
+* CE 33: start(V) = 0+ conv(W,X):1
+     [X=1,W=0,V=0] 
+* CE 34: start(V) = 0+ conv(W,X):2
+     [X=3,W=1,V=1] 
+* CE 35: start(V) = 0+ conv(V,W):3
+     [V+2>=W,V+8>=2*W,W>=4] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [27,28,31,32,35] --> Loop 22 
+* CEs [26,30,34] --> Loop 23 
+* CEs [25,29,33] --> Loop 24 
+
+#### Loops of start/1 
+* Loop 22: start(V) [V>=2] 
+* Loop 23: start(V) [V=1] 
+* Loop 24: start(V) [V=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [24]
+* [23]
+* [22]
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[24]] --> 1 
+* [[23]] --> 2 
+* [[22]] --> 3 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [12] 
+
+ * loop 12:half(V,Out) -> [half(V',Out')] 
+1
+#### Cost of phase [12]:half(V,Out) -> [half(V',Out')] 
+1*it(12)+0
+  Such that:it(12) =< V
+it(12) =< V-V'
+
+#### Cost of phase [12]:half(V,Out) -> [half(V',Out')] 
+1*it(12)+0
+  Such that:it(12) =< V
+it(12) =< V-V'
+
+#### Cost of chains of half(V,Out):
+* Chain [[12],11]: 1*it(12)+1
+  Such that:it(12) =< 2*Out
+
+  with precondition: [V=2*Out,V>=2] 
+
+* Chain [[12],10]: 1*it(12)+1
+  Such that:it(12) =< 2*Out
+
+  with precondition: [V=2*Out+1,V>=3] 
+
+* Chain [11]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [10]: 1
+  with precondition: [V=1,Out=0] 
+
+
+#### Cost of loops [15] 
+
+ * loop 15:lastbit(V,Out) -> [lastbit(V',Out')] 
+1
+#### Cost of phase [15]:lastbit(V,Out) -> [lastbit(V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V
+it(15) =< V-V'
+
+#### Cost of phase [15]:lastbit(V,Out) -> [lastbit(V',Out')] 
+1*it(15)+0
+  Such that:it(15) =< V
+it(15) =< V-V'
+
+#### Cost of chains of lastbit(V,Out):
+* Chain [[15],14]: 1*it(15)+1
+  Such that:it(15) =< V
+
+  with precondition: [Out=0,V>=2] 
+
+* Chain [[15],13]: 1*it(15)+1
+  Such that:it(15) =< V
+
+  with precondition: [Out=1,V>=3] 
+
+* Chain [14]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [13]: 1
+  with precondition: [V=1,Out=1] 
+
+
+#### Cost of loops [17,18,19,20] 
+
+ * loop 17:conv(V,Out) -> [conv(V',Out')] 
+1*s(3)+1*s(4)+3
+  Such that:s(3) =< 2*V'
+s(4) =< 2*V'+1
+
+ * loop 18:conv(V,Out) -> [conv(V',Out')] 
+1*s(7)+1*s(8)+3
+  Such that:s(7) =< 2*V'
+s(8) =< 2*V'+1
+
+ * loop 19:conv(V,Out) -> [conv(V',Out')] 
+2*s(12)+3
+  Such that:s(11) =< 2*V'
+s(12) =< s(11)
+
+ * loop 20:conv(V,Out) -> [conv(V',Out')] 
+2*s(16)+3
+  Such that:s(15) =< 2*V'
+s(16) =< s(15)
+
+#### Cost of phase [17,18,19,20]:conv(V,Out) -> [conv(V',Out')] 
+3*it(17)+3*it(18)+3*it(19)+3*it(20)+2*s(17)+2*s(18)+4*s(21)+0
+  Such that:aux(3) =< V
+aux(4) =< V-V'
+aux(5) =< 2*V
+aux(6) =< 2*V+4
+aux(7) =< 2*V-2*V'
+aux(8) =< 3*V
+aux(9) =< 3*V-3*V'
+aux(10) =< 4*V
+aux(11) =< 4*V-4*V'
+aux(12) =< V/2
+aux(13) =< V/2-V'/2
+it(17) =< aux(3)
+it(18) =< aux(3)
+it(19) =< aux(3)
+it(20) =< aux(3)
+it(17) =< aux(4)
+it(18) =< aux(4)
+it(19) =< aux(4)
+it(20) =< aux(4)
+it(19) =< aux(5)
+it(20) =< aux(5)
+it(20) =< aux(6)
+s(22) =< aux(6)
+it(19) =< aux(7)
+it(20) =< aux(7)
+s(22) =< aux(7)
+it(18) =< aux(8)
+it(19) =< aux(8)
+it(20) =< aux(8)
+s(18) =< aux(8)
+it(18) =< aux(9)
+it(19) =< aux(9)
+it(20) =< aux(9)
+s(18) =< aux(9)
+it(18) =< aux(10)
+it(19) =< aux(10)
+it(20) =< aux(10)
+s(17) =< aux(10)
+it(18) =< aux(11)
+it(19) =< aux(11)
+it(20) =< aux(11)
+s(17) =< aux(11)
+it(17) =< aux(12)
+it(18) =< aux(12)
+it(17) =< aux(13)
+it(18) =< aux(13)
+s(21) =< s(22)
+
+#### Cost of chains of conv(V,Out):
+* Chain [[17,18,19,20],21,16]: 3*it(17)+3*it(18)+3*it(19)+3*it(20)+2*s(17)+2*s(18)+4*s(21)+4
+  Such that:aux(6) =< 2*V+4
+aux(14) =< V
+aux(15) =< 2*V
+aux(16) =< 3*V
+aux(17) =< 4*V
+aux(18) =< V/2
+it(17) =< aux(14)
+it(18) =< aux(14)
+it(19) =< aux(14)
+it(20) =< aux(14)
+it(19) =< aux(15)
+it(20) =< aux(15)
+it(20) =< aux(6)
+s(22) =< aux(6)
+s(22) =< aux(15)
+it(18) =< aux(16)
+it(19) =< aux(16)
+it(20) =< aux(16)
+s(18) =< aux(16)
+it(18) =< aux(17)
+it(19) =< aux(17)
+it(20) =< aux(17)
+s(17) =< aux(17)
+it(17) =< aux(18)
+it(18) =< aux(18)
+s(21) =< s(22)
+
+  with precondition: [Out>=4,V+8>=2*Out,V+2>=Out] 
+
+* Chain [21,16]: 4
+  with precondition: [V=1,Out=3] 
+
+* Chain [16]: 1
+  with precondition: [V=0,Out=1] 
+
+
+#### Cost of chains of start(V):
+* Chain [24]: 1
+  with precondition: [V=0] 
+
+* Chain [23]: 4
+  with precondition: [V=1] 
+
+* Chain [22]: 4*s(25)+3*s(35)+3*s(36)+3*s(37)+3*s(38)+2*s(40)+2*s(41)+4*s(42)+4
+  Such that:s(31) =< 2*V
+s(29) =< 2*V+4
+s(32) =< 3*V
+s(33) =< 4*V
+s(34) =< V/2
+aux(19) =< V
+s(25) =< aux(19)
+s(35) =< aux(19)
+s(36) =< aux(19)
+s(37) =< aux(19)
+s(38) =< aux(19)
+s(37) =< s(31)
+s(38) =< s(31)
+s(38) =< s(29)
+s(39) =< s(29)
+s(39) =< s(31)
+s(36) =< s(32)
+s(37) =< s(32)
+s(38) =< s(32)
+s(40) =< s(32)
+s(36) =< s(33)
+s(37) =< s(33)
+s(38) =< s(33)
+s(41) =< s(33)
+s(35) =< s(34)
+s(36) =< s(34)
+s(42) =< s(39)
+
+  with precondition: [V>=2] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [24] with precondition: [V=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [23] with precondition: [V=1] 
+    - Upper bound: 4 
+    - Complexity: constant 
+* Chain [22] with precondition: [V>=2] 
+    - Upper bound: 38*V+20 
+    - Complexity: n 
+
+### Maximum cost of start(V): 38*V+20 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 24 ms.
+   - Backward Invariants 12 ms.
+   - Transitive Invariants 5 ms.
+* Refinement performed in 37 ms.
+* Termination proved in 6 ms.
+* Upper bounds computed in 91 ms.
+   - Equation cost structures 19 ms.
+   - Phase cost structures 57 ms.
+   - Chain cost structures 17 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 176 ms.
+

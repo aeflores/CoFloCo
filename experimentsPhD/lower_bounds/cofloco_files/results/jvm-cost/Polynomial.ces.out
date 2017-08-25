@@ -1,0 +1,211 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [n2/0]
+1. non_recursive : [n3/2]
+2. non_recursive : [n4/1]
+3. recursive : [m0/3,m1/4,n5/4,n7/3,n8/3]
+4. non_recursive : [m4/0]
+5. non_recursive : [n9/0]
+6. non_recursive : [m5/1]
+7. non_recursive : [m3/1]
+8. non_recursive : [m2/1]
+9. non_recursive : [m8/0]
+10. non_recursive : [m9/1]
+11. non_recursive : [m7/1]
+12. non_recursive : [m6/1]
+13. non_recursive : [n1/0]
+14. non_recursive : [n6/1]
+15. non_recursive : [n0/1]
+16. non_recursive : [copy_pol/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into m0/3
+4. SCC is completely evaluated into other SCCs
+5. SCC is completely evaluated into other SCCs
+6. SCC is completely evaluated into other SCCs
+7. SCC is completely evaluated into other SCCs
+8. SCC is completely evaluated into other SCCs
+9. SCC is completely evaluated into other SCCs
+10. SCC is completely evaluated into other SCCs
+11. SCC is completely evaluated into other SCCs
+12. SCC is completely evaluated into other SCCs
+13. SCC is completely evaluated into other SCCs
+14. SCC is partially evaluated into n6/1
+15. SCC is completely evaluated into other SCCs
+16. SCC is partially evaluated into copy_pol/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/3 
+* CE 5 is refined into CE [6] 
+* CE 4 is refined into CE [7] 
+
+
+#### Refined cost equations m0/3 
+* CE 6: m0(C,D,A) = 17+ m0(C,D,E)
+     [E>=1,D>=1,C>=0,11>=E,E=A+1] 
+* CE 7: m0(C,D,A) = 4
+     [A>=0,D>=1,C>=0] 
+
+### Cost equations --> "Loop" of m0/3 
+* CEs [7] --> Loop 5 
+* CEs [6] --> Loop 6 
+
+#### Loops of m0/3 
+* Loop 5: m0(C,D,A) [A>=0,D>=1,C>=0] 
+* Loop 6: m0(C,D,A)->  m0(C,D,A')
+                  [A'>=1,D>=1,C>=0,11>=A',A'=A+1] 
+
+### Ranking functions of CR m0(C,D,A) 
+* RF of phase [6]: [-A+11]
+
+#### Partial ranking functions of CR m0(C,D,A) 
+* Partial RF of phase [6]:
+  - RF of loop [6:1]:
+    -A+11
+
+
+### Resulting Chains:m0(C,D,A) 
+* [[6],5]
+* [5]
+
+
+### Specialization of cost equations n6/1 
+* CE 3 is refined into CE [8,9] 
+
+
+#### Refined cost equations n6/1 
+* CE 8: n6(B) = 25+ m0(B,C,D):[[6],5]
+     [C>=1,B>=0,D=0] 
+* CE 9: n6(B) = 25+ m0(B,C,D):[5]
+     [C>=1,B>=0,D=0] 
+
+### Cost equations --> "Loop" of n6/1 
+* CEs [9] --> Loop 7 
+* CEs [8] --> Loop 8 
+
+#### Loops of n6/1 
+* Loop 7: n6(B) [B>=0] 
+* Loop 8: n6(B) [B>=0] 
+
+### Ranking functions of CR n6(B) 
+
+#### Partial ranking functions of CR n6(B) 
+
+
+### Resulting Chains:n6(B) 
+* [8]
+* [7]
+
+
+### Specialization of cost equations copy_pol/1 
+* CE 2 is refined into CE [10,11] 
+
+
+#### Refined cost equations copy_pol/1 
+* CE 10: copy_pol(A) = 0+ n6(A):[8]
+     [A>=0] 
+* CE 11: copy_pol(A) = 0+ n6(A):[7]
+     [A>=0] 
+
+### Cost equations --> "Loop" of copy_pol/1 
+* CEs [11] --> Loop 9 
+* CEs [10] --> Loop 10 
+
+#### Loops of copy_pol/1 
+* Loop 9: copy_pol(A) [A>=0] 
+* Loop 10: copy_pol(A) [A>=0] 
+
+### Ranking functions of CR copy_pol(A) 
+
+#### Partial ranking functions of CR copy_pol(A) 
+
+
+### Resulting Chains:copy_pol(A) 
+* [10]
+* [9]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6] 
+
+ * loop 6:m0(C,D,A) -> [m0(C',D',A')] 
+17
+#### Cost of phase [6]:m0(C,D,A) -> [m0(C',D',A')] 
+17*it(6)+0
+  Such that:it(6) =< -A+11
+it(6) =< -A+A'
+it(6) >= -A+A'
+
+#### Cost of chains of m0(C,D,A):
+* Chain [[6],5]: 17*it(6)+4
+  Such that:it(6) =< -A+11
+it(6) >= 1
+
+  with precondition: [10>=A,C>=0,D>=1,A>=0] 
+
+* Chain [5]: 4
+  with precondition: [C>=0,D>=1,A>=0] 
+
+
+#### Cost of chains of n6(B):
+* Chain [8]: 17*s(1)+29
+  Such that:s(1) =< 11
+s(1) >= 1
+
+  with precondition: [B>=0] 
+
+* Chain [7]: 29
+  with precondition: [B>=0] 
+
+
+#### Cost of chains of copy_pol(A):
+* Chain [10]: 17*s(2)+29
+  Such that:s(2) =< 11
+s(2) >= 1
+
+  with precondition: [A>=0] 
+
+* Chain [9]: 29
+  with precondition: [A>=0] 
+
+
+Closed-form bounds of copy_pol(A): 
+-------------------------------------
+* Chain [10] with precondition: [A>=0] 
+    - Lower bound: 46 
+    - Complexity: constant
+ * Chain [9] with precondition: [A>=0] 
+    - Lower bound: 29 
+    - Complexity: constant
+ 
+### Partitioned lower bound of copy_pol(A): 
+* 29 
+ if [A>=0]
+Possible lower bounds : [29]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 40 ms.
+* Invariants computed in 25 ms.
+   - Backward Invariants 9 ms.
+   - Transitive Invariants 5 ms.
+* Refinement performed in 36 ms.
+* Termination proved in 8 ms.
+* Upper bounds computed in 45 ms.
+   - Equation cost structures 16 ms.
+   - Phase cost structures 15 ms.
+   - Chain cost structures 15 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 199 ms.
+

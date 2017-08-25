@@ -1,0 +1,830 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [fun/3]
+1. recursive  : [fun1/3]
+2. recursive [multiple] : [fun2/3,fun3/4,mark/2]
+3. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into fun/3
+1. SCC is partially evaluated into fun1/3
+2. SCC is partially evaluated into mark/2
+3. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations fun/3 
+* CE 30 is refined into CE [31] 
+* CE 28 is refined into CE [32] 
+* CE 29 is refined into CE [33] 
+
+
+#### Refined cost equations fun/3 
+* CE 31: fun(V1,V,Out) = 1
+     [V>=0,V1>=0,V1+V+1=Out] 
+* CE 32: fun(V1,V,Out) = 1
+     [V>=0,Out=0,V1=0] 
+* CE 33: fun(V1,V,Out) = 1+ fun(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+
+### Cost equations --> "Loop" of fun/3 
+* CEs [33] --> Loop 21 
+* CEs [31] --> Loop 22 
+* CEs [32] --> Loop 23 
+
+#### Loops of fun/3 
+* Loop 21: fun(V1,V,Out)->  fun(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+* Loop 22: fun(V1,V,Out) [V>=0,V1>=0,V1+V+1=Out] 
+* Loop 23: fun(V1,V,Out) [V>=0,Out=0,V1=0] 
+
+### Ranking functions of CR fun(V1,V,Out) 
+* RF of phase [21]: [V,V1]
+
+#### Partial ranking functions of CR fun(V1,V,Out) 
+* Partial RF of phase [21]:
+  - RF of loop [21:1]:
+    V
+    V1
+
+
+### Resulting Chains:fun(V1,V,Out) 
+* [[21],23]
+* [[21],22]
+* [23]
+* [22]
+
+
+### Merging Chains  fun/3 into  External patterns of execution 
+* [[23]] --> 1 
+* [[23,[21]]] --> 2 
+* [[22]] --> 3 
+* [[22,[21]]] --> 4 
+
+
+### Specialization of cost equations fun1/3 
+* CE 14 is refined into CE [34] 
+* CE 11 is refined into CE [35] 
+* CE 12 is refined into CE [36] 
+* CE 13 is refined into CE [37] 
+
+
+#### Refined cost equations fun1/3 
+* CE 34: fun1(V1,V,Out) = 1
+     [V>=0,V1>=0,V1+V+1=Out] 
+* CE 35: fun1(V1,V,Out) = 1
+     [V1>=0,Out=2,V=0] 
+* CE 36: fun1(V1,V,Out) = 1
+     [V>=1,Out=1,V1=0] 
+* CE 37: fun1(V1,V,Out) = 1+ fun1(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+
+### Cost equations --> "Loop" of fun1/3 
+* CEs [37] --> Loop 24 
+* CEs [34] --> Loop 25 
+* CEs [35] --> Loop 26 
+* CEs [36] --> Loop 27 
+
+#### Loops of fun1/3 
+* Loop 24: fun1(V1,V,Out)->  fun1(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+* Loop 25: fun1(V1,V,Out) [V>=0,V1>=0,V1+V+1=Out] 
+* Loop 26: fun1(V1,V,Out) [V1>=0,Out=2,V=0] 
+* Loop 27: fun1(V1,V,Out) [V>=1,Out=1,V1=0] 
+
+### Ranking functions of CR fun1(V1,V,Out) 
+* RF of phase [24]: [V,V1]
+
+#### Partial ranking functions of CR fun1(V1,V,Out) 
+* Partial RF of phase [24]:
+  - RF of loop [24:1]:
+    V
+    V1
+
+
+### Resulting Chains:fun1(V1,V,Out) 
+* [[24],27]
+* [[24],26]
+* [[24],25]
+* [27]
+* [26]
+* [25]
+
+
+### Merging Chains  fun1/3 into  External patterns of execution 
+* [[27]] --> 1 
+* [[26]] --> 2 
+* [[27,[24]]] --> 3 
+* [[26,[24]]] --> 4 
+* [[25]] --> 5 
+* [[25,[24]]] --> 6 
+
+
+### Specialization of cost equations mark/2 
+* CE 26 is refined into CE [38] 
+* CE 22 is refined into CE [39,40,41,42] 
+* CE 23 is refined into CE [43,44,45,46,47,48] 
+* CE 27 is refined into CE [49] 
+* CE 24 is refined into CE [50] 
+* CE 15 is refined into CE [51,52,53,54,55,56] 
+* CE 16 is refined into CE [57] 
+* CE 25 is refined into CE [58] 
+* CE 21 is refined into CE [59] 
+* CE 19 is refined into CE [60,61,62,63] 
+* CE 17 is refined into CE [64,65,66,67] 
+* CE 20 is refined into CE [68] 
+* CE 18 is refined into CE [69] 
+
+
+#### Refined cost equations mark/2 
+* CE 38: mark(V1,Out) = 1
+     [Out=2,V1=2] 
+* CE 39: mark(V1,Out) = 1+ fun(W1,X1,Y1):1
+     [X1>=0,X1+1=V1,Y1=0,W1=0,Out=0] 
+* CE 40: mark(V1,Out) = 1+ fun(W1,X1,Y1):2
+     [X1>=W1,W1>=1,W1+X1+1=V1,Y1=0,Out=0] 
+* CE 41: mark(A,A) = 1+ fun(B,C,A):3
+     [A>=B+1,B>=0,A=B+C+1] 
+* CE 42: mark(V1,Out) = 1+ fun(W1,X1,Out):4
+     [W1+X1>=Out+1,Out+W1>=X1+1,Out+X1>=W1+1,W1+X1+1=V1] 
+* CE 43: mark(V1,Out) = 1+ fun1(W1,X1,Y1):1
+     [X1>=1,X1+1=V1,Y1=1,W1=0,Out=1] 
+* CE 44: mark(V1,Out) = 1+ fun1(W1,X1,Y1):2
+     [W1>=0,W1+1=V1,Y1=2,X1=0,Out=2] 
+* CE 45: mark(V1,Out) = 1+ fun1(W1,X1,Y1):3
+     [X1>=W1+1,W1>=1,W1+X1+1=V1,Y1=1,Out=1] 
+* CE 46: mark(V1,Out) = 1+ fun1(W1,X1,Y1):4
+     [W1>=X1,X1>=1,W1+X1+1=V1,Y1=2,Out=2] 
+* CE 47: mark(A,A) = 1+ fun1(B,C,A):5
+     [A>=B+1,B>=0,A=B+C+1] 
+* CE 48: mark(V1,Out) = 1+ fun1(W1,X1,Out):6
+     [W1+X1>=Out+1,Out+W1>=X1+1,Out+X1>=W1+1,W1+X1+1=V1] 
+* CE 49: mark(V1,Out) = 1
+     [Out=1,V1=1] 
+* CE 50: mark(V1,Out) = 1
+     [Out=0,V1=0] 
+* CE 51: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):1
+     [V1>=Z1+2,Z1>=1,Z1+W1+2=V1,2*Z1+6=Out,X1=1,A2=1,Y1=0] 
+* CE 52: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):2
+     [Y1>=0,V1>=2,Y1+1=X1,V1=W1+2,Y1+7=Out,A2=2,Z1=0] 
+* CE 53: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):3
+     [V1>=Z1+2,Z1>=Y1+1,Y1>=1,Y1+2*Z1+6=Out,Z1+W1+2=V1,Y1+1=X1,A2=1] 
+* CE 54: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):4
+     [Y1>=Z1,V1>=Z1+2,Z1>=1,Y1+2*Z1+7=Out,Z1+W1+2=V1,Y1+1=X1,A2=2] 
+* CE 55: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):5
+     [V1+Y1>=A2+1,A2>=Y1+1,Y1>=0,A2+W1+1=V1+Y1,A2=Y1+Z1+1,3*A2+3=Out+Y1,Y1+1=X1] 
+* CE 56: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):6
+     [Y1+Z1>=A2+1,Y1+A2>=Z1+1,Z1+A2>=Y1+1,V1>=Z1+2,Y1+A2+2*Z1+5=Out,Z1+W1+2=V1,Y1+1=X1] 
+* CE 57: mark(V1,Out) = 2+ mark(W1,X1)
+     [Out+W1>=V1,V1>=W1+1,W1>=0,V1+X1=Out+W1] 
+* CE 58: mark(V1,Out) = 1+ mark(W1,X1)
+     [W1>=0,X1+1=Out,W1+1=V1] 
+* CE 59: mark(V1,Out) = 2+ mark(W1,X1)
+     [V1>=W1+2,W1>=0,X1=0,Out=0] 
+* CE 60: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):2+ mark(B2,Out)
+     [Y1>=0,V1>=2,Y1+4=B2,Y1+1=X1,V1=W1+2,A2=2,Z1=0] 
+* CE 61: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):4+ mark(B2,Out)
+     [Y1>=Z1,V1>=Z1+2,Z1>=1,Y1+2*Z1+4=B2,Z1+W1+2=V1,Y1+1=X1,A2=2] 
+* CE 62: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):5+ mark(B2,Out)
+     [V1+Y1>=3,Y1>=0,1>=Y1,V1+Y1=W1+3,Y1+B2=6,Y1+Z1=1,Y1+1=X1,A2=2] 
+* CE 63: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):6+ mark(B2,Out)
+     [Y1+Z1>=3,Y1+1>=Z1,V1>=Z1+2,Z1+1>=Y1,Y1+2*Z1+4=B2,Z1+W1+2=V1,Y1+1=X1,A2=2] 
+* CE 64: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):1+ mark(B2,Out)
+     [V1>=Z1+2,Z1>=1,Z1+W1+2=V1,B2=0,X1=1,A2=1,Y1=0] 
+* CE 65: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):3+ mark(B2,Out)
+     [V1>=Z1+2,Z1>=Y1+1,Y1>=1,Z1+W1+2=V1,Y1+1=X1,B2=0,A2=1] 
+* CE 66: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Z1,A2):5+ mark(B2,Out)
+     [V1>=2,V1=W1+2,B2=0,X1=1,A2=1,Z1=0,Y1=0] 
+* CE 67: mark(V1,Out) = 3+ mark(W1,X1)+ fun1(Y1,Y1,Z1):6+ mark(A2,Out)
+     [V1>=Y1+2,Y1>=1,Y1+W1+2=V1,Y1+1=X1,A2=0,Z1=1] 
+* CE 68: mark(V1,Out) = 2+ mark(W1,X1)+ mark(Y1,Out)
+     [V1>=W1+Y1+1,Y1>=0,W1>=0,X1=2] 
+* CE 69: mark(V1,Out) = 2+ mark(W1,X1)+ mark(Y1,Out)
+     [V1>=W1+Y1+1,Y1>=0,W1>=0,X1=1] 
+
+### Cost equations --> "Loop" of mark/2 
+* CEs [61] --> Loop 28 
+* CEs [63] --> Loop 29 
+* CEs [62] --> Loop 30 
+* CEs [60] --> Loop 31 
+* CEs [65] --> Loop 32 
+* CEs [67] --> Loop 33 
+* CEs [68] --> Loop 34 
+* CEs [64] --> Loop 35 
+* CEs [66,69] --> Loop 36 
+* CEs [56] --> Loop 37 
+* CEs [57] --> Loop 38 
+* CEs [53] --> Loop 39 
+* CEs [54] --> Loop 40 
+* CEs [55] --> Loop 41 
+* CEs [52] --> Loop 42 
+* CEs [58] --> Loop 43 
+* CEs [51] --> Loop 44 
+* CEs [59] --> Loop 45 
+* CEs [42,48] --> Loop 46 
+* CEs [43,45] --> Loop 47 
+* CEs [39,40] --> Loop 48 
+* CEs [38,44,46] --> Loop 49 
+* CEs [41,47,49] --> Loop 50 
+* CEs [50] --> Loop 51 
+
+#### Loops of mark/2 
+* Loop 28: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [V1'+Out'+1>=V1,V1>=V1'+3,V1'>=0,V1'2+2*V1'+1=2*V1+Out'] 
+* Loop 29: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [V1+Out'>=V1'+6,V1>=V1'+Out',V1'+Out'+2>=V1,V1'>=0,V1'2+2*V1'+1=2*V1+Out'] 
+* Loop 30: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [V1>=V1'+2,V1'+3>=V1,V1'>=0,V1+Out'=V1'+4,V1+3=V1'+V1'2] 
+* Loop 31: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [Out'>=1,V1>=2,Out'+3=V1'2,V1=V1'+2] 
+* Loop 32: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [V1>=V1'+Out'+2,Out'>=2,V1'>=0,V1'2=0] 
+* Loop 33: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [V1>=V1'+3,V1'>=0,V1'+Out'+1=V1,V1'2=0] 
+* Loop 34: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [V1>=V1'+V1'2+1,V1'2>=0,V1'>=0,Out'=2] 
+* Loop 35: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [V1>=V1'+3,V1'>=0,V1'2=0,Out'=1] 
+* Loop 36: mark(V1,Out)->  mark(V1',Out')  mark(V1'2,Out)
+                  [V1>=V1'+V1'2+1,V1'2>=0,V1'>=0,Out'=1] 
+* Loop 37: mark(V1,Out)->  mark(V1',Out')
+                  [Out+V1'>=2*Out'+V1+2,2*Out'+3*V1>=3*V1'+Out+4,Out+3*V1'>=3*V1,V1'>=0] 
+* Loop 38: mark(V1,Out)->  mark(V1',Out')
+                  [Out+V1'>=V1,V1>=V1'+1,V1'>=0,V1+Out'=Out+V1'] 
+* Loop 39: mark(V1,Out)->  mark(V1',Out')
+                  [Out+2*V1'>=2*V1+3,3*V1>=3*V1'+Out+1,V1'>=0,Out+2*V1'=2*V1+Out'+1] 
+* Loop 40: mark(V1,Out)->  mark(V1',Out')
+                  [Out+3*V1'>=3*V1+1,V1>=V1'+3,V1'>=0,Out'+2*V1+2=2*V1'+Out] 
+* Loop 41: mark(V1,Out)->  mark(V1',Out')
+                  [Out+3*V1'>=3*V1,V1>=V1'+2,V1'>=0,2*Out'+3*V1=3*V1'+Out+2] 
+* Loop 42: mark(V1,Out)->  mark(V1',Out')
+                  [Out>=7,V1>=2,Out=Out'+6,V1=V1'+2] 
+* Loop 43: mark(V1,Out)->  mark(V1',Out')
+                  [V1>=1,Out=Out'+1,V1=V1'+1] 
+* Loop 44: mark(V1,Out)->  mark(V1',Out')
+                  [2*V1+2>=Out,Out>=8,Out+2*V1'=2*V1+2,Out'=1] 
+* Loop 45: mark(V1,Out)->  mark(V1',Out')
+                  [V1>=V1'+2,V1'>=0,Out'=0,Out=0] 
+* Loop 46: mark(V1,Out) [V1>=Out+2,Out>=1] 
+* Loop 47: mark(V1,Out) [V1>=2,Out=1] 
+* Loop 48: mark(V1,Out) [V1>=1,Out=0] 
+* Loop 49: mark(V1,Out) [V1>=1,Out=2] 
+* Loop 50: mark(A,A) [A>=1] 
+* Loop 51: mark(V1,Out) [Out=0,V1=0] 
+
+### Ranking functions of CR mark(V1,Out) 
+
+#### Partial ranking functions of CR mark(V1,Out) 
+* Partial RF of phase [28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45]:
+  - RF of loop [28:1,29:1,33:1,33:2,35:1,35:2,37:1,40:1,44:1]:
+    V1-2 depends on loops [28:2,29:2,30:2,31:2] 
+  - RF of loop [30:1]:
+    V1/2-1/2 depends on loops [28:2,29:2,30:2,31:2] 
+  - RF of loop [31:1,41:1,42:1,45:1]:
+    V1-1 depends on loops [28:2,29:2,30:2,31:2] 
+  - RF of loop [32:1,32:2,39:1]:
+    V1-3 depends on loops [28:2,29:2,30:2,31:2] 
+  - RF of loop [34:1,34:2,36:1,36:2,38:1,43:1]:
+    V1 depends on loops [28:2,29:2,30:2,31:2] 
+
+
+### Resulting Chains:mark(V1,Out) 
+* [multiple([28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45],[[],[51],[50],[49],[48],[47],[46]])]...
+* [51]
+* [50]
+* [49]
+* [48]
+* [47]
+* [46]
+
+
+### Merging Chains  mark/2 into  External patterns of execution 
+* [[51]] --> 1 
+* [[48]] --> 2 
+* [[47]] --> 3 
+* [[49]] --> 4 
+* [[50]] --> 5 
+* [[46]] --> 6 
+* [[multiple([28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45],[[],[51],[50],[49],[48],[47],[46]])]] --> 7 
+
+
+### Specialization of cost equations start/3 
+* CE 7 is refined into CE [70,71,72,73,74,75,76] 
+* CE 2 is refined into CE [77,78,79,80,81,82] 
+* CE 3 is refined into CE [83] 
+* CE 4 is refined into CE [84,85,86,87] 
+* CE 5 is refined into CE [88,89,90,91,92,93,94] 
+* CE 6 is refined into CE [95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118] 
+* CE 8 is refined into CE [119,120,121,122] 
+* CE 9 is refined into CE [123,124,125,126,127,128] 
+* CE 10 is refined into CE [129,130,131,132,133,134,135] 
+
+
+#### Refined cost equations start/3 
+* CE 70: start(V1,V,V2) = 1+ mark(W2,X2):1
+     [V2>=0,X2=0,W2=0,V=0,V1=2] 
+* CE 71: start(V1,V,V2) = 1+ mark(V,W2):2
+     [V>=1,V2>=0,W2=0,V1=2] 
+* CE 72: start(V1,V,V2) = 1+ mark(V,W2):3
+     [V>=2,V2>=0,W2=1,V1=2] 
+* CE 73: start(V1,V,V2) = 1+ mark(V,W2):4
+     [V>=1,V2>=0,W2=2,V1=2] 
+* CE 74: start(V1,V,V2) = 1+ mark(V,V):5
+     [V>=1,V2>=0,V1=2] 
+* CE 75: start(V1,V,V2) = 1+ mark(V,W2):6
+     [V>=W2+2,W2>=1,V2>=0,V1=2] 
+* CE 76: start(V1,V,V2) = 1+ mark(V,W2):7
+     [V>=1,V2>=0,V1=2] 
+* CE 77: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):1
+     [X2>=1,X2+1=V,Y2=1,W2=0,V1=1] 
+* CE 78: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):2
+     [W2>=0,W2+1=V1,Y2=2,X2=0,V=1] 
+* CE 79: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):3
+     [X2>=W2+1,W2>=1,X2+1=V,W2+1=V1,Y2=1] 
+* CE 80: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):4
+     [W2>=X2,X2>=1,X2+1=V,W2+1=V1,Y2=2] 
+* CE 81: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):5
+     [Y2>=W2+1,W2>=0,Y2=W2+X2+1,Y2=V+W2,W2+1=V1] 
+* CE 82: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):6
+     [W2+X2>=Y2+1,W2+Y2>=X2+1,X2+Y2>=W2+1,X2+1=V,W2+1=V1] 
+* CE 83: start(V1,V,V2) = 1
+     [V>=0,V1>=0] 
+* CE 84: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):1+ mark(Z2,A3):1
+     [X2>=1,X2+1=V,A3=0,Z2=0,Y2=1,W2=0,V1=1] 
+* CE 85: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):3+ mark(Z2,A3):1
+     [X2>=W2+1,W2>=1,X2+1=V,W2+1=V1,A3=0,Z2=0,Y2=1] 
+* CE 86: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):5+ mark(Z2,A3):1
+     [A3=0,Z2=0,Y2=1,X2=0,W2=0,V=1,V1=1] 
+* CE 87: start(V1,V,V2) = 2+ fun1(W2,W2,X2):6+ mark(Y2,Z2):1
+     [W2>=1,W2+1=V,W2+1=V1,Z2=0,Y2=0,X2=1] 
+* CE 88: start(V1,V,V2) = 1+ mark(W2,X2):1
+     [V>=0,X2=0,W2=0,V2=0,V1=1] 
+* CE 89: start(V1,V,V2) = 1+ mark(V2,W2):2
+     [V2>=1,V>=0,W2=0,V1=1] 
+* CE 90: start(V1,V,V2) = 1+ mark(V2,W2):3
+     [V2>=2,V>=0,W2=1,V1=1] 
+* CE 91: start(V1,V,V2) = 1+ mark(V2,W2):4
+     [V2>=1,V>=0,W2=2,V1=1] 
+* CE 92: start(V1,V,V2) = 1+ mark(V2,V2):5
+     [V2>=1,V>=0,V1=1] 
+* CE 93: start(V1,V,V2) = 1+ mark(V2,W2):6
+     [V2>=W2+2,W2>=1,V>=0,V1=1] 
+* CE 94: start(V1,V,V2) = 1+ mark(V2,W2):7
+     [V2>=1,V>=0,V1=1] 
+* CE 95: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):2+ mark(Z2,A3):2
+     [Z2>=4,Z2=W2+4,Z2=V1+3,A3=0,Y2=2,X2=0,V=1] 
+* CE 96: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):2+ mark(Z2,A3):3
+     [Z2>=4,Z2=W2+4,Z2=V1+3,A3=1,Y2=2,X2=0,V=1] 
+* CE 97: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):2+ mark(Z2,A3):4
+     [Z2>=4,Z2=W2+4,Z2=V1+3,A3=2,Y2=2,X2=0,V=1] 
+* CE 98: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):2+ mark(Z2,Z2):5
+     [Z2>=4,Z2=W2+4,Z2=V1+3,Y2=2,X2=0,V=1] 
+* CE 99: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):2+ mark(Z2,A3):6
+     [Z2>=A3+2,A3>=1,Z2>=4,Z2=W2+4,Z2=V1+3,Y2=2,X2=0,V=1] 
+* CE 100: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):2+ mark(Z2,A3):7
+     [Z2>=4,Z2=W2+4,Z2=V1+3,Y2=2,X2=0,V=1] 
+* CE 101: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):4+ mark(Z2,A3):2
+     [Z2>=3*X2+4,X2>=1,Z2=2*X2+W2+4,Z2=2*X2+V1+3,X2+1=V,A3=0,Y2=2] 
+* CE 102: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):4+ mark(Z2,A3):3
+     [Z2>=3*X2+4,X2>=1,Z2=2*X2+W2+4,Z2=2*X2+V1+3,X2+1=V,A3=1,Y2=2] 
+* CE 103: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):4+ mark(Z2,A3):4
+     [Z2>=3*X2+4,X2>=1,Z2=2*X2+W2+4,Z2=2*X2+V1+3,X2+1=V,A3=2,Y2=2] 
+* CE 104: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):4+ mark(Z2,Z2):5
+     [Z2>=3*X2+4,X2>=1,Z2=2*X2+W2+4,Z2=2*X2+V1+3,X2+1=V,Y2=2] 
+* CE 105: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):4+ mark(Z2,A3):6
+     [Z2>=A3+2,Z2>=3*X2+4,A3>=1,X2>=1,Z2=2*X2+W2+4,Z2=2*X2+V1+3,X2+1=V,Y2=2] 
+* CE 106: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):4+ mark(Z2,A3):7
+     [Z2>=3*X2+4,X2>=1,Z2=2*X2+W2+4,Z2=2*X2+V1+3,X2+1=V,Y2=2] 
+* CE 107: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):5+ mark(Z2,A3):2
+     [Z2>=5,6>=Z2,W2+Z2=6,V1+Z2=7,Z2=X2+5,Z2=V+4,A3=0,Y2=2] 
+* CE 108: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):5+ mark(Z2,A3):3
+     [Z2>=5,6>=Z2,W2+Z2=6,V1+Z2=7,Z2=X2+5,Z2=V+4,A3=1,Y2=2] 
+* CE 109: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):5+ mark(Z2,A3):4
+     [Z2>=5,6>=Z2,W2+Z2=6,V1+Z2=7,Z2=X2+5,Z2=V+4,A3=2,Y2=2] 
+* CE 110: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):5+ mark(Z2,Z2):5
+     [Z2>=5,6>=Z2,W2+Z2=6,V1+Z2=7,Z2=X2+5,Z2=V+4,Y2=2] 
+* CE 111: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):5+ mark(Z2,A3):6
+     [Z2>=A3+2,A3>=1,Z2>=5,6>=Z2,W2+Z2=6,V1+Z2=7,Z2=X2+5,Z2=V+4,Y2=2] 
+* CE 112: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):5+ mark(Z2,A3):7
+     [Z2>=5,6>=Z2,W2+Z2=6,V1+Z2=7,Z2=X2+5,Z2=V+4,Y2=2] 
+* CE 113: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):6+ mark(Z2,A3):2
+     [W2+Z2>=10,3*W2+6>=Z2,Z2>=3*W2+2,Z2=2*X2+W2+4,Z2=2*V+W2+2,W2+1=V1,A3=0,Y2=2] 
+* CE 114: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):6+ mark(Z2,A3):3
+     [W2+Z2>=10,3*W2+6>=Z2,Z2>=3*W2+2,Z2=2*X2+W2+4,Z2=2*V+W2+2,W2+1=V1,A3=1,Y2=2] 
+* CE 115: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):6+ mark(Z2,A3):4
+     [W2+Z2>=10,3*W2+6>=Z2,Z2>=3*W2+2,Z2=2*X2+W2+4,Z2=2*V+W2+2,W2+1=V1,A3=2,Y2=2] 
+* CE 116: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):6+ mark(Z2,Z2):5
+     [W2+Z2>=10,3*W2+6>=Z2,Z2>=3*W2+2,Z2=2*X2+W2+4,Z2=2*V+W2+2,W2+1=V1,Y2=2] 
+* CE 117: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):6+ mark(Z2,A3):6
+     [W2+Z2>=10,Z2>=A3+2,3*W2+6>=Z2,Z2>=3*W2+2,A3>=1,Z2=2*X2+W2+4,Z2=2*V+W2+2,W2+1=V1,Y2=2] 
+* CE 118: start(V1,V,V2) = 2+ fun1(W2,X2,Y2):6+ mark(Z2,A3):7
+     [W2+Z2>=10,3*W2+6>=Z2,Z2>=3*W2+2,Z2=2*X2+W2+4,Z2=2*V+W2+2,W2+1=V1,Y2=2] 
+* CE 119: start(V1,V,V2) = 0+ fun(W2,V,X2):1
+     [V>=0,X2=0,W2=0,V1=0] 
+* CE 120: start(V1,V,V2) = 0+ fun(V1,V,W2):2
+     [V>=V1,V1>=1,W2=0] 
+* CE 121: start(V1,V,V2) = 0+ fun(V1,W2,X2):3
+     [X2>=V1+1,V1>=0,X2=V1+W2+1,X2=V1+V+1] 
+* CE 122: start(V1,V,V2) = 0+ fun(V1,V,W2):4
+     [V1+V>=W2+1,V1+W2>=V+1,V+W2>=V1+1] 
+* CE 123: start(V1,V,V2) = 0+ fun1(W2,V,X2):1
+     [V>=1,X2=1,W2=0,V1=0] 
+* CE 124: start(V1,V,V2) = 0+ fun1(V1,W2,X2):2
+     [V1>=0,X2=2,W2=0,V=0] 
+* CE 125: start(V1,V,V2) = 0+ fun1(V1,V,W2):3
+     [V>=V1+1,V1>=1,W2=1] 
+* CE 126: start(V1,V,V2) = 0+ fun1(V1,V,W2):4
+     [V1>=V,V>=1,W2=2] 
+* CE 127: start(V1,V,V2) = 0+ fun1(V1,W2,X2):5
+     [X2>=V1+1,V1>=0,X2=V1+W2+1,X2=V1+V+1] 
+* CE 128: start(V1,V,V2) = 0+ fun1(V1,V,W2):6
+     [V1+V>=W2+1,V1+W2>=V+1,V+W2>=V1+1] 
+* CE 129: start(V1,V,V2) = 0+ mark(W2,X2):1
+     [X2=0,W2=0,V1=0] 
+* CE 130: start(V1,V,V2) = 0+ mark(V1,W2):2
+     [V1>=1,W2=0] 
+* CE 131: start(V1,V,V2) = 0+ mark(V1,W2):3
+     [V1>=2,W2=1] 
+* CE 132: start(V1,V,V2) = 0+ mark(V1,W2):4
+     [V1>=1,W2=2] 
+* CE 133: start(V1,V,V2) = 0+ mark(V1,V1):5
+     [V1>=1] 
+* CE 134: start(V1,V,V2) = 0+ mark(V1,W2):6
+     [V1>=W2+2,W2>=1] 
+* CE 135: start(V1,V,V2) = 0+ mark(V1,W2):7
+     [V1>=1] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [112] --> Loop 52 
+* CEs [100] --> Loop 53 
+* CEs [76] --> Loop 54 
+* CEs [94,106,118,135] --> Loop 55 
+* CEs [107,108,109,110,111] --> Loop 56 
+* CEs [87] --> Loop 57 
+* CEs [71,72,73,74,75] --> Loop 58 
+* CEs [70,124] --> Loop 59 
+* CEs [77,84] --> Loop 60 
+* CEs [89,90,91,92,93] --> Loop 61 
+* CEs [88,130,131,132,133,134] --> Loop 62 
+* CEs [78,79,80,81,82,83,85,86,95,96,97,98,99,101,102,103,104,105,113,114,115,116,117,120,121,122,125,126,127,128] --> Loop 63 
+* CEs [119,123,129] --> Loop 64 
+
+#### Loops of start/3 
+* Loop 52: start(V1,V,V2) [V1>=1,2>=V1,V1+V=3] 
+* Loop 53: start(V1,V,V2) [V1>=1,V=1] 
+* Loop 54: start(V1,V,V2) [V2>=0,V>=1,V1=2] 
+* Loop 55: start(V1,V,V2) [V1>=1] 
+* Loop 56: start(V1,V,V2) [V1>=1,2>=V1,V1+V=3] 
+* Loop 57: start(A,A,B) [A>=2] 
+* Loop 58: start(V1,V,V2) [V2>=0,V>=1,V1=2] 
+* Loop 59: start(V1,V,V2) [V1>=0,V=0] 
+* Loop 60: start(V1,V,V2) [V>=2,V1=1] 
+* Loop 61: start(V1,V,V2) [V2>=1,V>=0,V1=1] 
+* Loop 62: start(V1,V,V2) [V1>=1] 
+* Loop 63: start(V1,V,V2) [V>=0,V1>=0] 
+* Loop 64: start(V1,V,V2) [V1=0] 
+
+### Ranking functions of CR start(V1,V,V2) 
+
+#### Partial ranking functions of CR start(V1,V,V2) 
+
+
+### Resulting Chains:start(V1,V,V2) 
+* [64]
+* [63]
+* [62]
+* [61]
+* [60]
+* [59]
+* [58]
+* [57]
+* [56]
+* [55]...
+* [54]...
+* [53]...
+* [52]...
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[64]] --> 1 
+* [[61],[63]] --> 2 
+* [[60],[62]] --> 3 
+* [[58]] --> 4 
+* [[59]] --> 5 
+* [[57]] --> 6 
+* [[56]] --> 7 
+* [[54]] --> 8 
+* [[53]] --> 9 
+* [[52]] --> 10 
+* [[55]] --> 11 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [21] 
+
+ * loop 21:fun(V1,V,Out) -> [fun(V1',V',Out')] 
+1
+#### Cost of phase [21]:fun(V1,V,Out) -> [fun(V1',V',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V1
+it(21) =< V1-V1'
+it(21) =< V
+it(21) =< V-V'
+
+#### Cost of phase [21]:fun(V1,V,Out) -> [fun(V1',V',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V1
+it(21) =< V1-V1'
+it(21) =< V
+it(21) =< V-V'
+
+#### Cost of chains of fun(V1,V,Out):
+* Chain [[21],23]: 1*it(21)+1
+  Such that:it(21) =< V1
+
+  with precondition: [Out=0,V1>=1,V>=V1] 
+
+* Chain [[21],22]: 1*it(21)+1
+  Such that:it(21) =< V1/2+V/2-Out/2+1/2
+
+  with precondition: [Out+V>=V1+1,Out+V1>=V+1,V+V1>=Out+1] 
+
+* Chain [23]: 1
+  with precondition: [V1=0,Out=0,V>=0] 
+
+* Chain [22]: 1
+  with precondition: [V+V1+1=Out,V1>=0,V>=0] 
+
+
+#### Cost of loops [24] 
+
+ * loop 24:fun1(V1,V,Out) -> [fun1(V1',V',Out')] 
+1
+#### Cost of phase [24]:fun1(V1,V,Out) -> [fun1(V1',V',Out')] 
+1*it(24)+0
+  Such that:it(24) =< V1
+it(24) =< V1-V1'
+it(24) =< V
+it(24) =< V-V'
+
+#### Cost of phase [24]:fun1(V1,V,Out) -> [fun1(V1',V',Out')] 
+1*it(24)+0
+  Such that:it(24) =< V1
+it(24) =< V1-V1'
+it(24) =< V
+it(24) =< V-V'
+
+#### Cost of phase [24]:fun1(V1,V,Out) -> [fun1(V1',V',Out')] 
+1*it(24)+0
+  Such that:it(24) =< V1
+it(24) =< V1-V1'
+it(24) =< V
+it(24) =< V-V'
+
+#### Cost of chains of fun1(V1,V,Out):
+* Chain [[24],27]: 1*it(24)+1
+  Such that:it(24) =< V1
+
+  with precondition: [Out=1,V1>=1,V>=V1+1] 
+
+* Chain [[24],26]: 1*it(24)+1
+  Such that:it(24) =< V
+
+  with precondition: [Out=2,V>=1,V1>=V] 
+
+* Chain [[24],25]: 1*it(24)+1
+  Such that:it(24) =< V1/2+V/2-Out/2+1/2
+
+  with precondition: [Out+V>=V1+1,Out+V1>=V+1,V+V1>=Out+1] 
+
+* Chain [27]: 1
+  with precondition: [V1=0,Out=1,V>=1] 
+
+* Chain [26]: 1
+  with precondition: [V=0,Out=2,V1>=0] 
+
+* Chain [25]: 1
+  with precondition: [V+V1+1=Out,V1>=0,V>=0] 
+
+
+#### Cost of loops [28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45] 
+
+ * loop 28:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+1*s(7)+4
+  Such that:s(7) =< V1-V1'
+
+ * loop 29:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+1*s(9)+4
+  Such that:s(9) =< -V1/2+V1'/2+V1'2/2
+
+ * loop 30:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+4
+ * loop 31:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+4
+ * loop 32:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+1*s(11)+4
+  Such that:s(11) =< V1-V1'
+
+ * loop 33:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+1*s(13)+4
+  Such that:s(13) =< V1-V1'
+
+ * loop 34:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+2
+ * loop 35:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+4
+ * loop 36:mark(V1,Out) -> [mark(V1',Out'),mark(V1'2,Out'2)] 
+4
+ * loop 37:mark(V1,Out) -> [mark(V1',Out')] 
+1*s(15)+4
+  Such that:s(15) =< V1-V1'
+
+ * loop 38:mark(V1,Out) -> [mark(V1',Out')] 
+2
+ * loop 39:mark(V1,Out) -> [mark(V1',Out')] 
+1*s(17)+4
+  Such that:s(17) =< V1-V1'
+
+ * loop 40:mark(V1,Out) -> [mark(V1',Out')] 
+1*s(19)+4
+  Such that:s(19) =< V1-V1'
+
+ * loop 41:mark(V1,Out) -> [mark(V1',Out')] 
+4
+ * loop 42:mark(V1,Out) -> [mark(V1',Out')] 
+4
+ * loop 43:mark(V1,Out) -> [mark(V1',Out')] 
+1
+ * loop 44:mark(V1,Out) -> [mark(V1',Out')] 
+4
+ * loop 45:mark(V1,Out) -> [mark(V1',Out')] 
+2
+#### Cost of phase [28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45]:mark(V1,Out) -> [] 
+16*it(28)+8*it(32)+54*it(33)+1*it([51])+1*s(20)+1*s(21)+1*s(22)+2*s(23)+2*s(30)+0
+#### Cost of chains of mark(V1,Out):
+* Chain [multiple([28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45],[[],[51],[50],[49],[48],[47],[46]])]...: 16*it(28)+8*it(32)+54*it(33)+1*it([51])+1*s(20)+1*s(21)+1*s(22)+2*s(23)+2*s(30)+0
+  with precondition: [V1>=1] 
+
+* Chain [51]: 1
+  with precondition: [V1=0,Out=0] 
+
+* Chain [50]: 2
+  with precondition: [V1=Out,V1>=1] 
+
+* Chain [49]: 1*s(1)+2
+  Such that:s(1) =< V1/2
+
+  with precondition: [Out=2,V1>=1] 
+
+* Chain [48]: 1*s(2)+2
+  Such that:s(2) =< V1/2
+
+  with precondition: [Out=0,V1>=1] 
+
+* Chain [47]: 1*s(3)+2
+  Such that:s(3) =< V1/2
+
+  with precondition: [Out=1,V1>=2] 
+
+* Chain [46]: 2*s(4)+2
+  Such that:aux(1) =< V1/2
+s(4) =< aux(1)
+
+  with precondition: [Out>=1,V1>=Out+2] 
+
+
+#### Cost of chains of start(V1,V,V2):
+* Chain [64]: 1
+  with precondition: [V1=0] 
+
+* Chain [63]: 4*s(32)+10*s(33)+5*s(36)+10*s(42)+5*s(51)+5
+  Such that:aux(61) =< V1
+aux(62) =< V1/2+3/2
+aux(63) =< V1/2+V+1/2
+aux(64) =< V1/2+V/2
+aux(65) =< V
+s(32) =< aux(61)
+s(36) =< aux(62)
+s(42) =< aux(63)
+s(51) =< aux(64)
+s(33) =< aux(65)
+
+  with precondition: [V1>=0,V>=0] 
+
+* Chain [62]: 5*s(66)+2
+  Such that:aux(66) =< V1/2
+s(66) =< aux(66)
+
+  with precondition: [V1>=1] 
+
+* Chain [61]: 5*s(71)+3
+  Such that:aux(67) =< V2/2
+s(71) =< aux(67)
+
+  with precondition: [V1=1,V>=0,V2>=1] 
+
+* Chain [60]: 4
+  with precondition: [V1=1,V>=2] 
+
+* Chain [59]: 2
+  with precondition: [V=0,V1>=0] 
+
+* Chain [58]: 5*s(76)+3
+  Such that:aux(68) =< V/2
+s(76) =< aux(68)
+
+  with precondition: [V1=2,V>=1,V2>=0] 
+
+* Chain [57]: 1*s(81)+4
+  Such that:s(81) =< V
+
+  with precondition: [V1=V,V1>=2] 
+
+* Chain [56]: 5*s(82)+5
+  Such that:aux(69) =< -V1/2+7/2
+s(82) =< aux(69)
+
+  with precondition: [V+V1=3,2>=V1,V1>=1] 
+
+* Chain [55]...: 344*s(87)+1*s(96)+1*s(106)+3
+  Such that:s(106) =< V1/2+V/2
+s(96) =< V
+
+  with precondition: [V1>=1] 
+
+* Chain [54]...: 86*s(125)+1
+  with precondition: [V1=2,V>=1,V2>=0] 
+
+* Chain [53]...: 86*s(134)+3
+  with precondition: [V=1,V1>=1] 
+
+* Chain [52]...: 86*s(143)+3
+  with precondition: [V+V1=3,2>=V1,V1>=1] 
+
+
+Closed-form bounds of start(V1,V,V2): 
+-------------------------------------
+* Chain [64] with precondition: [V1=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [63] with precondition: [V1>=0,V>=0] 
+    - Upper bound: 14*V1+45/2*V+35/2 
+    - Complexity: n 
+* Chain [62] with precondition: [V1>=1] 
+    - Upper bound: 5/2*V1+2 
+    - Complexity: n 
+* Chain [61] with precondition: [V1=1,V>=0,V2>=1] 
+    - Upper bound: 5/2*V2+3 
+    - Complexity: n 
+* Chain [60] with precondition: [V1=1,V>=2] 
+    - Upper bound: 4 
+    - Complexity: constant 
+* Chain [59] with precondition: [V=0,V1>=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [58] with precondition: [V1=2,V>=1,V2>=0] 
+    - Upper bound: 5/2*V+3 
+    - Complexity: n 
+* Chain [57] with precondition: [V1=V,V1>=2] 
+    - Upper bound: V+4 
+    - Complexity: n 
+* Chain [56] with precondition: [V1+V=3,2>=V1,V1>=1] 
+    - Upper bound: -5/2*V1+45/2 
+    - Complexity: n 
+* Chain [55]... with precondition: [V1>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [54]... with precondition: [V1=2,V>=1,V2>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [53]... with precondition: [V=1,V1>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [52]... with precondition: [V1+V=3,2>=V1,V1>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V1,V,V2): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 39 ms.
+* Invariants computed in 59 ms.
+   - Backward Invariants 17 ms.
+   - Transitive Invariants 14 ms.
+* Refinement performed in 217 ms.
+* Termination proved in 52 ms.
+* Upper bounds computed in 273 ms.
+   - Equation cost structures 90 ms.
+   - Phase cost structures 175 ms.
+   - Chain cost structures 17 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 678 ms.
+

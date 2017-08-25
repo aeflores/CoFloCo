@@ -1,0 +1,237 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [n2/2]
+1. non_recursive : [m7/1]
+2. recursive : [m0/1,m1/1,m9/1]
+3. non_recursive : [m6/0]
+4. non_recursive : [m8/1]
+5. non_recursive : [m5/1]
+6. non_recursive : [m4/1]
+7. recursive : [m2/2,m3/2,n4/2]
+8. non_recursive : [n1/0]
+9. non_recursive : [n3/1]
+10. non_recursive : [n0/1]
+11. non_recursive : [evenDigits/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is partially evaluated into m0/1
+3. SCC is completely evaluated into other SCCs
+4. SCC is completely evaluated into other SCCs
+5. SCC is completely evaluated into other SCCs
+6. SCC is completely evaluated into other SCCs
+7. SCC is partially evaluated into m2/2
+8. SCC is completely evaluated into other SCCs
+9. SCC is completely evaluated into other SCCs
+10. SCC is completely evaluated into other SCCs
+11. SCC is partially evaluated into evenDigits/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/1 
+* CE 6 is refined into CE [7] 
+* CE 5 is refined into CE [8] 
+
+
+#### Refined cost equations m0/1 
+* CE 7: m0(A) = 8+ m0(B)
+     [A>=2*B,A>=1,2>=A] 
+* CE 8: m0(A) = 2
+     [] 
+
+### Cost equations --> "Loop" of m0/1 
+* CEs [8] --> Loop 6 
+* CEs [7] --> Loop 7 
+
+#### Loops of m0/1 
+* Loop 6: m0(A) [] 
+* Loop 7: m0(A)->  m0(A')
+                  [A>=2*A',A>=1,2>=A] 
+
+### Ranking functions of CR m0(A) 
+* RF of phase [7]: [2*A-1]
+
+#### Partial ranking functions of CR m0(A) 
+* Partial RF of phase [7]:
+  - RF of loop [7:1]:
+    2*A-1
+
+
+### Resulting Chains:m0(A) 
+* [[7],6]
+* [6]
+
+
+### Specialization of cost equations m2/2 
+* CE 4 is refined into CE [9,10] 
+* CE 3 is refined into CE [11] 
+
+
+#### Refined cost equations m2/2 
+* CE 9: m2(A,B) = 14+ m2(A,C)+ m0(B):[[7],6]
+     [A>=B+1,B>=1,2>=B,B+1=C] 
+* CE 10: m2(A,B) = 14+ m2(A,C)+ m0(B):[6]
+     [A>=B+1,B>=0,B+1=C] 
+* CE 11: m2(A,B) = 3
+     [A>=B,B>=0,A>=1] 
+
+### Cost equations --> "Loop" of m2/2 
+* CEs [11] --> Loop 8 
+* CEs [10] --> Loop 9 
+* CEs [9] --> Loop 10 
+
+#### Loops of m2/2 
+* Loop 8: m2(A,B) [A>=B,B>=0,A>=1] 
+* Loop 9: m2(A,B)->  m2(A,B')
+                  [A>=B+1,B>=0,B+1=B'] 
+* Loop 10: m2(A,B)->  m2(A,B')
+                  [A>=B+1,B>=1,2>=B,B+1=B'] 
+
+### Ranking functions of CR m2(A,B) 
+* RF of phase [9,10]: [A-B]
+
+#### Partial ranking functions of CR m2(A,B) 
+* Partial RF of phase [9,10]:
+  - RF of loop [9:1,10:1]:
+    A-B
+  - RF of loop [10:1]:
+    -B+3
+
+
+### Resulting Chains:m2(A,B) 
+* [[9,10],8]
+* [8]
+
+
+### Specialization of cost equations evenDigits/1 
+* CE 2 is refined into CE [12,13] 
+
+
+#### Refined cost equations evenDigits/1 
+* CE 12: evenDigits(A) = 6+ m2(A,B):[[9,10],8]
+     [A>=1,B=0] 
+* CE 13: evenDigits(A) = 6+ m2(A,B):[8]
+     [A>=1,B=0] 
+
+### Cost equations --> "Loop" of evenDigits/1 
+* CEs [13] --> Loop 11 
+* CEs [12] --> Loop 12 
+
+#### Loops of evenDigits/1 
+* Loop 11: evenDigits(A) [A>=1] 
+* Loop 12: evenDigits(A) [A>=1] 
+
+### Ranking functions of CR evenDigits(A) 
+
+#### Partial ranking functions of CR evenDigits(A) 
+
+
+### Resulting Chains:evenDigits(A) 
+* [12]
+* [11]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [7] 
+
+ * loop 7:m0(A) -> [m0(A')] 
+8
+#### Cost of phase [7]:m0(A) -> [m0(A')] 
+8*it(7)+0
+  Such that:it(7) =< 2*A-1
+it(7) =< 2*A-2*A'
+
+#### Cost of chains of m0(A):
+* Chain [[7],6]: 8*it(7)+2
+  Such that:it(7) =< 2*A-1
+
+  with precondition: [2>=A,A>=1] 
+
+* Chain [6]: 2
+  with precondition: [] 
+
+
+#### Cost of loops [9,10] 
+
+ * loop 9:m2(A,B) -> [m2(A',B')] 
+16
+ * loop 10:m2(A,B) -> [m2(A',B')] 
+8*s(2)+16
+  Such that:s(2) =< 2*B-1
+
+#### Cost of phase [9,10]:m2(A,B) -> [m2(A',B')] 
+16*it(9)+16*it(10)+8*s(3)+0
+  Such that:it(9)+it(10) =< A-B
+it(9)+it(10) =< A-B-A'+B'
+s(3) =< 5*A-3*B-6
+s(3) =< 5*A-3*B-5*A'+3*B'
+it(10) =< -B+3
+it(10) =< -B+B'
+it(9)+it(10) >= A-B-A'+B'
+it(9)+it(10) >= -B+B'
+
+#### Cost of chains of m2(A,B):
+* Chain [[9,10],8]: 16*it(9)+16*it(10)+8*s(3)+3
+  Such that:it(10)+it(9) =< A-B
+s(3) =< 3*A-3*B
+s(3) =< 5*A-3*B-6
+it(10) =< -B+3
+it(10)+it(9) >= 1
+
+  with precondition: [B>=0,A>=B+1] 
+
+* Chain [8]: 3
+  with precondition: [A>=1,B>=0,A>=B] 
+
+
+#### Cost of chains of evenDigits(A):
+* Chain [12]: 16*s(4)+16*s(5)+8*s(6)+9
+  Such that:s(4) =< 3
+s(5)+s(4) =< A
+s(6) =< 3*A
+s(6) =< 5*A-6
+s(4)+s(5) >= 1
+
+  with precondition: [A>=1] 
+
+* Chain [11]: 9
+  with precondition: [A>=1] 
+
+
+Closed-form bounds of evenDigits(A): 
+-------------------------------------
+* Chain [12] with precondition: [A>=1] 
+    - Lower bound: 25 
+    - Complexity: constant
+ * Chain [11] with precondition: [A>=1] 
+    - Lower bound: 9 
+    - Complexity: constant
+ 
+### Partitioned lower bound of evenDigits(A): 
+* 9 
+ if [A>=1]
+Possible lower bounds : [9]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 24 ms.
+* Invariants computed in 29 ms.
+   - Backward Invariants 11 ms.
+   - Transitive Invariants 7 ms.
+* Refinement performed in 36 ms.
+* Termination proved in 11 ms.
+* Upper bounds computed in 73 ms.
+   - Equation cost structures 17 ms.
+   - Phase cost structures 41 ms.
+   - Chain cost structures 16 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 205 ms.
+

@@ -1,0 +1,1434 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [ge/3]
+1. recursive  : [gt/3]
+2. recursive  : [if/4,minus/3]
+3. recursive  : [gcd/3,if1/4,if2/4]
+4. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into ge/3
+1. SCC is partially evaluated into gt/3
+2. SCC is partially evaluated into minus/3
+3. SCC is partially evaluated into gcd/3
+4. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations ge/3 
+* CE 30 is refined into CE [31] 
+* CE 27 is refined into CE [32] 
+* CE 28 is refined into CE [33] 
+* CE 29 is refined into CE [34] 
+
+
+#### Refined cost equations ge/3 
+* CE 31: ge(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 32: ge(V1,V,Out) = 1
+     [V1>=0,Out=2,V=0] 
+* CE 33: ge(V1,V,Out) = 1
+     [V>=1,Out=1,V1=0] 
+* CE 34: ge(V1,V,Out) = 1+ ge(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+
+### Cost equations --> "Loop" of ge/3 
+* CEs [34] --> Loop 17 
+* CEs [31] --> Loop 18 
+* CEs [32] --> Loop 19 
+* CEs [33] --> Loop 20 
+
+#### Loops of ge/3 
+* Loop 17: ge(V1,V,Out)->  ge(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+* Loop 18: ge(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 19: ge(V1,V,Out) [V1>=0,Out=2,V=0] 
+* Loop 20: ge(V1,V,Out) [V>=1,Out=1,V1=0] 
+
+### Ranking functions of CR ge(V1,V,Out) 
+* RF of phase [17]: [V,V1]
+
+#### Partial ranking functions of CR ge(V1,V,Out) 
+* Partial RF of phase [17]:
+  - RF of loop [17:1]:
+    V
+    V1
+
+
+### Resulting Chains:ge(V1,V,Out) 
+* [[17],20]
+* [[17],19]
+* [[17],18]
+* [20]
+* [19]
+* [18]
+
+
+### Merging Chains  ge/3 into  External patterns of execution 
+* [[20]] --> 1 
+* [[19]] --> 2 
+* [[18],[18,[17]]] --> 3 
+* [[20,[17]]] --> 4 
+* [[19,[17]]] --> 5 
+
+
+### Specialization of cost equations gt/3 
+* CE 17 is refined into CE [35] 
+* CE 15 is refined into CE [36] 
+* CE 14 is refined into CE [37] 
+* CE 16 is refined into CE [38] 
+
+
+#### Refined cost equations gt/3 
+* CE 35: gt(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 36: gt(V1,V,Out) = 1
+     [V1>=1,Out=2,V=0] 
+* CE 37: gt(V1,V,Out) = 1
+     [V>=0,Out=1,V1=0] 
+* CE 38: gt(V1,V,Out) = 1+ gt(W1,X1,Out)
+     [X1>=0,W1>=0,X1+1=V,W1+1=V1] 
+
+### Cost equations --> "Loop" of gt/3 
+* CEs [38] --> Loop 21 
+* CEs [35] --> Loop 22 
+* CEs [36] --> Loop 23 
+* CEs [37] --> Loop 24 
+
+#### Loops of gt/3 
+* Loop 21: gt(V1,V,Out)->  gt(V1',V',Out)
+                  [V'>=0,V1'>=0,V'+1=V,V1'+1=V1] 
+* Loop 22: gt(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 23: gt(V1,V,Out) [V1>=1,Out=2,V=0] 
+* Loop 24: gt(V1,V,Out) [V>=0,Out=1,V1=0] 
+
+### Ranking functions of CR gt(V1,V,Out) 
+* RF of phase [21]: [V,V1]
+
+#### Partial ranking functions of CR gt(V1,V,Out) 
+* Partial RF of phase [21]:
+  - RF of loop [21:1]:
+    V
+    V1
+
+
+### Resulting Chains:gt(V1,V,Out) 
+* [[21],24]
+* [[21],23]
+* [[21],22]
+* [24]
+* [23]
+* [22]
+
+
+### Merging Chains  gt/3 into  External patterns of execution 
+* [[24]] --> 1 
+* [[23]] --> 2 
+* [[22],[22,[21]]] --> 3 
+* [[24,[21]]] --> 4 
+* [[23,[21]]] --> 5 
+
+
+### Specialization of cost equations minus/3 
+* CE 18 is refined into CE [39,40,41,42] 
+* CE 19 is refined into CE [43] 
+* CE 21 is refined into CE [44] 
+* CE 20 is refined into CE [45,46] 
+
+
+#### Refined cost equations minus/3 
+* CE 39: minus(V1,V,Out) = 1+ gt(V1,W1,X1):2
+     [V1>=1,X1=2,W1=0,Out=0,V=0] 
+* CE 40: minus(V1,V,Out) = 1+ gt(V1,V,W1):3
+     [V>=0,V1>=1,W1=0,Out=0] 
+* CE 41: minus(V1,V,Out) = 1+ gt(V1,V,W1):4
+     [V>=V1,V1>=1,W1=1,Out=0] 
+* CE 42: minus(V1,V,Out) = 1+ gt(V1,V,W1):5
+     [V1>=V+1,V>=1,W1=2,Out=0] 
+* CE 43: minus(V1,V,Out) = 2+ gt(V1,V,W1):4
+     [V>=V1,V1>=1,W1=1,Out=0] 
+* CE 44: minus(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 45: minus(V1,V,Out) = 2+ gt(V1,W1,X1):2+ minus(Y1,Z1,A2)
+     [V1>=1,V1=Y1+1,A2+1=Out,Z1=0,X1=2,W1=0,V=0] 
+* CE 46: minus(V1,V,Out) = 2+ gt(V1,V,W1):5+ minus(X1,V,Y1)
+     [V1>=V+1,V>=1,V1=X1+1,Y1+1=Out,W1=2] 
+
+### Cost equations --> "Loop" of minus/3 
+* CEs [46] --> Loop 25 
+* CEs [45] --> Loop 26 
+* CEs [39,40,41,42,43,44] --> Loop 27 
+
+#### Loops of minus/3 
+* Loop 25: minus(V1,V,Out)->  minus(V1',V,Out')
+                  [V1>=V+1,V>=1,Out=Out'+1,V1=V1'+1] 
+* Loop 26: minus(V1,V,Out)->  minus(V1',V',Out')
+                  [V1>=1,Out=Out'+1,V1=V1'+1,V'=0,V=0] 
+* Loop 27: minus(V1,V,Out) [V>=0,V1>=0,Out=0] 
+
+### Ranking functions of CR minus(V1,V,Out) 
+* RF of phase [25]: [V1-1,V1-V]
+* RF of phase [26]: [V1]
+
+#### Partial ranking functions of CR minus(V1,V,Out) 
+* Partial RF of phase [25]:
+  - RF of loop [25:1]:
+    V1-1
+    V1-V
+* Partial RF of phase [26]:
+  - RF of loop [26:1]:
+    V1
+
+
+### Resulting Chains:minus(V1,V,Out) 
+* [[26],27]
+* [[25],27]
+* [27]
+
+
+### Merging Chains  minus/3 into  External patterns of execution 
+* [[27,[26]]] --> 1 
+* [[27]] --> 2 
+* [[27,[25]]] --> 3 
+
+
+### Specialization of cost equations gcd/3 
+* CE 24 is refined into CE [47,48] 
+* CE 26 is refined into CE [49,50] 
+* CE 23 is refined into CE [51] 
+* CE 22 is refined into CE [52,53,54,55] 
+* CE 25 is refined into CE [56,57,58,59,60] 
+
+
+#### Refined cost equations gcd/3 
+* CE 47: gcd(V1,V,Out) = 3+ ge(V1,V,W1):5+ gt(V,X1,Y1):2+ minus(V1,V,Z1):2+ gcd(A2,V,Out)
+     [V1>=V,V>=1,A2=0,Z1=0,Y1=2,X1=0,W1=2] 
+* CE 48: gcd(V1,V,Out) = 3+ ge(V1,V,W1):5+ gt(V,X1,Y1):2+ minus(V1,V,Z1):3+ gcd(Z1,V,Out)
+     [V1>=V+Z1,Z1>=1,V>=1,Y1=2,X1=0,W1=2] 
+* CE 49: gcd(V1,V,Out) = 2+ ge(W1,V,X1):1+ gcd(V,Y1,Out)
+     [V>=1,Y1=0,X1=1,W1=0,V1=0] 
+* CE 50: gcd(V1,V,Out) = 2+ ge(V1,V,W1):4+ gcd(V,V1,Out)
+     [V>=V1+1,V1>=1,W1=1] 
+* CE 51: gcd(A,B,A) = 3+ ge(A,C,D):2+ gt(E,F,G):1
+     [A>=0,G=1,F=0,E=0,D=2,C=0,B=0] 
+* CE 52: gcd(V1,V,Out) = 2+ ge(V1,W1,X1):2+ gt(Y1,Z1,A2):1
+     [V1>=0,A2=1,Z1=0,Y1=0,X1=2,W1=0,Out=0,V=0] 
+* CE 53: gcd(V1,V,Out) = 2+ ge(V1,W1,X1):2+ gt(Y1,Z1,A2):3
+     [V1>=0,A2=0,Z1=0,Y1=0,X1=2,W1=0,Out=0,V=0] 
+* CE 54: gcd(V1,V,Out) = 2+ ge(V1,V,W1):5+ gt(V,X1,Y1):2
+     [V1>=V,V>=1,Y1=2,X1=0,W1=2,Out=0] 
+* CE 55: gcd(V1,V,Out) = 2+ ge(V1,V,W1):5+ gt(V,X1,Y1):3
+     [V1>=V,V>=1,Y1=0,X1=0,W1=2,Out=0] 
+* CE 56: gcd(V1,V,Out) = 1+ ge(W1,V,X1):1
+     [V>=1,X1=1,W1=0,Out=0,V1=0] 
+* CE 57: gcd(V1,V,Out) = 1+ ge(V1,W1,X1):2
+     [V1>=0,X1=2,W1=0,Out=0,V=0] 
+* CE 58: gcd(V1,V,Out) = 1+ ge(V1,V,W1):3
+     [V>=0,V1>=0,W1=0,Out=0] 
+* CE 59: gcd(V1,V,Out) = 1+ ge(V1,V,W1):4
+     [V>=V1+1,V1>=1,W1=1,Out=0] 
+* CE 60: gcd(V1,V,Out) = 1+ ge(V1,V,W1):5
+     [V1>=V,V>=1,W1=2,Out=0] 
+
+### Cost equations --> "Loop" of gcd/3 
+* CEs [51] --> Loop 28 
+* CEs [52,53,57] --> Loop 29 
+* CEs [54,55,56,58,59,60] --> Loop 30 
+* CEs [48] --> Loop 31 
+* CEs [50] --> Loop 32 
+* CEs [47] --> Loop 33 
+* CEs [49] --> Loop 34 
+
+#### Loops of gcd/3 
+* Loop 28: gcd(A,B,A) [A>=0,B=0] 
+* Loop 29: gcd(V1,V,Out) [V1>=0,Out=0,V=0] 
+* Loop 30: gcd(V1,V,Out) [V>=0,V1>=0,Out=0] 
+* Loop 31: gcd(V1,V,Out)->  gcd(V1',V,Out)
+                  [V1>=V+V1',V1'>=1,V>=1] 
+* Loop 32: gcd(V1,V,Out)->  gcd(V,V1,Out)
+                  [V>=V1+1,V1>=1] 
+* Loop 33: gcd(V1,V,Out)->  gcd(V1',V,Out)
+                  [V1>=V,V>=1,V1'=0] 
+* Loop 34: gcd(V1,V,Out)->  gcd(V,A',Out)
+                  [V>=1,A'=0,V1=0] 
+
+### Ranking functions of CR gcd(V1,V,Out) 
+* RF of phase [31,32]: [V1+2*V-3]
+
+#### Partial ranking functions of CR gcd(V1,V,Out) 
+* Partial RF of phase [31,32]:
+  - RF of loop [31:1]:
+    V1-1 depends on loops [32:1] 
+    V1-V depends on loops [32:1] 
+  - RF of loop [32:1]:
+    V-1
+    -V1/2+V/2 depends on loops [31:1] 
+
+
+### Resulting Chains:gcd(V1,V,Out) 
+* [[31,32],33,34,30]
+* [[31,32],33,34,29]
+* [[31,32],33,34,28]
+* [[31,32],33,30]
+* [[31,32],30]
+* [34,30]
+* [34,29]
+* [34,28]
+* [33,34,30]
+* [33,34,29]
+* [33,34,28]
+* [33,30]
+* [30]
+* [29]
+* [28]
+
+
+### Merging Chains  gcd/3 into  External patterns of execution 
+* [[30],[30,33],[29,34,33],[30,34,33],[29,34],[30,34],[30,[31,32]],[30,33,[31,32]],[29,34,33,[31,32]],[30,34,33,[31,32]]] --> 1 
+* [[28,34]] --> 2 
+* [[29]] --> 3 
+* [[28]] --> 4 
+* [[28,34,33]] --> 5 
+* [[28,34,33,[31,32]]] --> 6 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [61,62,63] 
+* CE 4 is refined into CE [64] 
+* CE 6 is refined into CE [65,66,67,68,69] 
+* CE 7 is refined into CE [70,71,72,73,74,75,76,77,78,79] 
+* CE 9 is refined into CE [80,81,82] 
+* CE 3 is refined into CE [83] 
+* CE 5 is refined into CE [84] 
+* CE 8 is refined into CE [85,86,87,88,89,90] 
+* CE 10 is refined into CE [91,92,93] 
+* CE 11 is refined into CE [94,95,96,97,98,99] 
+* CE 12 is refined into CE [100,101,102,103,104] 
+* CE 13 is refined into CE [105,106,107,108,109] 
+
+
+#### Refined cost equations start/3 
+* CE 61: start(V1,V,V5) = 1+ gt(W5,X5,Y5):1
+     [V>=0,Y5=1,X5=0,W5=0,V5=0,V1=2] 
+* CE 62: start(V1,V,V5) = 1+ gt(V5,W5,X5):2
+     [V5>=1,V>=0,X5=2,W5=0,V1=2] 
+* CE 63: start(V1,V,V5) = 1+ gt(V5,W5,X5):3
+     [V5>=0,V>=0,X5=0,W5=0,V1=2] 
+* CE 64: start(V1,V,V5) = 2+ gt(W5,X5,Y5):1
+     [V>=0,Y5=1,X5=0,W5=0,V5=0,V1=2] 
+* CE 65: start(V1,V,V5) = 2+ gt(V5,W5,X5):2+ minus(V,V5,Y5):2+ gcd(Z5,V5,A6):1
+     [V5>=1,V>=0,A6=0,Z5=0,Y5=0,X5=2,W5=0,V1=2] 
+* CE 66: start(V1,V,V5) = 2+ gt(V5,W5,X5):2+ minus(V,V5,Y5):2+ gcd(Z5,V5,V5):2
+     [V5>=1,V>=0,Z5=0,Y5=0,X5=2,W5=0,V1=2] 
+* CE 67: start(V1,V,V5) = 2+ gt(V5,W5,X5):2+ minus(V,V5,Y5):3+ gcd(Y5,V5,Z5):1
+     [V>=V5+Y5,V5>=1,Y5>=1,Z5=0,X5=2,W5=0,V1=2] 
+* CE 68: start(V1,V,V5) = 2+ gt(V5,W5,X5):2+ minus(V,V5,Y5):3+ gcd(Y5,V5,V5):5
+     [V>=V5+Y5,Y5>=V5,V5>=1,X5=2,W5=0,V1=2] 
+* CE 69: start(V1,V,V5) = 2+ gt(V5,W5,X5):2+ minus(V,V5,Y5):3+ gcd(Y5,V5,Z5):6
+     [V>=V5+Y5,V5+Y5>=2*Z5+1,V5>=Z5,Y5>=Z5,Z5>=1,X5=2,W5=0,V1=2] 
+* CE 70: start(V1,V,V5) = 1+ minus(V,W5,X5):1+ gcd(X5,Y5,Z5):1
+     [V>=X5,X5>=1,Z5=0,Y5=0,W5=0,V5=0,V1=2] 
+* CE 71: start(V1,V,V5) = 1+ minus(V,W5,X5):1+ gcd(X5,Y5,Z5):3
+     [V>=X5,X5>=1,Z5=0,Y5=0,W5=0,V5=0,V1=2] 
+* CE 72: start(V1,V,V5) = 1+ minus(V,W5,X5):1+ gcd(X5,Y5,X5):4
+     [V>=X5,X5>=1,Y5=0,W5=0,V5=0,V1=2] 
+* CE 73: start(V1,V,V5) = 1+ minus(V,V5,W5):2+ gcd(X5,V5,Y5):1
+     [V5>=0,V>=0,Y5=0,X5=0,W5=0,V1=2] 
+* CE 74: start(V1,V,V5) = 1+ minus(V,V5,W5):2+ gcd(X5,V5,V5):2
+     [V5>=1,V>=0,X5=0,W5=0,V1=2] 
+* CE 75: start(V1,V,V5) = 1+ minus(V,W5,X5):2+ gcd(Y5,Z5,A6):3
+     [V>=0,A6=0,Z5=0,Y5=0,X5=0,W5=0,V5=0,V1=2] 
+* CE 76: start(V1,V,V5) = 1+ minus(V,W5,X5):2+ gcd(Y5,Z5,A6):4
+     [V>=0,A6=0,Z5=0,Y5=0,X5=0,W5=0,V5=0,V1=2] 
+* CE 77: start(V1,V,V5) = 1+ minus(V,V5,W5):3+ gcd(W5,V5,X5):1
+     [V>=V5+W5,V5>=1,W5>=1,X5=0,V1=2] 
+* CE 78: start(V1,V,V5) = 1+ minus(V,V5,W5):3+ gcd(W5,V5,V5):5
+     [V>=V5+W5,W5>=V5,V5>=1,V1=2] 
+* CE 79: start(V1,V,V5) = 1+ minus(V,V5,W5):3+ gcd(W5,V5,X5):6
+     [V>=V5+W5,V5+W5>=2*X5+1,V5>=X5,W5>=X5,X5>=1,V1=2] 
+* CE 80: start(V1,V,V5) = 1+ minus(V,W5,X5):1
+     [V>=X5,X5>=1,W5=0,V5=0,V1=2] 
+* CE 81: start(V1,V,V5) = 1+ minus(V,V5,W5):2
+     [V5>=0,V>=0,W5=0,V1=2] 
+* CE 82: start(V1,V,V5) = 1+ minus(V,V5,W5):3
+     [V>=V5+W5,W5>=1,V5>=1,V1=2] 
+* CE 83: start(V1,V,V5) = 0
+     [V5>=0,V>=0,V1>=0] 
+* CE 84: start(V1,V,V5) = 1
+     [V5>=0,V>=0,V1=1] 
+* CE 85: start(V1,V,V5) = 1+ gcd(V5,V,W5):1
+     [V>=0,V5>=0,W5=0,V1=1] 
+* CE 86: start(V1,V,V5) = 1+ gcd(W5,V,V):2
+     [V>=1,W5=0,V5=0,V1=1] 
+* CE 87: start(V1,V,V5) = 1+ gcd(V5,W5,X5):3
+     [V5>=0,X5=0,W5=0,V=0,V1=1] 
+* CE 88: start(V1,V,V5) = 1+ gcd(V5,W5,V5):4
+     [V5>=0,W5=0,V=0,V1=1] 
+* CE 89: start(V1,V,V5) = 1+ gcd(V5,V,V):5
+     [V5>=V,V>=1,V1=1] 
+* CE 90: start(V1,V,V5) = 1+ gcd(V5,V,W5):6
+     [V+V5>=2*W5+1,V>=W5,V5>=W5,W5>=1,V1=1] 
+* CE 91: start(V1,V,V5) = 0+ minus(V1,W5,X5):1
+     [V1>=X5,X5>=1,W5=0,V=0] 
+* CE 92: start(V1,V,V5) = 0+ minus(V1,V,W5):2
+     [V>=0,V1>=0,W5=0] 
+* CE 93: start(V1,V,V5) = 0+ minus(V1,V,W5):3
+     [V1>=V+W5,W5>=1,V>=1] 
+* CE 94: start(V1,V,V5) = 0+ gcd(V1,V,W5):1
+     [V>=0,V1>=0,W5=0] 
+* CE 95: start(V1,V,V5) = 0+ gcd(W5,V,V):2
+     [V>=1,W5=0,V1=0] 
+* CE 96: start(V1,V,V5) = 0+ gcd(V1,W5,X5):3
+     [V1>=0,X5=0,W5=0,V=0] 
+* CE 97: start(V1,V,V5) = 0+ gcd(V1,W5,V1):4
+     [V1>=0,W5=0,V=0] 
+* CE 98: start(V1,V,V5) = 0+ gcd(V1,V,V):5
+     [V1>=V,V>=1] 
+* CE 99: start(V1,V,V5) = 0+ gcd(V1,V,W5):6
+     [V1+V>=2*W5+1,V>=W5,V1>=W5,W5>=1] 
+* CE 100: start(V1,V,V5) = 0+ gt(W5,V,X5):1
+     [V>=0,X5=1,W5=0,V1=0] 
+* CE 101: start(V1,V,V5) = 0+ gt(V1,W5,X5):2
+     [V1>=1,X5=2,W5=0,V=0] 
+* CE 102: start(V1,V,V5) = 0+ gt(V1,V,W5):3
+     [V>=0,V1>=0,W5=0] 
+* CE 103: start(V1,V,V5) = 0+ gt(V1,V,W5):4
+     [V>=V1,V1>=1,W5=1] 
+* CE 104: start(V1,V,V5) = 0+ gt(V1,V,W5):5
+     [V1>=V+1,V>=1,W5=2] 
+* CE 105: start(V1,V,V5) = 0+ ge(W5,V,X5):1
+     [V>=1,X5=1,W5=0,V1=0] 
+* CE 106: start(V1,V,V5) = 0+ ge(V1,W5,X5):2
+     [V1>=0,X5=2,W5=0,V=0] 
+* CE 107: start(V1,V,V5) = 0+ ge(V1,V,W5):3
+     [V>=0,V1>=0,W5=0] 
+* CE 108: start(V1,V,V5) = 0+ ge(V1,V,W5):4
+     [V>=V1+1,V1>=1,W5=1] 
+* CE 109: start(V1,V,V5) = 0+ ge(V1,V,W5):5
+     [V1>=V,V>=1,W5=2] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [91,96,97,101,106] --> Loop 35 
+* CEs [61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82] --> Loop 36 
+* CEs [86] --> Loop 37 
+* CEs [84,85,87,88,89,90] --> Loop 38 
+* CEs [83,92,93,94,95,98,99,100,102,103,104,105,107,108,109] --> Loop 39 
+
+#### Loops of start/3 
+* Loop 35: start(V1,V,V5) [V1>=0,V=0] 
+* Loop 36: start(V1,V,V5) [V5>=0,V>=0,V1=2] 
+* Loop 37: start(V1,V,V5) [V>=1,V5=0,V1=1] 
+* Loop 38: start(V1,V,V5) [V5>=0,V>=0,V1=1] 
+* Loop 39: start(V1,V,V5) [V>=0,V1>=0] 
+
+### Ranking functions of CR start(V1,V,V5) 
+
+#### Partial ranking functions of CR start(V1,V,V5) 
+
+
+### Resulting Chains:start(V1,V,V5) 
+* [39]
+* [38]
+* [37]
+* [36]
+* [35]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[37],[38],[39]] --> 1 
+* [[36]] --> 2 
+* [[35]] --> 3 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [17] 
+
+ * loop 17:ge(V1,V,Out) -> [ge(V1',V',Out')] 
+1
+#### Cost of phase [17]:ge(V1,V,Out) -> [ge(V1',V',Out')] 
+1*it(17)+0
+  Such that:it(17) =< V1
+it(17) =< V1-V1'
+it(17) =< V
+it(17) =< V-V'
+
+#### Cost of phase [17]:ge(V1,V,Out) -> [ge(V1',V',Out')] 
+1*it(17)+0
+  Such that:it(17) =< V1
+it(17) =< V1-V1'
+it(17) =< V
+it(17) =< V-V'
+
+#### Cost of phase [17]:ge(V1,V,Out) -> [ge(V1',V',Out')] 
+1*it(17)+0
+  Such that:it(17) =< V1
+it(17) =< V1-V1'
+it(17) =< V
+it(17) =< V-V'
+
+#### Cost of chains of ge(V1,V,Out):
+* Chain [[17],20]: 1*it(17)+1
+  Such that:it(17) =< V1
+
+  with precondition: [Out=1,V1>=1,V>=V1+1] 
+
+* Chain [[17],19]: 1*it(17)+1
+  Such that:it(17) =< V
+
+  with precondition: [Out=2,V>=1,V1>=V] 
+
+* Chain [[17],18]: 1*it(17)+0
+  Such that:it(17) =< V
+
+  with precondition: [Out=0,V1>=1,V>=1] 
+
+* Chain [20]: 1
+  with precondition: [V1=0,Out=1,V>=1] 
+
+* Chain [19]: 1
+  with precondition: [V=0,Out=2,V1>=0] 
+
+* Chain [18]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [21] 
+
+ * loop 21:gt(V1,V,Out) -> [gt(V1',V',Out')] 
+1
+#### Cost of phase [21]:gt(V1,V,Out) -> [gt(V1',V',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V1
+it(21) =< V1-V1'
+it(21) =< V
+it(21) =< V-V'
+
+#### Cost of phase [21]:gt(V1,V,Out) -> [gt(V1',V',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V1
+it(21) =< V1-V1'
+it(21) =< V
+it(21) =< V-V'
+
+#### Cost of phase [21]:gt(V1,V,Out) -> [gt(V1',V',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V1
+it(21) =< V1-V1'
+it(21) =< V
+it(21) =< V-V'
+
+#### Cost of chains of gt(V1,V,Out):
+* Chain [[21],24]: 1*it(21)+1
+  Such that:it(21) =< V1
+
+  with precondition: [Out=1,V1>=1,V>=V1] 
+
+* Chain [[21],23]: 1*it(21)+1
+  Such that:it(21) =< V
+
+  with precondition: [Out=2,V>=1,V1>=V+1] 
+
+* Chain [[21],22]: 1*it(21)+0
+  Such that:it(21) =< V
+
+  with precondition: [Out=0,V1>=1,V>=1] 
+
+* Chain [24]: 1
+  with precondition: [V1=0,Out=1,V>=0] 
+
+* Chain [23]: 1
+  with precondition: [V=0,Out=2,V1>=1] 
+
+* Chain [22]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [26] 
+
+ * loop 26:minus(V1,V,Out) -> [minus(V1',V',Out')] 
+3
+#### Cost of phase [26]:minus(V1,V,Out) -> [minus(V1',V',Out')] 
+3*it(26)+0
+  Such that:it(26) =< V1
+it(26) =< V1-V1'
+
+#### Cost of loops [25] 
+
+ * loop 25:minus(V1,V,Out) -> [minus(V1',V',Out')] 
+1*s(8)+3
+  Such that:s(8) =< V'
+
+#### Cost of phase [25]:minus(V1,V,Out) -> [minus(V1',V',Out')] 
+3*it(25)+1*s(9)+0
+  Such that:it(25) =< V1
+it(25) =< V1-V
+it(25) =< V1-V-V1'+V'
+it(25) =< V1-V1'
+aux(3) =< V
+s(9) =< it(25)*aux(3)
+
+#### Cost of chains of minus(V1,V,Out):
+* Chain [[26],27]: 3*it(26)+2*s(4)+3
+  Such that:aux(1) =< V1-Out
+it(26) =< Out
+s(4) =< aux(1)
+
+  with precondition: [V=0,Out>=1,V1>=Out] 
+
+* Chain [[25],27]: 3*it(25)+2*s(3)+2*s(4)+1*s(9)+3
+  Such that:aux(1) =< V1-Out
+it(25) =< Out
+aux(4) =< V
+s(4) =< aux(1)
+s(3) =< aux(4)
+s(9) =< it(25)*aux(4)
+
+  with precondition: [V>=1,Out>=1,V1>=Out+V] 
+
+* Chain [27]: 2*s(3)+2*s(4)+3
+  Such that:aux(1) =< V1
+aux(2) =< V
+s(4) =< aux(1)
+s(3) =< aux(2)
+
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of loops [31,32] 
+
+ * loop 31:gcd(V1,V,Out) -> [gcd(V1',V',Out')] 
+3*s(31)+3*s(29)+2*s(32)+1*s(33)+8
+  Such that:s(28) =< V1-V1'
+s(29) =< V1'
+s(30) =< V'
+s(31) =< s(30)
+s(32) =< s(28)
+s(33) =< s(29)*s(30)
+
+ * loop 32:gcd(V1,V,Out) -> [gcd(V1',V',Out')] 
+1*s(35)+3
+  Such that:s(35) =< V'
+
+#### Cost of phase [31,32]:gcd(V1,V,Out) -> [gcd(V1',V',Out')] 
+8*it(31)+3*it(32)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+0
+  Such that:aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+it(32) =< V-V'
+aux(36) =< -V1+V
+aux(37) =< V1
+aux(38) =< V1+V
+aux(39) =< V1+2*V
+aux(40) =< V1+2*V-V1'-2*V'
+aux(41) =< V1-V1'
+aux(42) =< V1/2+V/2
+aux(43) =< V1/2+V/2-V1'/2-V'/2
+aux(44) =< V
+it(31) =< aux(39)
+it(32) =< aux(39)
+it(31) =< aux(40)
+it(32) =< aux(40)
+aux(24) =< aux(42)
+aux(24) =< aux(43)
+it(32) =< aux(44)
+aux(23) =< aux(44)
+aux(26) =< aux(38)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(44)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(37)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(37)
+s(41) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(37)
+it(31) =< aux(9)+aux(41)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(38)
+s(40) =< it(31)*aux(38)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(44)
+
+#### Cost of phase [31,32]:gcd(V1,V,Out) -> [gcd(V1',V',Out')] 
+8*it(31)+3*it(32)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+0
+  Such that:aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+it(32) =< V-V'
+aux(36) =< -V1+V
+aux(37) =< V1
+aux(38) =< V1+V
+aux(39) =< V1+2*V
+aux(40) =< V1+2*V-V1'-2*V'
+aux(41) =< V1-V1'
+aux(42) =< V1/2+V/2
+aux(43) =< V1/2+V/2-V1'/2-V'/2
+aux(44) =< V
+it(31) =< aux(39)
+it(32) =< aux(39)
+it(31) =< aux(40)
+it(32) =< aux(40)
+aux(24) =< aux(42)
+aux(24) =< aux(43)
+it(32) =< aux(44)
+aux(23) =< aux(44)
+aux(26) =< aux(38)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(44)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(37)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(37)
+s(41) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(37)
+it(31) =< aux(9)+aux(41)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(38)
+s(40) =< it(31)*aux(38)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(44)
+
+#### Cost of phase [31,32]:gcd(V1,V,Out) -> [gcd(V1',V',Out')] 
+8*it(31)+3*it(32)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+0
+  Such that:aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+it(32) =< V-V'
+aux(36) =< -V1+V
+aux(37) =< V1
+aux(38) =< V1+V
+aux(39) =< V1+2*V
+aux(40) =< V1+2*V-V1'-2*V'
+aux(41) =< V1-V1'
+aux(42) =< V1/2+V/2
+aux(43) =< V1/2+V/2-V1'/2-V'/2
+aux(44) =< V
+it(31) =< aux(39)
+it(32) =< aux(39)
+it(31) =< aux(40)
+it(32) =< aux(40)
+aux(24) =< aux(42)
+aux(24) =< aux(43)
+it(32) =< aux(44)
+aux(23) =< aux(44)
+aux(26) =< aux(38)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(44)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(37)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(37)
+s(41) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(37)
+it(31) =< aux(9)+aux(41)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(38)
+s(40) =< it(31)*aux(38)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(44)
+
+#### Cost of phase [31,32]:gcd(V1,V,Out) -> [gcd(V1',V',Out')] 
+8*it(31)+3*it(32)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+0
+  Such that:aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+it(32) =< V-V'
+aux(36) =< -V1+V
+aux(37) =< V1
+aux(38) =< V1+V
+aux(39) =< V1+2*V
+aux(40) =< V1+2*V-V1'-2*V'
+aux(41) =< V1-V1'
+aux(42) =< V1/2+V/2
+aux(43) =< V1/2+V/2-V1'/2-V'/2
+aux(44) =< V
+it(31) =< aux(39)
+it(32) =< aux(39)
+it(31) =< aux(40)
+it(32) =< aux(40)
+aux(24) =< aux(42)
+aux(24) =< aux(43)
+it(32) =< aux(44)
+aux(23) =< aux(44)
+aux(26) =< aux(38)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(44)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(37)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(37)
+s(41) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(37)
+it(31) =< aux(9)+aux(41)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(38)
+s(40) =< it(31)*aux(38)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(44)
+
+#### Cost of phase [31,32]:gcd(V1,V,Out) -> [gcd(V1',V',Out')] 
+8*it(31)+3*it(32)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+0
+  Such that:aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+it(32) =< V-V'
+aux(36) =< -V1+V
+aux(37) =< V1
+aux(38) =< V1+V
+aux(39) =< V1+2*V
+aux(40) =< V1+2*V-V1'-2*V'
+aux(41) =< V1-V1'
+aux(42) =< V1/2+V/2
+aux(43) =< V1/2+V/2-V1'/2-V'/2
+aux(44) =< V
+it(31) =< aux(39)
+it(32) =< aux(39)
+it(31) =< aux(40)
+it(32) =< aux(40)
+aux(24) =< aux(42)
+aux(24) =< aux(43)
+it(32) =< aux(44)
+aux(23) =< aux(44)
+aux(26) =< aux(38)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(44)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(37)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(37)
+s(41) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(37)
+it(31) =< aux(9)+aux(41)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(38)
+s(40) =< it(31)*aux(38)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(44)
+
+#### Cost of chains of gcd(V1,V,Out):
+* Chain [[31,32],33,34,30]: 8*it(31)+3*it(32)+4*s(14)+2*s(19)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+15
+  Such that:aux(36) =< -V1+V
+aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+aux(45) =< V1
+aux(46) =< V1+V
+aux(47) =< V1+2*V
+aux(48) =< V1/2+V/2
+aux(49) =< V
+aux(7) =< aux(46)
+aux(7) =< aux(47)
+aux(7) =< aux(48)
+aux(7) =< aux(49)
+it(32) =< aux(49)
+s(14) =< aux(7)
+s(19) =< aux(47)
+it(31) =< aux(47)
+it(32) =< aux(47)
+aux(24) =< aux(48)
+aux(24) =< aux(46)
+aux(23) =< aux(49)
+aux(26) =< aux(46)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(49)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(45)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(45)
+s(40) =< aux(9)+aux(45)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(46)
+s(40) =< it(31)*aux(46)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(49)
+
+  with precondition: [Out=0,V1>=1,V>=1,V+V1>=3] 
+
+* Chain [[31,32],33,34,29]: 8*it(31)+3*it(32)+3*s(16)+2*s(19)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+15
+  Such that:aux(36) =< -V1+V
+aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+aux(50) =< V1
+aux(51) =< V1+V
+aux(52) =< V1+2*V
+aux(53) =< V1/2+V/2
+aux(54) =< V
+aux(6) =< aux(51)
+aux(6) =< aux(52)
+aux(6) =< aux(53)
+aux(6) =< aux(54)
+it(32) =< aux(54)
+s(16) =< aux(6)
+s(19) =< aux(52)
+it(31) =< aux(52)
+it(32) =< aux(52)
+aux(24) =< aux(53)
+aux(24) =< aux(51)
+aux(23) =< aux(54)
+aux(26) =< aux(51)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(54)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(50)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(50)
+s(40) =< aux(9)+aux(50)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(51)
+s(40) =< it(31)*aux(51)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(54)
+
+  with precondition: [Out=0,V1>=1,V>=1,V+V1>=3] 
+
+* Chain [[31,32],33,34,28]: 8*it(31)+3*it(32)+3*s(16)+2*s(19)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+16
+  Such that:aux(36) =< -V1+V
+aux(37) =< V1
+aux(12) =< V1-V
+aux(38) =< V1+V
+aux(39) =< V1+2*V
+aux(40) =< V1+2*V-2*Out
+aux(41) =< V1-Out
+aux(25) =< -V1/2+V/2
+aux(42) =< V1/2+V/2
+aux(43) =< V1/2+V/2-Out
+aux(44) =< V
+it(32) =< V-Out
+aux(6) =< Out
+aux(55) =< V1+V-Out
+aux(43) =< aux(55)
+s(16) =< aux(6)
+s(19) =< aux(55)
+it(31) =< aux(39)
+it(32) =< aux(39)
+it(31) =< aux(40)
+it(32) =< aux(40)
+aux(24) =< aux(42)
+aux(24) =< aux(43)
+it(32) =< aux(44)
+aux(23) =< aux(44)
+aux(26) =< aux(38)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(44)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(37)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(37)
+s(41) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(41)
+s(40) =< aux(9)+aux(37)
+it(31) =< aux(9)+aux(41)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(38)
+s(40) =< it(31)*aux(38)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(44)
+
+  with precondition: [Out>=1,V1>=Out,V>=Out,V+V1>=2*Out+1] 
+
+* Chain [[31,32],33,30]: 8*it(31)+3*it(32)+7*s(10)+2*s(19)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+12
+  Such that:aux(36) =< -V1+V
+aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+aux(57) =< V1
+aux(58) =< V1+V
+aux(59) =< V1+2*V
+aux(60) =< V1/2+V/2
+aux(61) =< V
+aux(43) =< aux(58)
+aux(56) =< aux(58)
+aux(56) =< aux(59)
+aux(43) =< aux(60)
+aux(56) =< aux(61)
+it(32) =< aux(61)
+s(10) =< aux(56)
+s(19) =< aux(58)
+it(31) =< aux(59)
+it(32) =< aux(59)
+aux(24) =< aux(60)
+aux(24) =< aux(43)
+aux(23) =< aux(61)
+aux(26) =< aux(58)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(61)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(57)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(57)
+s(40) =< aux(9)+aux(57)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(58)
+s(40) =< it(31)*aux(58)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(61)
+
+  with precondition: [Out=0,V1>=1,V>=1,V+V1>=3] 
+
+* Chain [[31,32],30]: 8*it(31)+3*it(32)+4*s(10)+1*s(14)+3*s(36)+3*s(37)+2*s(38)+1*s(39)+1*s(42)+4
+  Such that:aux(36) =< -V1+V
+aux(12) =< V1-V
+aux(25) =< -V1/2+V/2
+aux(42) =< V1/2+V/2
+aux(62) =< V1
+aux(63) =< V1+V
+aux(64) =< V1+2*V
+aux(65) =< V
+aux(5) =< aux(63)
+s(14) =< aux(63)
+aux(5) =< aux(64)
+aux(5) =< aux(65)
+it(32) =< aux(65)
+s(10) =< aux(5)
+it(31) =< aux(64)
+it(32) =< aux(64)
+aux(24) =< aux(42)
+aux(24) =< aux(63)
+aux(23) =< aux(65)
+aux(26) =< aux(63)+1
+aux(27) =< aux(24)*2
+it(32) =< aux(24)+aux(25)
+aux(9) =< aux(27)+aux(36)
+aux(9) =< it(32)*aux(23)
+aux(11) =< aux(27)+aux(36)
+aux(11) =< it(32)*aux(65)
+s(42) =< it(32)*aux(26)
+s(41) =< aux(9)+aux(62)
+it(31) =< aux(11)+aux(12)
+it(31) =< aux(9)+aux(62)
+s(40) =< aux(9)+aux(62)
+s(41) =< it(31)*aux(23)
+s(37) =< it(31)*aux(63)
+s(40) =< it(31)*aux(63)
+s(36) =< s(41)
+s(38) =< s(40)
+s(39) =< s(37)*aux(65)
+
+  with precondition: [Out=0,V1>=1,V>=1,V+V1>=3] 
+
+* Chain [34,30]: 1*s(14)+7
+  Such that:s(14) =< V
+
+  with precondition: [V1=0,Out=0,V>=1] 
+
+* Chain [34,29]: 7
+  with precondition: [V1=0,Out=0,V>=1] 
+
+* Chain [34,28]: 8
+  with precondition: [V1=0,V=Out,V>=1] 
+
+* Chain [33,34,30]: 4*s(14)+2*s(19)+15
+  Such that:s(17) =< V1
+aux(7) =< V
+s(14) =< aux(7)
+s(19) =< s(17)
+
+  with precondition: [Out=0,V>=1,V1>=V] 
+
+* Chain [33,34,29]: 3*s(16)+2*s(19)+15
+  Such that:s(17) =< V1
+aux(6) =< V
+s(16) =< aux(6)
+s(19) =< s(17)
+
+  with precondition: [Out=0,V>=1,V1>=V] 
+
+* Chain [33,34,28]: 3*s(16)+2*s(19)+16
+  Such that:s(17) =< V1
+aux(6) =< Out
+s(16) =< aux(6)
+s(19) =< s(17)
+
+  with precondition: [V=Out,V>=1,V1>=V] 
+
+* Chain [33,30]: 7*s(10)+2*s(19)+12
+  Such that:s(17) =< V1
+aux(56) =< V
+s(10) =< aux(56)
+s(19) =< s(17)
+
+  with precondition: [Out=0,V>=1,V1>=V] 
+
+* Chain [30]: 4*s(10)+1*s(14)+4
+  Such that:s(14) =< V1
+aux(5) =< V
+s(10) =< aux(5)
+
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+* Chain [29]: 4
+  with precondition: [V=0,Out=0,V1>=0] 
+
+* Chain [28]: 5
+  with precondition: [V=0,V1=Out,V1>=0] 
+
+
+#### Cost of chains of start(V1,V,V5):
+* Chain [39]: 18*s(167)+30*s(168)+1*s(174)+5*s(186)+9*s(187)+11*s(188)+24*s(189)+3*s(196)+9*s(199)+9*s(200)+6*s(201)+3*s(202)+6*s(203)+16*s(204)+2*s(209)+6*s(212)+6*s(213)+4*s(214)+2*s(215)+7*s(217)+4*s(218)+3*s(237)+16
+  Such that:aux(80) =< -V1+V
+aux(81) =< V1
+aux(82) =< V1-V
+aux(83) =< V1+V
+aux(84) =< V1+2*V
+aux(85) =< -V1/2+V/2
+aux(86) =< V1/2+V/2
+aux(87) =< V
+s(167) =< aux(81)
+s(168) =< aux(87)
+s(185) =< aux(83)
+s(186) =< aux(83)
+s(185) =< aux(84)
+s(185) =< aux(87)
+s(187) =< aux(87)
+s(188) =< s(185)
+s(189) =< aux(84)
+s(187) =< aux(84)
+s(190) =< aux(86)
+s(190) =< aux(83)
+s(191) =< aux(87)
+s(192) =< aux(83)+1
+s(193) =< s(190)*2
+s(187) =< s(190)+aux(85)
+s(194) =< s(193)+aux(80)
+s(194) =< s(187)*s(191)
+s(195) =< s(193)+aux(80)
+s(195) =< s(187)*aux(87)
+s(196) =< s(187)*s(192)
+s(197) =< s(194)+aux(81)
+s(189) =< s(195)+aux(82)
+s(189) =< s(194)+aux(81)
+s(198) =< s(194)+aux(81)
+s(197) =< s(189)*s(191)
+s(199) =< s(189)*aux(83)
+s(198) =< s(189)*aux(83)
+s(200) =< s(197)
+s(201) =< s(198)
+s(202) =< s(199)*aux(87)
+s(203) =< aux(87)
+s(204) =< aux(84)
+s(203) =< aux(84)
+s(205) =< aux(86)
+s(205) =< s(190)
+s(206) =< s(205)*2
+s(203) =< s(205)+aux(85)
+s(207) =< s(206)+aux(80)
+s(207) =< s(203)*s(191)
+s(208) =< s(206)+aux(80)
+s(208) =< s(203)*aux(87)
+s(209) =< s(203)*s(192)
+s(210) =< s(207)+aux(81)
+s(204) =< s(208)+aux(82)
+s(204) =< s(207)+aux(81)
+s(211) =< s(207)+aux(81)
+s(210) =< s(204)*s(191)
+s(212) =< s(204)*aux(83)
+s(211) =< s(204)*aux(83)
+s(213) =< s(210)
+s(214) =< s(211)
+s(215) =< s(212)*aux(87)
+s(216) =< aux(83)
+s(216) =< aux(84)
+s(216) =< aux(86)
+s(216) =< aux(87)
+s(217) =< s(216)
+s(218) =< aux(84)
+s(235) =< aux(81)
+s(235) =< aux(83)
+s(237) =< s(235)
+s(174) =< s(167)*aux(87)
+
+  with precondition: [V1>=0,V>=0] 
+
+* Chain [38]: 9*s(267)+22*s(268)+5*s(270)+9*s(271)+11*s(272)+24*s(273)+3*s(280)+9*s(283)+9*s(284)+6*s(285)+3*s(286)+6*s(287)+16*s(288)+2*s(293)+6*s(296)+6*s(297)+4*s(298)+2*s(299)+7*s(301)+4*s(302)+3*s(321)+17
+  Such that:aux(93) =< -V+V5
+aux(94) =< V
+aux(95) =< V-V5
+aux(96) =< V+V5
+aux(97) =< 2*V+V5
+aux(98) =< V/2-V5/2
+aux(99) =< V/2+V5/2
+aux(100) =< V5
+s(267) =< aux(100)
+s(268) =< aux(94)
+s(269) =< aux(96)
+s(270) =< aux(96)
+s(269) =< aux(97)
+s(269) =< aux(94)
+s(271) =< aux(94)
+s(272) =< s(269)
+s(273) =< aux(97)
+s(271) =< aux(97)
+s(274) =< aux(99)
+s(274) =< aux(96)
+s(275) =< aux(94)
+s(276) =< aux(96)+1
+s(277) =< s(274)*2
+s(271) =< s(274)+aux(98)
+s(278) =< s(277)+aux(95)
+s(278) =< s(271)*s(275)
+s(279) =< s(277)+aux(95)
+s(279) =< s(271)*aux(94)
+s(280) =< s(271)*s(276)
+s(281) =< s(278)+aux(100)
+s(273) =< s(279)+aux(93)
+s(273) =< s(278)+aux(100)
+s(282) =< s(278)+aux(100)
+s(281) =< s(273)*s(275)
+s(283) =< s(273)*aux(96)
+s(282) =< s(273)*aux(96)
+s(284) =< s(281)
+s(285) =< s(282)
+s(286) =< s(283)*aux(94)
+s(287) =< aux(94)
+s(288) =< aux(97)
+s(287) =< aux(97)
+s(289) =< aux(99)
+s(289) =< s(274)
+s(290) =< s(289)*2
+s(287) =< s(289)+aux(98)
+s(291) =< s(290)+aux(95)
+s(291) =< s(287)*s(275)
+s(292) =< s(290)+aux(95)
+s(292) =< s(287)*aux(94)
+s(293) =< s(287)*s(276)
+s(294) =< s(291)+aux(100)
+s(288) =< s(292)+aux(93)
+s(288) =< s(291)+aux(100)
+s(295) =< s(291)+aux(100)
+s(294) =< s(288)*s(275)
+s(296) =< s(288)*aux(96)
+s(295) =< s(288)*aux(96)
+s(297) =< s(294)
+s(298) =< s(295)
+s(299) =< s(296)*aux(94)
+s(300) =< aux(96)
+s(300) =< aux(97)
+s(300) =< aux(99)
+s(300) =< aux(94)
+s(301) =< s(300)
+s(302) =< aux(97)
+s(319) =< aux(96)
+s(319) =< aux(100)
+s(321) =< s(319)
+
+  with precondition: [V1=1,V>=0,V5>=0] 
+
+* Chain [37]: 9
+  with precondition: [V1=1,V5=0,V>=1] 
+
+* Chain [36]: 125*s(340)+112*s(341)+18*s(354)+22*s(355)+48*s(356)+6*s(363)+18*s(366)+18*s(367)+12*s(368)+6*s(369)+6*s(370)+16*s(371)+2*s(376)+6*s(379)+6*s(380)+4*s(381)+2*s(382)+14*s(384)+8*s(385)+8*s(393)+7*s(395)+10*s(407)+24*s(408)+36*s(409)+64*s(410)+8*s(417)+24*s(420)+24*s(421)+16*s(422)+8*s(423)+8*s(439)+6*s(467)+6*s(470)+16*s(472)+2*s(479)+6*s(482)+6*s(483)+4*s(484)+2*s(485)+12*s(513)+8*s(515)+22
+  Such that:aux(129) =< V
+aux(130) =< V-2*V5
+aux(131) =< V+V5
+aux(132) =< V+2*V5
+aux(133) =< -V5
+aux(134) =< V5
+aux(135) =< 2*V5
+aux(136) =< V5/2
+s(340) =< aux(129)
+s(341) =< aux(134)
+s(395) =< s(340)*aux(134)
+s(512) =< aux(129)
+s(513) =< s(340)*aux(129)
+s(512) =< s(340)*aux(129)
+s(515) =< s(512)
+s(352) =< aux(134)
+s(352) =< aux(135)
+s(354) =< aux(134)
+s(355) =< s(352)
+s(356) =< aux(135)
+s(354) =< aux(135)
+s(357) =< aux(136)
+s(357) =< aux(134)
+s(358) =< aux(134)
+s(359) =< aux(134)+1
+s(360) =< s(357)*2
+s(354) =< s(357)+aux(136)
+s(361) =< s(360)+aux(134)
+s(361) =< s(354)*s(358)
+s(362) =< s(360)+aux(134)
+s(362) =< s(354)*aux(134)
+s(363) =< s(354)*s(359)
+s(364) =< s(361)
+s(356) =< s(362)+aux(133)
+s(356) =< s(361)
+s(365) =< s(361)
+s(364) =< s(356)*s(358)
+s(366) =< s(356)*aux(134)
+s(365) =< s(356)*aux(134)
+s(367) =< s(364)
+s(368) =< s(365)
+s(369) =< s(366)*aux(134)
+s(370) =< aux(134)
+s(371) =< aux(135)
+s(370) =< aux(135)
+s(372) =< aux(136)
+s(372) =< s(357)
+s(373) =< s(372)*2
+s(370) =< s(372)+aux(136)
+s(374) =< s(373)+aux(134)
+s(374) =< s(370)*s(358)
+s(375) =< s(373)+aux(134)
+s(375) =< s(370)*aux(134)
+s(376) =< s(370)*s(359)
+s(377) =< s(374)
+s(371) =< s(375)+aux(133)
+s(371) =< s(374)
+s(378) =< s(374)
+s(377) =< s(371)*s(358)
+s(379) =< s(371)*aux(134)
+s(378) =< s(371)*aux(134)
+s(380) =< s(377)
+s(381) =< s(378)
+s(382) =< s(379)*aux(134)
+s(383) =< aux(134)
+s(383) =< aux(135)
+s(383) =< aux(136)
+s(384) =< s(383)
+s(385) =< aux(135)
+s(390) =< aux(129)
+s(390) =< aux(131)
+s(406) =< aux(131)
+s(407) =< aux(131)
+s(406) =< aux(132)
+s(406) =< aux(134)
+s(408) =< aux(134)
+s(409) =< s(406)
+s(410) =< aux(132)
+s(408) =< aux(132)
+s(413) =< aux(131)+1
+s(414) =< aux(131)*2
+s(408) =< aux(131)+aux(136)
+s(415) =< s(414)+aux(134)
+s(415) =< s(408)*s(358)
+s(416) =< s(414)+aux(134)
+s(416) =< s(408)*aux(134)
+s(417) =< s(408)*s(413)
+s(418) =< s(415)+aux(129)
+s(410) =< s(416)+aux(130)
+s(410) =< s(415)+aux(129)
+s(419) =< s(415)+aux(129)
+s(418) =< s(410)*s(358)
+s(420) =< s(410)*aux(131)
+s(419) =< s(410)*aux(131)
+s(421) =< s(418)
+s(422) =< s(419)
+s(423) =< s(420)*aux(134)
+s(439) =< aux(132)
+s(393) =< s(390)
+s(468) =< aux(131)
+s(468) =< aux(132)
+s(467) =< aux(134)
+s(470) =< s(468)
+s(472) =< aux(132)
+s(467) =< aux(132)
+s(467) =< aux(131)+aux(134)
+s(477) =< s(414)+aux(134)
+s(477) =< s(467)*s(358)
+s(478) =< s(414)+aux(134)
+s(478) =< s(467)*aux(134)
+s(479) =< s(467)*s(413)
+s(480) =< s(477)+aux(129)
+s(472) =< s(478)+aux(130)
+s(472) =< s(477)+aux(129)
+s(481) =< s(477)+aux(129)
+s(480) =< s(472)*s(358)
+s(482) =< s(472)*aux(131)
+s(481) =< s(472)*aux(131)
+s(483) =< s(480)
+s(484) =< s(481)
+s(485) =< s(482)*aux(134)
+
+  with precondition: [V1=2,V>=0,V5>=0] 
+
+* Chain [35]: 5*s(709)+5
+  Such that:aux(137) =< V1
+s(709) =< aux(137)
+
+  with precondition: [V=0,V1>=0] 
+
+
+Closed-form bounds of start(V1,V,V5): 
+-------------------------------------
+* Chain [39] with precondition: [V1>=0,V>=0] 
+    - Upper bound: 46*V1+50*V+16+V*V1+ (V1+2*V)* ((V1+V)* (5*V))+ (23*V1+23*V)+ (5*V1+5*V)*V+ (15*V1+15*V)* (V1+2*V)+ (44*V1+88*V)+nat(-V1+V)*25+ (25*V1+25*V) 
+    - Complexity: n^3 
+* Chain [38] with precondition: [V1=1,V>=0,V5>=0] 
+    - Upper bound: 42*V+17+ (2*V+V5)* ((V+V5)* (5*V))+34*V5+ (26*V+26*V5)+ (5*V+5*V5)*V+ (15*V+15*V5)* (2*V+V5)+ (88*V+44*V5)+ (25*V+25*V5)+nat(V-V5)*25 
+    - Complexity: n^3 
+* Chain [37] with precondition: [V1=1,V5=0,V>=1] 
+    - Upper bound: 9 
+    - Complexity: constant 
+* Chain [36] with precondition: [V1=2,V>=0,V5>=0] 
+    - Upper bound: 191*V+22+12*V*V+310*V5+7*V5*V+8*V5*V5+8*V5*V5* (2*V5)+24*V5* (2*V5)+ (V+2*V5)* ((V+V5)* (10*V5))+144*V5+ (152*V+152*V5)+ (10*V+10*V5)*V5+ (30*V+30*V5)* (V+2*V5)+ (88*V+176*V5)+40*V5 
+    - Complexity: n^3 
+* Chain [35] with precondition: [V=0,V1>=0] 
+    - Upper bound: 5*V1+5 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V,V5): max([max([5*V1,4]),42*V+11+max([8*V+max([46*V1+V*V1+ (V1+2*V)* ((V1+V)* (5*V))+ (23*V1+23*V)+ (5*V1+5*V)*V+ (15*V1+15*V)* (V1+2*V)+ (44*V1+88*V)+nat(-V1+V)*25+ (25*V1+25*V),141*V+6+12*V*V+nat(V5)*310+nat(V5)*7*V+nat(V5)*8*nat(V5)+nat(V5)*8*nat(V5)*nat(2*V5)+nat(V5)*24*nat(2*V5)+nat(V5)*10*nat(V+V5)*nat(V+2*V5)+nat(2*V5)*72+nat(V+V5)*152+nat(V+V5)*10*nat(V5)+nat(V+V5)*30*nat(V+2*V5)+nat(V+2*V5)*88+nat(V5/2)*80]),5*V*nat(V+V5)*nat(2*V+V5)+1+nat(V5)*34+nat(V+V5)*26+nat(V+V5)*5*V+nat(V+V5)*15*nat(2*V+V5)+nat(2*V+V5)*44+nat(V/2+V5/2)*50+nat(V-V5)*25])])+5 
+Asymptotic class: n^3 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 40 ms.
+* Invariants computed in 70 ms.
+   - Backward Invariants 36 ms.
+   - Transitive Invariants 7 ms.
+* Refinement performed in 161 ms.
+* Termination proved in 11 ms.
+* Upper bounds computed in 1920 ms.
+   - Equation cost structures 1454 ms.
+   - Phase cost structures 92 ms.
+   - Chain cost structures 116 ms.
+   - Solving cost expressions 108 ms.
+* Total analysis performed in 2243 ms.
+

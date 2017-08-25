@@ -1,0 +1,331 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [m9/2]
+1. non_recursive : [n0/2]
+2. non_recursive : [n1/2]
+3. recursive : [m0/2,m1/4,n4/4]
+4. recursive : [m2/2,m3/4,n3/4]
+5. recursive : [m4/3,m5/5,n2/5]
+6. non_recursive : [m8/0]
+7. non_recursive : [m7/2]
+8. non_recursive : [m6/2]
+9. non_recursive : [multiply/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into m0/2
+4. SCC is partially evaluated into m2/2
+5. SCC is partially evaluated into m4/3
+6. SCC is completely evaluated into other SCCs
+7. SCC is completely evaluated into other SCCs
+8. SCC is completely evaluated into other SCCs
+9. SCC is partially evaluated into multiply/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/2 
+* CE 8 is refined into CE [9] 
+* CE 7 is refined into CE [10] 
+
+
+#### Refined cost equations m0/2 
+* CE 9: m0(A,B) = 27+ m0(A,C)
+     [A>=C,C>=1,C=B+1] 
+* CE 10: m0(A,B) = 3
+     [A>=B,B>=0,A>=1] 
+
+### Cost equations --> "Loop" of m0/2 
+* CEs [10] --> Loop 8 
+* CEs [9] --> Loop 9 
+
+#### Loops of m0/2 
+* Loop 8: m0(A,B) [A>=B,B>=0,A>=1] 
+* Loop 9: m0(A,B)->  m0(A,B')
+                  [A>=B',B'>=1,B'=B+1] 
+
+### Ranking functions of CR m0(A,B) 
+* RF of phase [9]: [A-B]
+
+#### Partial ranking functions of CR m0(A,B) 
+* Partial RF of phase [9]:
+  - RF of loop [9:1]:
+    A-B
+
+
+### Resulting Chains:m0(A,B) 
+* [[9],8]
+* [8]
+
+
+### Specialization of cost equations m2/2 
+* CE 6 is refined into CE [11,12] 
+* CE 5 is refined into CE [13] 
+
+
+#### Refined cost equations m2/2 
+* CE 11: m2(A,B) = 7+ m2(A,C)+ m0(A,D):[[9],8]
+     [A>=C,C>=1,C=B+1,D=0] 
+* CE 12: m2(A,B) = 7+ m2(A,C)+ m0(A,D):[8]
+     [A>=C,C>=1,C=B+1,D=0] 
+* CE 13: m2(A,B) = 3
+     [B>=0] 
+
+### Cost equations --> "Loop" of m2/2 
+* CEs [13] --> Loop 10 
+* CEs [12] --> Loop 11 
+* CEs [11] --> Loop 12 
+
+#### Loops of m2/2 
+* Loop 10: m2(A,B) [B>=0] 
+* Loop 11: m2(A,B)->  m2(A,B')
+                  [A>=B',B'>=1,B'=B+1] 
+* Loop 12: m2(A,B)->  m2(A,B')
+                  [A>=B',B'>=1,B'=B+1] 
+
+### Ranking functions of CR m2(A,B) 
+* RF of phase [11,12]: [A-B]
+
+#### Partial ranking functions of CR m2(A,B) 
+* Partial RF of phase [11,12]:
+  - RF of loop [11:1,12:1]:
+    A-B
+
+
+### Resulting Chains:m2(A,B) 
+* [[11,12],10]
+* [10]
+
+
+### Specialization of cost equations m4/3 
+* CE 4 is refined into CE [14,15] 
+* CE 3 is refined into CE [16] 
+
+
+#### Refined cost equations m4/3 
+* CE 14: m4(A,B,C) = 7+ m4(A,B,D)+ m2(A,E):[[11,12],10]
+     [B>=D,D>=1,A>=1,D=C+1,E=0] 
+* CE 15: m4(A,B,C) = 7+ m4(A,B,D)+ m2(A,E):[10]
+     [B>=D,D>=1,D=C+1,E=0] 
+* CE 16: m4(A,B,C) = 3
+     [C>=0] 
+
+### Cost equations --> "Loop" of m4/3 
+* CEs [16] --> Loop 13 
+* CEs [15] --> Loop 14 
+* CEs [14] --> Loop 15 
+
+#### Loops of m4/3 
+* Loop 13: m4(A,B,C) [C>=0] 
+* Loop 14: m4(A,B,C)->  m4(A,B,C')
+                  [B>=C',C'>=1,C'=C+1] 
+* Loop 15: m4(A,B,C)->  m4(A,B,C')
+                  [B>=C',C'>=1,A>=1,C'=C+1] 
+
+### Ranking functions of CR m4(A,B,C) 
+* RF of phase [14,15]: [B-C]
+
+#### Partial ranking functions of CR m4(A,B,C) 
+* Partial RF of phase [14,15]:
+  - RF of loop [14:1,15:1]:
+    B-C
+
+
+### Resulting Chains:m4(A,B,C) 
+* [[14,15],13]
+* [13]
+
+
+### Specialization of cost equations multiply/2 
+* CE 2 is refined into CE [17,18] 
+
+
+#### Refined cost equations multiply/2 
+* CE 17: multiply(A,B) = 14+ m4(A,B,C):[[14,15],13]
+     [B>=1,C=0] 
+* CE 18: multiply(A,B) = 14+ m4(A,B,C):[13]
+     [C=0] 
+
+### Cost equations --> "Loop" of multiply/2 
+* CEs [17] --> Loop 16 
+* CEs [18] --> Loop 17 
+
+#### Loops of multiply/2 
+* Loop 16: multiply(A,B) [B>=1] 
+* Loop 17: multiply(A,B) [] 
+
+### Ranking functions of CR multiply(A,B) 
+
+#### Partial ranking functions of CR multiply(A,B) 
+
+
+### Resulting Chains:multiply(A,B) 
+* [17]
+* [16]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [9] 
+
+ * loop 9:m0(A,B) -> [m0(A',B')] 
+27
+#### Cost of phase [9]:m0(A,B) -> [m0(A',B')] 
+27*it(9)+0
+  Such that:it(9) =< A-B
+it(9) =< A-B-A'+B'
+it(9) >= A-B-A'+B'
+
+#### Cost of chains of m0(A,B):
+* Chain [[9],8]: 27*it(9)+3
+  Such that:it(9) =< A-B
+it(9) >= 1
+
+  with precondition: [B>=0,A>=B+1] 
+
+* Chain [8]: 3
+  with precondition: [A>=1,B>=0,A>=B] 
+
+
+#### Cost of loops [11,12] 
+
+ * loop 11:m2(A,B) -> [m2(A',B')] 
+10
+ * loop 12:m2(A,B) -> [m2(A',B')] 
+27*s(2)+10
+  Such that:s(2) =< A
+s(2) >= 1
+
+#### Cost of phase [11,12]:m2(A,B) -> [m2(A',B')] 
+10*it(11)+10*it(12)+27*s(3)+0
+  Such that:aux(2) =< A
+it(11)+it(12) =< A-B
+it(11)+it(12) =< A-B-A'+B'
+s(3) =< it(12)*aux(2)
+aux(3) >= A-B-A'+B'
+aux(1)+it(11) >= aux(3)
+it(11)+it(12) >= aux(3)
+s(3) >= aux(1)
+
+#### Cost of chains of m2(A,B):
+* Chain [[11,12],10]: 10*it(11)+10*it(12)+27*s(3)+3
+  Such that:aux(2) =< A
+it(12)+it(11) =< A-B
+s(3) =< it(12)*aux(2)
+aux(3) >= 1
+aux(1)+it(11) >= aux(3)
+it(11)+it(12) >= aux(3)
+s(3) >= aux(1)
+
+  with precondition: [B>=0,A>=B+1] 
+
+* Chain [10]: 3
+  with precondition: [B>=0] 
+
+
+#### Cost of loops [14,15] 
+
+ * loop 14:m4(A,B,C) -> [m4(A',B',C')] 
+10
+ * loop 15:m4(A,B,C) -> [m4(A',B',C')] 
+10*s(12)+10*s(13)+27*s(15)+10
+  Such that:s(10) =< A'
+s(12)+s(13) =< s(10)
+s(15) =< s(12)*s(10)
+s(11) >= 1
+s(13)+s(14) >= s(11)
+s(12)+s(13) >= s(11)
+s(15) >= s(14)
+
+#### Cost of phase [14,15]:m4(A,B,C) -> [m4(A',B',C')] 
+10*it(14)+10*it(15)+10*s(16)+10*s(17)+27*s(18)+0
+  Such that:s(10) =< A
+it(14)+it(15) =< B-C
+it(14)+it(15) =< B-C-B'+C'
+aux(6) =< s(10)
+s(21) =< it(15)*aux(6)
+s(16)+s(17) =< s(21)
+s(18) =< s(16)*s(10)
+aux(7) >= B-C-B'+C'
+aux(5)+it(14) >= aux(7)
+it(14)+it(15) >= aux(7)
+aux(5) >= aux(5)
+s(17)+s(19) >= aux(5)
+s(16)+s(17) >= aux(5)
+s(18) >= s(19)
+
+#### Cost of chains of m4(A,B,C):
+* Chain [[14,15],13]: 10*it(14)+10*it(15)+10*s(16)+10*s(17)+27*s(18)+3
+  Such that:s(10) =< A
+it(15)+it(14) =< B-C
+aux(6) =< s(10)
+s(21) =< it(15)*aux(6)
+s(16)+s(17) =< s(21)
+s(18) =< s(16)*s(10)
+aux(7) >= 1
+aux(5)+it(14) >= aux(7)
+it(14)+it(15) >= aux(7)
+aux(5) >= aux(5)
+s(17)+s(19) >= aux(5)
+s(16)+s(17) >= aux(5)
+s(18) >= s(19)
+
+  with precondition: [C>=0,B>=C+1] 
+
+* Chain [13]: 3
+  with precondition: [C>=0] 
+
+
+#### Cost of chains of multiply(A,B):
+* Chain [17]: 17
+  with precondition: [] 
+
+* Chain [16]: 10*s(23)+10*s(24)+10*s(29)+10*s(30)+27*s(32)+17
+  Such that:s(24)+s(23) =< B
+s(25) >= 1
+s(24)+s(26) >= s(25)
+s(23)+s(24) >= s(25)
+s(26) >= s(26)
+s(30)+s(31) >= s(26)
+s(29)+s(30) >= s(26)
+s(32) >= s(31)
+
+  with precondition: [B>=1] 
+
+
+Closed-form bounds of multiply(A,B): 
+-------------------------------------
+* Chain [17] with precondition: [] 
+    - Lower bound: 17 
+    - Complexity: constant
+ * Chain [16] with precondition: [B>=1] 
+    - Lower bound: 27 
+    - Complexity: constant
+ 
+### Partitioned lower bound of multiply(A,B): 
+* 17 
+ if []
+Possible lower bounds : [17]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 45 ms.
+* Invariants computed in 55 ms.
+   - Backward Invariants 18 ms.
+   - Transitive Invariants 15 ms.
+* Refinement performed in 71 ms.
+* Termination proved in 21 ms.
+* Upper bounds computed in 187 ms.
+   - Equation cost structures 45 ms.
+   - Phase cost structures 121 ms.
+   - Chain cost structures 37 ms.
+   - Solving cost expressions 7 ms.
+* Total analysis performed in 437 ms.
+

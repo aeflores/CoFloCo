@@ -1,0 +1,680 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [amor/atva/Loops_foo()V/0]
+1. recursive : [12_loop/2]
+2. recursive : [5_loop/2]
+3. recursive : [1_loop/3]
+4. non_recursive : [amor/atva/Loops_infinity(I)V/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into 12_loop/2
+2. SCC is partially evaluated into 5_loop/2
+3. SCC is partially evaluated into 1_loop/3
+4. SCC is partially evaluated into amor/atva/Loops_infinity(I)V/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations 12_loop/2 
+* CE 11 is refined into CE [12] 
+* CE 10 is refined into CE [13] 
+
+
+#### Refined cost equations 12_loop/2 
+* CE 12: 12_loop(A,B) = 0
+     [B>=A,A>=1] 
+* CE 13: 12_loop(A,B) = 1+ 12_loop(A,C)
+     [A>=B+1,B>=0,B+1=C] 
+
+### Cost equations --> "Loop" of 12_loop/2 
+* CEs [13] --> Loop 11 
+* CEs [12] --> Loop 12 
+
+#### Loops of 12_loop/2 
+* Loop 11: 12_loop(A,B)->  12_loop(A,B')
+                  [A>=B+1,B>=0,B+1=B'] 
+* Loop 12: 12_loop(A,B) [B>=A,A>=1] 
+
+### Ranking functions of CR 12_loop(A,B) 
+* RF of phase [11]: [A-B]
+
+#### Partial ranking functions of CR 12_loop(A,B) 
+* Partial RF of phase [11]:
+  - RF of loop [11:1]:
+    A-B
+
+
+### Resulting Chains:12_loop(A,B) 
+* [[11],12]
+
+
+### Specialization of cost equations 5_loop/2 
+* CE 8 is refined into CE [14] 
+* CE 9 is refined into CE [15] 
+* CE 7 is refined into CE [16] 
+
+
+#### Refined cost equations 5_loop/2 
+* CE 14: 5_loop(A,B) = 0
+     [A>=B+1,B>=0] 
+* CE 15: 5_loop(A,A) = 0
+     [A>=0] 
+* CE 16: 5_loop(A,B) = 0+ 5_loop(A,C)
+     [A>=B+1,B>=0,B+1=C] 
+
+### Cost equations --> "Loop" of 5_loop/2 
+* CEs [16] --> Loop 13 
+* CEs [14] --> Loop 14 
+* CEs [15] --> Loop 15 
+
+#### Loops of 5_loop/2 
+* Loop 13: 5_loop(A,B)->  5_loop(A,B')
+                  [A>=B+1,B>=0,B+1=B'] 
+* Loop 14: 5_loop(A,B) [A>=B+1,B>=0] 
+* Loop 15: 5_loop(A,A) [A>=0] 
+
+### Ranking functions of CR 5_loop(A,B) 
+* RF of phase [13]: [A-B]
+
+#### Partial ranking functions of CR 5_loop(A,B) 
+* Partial RF of phase [13]:
+  - RF of loop [13:1]:
+    A-B
+
+
+### Resulting Chains:5_loop(A,B) 
+* [[13],15]
+* [[13],14]
+* [15]
+* [14]
+
+
+### Specialization of cost equations 1_loop/3 
+* CE 6 is refined into CE [17] 
+* CE 5 is refined into CE [18,19,20] 
+* CE 4 is refined into CE [21,22,23,24] 
+* CE 3 is refined into CE [25,26,27,28] 
+
+
+#### Refined cost equations 1_loop/3 
+* CE 17: 1_loop(A,B,C) = 0
+     [C>=0,B>=0,0>=A+1] 
+* CE 18: 1_loop(A,B,C) = 0+ 5_loop(A,D):[[13],15]+ 12_loop(E,F):[[11],12]+ 1_loop(G,E,H)
+     [H>=E,A>=E,C>=B,E>=1,B>=0,E+G=A,F=0,D=0] 
+* CE 19: 1_loop(A,B,C) = 0+ 5_loop(A,D):[[13],14]+ 12_loop(E,F):[[11],12]+ 1_loop(G,E,H)
+     [H>=E,A>=E,C>=B,E>=1,A>=2,B>=0,E+G=A,F=0,D=0] 
+* CE 20: 1_loop(A,B,C) = 0+ 5_loop(A,D):[14]+ 12_loop(E,F):[[11],12]+ 1_loop(G,E,H)
+     [H>=E,A>=E,C>=B,E>=1,B>=0,E+G=A,F=0,D=0] 
+* CE 21: 1_loop(A,B,C) = 0+ 5_loop(A,D):[[13],15]+ 1_loop(E,F,C)
+     [F>=A+1,C>=B,A>=1,B>=0,A=E+F,D=0] 
+* CE 22: 1_loop(A,B,C) = 0+ 5_loop(A,D):[[13],14]+ 1_loop(E,F,C)
+     [F>=A+1,C>=B,A>=2,B>=0,A=E+F,D=0] 
+* CE 23: 1_loop(A,B,C) = 0+ 5_loop(D,E):[15]+ 1_loop(F,G,C)
+     [C>=B,G>=1,B>=0,F+G=0,E=0,D=0,A=0] 
+* CE 24: 1_loop(A,B,C) = 0+ 5_loop(A,D):[14]+ 1_loop(E,F,C)
+     [F>=A+1,C>=B,A>=1,B>=0,A=E+F,D=0] 
+* CE 25: 1_loop(A,B,C) = 0+ 5_loop(A,D):[[13],15]+ 1_loop(A,E,C)
+     [C>=B,A>=1,B>=0,E=0,D=0] 
+* CE 26: 1_loop(A,B,C) = 0+ 5_loop(A,D):[[13],14]+ 1_loop(A,E,C)
+     [C>=B,A>=2,B>=0,E=0,D=0] 
+* CE 27: 1_loop(A,B,C) = 0+ 5_loop(D,E):[15]+ 1_loop(F,G,C)
+     [C>=B,B>=0,G=0,F=0,E=0,D=0,A=0] 
+* CE 28: 1_loop(A,B,C) = 0+ 5_loop(A,D):[14]+ 1_loop(A,E,C)
+     [C>=B,A>=1,B>=0,E=0,D=0] 
+
+### Cost equations --> "Loop" of 1_loop/3 
+* CEs [20] --> Loop 16 
+* CEs [18] --> Loop 17 
+* CEs [19] --> Loop 18 
+* CEs [22] --> Loop 19 
+* CEs [24] --> Loop 20 
+* CEs [21] --> Loop 21 
+* CEs [26] --> Loop 22 
+* CEs [28] --> Loop 23 
+* CEs [25] --> Loop 24 
+* CEs [23] --> Loop 25 
+* CEs [27] --> Loop 26 
+* CEs [17] --> Loop 27 
+
+#### Loops of 1_loop/3 
+* Loop 16: 1_loop(A,B,C)->  1_loop(A',B',C')
+                  [C'>=B',A>=B',C>=B,B'>=1,B>=0,A'+B'=A] 
+* Loop 17: 1_loop(A,B,C)->  1_loop(A',B',C')
+                  [C'>=B',A>=B',C>=B,B'>=1,B>=0,A'+B'=A] 
+* Loop 18: 1_loop(A,B,C)->  1_loop(A',B',C')
+                  [C'>=B',A>=B',C>=B,B'>=1,B>=0,A>=2,A'+B'=A] 
+* Loop 19: 1_loop(A,B,C)->  1_loop(A',B',C)
+                  [C>=B,B'>=A+1,B>=0,A>=2,A=A'+B'] 
+* Loop 20: 1_loop(A,B,C)->  1_loop(A',B',C)
+                  [C>=B,B'>=A+1,B>=0,A>=1,A=A'+B'] 
+* Loop 21: 1_loop(A,B,C)->  1_loop(A',B',C)
+                  [C>=B,B'>=A+1,B>=0,A>=1,A=A'+B'] 
+* Loop 22: 1_loop(A,B,C)->  1_loop(A,B',C)
+                  [C>=B,B>=0,A>=2,B'=0] 
+* Loop 23: 1_loop(A,B,C)->  1_loop(A,B',C)
+                  [C>=B,B>=0,A>=1,B'=0] 
+* Loop 24: 1_loop(A,B,C)->  1_loop(A,B',C)
+                  [C>=B,B>=0,A>=1,B'=0] 
+* Loop 25: 1_loop(A,B,C)->  1_loop(A',B',C)
+                  [C>=B,B'>=1,B>=0,A'+B'=0,A=0] 
+* Loop 26: 1_loop(A,B,C)->  1_loop(A',B',C)
+                  [C>=B,B>=0,B'=0,A'=0,A=0] 
+* Loop 27: 1_loop(A,B,C) [C>=0,B>=0,0>=A+1] 
+
+### Ranking functions of CR 1_loop(A,B,C) 
+
+#### Partial ranking functions of CR 1_loop(A,B,C) 
+* Partial RF of phase [16,17,18,22,23,24]:
+  - RF of loop [16:1,17:1]:
+    A
+  - RF of loop [18:1]:
+    A-1
+
+
+### Resulting Chains:1_loop(A,B,C) 
+* [[26]]...
+* [[26],25,27]
+* [[16,17,18,22,23,24]]...
+* [[16,17,18,22,23,24],[26]]...
+* [[16,17,18,22,23,24],[26],25,27]
+* [[16,17,18,22,23,24],25,27]
+* [[16,17,18,22,23,24],21,27]
+* [[16,17,18,22,23,24],20,27]
+* [[16,17,18,22,23,24],19,27]
+* [27]
+* [25,27]
+* [21,27]
+* [20,27]
+* [19,27]
+
+
+### Specialization of cost equations amor/atva/Loops_infinity(I)V/1 
+* CE 2 is refined into CE [29,30,31,32,33,34,35,36,37,38,39,40,41,42] 
+
+
+#### Refined cost equations amor/atva/Loops_infinity(I)V/1 
+* CE 29: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(B,C,D):[[26]]
+     [D=0,C=0,B=0,A=0] 
+* CE 30: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(B,C,D):[[26],25,27]
+     [D=0,C=0,B=0,A=0] 
+* CE 31: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[[16,17,18,22,23,24]]
+     [A>=1,C=0,B=0] 
+* CE 32: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[[16,17,18,22,23,24],[26]]
+     [A>=1,C=0,B=0] 
+* CE 33: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[[16,17,18,22,23,24],[26],25,27]
+     [A>=1,C=0,B=0] 
+* CE 34: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[[16,17,18,22,23,24],25,27]
+     [A>=1,C=0,B=0] 
+* CE 35: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[[16,17,18,22,23,24],21,27]
+     [A>=1,C=0,B=0] 
+* CE 36: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[[16,17,18,22,23,24],20,27]
+     [A>=1,C=0,B=0] 
+* CE 37: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[[16,17,18,22,23,24],19,27]
+     [A>=2,C=0,B=0] 
+* CE 38: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[27]
+     [0>=A+1,C=0,B=0] 
+* CE 39: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(B,C,D):[25,27]
+     [D=0,C=0,B=0,A=0] 
+* CE 40: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[21,27]
+     [A>=1,C=0,B=0] 
+* CE 41: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[20,27]
+     [A>=1,C=0,B=0] 
+* CE 42: amor/atva/Loops_infinity(I)V(A) = 0+ 1_loop(A,B,C):[19,27]
+     [A>=2,C=0,B=0] 
+
+### Cost equations --> "Loop" of amor/atva/Loops_infinity(I)V/1 
+* CEs [42] --> Loop 28 
+* CEs [37] --> Loop 29 
+* CEs [41] --> Loop 30 
+* CEs [40] --> Loop 31 
+* CEs [36] --> Loop 32 
+* CEs [35] --> Loop 33 
+* CEs [34] --> Loop 34 
+* CEs [33] --> Loop 35 
+* CEs [38] --> Loop 36 
+* CEs [39] --> Loop 37 
+* CEs [30] --> Loop 38 
+* CEs [32] --> Loop 39 
+* CEs [31] --> Loop 40 
+* CEs [29] --> Loop 41 
+
+#### Loops of amor/atva/Loops_infinity(I)V/1 
+* Loop 28: amor/atva/Loops_infinity(I)V(A) [A>=2] 
+* Loop 29: amor/atva/Loops_infinity(I)V(A) [A>=2] 
+* Loop 30: amor/atva/Loops_infinity(I)V(A) [A>=1] 
+* Loop 31: amor/atva/Loops_infinity(I)V(A) [A>=1] 
+* Loop 32: amor/atva/Loops_infinity(I)V(A) [A>=1] 
+* Loop 33: amor/atva/Loops_infinity(I)V(A) [A>=1] 
+* Loop 34: amor/atva/Loops_infinity(I)V(A) [A>=1] 
+* Loop 35: amor/atva/Loops_infinity(I)V(A) [A>=1] 
+* Loop 36: amor/atva/Loops_infinity(I)V(A) [0>=A+1] 
+* Loop 37: amor/atva/Loops_infinity(I)V(A) [A=0] 
+* Loop 38: amor/atva/Loops_infinity(I)V(A) [A=0] 
+* Loop 39: amor/atva/Loops_infinity(I)V(A) [A>=1] 
+* Loop 40: amor/atva/Loops_infinity(I)V(A) [A>=1] 
+* Loop 41: amor/atva/Loops_infinity(I)V(A) [A=0] 
+
+### Ranking functions of CR amor/atva/Loops_infinity(I)V(A) 
+
+#### Partial ranking functions of CR amor/atva/Loops_infinity(I)V(A) 
+
+
+### Resulting Chains:amor/atva/Loops_infinity(I)V(A) 
+* [41]...
+* [40]...
+* [39]...
+* [38]
+* [37]
+* [36]
+* [35]
+* [34]
+* [33]
+* [32]
+* [31]
+* [30]
+* [29]
+* [28]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [11] 
+
+ * loop 11:12_loop(A,B) -> [12_loop(A',B')] 
+1
+#### Cost of phase [11]:12_loop(A,B) -> [12_loop(A',B')] 
+1*it(11)+0
+  Such that:it(11) =< A-B
+it(11) =< A-B-A'+B'
+it(11) >= A-B-A'+B'
+
+#### Cost of chains of 12_loop(A,B):
+* Chain [[11],12]: 1*it(11)+0
+  Such that:it(11) =< A-B
+it(11) >= A-B
+
+  with precondition: [B>=0,A>=B+1] 
+
+
+#### Cost of loops [13] 
+
+ * loop 13:5_loop(A,B) -> [5_loop(A',B')] 
+0
+#### Cost of phase [13]:5_loop(A,B) -> [5_loop(A',B')] 
+0
+#### Cost of phase [13]:5_loop(A,B) -> [5_loop(A',B')] 
+0
+#### Cost of chains of 5_loop(A,B):
+* Chain [[13],15]: 0
+  with precondition: [B>=0,A>=B+1] 
+
+* Chain [[13],14]: 0
+  with precondition: [B>=0,A>=B+2] 
+
+* Chain [15]: 0
+  with precondition: [B=A,B>=0] 
+
+* Chain [14]: 0
+  with precondition: [B>=0,A>=B+1] 
+
+
+#### Cost of loops [26] 
+
+ * loop 26:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+0
+#### Cost of phase [26]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+0
+#### Cost of phase [26]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+0
+#### Cost of loops [16,17,18,22,23,24] 
+
+ * loop 16:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(2)+0
+  Such that:s(2) =< B'
+s(2) >= A-A'
+
+ * loop 17:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(4)+0
+  Such that:s(4) =< B'
+s(4) >= A-A'
+
+ * loop 18:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(6)+0
+  Such that:s(6) =< B'
+s(6) >= A-A'
+
+ * loop 22:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+0
+ * loop 23:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+0
+ * loop 24:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+0
+#### Cost of phase [16,17,18,22,23,24]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(4) =< A
+aux(5) =< A-A'
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+s(7)+s(8)+s(9) >= A-A'
+
+#### Cost of phase [16,17,18,22,23,24]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(4) =< A
+aux(5) =< A-A'
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+s(7)+s(8)+s(9) >= A-A'
+
+#### Cost of phase [16,17,18,22,23,24]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(4) =< A
+aux(5) =< A-A'
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+s(7)+s(8)+s(9) >= A-A'
+
+#### Cost of phase [16,17,18,22,23,24]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(4) =< A
+aux(5) =< A-A'
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+s(7)+s(8)+s(9) >= A-A'
+
+#### Cost of phase [16,17,18,22,23,24]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(4) =< A
+aux(5) =< A-A'
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+s(7)+s(8)+s(9) >= A-A'
+
+#### Cost of phase [16,17,18,22,23,24]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(4) =< A
+aux(5) =< A-A'
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+s(7)+s(8)+s(9) >= A-A'
+
+#### Cost of phase [16,17,18,22,23,24]:1_loop(A,B,C) -> [1_loop(A',B',C')] 
+1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(4) =< A
+aux(5) =< A-A'
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+s(7)+s(8)+s(9) >= A-A'
+
+#### Cost of chains of 1_loop(A,B,C):
+* Chain [[26]]...: 0
+  with precondition: [A=0,C>=B,B>=0] 
+
+* Chain [[26],25,27]: 0
+  with precondition: [A=0,B>=0,C>=B] 
+
+* Chain [[16,17,18,22,23,24]]...: 1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(7) =< A
+s(9) =< aux(7)
+s(8) =< aux(7)
+s(7) =< aux(7)
+
+  with precondition: [A>=1,C>=B,B>=0] 
+
+* Chain [[16,17,18,22,23,24],[26]]...: 1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(8) =< A
+s(9) =< aux(8)
+s(8) =< aux(8)
+s(7) =< aux(8)
+s(9)+s(8)+s(7) >= A
+
+  with precondition: [A>=1,B>=0,C>=B] 
+
+* Chain [[16,17,18,22,23,24],[26],25,27]: 1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(9) =< A
+s(9) =< aux(9)
+s(8) =< aux(9)
+s(7) =< aux(9)
+s(9)+s(8)+s(7) >= A
+
+  with precondition: [A>=1,B>=0,C>=B] 
+
+* Chain [[16,17,18,22,23,24],25,27]: 1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(10) =< A
+s(9) =< aux(10)
+s(8) =< aux(10)
+s(7) =< aux(10)
+s(9)+s(8)+s(7) >= A
+
+  with precondition: [A>=1,B>=0,C>=B] 
+
+* Chain [[16,17,18,22,23,24],21,27]: 1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(5) =< A-1
+aux(4) =< A
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+
+  with precondition: [A>=1,B>=0,C>=B] 
+
+* Chain [[16,17,18,22,23,24],20,27]: 1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(5) =< A-1
+aux(4) =< A
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+
+  with precondition: [A>=1,B>=0,C>=B] 
+
+* Chain [[16,17,18,22,23,24],19,27]: 1*s(7)+1*s(8)+1*s(9)+0
+  Such that:aux(5) =< A-2
+aux(4) =< A
+s(9) =< aux(4)
+s(8) =< aux(4)
+s(7) =< aux(4)
+s(9) =< aux(5)
+s(8) =< aux(5)
+s(7) =< aux(5)
+
+  with precondition: [A>=2,B>=0,C>=B] 
+
+* Chain [27]: 0
+  with precondition: [0>=A+1,B>=0,C>=0] 
+
+* Chain [25,27]: 0
+  with precondition: [A=0,B>=0,C>=B] 
+
+* Chain [21,27]: 0
+  with precondition: [A>=1,B>=0,C>=B] 
+
+* Chain [20,27]: 0
+  with precondition: [A>=1,B>=0,C>=B] 
+
+* Chain [19,27]: 0
+  with precondition: [A>=2,B>=0,C>=B] 
+
+
+#### Cost of chains of amor/atva/Loops_infinity(I)V(A):
+* Chain [41]...: 0
+  with precondition: [A=0] 
+
+* Chain [40]...: 3*s(11)+0
+  Such that:s(10) =< A
+s(11) =< s(10)
+
+  with precondition: [A>=1] 
+
+* Chain [39]...: 1*s(15)+1*s(16)+1*s(17)+0
+  Such that:s(14) =< A
+s(15) =< s(14)
+s(16) =< s(14)
+s(17) =< s(14)
+s(17)+s(16)+s(15) >= A
+
+  with precondition: [A>=1] 
+
+* Chain [38]: 0
+  with precondition: [A=0] 
+
+* Chain [37]: 0
+  with precondition: [A=0] 
+
+* Chain [36]: 0
+  with precondition: [0>=A+1] 
+
+* Chain [35]: 1*s(19)+1*s(20)+1*s(21)+0
+  Such that:s(18) =< A
+s(19) =< s(18)
+s(20) =< s(18)
+s(21) =< s(18)
+s(21)+s(20)+s(19) >= A
+
+  with precondition: [A>=1] 
+
+* Chain [34]: 1*s(23)+1*s(24)+1*s(25)+0
+  Such that:s(22) =< A
+s(23) =< s(22)
+s(24) =< s(22)
+s(25) =< s(22)
+s(25)+s(24)+s(23) >= A
+
+  with precondition: [A>=1] 
+
+* Chain [33]: 3*s(28)+0
+  Such that:s(26) =< A-1
+s(27) =< A
+s(28) =< s(27)
+s(28) =< s(26)
+
+  with precondition: [A>=1] 
+
+* Chain [32]: 3*s(33)+0
+  Such that:s(31) =< A-1
+s(32) =< A
+s(33) =< s(32)
+s(33) =< s(31)
+
+  with precondition: [A>=1] 
+
+* Chain [31]: 0
+  with precondition: [A>=1] 
+
+* Chain [30]: 0
+  with precondition: [A>=1] 
+
+* Chain [29]: 3*s(38)+0
+  Such that:s(36) =< A-2
+s(37) =< A
+s(38) =< s(37)
+s(38) =< s(36)
+
+  with precondition: [A>=2] 
+
+* Chain [28]: 0
+  with precondition: [A>=2] 
+
+
+Closed-form bounds of amor/atva/Loops_infinity(I)V(A): 
+-------------------------------------
+* Chain [41]... with precondition: [A=0] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [40]... with precondition: [A>=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [39]... with precondition: [A>=1] 
+    - Lower bound: A 
+    - Complexity: n
+ * Chain [38] with precondition: [A=0] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [37] with precondition: [A=0] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [36] with precondition: [0>=A+1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [35] with precondition: [A>=1] 
+    - Lower bound: A 
+    - Complexity: n
+ * Chain [34] with precondition: [A>=1] 
+    - Lower bound: A 
+    - Complexity: n
+ * Chain [33] with precondition: [A>=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [32] with precondition: [A>=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [31] with precondition: [A>=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [30] with precondition: [A>=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [29] with precondition: [A>=2] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [28] with precondition: [A>=2] 
+    - Lower bound: 0 
+    - Complexity: constant
+ 
+### Partitioned lower bound of amor/atva/Loops_infinity(I)V(A): 
+* 0 
+ if []
+Possible lower bounds : [0]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 22 ms.
+* Invariants computed in 286 ms.
+   - Backward Invariants 156 ms.
+   - Transitive Invariants 33 ms.
+* Refinement performed in 290 ms.
+* Termination proved in 49 ms.
+* Upper bounds computed in 385 ms.
+   - Equation cost structures 80 ms.
+   - Phase cost structures 170 ms.
+   - Chain cost structures 107 ms.
+   - Solving cost expressions 8 ms.
+* Total analysis performed in 1094 ms.
+

@@ -1,0 +1,133 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/sizechange.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   A RAML implementation of the examples that are given in the paper
+ *   "The Size-Change Principle for Program Termination" by Chin Soon Lee,
+ *   Neil D. Jones, and Amir M. Ben-Amram (POPL'01).  All examples are
+ *   tricky to prove terminating but you can prove termination by using
+ *   the size-change principle.
+ *
+ *   Five of the six given examples have actually a polynomial run time
+ *   (the last example is the Ackermann function) and thus can be analyzed
+ *   in RAML.  Four of the five examples can be analyzed in RAML without
+ *   any changes.  One example needed a small rewrite but I would argue
+ *   that our version is more natural.  The computed bounds are all
+ *   asymptotically tight
+ *)
+
+
+(* Example 1: Accumulation *)
+
+let rec r1 ls a =
+	match ls with
+	| [] -> a
+	| x::xs -> (Raml.tick(1.0); r1 xs (x::a));;
+
+let rev ls =
+	r1 ls [];;
+
+
+(* Example 2: Mutual Recursion *)
+
+(* Note that the paper contains a type error in this example.
+   It says g (a,b,c) = f(a, cons(b,c)) but this doesn't type
+   check neither in RAML nor in OCaml.  So I'm using append
+   instead. *)
+
+let rec append l1 l2 =
+	match l1 with
+	| [] -> l2
+	| x::xs -> (Raml.tick(1.0); x::append xs l2);;
+
+let rec f i x =
+	match i with
+	| [] -> x
+	| y::ys -> (Raml.tick(1.0); g ys x i)
+  and g a b c =
+	(Raml.tick(1.0); f a (append b c));;
+
+
+
+
+(* Example 3: Ackermann function *)
+
+(* RAML can only derive polynomial resource bounds.
+   So the Ackermann function will not work. *)
+
+
+(* Example 4: Permuted Parameters *)
+
+let rec p m n r = match r with
+          | _::r' -> p m r' n
+          | []    -> match n with
+                     | _::n' -> p [] n' m
+                     | []    -> m;;
+
+
+(* Example 5: Permuted and Discarded Parameters *) 
+
+(* The function f2 was originally given in the paper.  It can not be
+   analyzed in RAML. *)
+
+
+let rec f2 x y =
+	match y with
+	| [] -> x
+	| p::ps ->
+		match x with
+		| [] -> (Raml.tick(1.0); f2 y ps)
+		| q::qs -> (Raml.tick(1.0); f2 y qs);;
+
+(* The problem is that the recursion unfolds in a way such that case x =
+nil happens at most once.  RAML cannot infer this information.
+
+However, I found this function a bit constructed.  (Although it is
+impressive that the size-change principle can establish termination.)
+Below is a slightly longer version that I find easier to understand.
+
+The function f2' is semantically equivalent to f2.*)
+  
+
+let rec last l =
+	match l with
+	| [] -> []
+	| x::xs ->
+		(Raml.tick(1.0);
+		let lst = last xs in
+		match lst with
+		| [] -> [x]
+		| y::ys -> lst);;
+
+let rec f2' x y =
+	match y with
+	| [] -> x
+	| p::ps ->
+		match x with
+		| [] -> (Raml.tick(1.0); last y)
+		| b::bs -> (Raml.tick(1.0); f2' y bs);;
+
+
+
+(* Example 6: Late-Starting Descending Parameters*)
+
+let rec g3 c d =
+	match c with
+	| [] -> d
+	| x::xs -> (Raml.tick(1.0); g3 xs (x::d));;
+
+let rec f3 a b =
+	match b with
+	| [] -> (Raml.tick(1.0); g3 a [])
+	| x::xs -> (Raml.tick(1.0); f3 (x::a) xs);;
+
+()

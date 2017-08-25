@@ -1,0 +1,158 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [plus/3]
+1. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into plus/3
+1. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations plus/3 
+* CE 4 is refined into CE [6] 
+* CE 5 is refined into CE [7] 
+* CE 3 is refined into CE [8] 
+
+
+#### Refined cost equations plus/3 
+* CE 6: plus(V1,V,Out) = 1+ plus(W1,V,X1)
+     [W1>=0,V>=0,X1+1=Out,W1+1=V1] 
+* CE 7: plus(V1,V,Out) = 1+ plus(W1,X1,Out)
+     [W1>=0,V>=0,V+1=X1,W1+1=V1] 
+* CE 8: plus(A,B,B) = 1
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of plus/3 
+* CEs [8] --> Loop 5 
+* CEs [6] --> Loop 6 
+* CEs [7] --> Loop 7 
+
+#### Loops of plus/3 
+* Loop 5: plus(A,B,B) [B>=0,A=0] 
+* Loop 6: plus(V1,V,Out)->  plus(V1',V,Out')
+                  [V>=0,V1>=1,Out=Out'+1,V1=V1'+1] 
+* Loop 7: plus(V1,V,Out)->  plus(V1',V',Out)
+                  [V>=0,V1>=1,V+1=V',V1=V1'+1] 
+
+### Ranking functions of CR plus(V1,V,Out) 
+* RF of phase [6,7]: [V1]
+
+#### Partial ranking functions of CR plus(V1,V,Out) 
+* Partial RF of phase [6,7]:
+  - RF of loop [6:1,7:1]:
+    V1
+
+
+### Resulting Chains:plus(V1,V,Out) 
+* [[6,7],5]
+* [5]
+
+
+### Merging Chains  plus/3 into  External patterns of execution 
+* [[5]] --> 1 
+* [[5,[6,7]]] --> 2 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [9,10] 
+
+
+#### Refined cost equations start/2 
+* CE 9: start(V1,V) = 0+ plus(W1,V,V):1
+     [V>=0,W1=0,V1=0] 
+* CE 10: start(V1,V) = 0+ plus(V1,W1,X1):2
+     [X1>=V1,V1>=1,X1=V1+W1,X1=V1+V] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [10] --> Loop 8 
+* CEs [9] --> Loop 9 
+
+#### Loops of start/2 
+* Loop 8: start(V1,V) [V>=0,V1>=1] 
+* Loop 9: start(V1,V) [V>=0,V1=0] 
+
+### Ranking functions of CR start(V1,V) 
+
+#### Partial ranking functions of CR start(V1,V) 
+
+
+### Resulting Chains:start(V1,V) 
+* [9]
+* [8]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[9]] --> 1 
+* [[8]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6,7] 
+
+ * loop 6:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1
+ * loop 7:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+1
+#### Cost of phase [6,7]:plus(V1,V,Out) -> [plus(V1',V',Out')] 
+2*it(6)+0
+  Such that:aux(1) =< V1
+aux(2) =< V1-V1'
+it(6) =< aux(1)
+it(6) =< aux(2)
+
+#### Cost of chains of plus(V1,V,Out):
+* Chain [[6,7],5]: 2*it(6)+1
+  Such that:aux(3) =< V1
+it(6) =< aux(3)
+
+  with precondition: [V+V1=Out,V1>=1,V>=0] 
+
+* Chain [5]: 1
+  with precondition: [V1=0,V=Out,V>=0] 
+
+
+#### Cost of chains of start(V1,V):
+* Chain [9]: 1
+  with precondition: [V1=0,V>=0] 
+
+* Chain [8]: 2*s(2)+1
+  Such that:s(1) =< V1
+s(2) =< s(1)
+
+  with precondition: [V1>=1,V>=0] 
+
+
+Closed-form bounds of start(V1,V): 
+-------------------------------------
+* Chain [9] with precondition: [V1=0,V>=0] 
+    - Upper bound: 1 
+    - Complexity: constant 
+* Chain [8] with precondition: [V1>=1,V>=0] 
+    - Upper bound: 2*V1+1 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V): 2*V1+1 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 3 ms.
+* Invariants computed in 9 ms.
+   - Backward Invariants 3 ms.
+   - Transitive Invariants 3 ms.
+* Refinement performed in 14 ms.
+* Termination proved in 2 ms.
+* Upper bounds computed in 13 ms.
+   - Equation cost structures 5 ms.
+   - Phase cost structures 5 ms.
+   - Chain cost structures 4 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 49 ms.
+

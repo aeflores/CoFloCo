@@ -1,0 +1,223 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [append/3]
+1. non_recursive  : [elem/2]
+2. non_recursive  : [isEmpty/2]
+3. non_recursive  : [left/2]
+4. non_recursive  : [right/2]
+5. recursive  : [if/7,listify/3]
+6. non_recursive  : [toList/2]
+7. non_recursive  : [start/6]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into append/3
+1. SCC is partially evaluated into elem/2
+2. SCC is partially evaluated into isEmpty/2
+3. SCC is partially evaluated into left/2
+4. SCC is partially evaluated into right/2
+5. SCC is partially evaluated into listify/3
+6. SCC is completely evaluated into other SCCs
+7. SCC is partially evaluated into start/6
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations append/3 
+* CE 30 is refined into CE [31] 
+* CE 28 is refined into CE [32] 
+* CE 29 is refined into CE [33] 
+
+
+#### Refined cost equations append/3 
+* CE 31: append(V,V13,Out) = 0
+     [V13>=0,V>=0,Out=0] 
+* CE 32: append(V,V13,Out) = 1
+     [V13>=0,V13+1=Out,V=0] 
+* CE 33: append(V,V13,Out) = 1+ append(W13,V13,X13)
+     [W13>=0,V13>=0,X13+2=Out,W13+2=V] 
+
+### Cost equations --> "Loop" of append/3 
+* CEs [33] --> Loop 19 
+* CEs [31] --> Loop 20 
+* CEs [32] --> Loop 21 
+
+#### Loops of append/3 
+* Loop 19: append(V,V13,Out)->  append(V',V13,Out')
+                  [V'>=0,V13>=0,Out=Out'+2,V'+2=V] 
+* Loop 20: append(V,V13,Out) [V13>=0,V>=0,Out=0] 
+* Loop 21: append(V,V13,Out) [V13>=0,V13+1=Out,V=0] 
+
+### Ranking functions of CR append(V,V13,Out) 
+* RF of phase [19]: [V-1]
+
+#### Partial ranking functions of CR append(V,V13,Out) 
+* Partial RF of phase [19]:
+  - RF of loop [19:1]:
+    V-1
+
+
+### Resulting Chains:append(V,V13,Out) 
+* [[19],21]
+* [[19],20]
+* [21]
+* [20]
+
+
+### Merging Chains  append/3 into  External patterns of execution 
+* [[21]] --> 1 
+* [[20]] --> 2 
+* [[21,[19]]] --> 3 
+* [[20,[19]]] --> 4 
+
+
+### Specialization of cost equations elem/2 
+* CE 26 is refined into CE [34] 
+* CE 27 is refined into CE [35] 
+
+
+#### Refined cost equations elem/2 
+* CE 34: elem(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 35: elem(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of elem/2 
+* CEs [34] --> Loop 22 
+* CEs [35] --> Loop 23 
+
+#### Loops of elem/2 
+* Loop 22: elem(V,Out) [V>=Out+1,Out>=0] 
+* Loop 23: elem(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR elem(V,Out) 
+
+#### Partial ranking functions of CR elem(V,Out) 
+
+
+### Resulting Chains:elem(V,Out) 
+* [23]
+* [22]
+
+
+### Merging Chains  elem/2 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+
+
+### Specialization of cost equations isEmpty/2 
+* CE 18 is refined into CE [36] 
+* CE 19 is refined into CE [37] 
+* CE 17 is refined into CE [38] 
+
+
+#### Refined cost equations isEmpty/2 
+* CE 36: isEmpty(V,Out) = 1
+     [V>=1,Out=1] 
+* CE 37: isEmpty(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 38: isEmpty(V,Out) = 1
+     [Out=2,V=0] 
+
+### Cost equations --> "Loop" of isEmpty/2 
+* CEs [36] --> Loop 24 
+* CEs [37] --> Loop 25 
+* CEs [38] --> Loop 26 
+
+#### Loops of isEmpty/2 
+* Loop 24: isEmpty(V,Out) [V>=1,Out=1] 
+* Loop 25: isEmpty(V,Out) [V>=0,Out=0] 
+* Loop 26: isEmpty(V,Out) [Out=2,V=0] 
+
+### Ranking functions of CR isEmpty(V,Out) 
+
+#### Partial ranking functions of CR isEmpty(V,Out) 
+
+
+### Resulting Chains:isEmpty(V,Out) 
+* [26]
+* [25]
+* [24]
+
+
+### Merging Chains  isEmpty/2 into  External patterns of execution 
+* [[26]] --> 1 
+* [[25]] --> 2 
+* [[24]] --> 3 
+
+
+### Specialization of cost equations left/2 
+* CE 21 is refined into CE [39] 
+* CE 20 is refined into CE [40] 
+* CE 22 is refined into CE [41] 
+
+
+#### Refined cost equations left/2 
+* CE 39: left(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 40: left(V,Out) = 1
+     [Out=0,V=0] 
+* CE 41: left(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of left/2 
+* CEs [39] --> Loop 27 
+* CEs [40,41] --> Loop 28 
+
+#### Loops of left/2 
+* Loop 27: left(V,Out) [V>=Out+1,Out>=0] 
+* Loop 28: left(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR left(V,Out) 
+
+#### Partial ranking functions of CR left(V,Out) 
+
+
+### Resulting Chains:left(V,Out) 
+* [28]
+* [27]
+
+
+### Merging Chains  left/2 into  External patterns of execution 
+* [[28]] --> 1 
+* [[27]] --> 2 
+
+
+### Specialization of cost equations right/2 
+* CE 24 is refined into CE [42] 
+* CE 23 is refined into CE [43] 
+* CE 25 is refined into CE [44] 
+
+
+#### Refined cost equations right/2 
+* CE 42: right(V,Out) = 1
+     [V>=Out+1,Out>=0] 
+* CE 43: right(V,Out) = 1
+     [Out=0,V=0] 
+* CE 44: right(V,Out) = 0
+     [V>=0,Out=0] 
+
+### Cost equations --> "Loop" of right/2 
+* CEs [42] --> Loop 29 
+* CEs [43,44] --> Loop 30 
+
+#### Loops of right/2 
+* Loop 29: right(V,Out) [V>=Out+1,Out>=0] 
+* Loop 30: right(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR right(V,Out) 
+
+#### Partial ranking functions of CR right(V,Out) 
+
+
+### Resulting Chains:right(V,Out) 
+* [30]
+* [29]
+
+
+### Merging Chains  right/2 into  External patterns of execution 
+* [[30]] --> 1 
+* [[29]] --> 2 
+

@@ -1,0 +1,188 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [cond/3]
+1. recursive [non_tail] : [admit/3]
+2. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into cond/3
+1. SCC is partially evaluated into admit/3
+2. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations cond/3 
+* CE 8 is refined into CE [9] 
+* CE 7 is refined into CE [10] 
+
+
+#### Refined cost equations cond/3 
+* CE 9: cond(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 10: cond(A,B,B) = 1
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of cond/3 
+* CEs [9] --> Loop 6 
+* CEs [10] --> Loop 7 
+
+#### Loops of cond/3 
+* Loop 6: cond(V,V1,Out) [V1>=0,V>=0,Out=0] 
+* Loop 7: cond(A,B,B) [B>=0,A=0] 
+
+### Ranking functions of CR cond(V,V1,Out) 
+
+#### Partial ranking functions of CR cond(V,V1,Out) 
+
+
+### Resulting Chains:cond(V,V1,Out) 
+* [7]
+* [6]
+
+
+### Merging Chains  cond/3 into  External patterns of execution 
+* [[7]] --> 1 
+* [[6]] --> 2 
+
+
+### Specialization of cost equations admit/3 
+* CE 4 is refined into CE [11] 
+* CE 6 is refined into CE [12] 
+* CE 5 is refined into CE [13] 
+
+
+#### Refined cost equations admit/3 
+* CE 11: admit(V,V1,Out) = 1
+     [V>=0,Out=0,V1=0] 
+* CE 12: admit(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 13: admit(V,V1,Out) = 1+ admit(W1,X1,Y1)+ cond(Z1,A2,B2):2
+     [Z1+X1+1>=V1,V1>=X1+3,X1>=0,A2>=0,A2+X1=V1+Y1,Z1+X1+1=V+V1,Z1=W1+1,B2=0,Out=0] 
+
+### Cost equations --> "Loop" of admit/3 
+* CEs [13] --> Loop 8 
+* CEs [11,12] --> Loop 9 
+
+#### Loops of admit/3 
+* Loop 8: admit(V,V1,Out)->  admit(V',V1',Out')
+                  [V1+Out'>=V1',V'+V1'+2>=V1,V1>=V1'+3,V1'>=0,V+V1=V'+V1'+2,Out=0] 
+* Loop 9: admit(V,V1,Out) [V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR admit(V,V1,Out) 
+* RF of phase [8]: [V/2+V1/2-1,V1/3-2/3]
+
+#### Partial ranking functions of CR admit(V,V1,Out) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    V/2+V1/2-1
+    V1/3-2/3
+
+
+### Resulting Chains:admit(V,V1,Out) 
+* [[8],9]
+* [9]
+
+
+### Merging Chains  admit/3 into  External patterns of execution 
+* [[9],[9,[8]]] --> 1 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [14] 
+* CE 3 is refined into CE [15,16] 
+
+
+#### Refined cost equations start/2 
+* CE 14: start(V,V1) = 0+ admit(V,V1,W1):1
+     [V1>=0,V>=0,W1=0] 
+* CE 15: start(V,V1) = 0+ cond(W1,V1,V1):1
+     [V1>=0,W1=0,V=0] 
+* CE 16: start(V,V1) = 0+ cond(V,V1,W1):2
+     [V1>=0,V>=0,W1=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [14,15,16] --> Loop 10 
+
+#### Loops of start/2 
+* Loop 10: start(V,V1) [V1>=0,V>=0] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [10]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[10]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of cond(V,V1,Out):
+* Chain [7]: 1
+  with precondition: [V=0,V1=Out,V1>=0] 
+
+* Chain [6]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of loops [8] 
+
+ * loop 8:admit(V,V1,Out) -> [admit(V',V1',Out')] 
+1
+#### Cost of phase [8]:admit(V,V1,Out) -> [admit(V',V1',Out')] 
+1*it(8)+0
+  Such that:it(8) =< V/2+V1/2
+it(8) =< V/2+V1/2-V'/2-V1'/2
+it(8) =< V1/3
+it(8) =< V1/3-V1'/3
+
+#### Cost of chains of admit(V,V1,Out):
+* Chain [[8],9]: 1*it(8)+1
+  Such that:it(8) =< V1/3
+
+  with precondition: [Out=0,V>=0,V1>=3] 
+
+* Chain [9]: 1
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [10]: 1*s(2)+1
+  Such that:s(2) =< V1/3
+
+  with precondition: [V>=0,V1>=0] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [10] with precondition: [V>=0,V1>=0] 
+    - Upper bound: V1/3+1 
+    - Complexity: n 
+
+### Maximum cost of start(V,V1): V1/3+1 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 7 ms.
+   - Backward Invariants 3 ms.
+   - Transitive Invariants 2 ms.
+* Refinement performed in 17 ms.
+* Termination proved in 2 ms.
+* Upper bounds computed in 12 ms.
+   - Equation cost structures 4 ms.
+   - Phase cost structures 3 ms.
+   - Chain cost structures 3 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 53 ms.
+

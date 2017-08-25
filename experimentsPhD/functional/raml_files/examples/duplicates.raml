@@ -1,0 +1,46 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/duplicates.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   Remove duplicates from a list.
+ *)
+
+
+let rec eq l1 l2 =
+	match l1 with
+	| [] ->
+		begin
+		match l2 with
+		| [] -> true
+		| y::ys -> false
+		end
+	| x::xs ->
+		begin
+		match l2 with
+		| [] -> false
+		| y::ys -> (Raml.tick(1.0); ((x:int) = (y:int)) && (eq xs ys))
+		end;;
+
+let rec remove x l =
+	match l with
+	| [] -> []
+	| y::ys ->
+		(Raml.tick(1.0); 
+		if (eq x y) then remove x ys
+		else y::(remove x ys));;
+
+let rec nub l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); x::nub (remove x xs));;
+
+nub [[1];[2];[3];[4];[5];[3];[1];[6];[7];[4];[1];[5];[8];[9];[8];[8];[8]]

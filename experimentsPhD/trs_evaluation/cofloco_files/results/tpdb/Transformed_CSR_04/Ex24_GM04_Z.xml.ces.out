@@ -1,0 +1,163 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [g/2]
+1. non_recursive  : [activate/2]
+2. non_recursive  : [b/1]
+3. recursive  : [f/4]
+4. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into activate/2
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into f/4
+4. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations activate/2 
+* CE 5 is refined into CE [9] 
+* CE 6 is refined into CE [10] 
+
+
+#### Refined cost equations activate/2 
+* CE 9: activate(A,A) = 1
+     [A>=0] 
+* CE 10: activate(A,A) = 2
+     [A>=1] 
+
+### Cost equations --> "Loop" of activate/2 
+* CEs [9,10] --> Loop 5 
+
+#### Loops of activate/2 
+* Loop 5: activate(A,A) [A>=0] 
+
+### Ranking functions of CR activate(V,Out) 
+
+#### Partial ranking functions of CR activate(V,Out) 
+
+
+### Resulting Chains:activate(V,Out) 
+* [5]
+
+
+### Merging Chains  activate/2 into  External patterns of execution 
+* [[5]] --> 1 
+
+
+### Specialization of cost equations f/4 
+* CE 8 is refined into CE [11] 
+* CE 7 is refined into CE [12] 
+
+
+#### Refined cost equations f/4 
+* CE 11: f(V,V1,V2,Out) = 0
+     [V2>=0,V1>=0,V>=0,Out=0] 
+* CE 12: f(V,V1,V2,Out) = 1+ activate(V2,V2):1+ activate(V2,V2):1+ activate(V2,V2):1+ f(V2,V2,V2,Out)
+     [V2>=0,V>=0,V+1=V1] 
+
+### Cost equations --> "Loop" of f/4 
+* CEs [12] --> Loop 6 
+* CEs [11] --> Loop 7 
+
+#### Loops of f/4 
+* Loop 6: f(V,V1,V2,Out)->  f(V2,V2,V2,Out)
+                  [V2>=0,V>=0,V+1=V1] 
+* Loop 7: f(V,V1,V2,Out) [V2>=0,V1>=0,V>=0,Out=0] 
+
+### Ranking functions of CR f(V,V1,V2,Out) 
+
+#### Partial ranking functions of CR f(V,V1,V2,Out) 
+
+
+### Resulting Chains:f(V,V1,V2,Out) 
+* [7]
+* [6,7]
+
+
+### Merging Chains  f/4 into  External patterns of execution 
+* [[7,6],[7]] --> 1 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [13] 
+* CE 3 is refined into CE [14] 
+* CE 4 is refined into CE [15] 
+
+
+#### Refined cost equations start/3 
+* CE 13: start(V,V1,V2) = 1
+     [] 
+* CE 14: start(V,V1,V2) = 0+ activate(V,V):1
+     [V>=0] 
+* CE 15: start(V,V1,V2) = 0+ f(V,V1,V2,W2):1
+     [V2>=0,V1>=0,V>=0,W2=0] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [13,14,15] --> Loop 8 
+
+#### Loops of start/3 
+* Loop 8: start(V,V1,V2) [] 
+
+### Ranking functions of CR start(V,V1,V2) 
+
+#### Partial ranking functions of CR start(V,V1,V2) 
+
+
+### Resulting Chains:start(V,V1,V2) 
+* [8]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[8]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of activate(V,Out):
+* Chain [5]: 2
+  with precondition: [V=Out,V>=0] 
+
+
+#### Cost of chains of f(V,V1,V2,Out):
+* Chain [7]: 0
+  with precondition: [Out=0,V>=0,V1>=0,V2>=0] 
+
+* Chain [6,7]: 7
+  with precondition: [Out=0,V1=V+1,V1>=1,V2>=0] 
+
+
+#### Cost of chains of start(V,V1,V2):
+* Chain [8]: 7
+  with precondition: [] 
+
+
+Closed-form bounds of start(V,V1,V2): 
+-------------------------------------
+* Chain [8] with precondition: [] 
+    - Upper bound: 7 
+    - Complexity: constant 
+
+### Maximum cost of start(V,V1,V2): 7 
+Asymptotic class: constant 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 17 ms.
+* Invariants computed in 13 ms.
+   - Backward Invariants 7 ms.
+   - Transitive Invariants 0 ms.
+* Refinement performed in 40 ms.
+* Termination proved in 1 ms.
+* Upper bounds computed in 20 ms.
+   - Equation cost structures 8 ms.
+   - Phase cost structures 0 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 132 ms.
+

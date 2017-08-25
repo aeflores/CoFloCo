@@ -1,0 +1,635 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [dbl/2]
+1. non_recursive  : [s/2]
+2. recursive [multiple] : [activate/2,dbls/2,from/2,indx/3,sel/3]
+3. non_recursive  : [dbl1/2]
+4. non_recursive  : [quote/2]
+5. non_recursive  : [sel1/3]
+6. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into dbl/2
+1. SCC is completely evaluated into other SCCs
+2. SCC is partially evaluated into activate/2
+3. SCC is partially evaluated into dbl1/2
+4. SCC is partially evaluated into quote/2
+5. SCC is partially evaluated into sel1/3
+6. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations dbl/2 
+* CE 24 is refined into CE [29] 
+* CE 23 is refined into CE [30] 
+
+
+#### Refined cost equations dbl/2 
+* CE 29: dbl(V,Out) = 1
+     [V>=0,V+1=Out] 
+* CE 30: dbl(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of dbl/2 
+* CEs [29] --> Loop 16 
+* CEs [30] --> Loop 17 
+
+#### Loops of dbl/2 
+* Loop 16: dbl(V,Out) [V>=0,V+1=Out] 
+* Loop 17: dbl(V,Out) [Out=0,V=0] 
+
+### Ranking functions of CR dbl(V,Out) 
+
+#### Partial ranking functions of CR dbl(V,Out) 
+
+
+### Resulting Chains:dbl(V,Out) 
+* [17]
+* [16]
+
+
+### Merging Chains  dbl/2 into  External patterns of execution 
+* [[17]] --> 1 
+* [[16]] --> 2 
+
+
+### Specialization of cost equations activate/2 
+* CE 14 is refined into CE [31] 
+* CE 20 is refined into CE [32] 
+* CE 13 is refined into CE [33] 
+* CE 19 is refined into CE [34,35] 
+* CE 18 is refined into CE [36] 
+* CE 16 is refined into CE [37] 
+* CE 17 is refined into CE [38] 
+* CE 15 is refined into CE [39] 
+
+
+#### Refined cost equations activate/2 
+* CE 31: activate(A,A) = 2
+     [A>=1] 
+* CE 32: activate(A,A) = 1
+     [A>=0] 
+* CE 33: activate(V,Out) = 2
+     [V>=2,Out=1] 
+* CE 34: activate(V,Out) = 1+ dbl(W,X):1
+     [X=0,W=0,Out=0,V=1] 
+* CE 35: activate(A,A) = 1+ dbl(B,A):2
+     [A>=1,A=B+1] 
+* CE 36: activate(V,Out) = 2+ activate(W,Out)
+     [V>=W+2,W>=0] 
+* CE 37: activate(V,Out) = 2+ activate(W,X)+ activate(Y,Z)
+     [V>=Y+2,Y>=0,V=W+Y+2,X+Z+3=Out] 
+* CE 38: activate(V,Out) = 2+ activate(W,X)+ activate(W,Y)
+     [W>=0,X+Y+3=Out,W+1=V] 
+* CE 39: activate(V,Out) = 2+ activate(W,X)+ activate(Y,Z)+ activate(A1,B1)+ activate(Y,C1)
+     [V>=Y+A1+2,A1>=0,Y>=0,X+Z+B1+C1+3=Out,V=W+Y+A1+2] 
+
+### Cost equations --> "Loop" of activate/2 
+* CEs [39] --> Loop 18 
+* CEs [37] --> Loop 19 
+* CEs [38] --> Loop 20 
+* CEs [36] --> Loop 21 
+* CEs [31,32,35] --> Loop 22 
+* CEs [33] --> Loop 23 
+* CEs [34] --> Loop 24 
+
+#### Loops of activate/2 
+* Loop 18: activate(V,Out)->  activate(V',Out')  activate(V'2,Out'2)  activate(V'3,Out'3)  activate(V'2,A'4)
+                  [V>=V'2+V'3+2,V'3>=0,V'2>=0,Out=Out'+Out'2+Out'3+A'4+3,V=V'+V'2+V'3+2] 
+* Loop 19: activate(V,Out)->  activate(V',Out')  activate(V'2,Out'2)
+                  [V>=V'+2,V'>=0,Out=Out'+Out'2+3,V'+V'2+2=V] 
+* Loop 20: activate(V,Out)->  activate(V',Out')  activate(V'2,Out'2)
+                  [V>=1,Out=Out'+Out'2+3,V=V'2+1,V=V'+1] 
+* Loop 21: activate(V,Out)->  activate(V',Out)
+                  [V>=V'+2,V'>=0] 
+* Loop 22: activate(A,A) [A>=0] 
+* Loop 23: activate(V,Out) [V>=2,Out=1] 
+* Loop 24: activate(V,Out) [Out=0,V=1] 
+
+### Ranking functions of CR activate(V,Out) 
+* RF of phase [18,19,20,21]: [V]
+
+#### Partial ranking functions of CR activate(V,Out) 
+* Partial RF of phase [18,19,20,21]:
+  - RF of loop [18:1,18:2,18:3,18:4,19:1,19:2,21:1]:
+    V-1
+  - RF of loop [20:1,20:2]:
+    V
+
+
+### Resulting Chains:activate(V,Out) 
+* [24]
+* [23]
+* [22]
+* [multiple([18,19,20,21],[[24],[23],[22]])]
+
+
+### Merging Chains  activate/2 into  External patterns of execution 
+* [[24]] --> 1 
+* [[23],[multiple([18,19,20,21],[[24],[23],[22]])]] --> 2 
+* [[22]] --> 3 
+
+
+### Specialization of cost equations dbl1/2 
+* CE 26 is refined into CE [40] 
+* CE 25 is refined into CE [41] 
+
+
+#### Refined cost equations dbl1/2 
+* CE 40: dbl1(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 41: dbl1(V,Out) = 1
+     [Out=1,V=0] 
+
+### Cost equations --> "Loop" of dbl1/2 
+* CEs [40] --> Loop 25 
+* CEs [41] --> Loop 26 
+
+#### Loops of dbl1/2 
+* Loop 25: dbl1(V,Out) [V>=0,Out=0] 
+* Loop 26: dbl1(V,Out) [Out=1,V=0] 
+
+### Ranking functions of CR dbl1(V,Out) 
+
+#### Partial ranking functions of CR dbl1(V,Out) 
+
+
+### Resulting Chains:dbl1(V,Out) 
+* [26]
+* [25]
+
+
+### Merging Chains  dbl1/2 into  External patterns of execution 
+* [[26]] --> 1 
+* [[25]] --> 2 
+
+
+### Specialization of cost equations quote/2 
+* CE 28 is refined into CE [42] 
+* CE 27 is refined into CE [43] 
+
+
+#### Refined cost equations quote/2 
+* CE 42: quote(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 43: quote(V,Out) = 1
+     [Out=1,V=0] 
+
+### Cost equations --> "Loop" of quote/2 
+* CEs [42] --> Loop 27 
+* CEs [43] --> Loop 28 
+
+#### Loops of quote/2 
+* Loop 27: quote(V,Out) [V>=0,Out=0] 
+* Loop 28: quote(V,Out) [Out=1,V=0] 
+
+### Ranking functions of CR quote(V,Out) 
+
+#### Partial ranking functions of CR quote(V,Out) 
+
+
+### Resulting Chains:quote(V,Out) 
+* [28]
+* [27]
+
+
+### Merging Chains  quote/2 into  External patterns of execution 
+* [[28]] --> 1 
+* [[27]] --> 2 
+
+
+### Specialization of cost equations sel1/3 
+* CE 22 is refined into CE [44] 
+* CE 21 is refined into CE [45,46,47] 
+
+
+#### Refined cost equations sel1/3 
+* CE 44: sel1(V,V1,Out) = 0
+     [V1>=0,V>=0,Out=0] 
+* CE 45: sel1(V,V1,Out) = 1+ activate(W1,X1):1
+     [V1>=2,X1=0,W1=1,Out=0,V=0] 
+* CE 46: sel1(V,V1,Out) = 1+ activate(W1,Out):2
+     [Out+3*W1>=6,V1>=W1+1,Out>=0,W1>=1,V=0] 
+* CE 47: sel1(V,V1,Out) = 1+ activate(Out,Out):3
+     [V1>=Out+1,Out>=0,V=0] 
+
+### Cost equations --> "Loop" of sel1/3 
+* CEs [44] --> Loop 29 
+* CEs [46] --> Loop 30 
+* CEs [45,47] --> Loop 31 
+
+#### Loops of sel1/3 
+* Loop 29: sel1(V,V1,Out) [V1>=0,V>=0,Out=0] 
+* Loop 30: sel1(V,V1,Out) [Out+3*V1>=9,Out>=0,V1>=2,V=0] 
+* Loop 31: sel1(V,V1,Out) [V1>=Out+1,Out>=0,V=0] 
+
+### Ranking functions of CR sel1(V,V1,Out) 
+
+#### Partial ranking functions of CR sel1(V,V1,Out) 
+
+
+### Resulting Chains:sel1(V,V1,Out) 
+* [31]
+* [30]
+* [29]
+
+
+### Merging Chains  sel1/3 into  External patterns of execution 
+* [[30]] --> 1 
+* [[31]] --> 2 
+* [[29]] --> 3 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [48] 
+* CE 3 is refined into CE [49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129] 
+* CE 4 is refined into CE [130,131,132,133,134,135,136,137,138] 
+* CE 5 is refined into CE [139] 
+* CE 6 is refined into CE [140,141,142,143,144,145,146,147,148] 
+* CE 7 is refined into CE [149,150,151] 
+* CE 8 is refined into CE [152,153,154] 
+* CE 9 is refined into CE [155,156,157] 
+* CE 10 is refined into CE [158,159] 
+* CE 11 is refined into CE [160,161] 
+* CE 12 is refined into CE [162,163] 
+
+
+#### Refined cost equations start/2 
+* CE 48: start(V,V1) = 1
+     [V>=0] 
+* CE 49: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,B2):1+ activate(C2,D2):1
+     [D2=0,C2=1,B2=0,A2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1,V=3] 
+* CE 50: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,B2):1+ activate(C2,D2):2
+     [D2>=3,C2=1,B2=0,A2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1,V=3] 
+* CE 51: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,B2):1+ activate(C2,D2):3
+     [D2=1,C2=1,B2=0,A2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1,V=3] 
+* CE 52: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,B2):2+ activate(C2,D2):1
+     [B2+3*A2>=6,B2>=0,A2>=1,A2+2=V,D2=0,C2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1] 
+* CE 53: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,B2):2+ activate(C2,D2):2
+     [B2+3*A2>=6,D2>=3,B2>=0,A2>=1,A2+2=V,C2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1] 
+* CE 54: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,B2):2+ activate(C2,D2):3
+     [B2+3*A2>=6,B2>=0,A2>=1,A2+2=V,D2=1,C2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1] 
+* CE 55: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,A2):3+ activate(B2,C2):1
+     [A2>=0,A2+2=V,C2=0,B2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1] 
+* CE 56: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,A2):3+ activate(B2,C2):2
+     [C2>=3,A2>=0,A2+2=V,B2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1] 
+* CE 57: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1+ activate(A2,A2):3+ activate(B2,C2):3
+     [A2>=0,A2+2=V,C2=1,B2=1,Z1=0,Y1=1,X1=0,W1=1,V1=1] 
+* CE 58: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):2+ activate(A2,B2):1+ activate(C2,D2):1
+     [Z1>=3,D2=0,C2=1,B2=0,A2=1,Y1=1,X1=0,W1=1,V1=1,V=3] 
+* CE 59: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,Y1):2+ activate(Z1,A2):1+ activate(V1,B2):2
+     [B2+3*V1>=6,Y1+3*V1>=6,B2>=0,V1>=1,Y1>=0,A2=0,Z1=1,X1=0,W1=1,V=3] 
+* CE 60: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,Y1):2+ activate(Z1,A2):1+ activate(V1,V1):3
+     [Y1+3*V1>=6,V1>=1,Y1>=0,A2=0,Z1=1,X1=0,W1=1,V=3] 
+* CE 61: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):2+ activate(A2,B2):2+ activate(C2,D2):1
+     [B2+3*A2>=6,B2>=0,A2>=1,Z1>=3,A2+2=V,D2=0,C2=1,Y1=1,X1=0,W1=1,V1=1] 
+* CE 62: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,Y1):2+ activate(Z1,A2):2+ activate(V1,B2):2
+     [B2+3*V1>=6,A2+3*Z1>=6,Y1+3*V1>=6,B2>=0,V1>=1,A2>=0,Z1>=1,Y1>=0,Z1+2=V,X1=0,W1=1] 
+* CE 63: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,Y1):2+ activate(Z1,A2):2+ activate(V1,V1):3
+     [A2+3*Z1>=6,Y1+3*V1>=6,V1>=1,A2>=0,Z1>=1,Y1>=0,Z1+2=V,X1=0,W1=1] 
+* CE 64: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):2+ activate(A2,A2):3+ activate(B2,C2):1
+     [A2>=0,Z1>=3,A2+2=V,C2=0,B2=1,Y1=1,X1=0,W1=1,V1=1] 
+* CE 65: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,Y1):2+ activate(Z1,Z1):3+ activate(V1,A2):2
+     [A2+3*V1>=6,Y1+3*V1>=6,A2>=0,V1>=1,Z1>=0,Y1>=0,Z1+2=V,X1=0,W1=1] 
+* CE 66: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,Y1):2+ activate(Z1,Z1):3+ activate(V1,V1):3
+     [Y1+3*V1>=6,V1>=1,Z1>=0,Y1>=0,Z1+2=V,X1=0,W1=1] 
+* CE 67: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):3+ activate(A2,B2):1+ activate(C2,D2):1
+     [D2=0,C2=1,B2=0,A2=1,Z1=1,Y1=1,X1=0,W1=1,V1=1,V=3] 
+* CE 68: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,V1):3+ activate(Y1,Z1):1+ activate(V1,A2):2
+     [A2+3*V1>=6,A2>=0,V1>=1,Z1=0,Y1=1,X1=0,W1=1,V=3] 
+* CE 69: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,V1):3+ activate(Y1,Z1):1+ activate(V1,V1):3
+     [V1>=0,Z1=0,Y1=1,X1=0,W1=1,V=3] 
+* CE 70: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):3+ activate(A2,B2):2+ activate(C2,D2):1
+     [B2+3*A2>=6,B2>=0,A2>=1,A2+2=V,D2=0,C2=1,Z1=1,Y1=1,X1=0,W1=1,V1=1] 
+* CE 71: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,V1):3+ activate(Y1,Z1):2+ activate(V1,A2):2
+     [A2+3*V1>=6,Z1+3*Y1>=6,A2>=0,V1>=1,Z1>=0,Y1>=1,Y1+2=V,X1=0,W1=1] 
+* CE 72: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,V1):3+ activate(Y1,Z1):2+ activate(V1,V1):3
+     [Z1+3*Y1>=6,V1>=0,Z1>=0,Y1>=1,Y1+2=V,X1=0,W1=1] 
+* CE 73: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):3+ activate(A2,A2):3+ activate(B2,C2):1
+     [A2>=0,A2+2=V,C2=0,B2=1,Z1=1,Y1=1,X1=0,W1=1,V1=1] 
+* CE 74: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,V1):3+ activate(Y1,Y1):3+ activate(V1,Z1):2
+     [Z1+3*V1>=6,Z1>=0,V1>=1,Y1>=0,Y1+2=V,X1=0,W1=1] 
+* CE 75: start(V,V1) = 1+ activate(W1,X1):1+ activate(V1,V1):3+ activate(Y1,Y1):3+ activate(V1,V1):3
+     [V1>=0,Y1>=0,Y1+2=V,X1=0,W1=1] 
+* CE 76: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,B2):1+ activate(C2,D2):1
+     [X1+3*W1>=6,X1>=0,W1>=1,W1+2=V,D2=0,C2=1,B2=0,A2=1,Z1=0,Y1=1,V1=1] 
+* CE 77: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,B2):1+ activate(C2,D2):2
+     [X1+3*W1>=6,D2>=3,X1>=0,W1>=1,W1+2=V,C2=1,B2=0,A2=1,Z1=0,Y1=1,V1=1] 
+* CE 78: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,B2):1+ activate(C2,D2):3
+     [X1+3*W1>=6,X1>=0,W1>=1,W1+2=V,D2=1,C2=1,B2=0,A2=1,Z1=0,Y1=1,V1=1] 
+* CE 79: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,B2):2+ activate(C2,D2):1
+     [B2+3*A2>=6,X1+3*W1>=6,B2>=0,A2>=1,X1>=0,W1>=1,W1+A2+1=V,D2=0,C2=1,Z1=0,Y1=1,V1=1] 
+* CE 80: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,B2):2+ activate(C2,D2):2
+     [B2+3*A2>=6,X1+3*W1>=6,D2>=3,B2>=0,A2>=1,X1>=0,W1>=1,W1+A2+1=V,C2=1,Z1=0,Y1=1,V1=1] 
+* CE 81: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,B2):2+ activate(C2,D2):3
+     [B2+3*A2>=6,X1+3*W1>=6,B2>=0,A2>=1,X1>=0,W1>=1,W1+A2+1=V,D2=1,C2=1,Z1=0,Y1=1,V1=1] 
+* CE 82: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,A2):3+ activate(B2,C2):1
+     [X1+3*W1>=6,A2>=0,X1>=0,W1>=1,W1+A2+1=V,C2=0,B2=1,Z1=0,Y1=1,V1=1] 
+* CE 83: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,A2):3+ activate(B2,C2):2
+     [X1+3*W1>=6,C2>=3,A2>=0,X1>=0,W1>=1,W1+A2+1=V,B2=1,Z1=0,Y1=1,V1=1] 
+* CE 84: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1+ activate(A2,A2):3+ activate(B2,C2):3
+     [X1+3*W1>=6,A2>=0,X1>=0,W1>=1,W1+A2+1=V,C2=1,B2=1,Z1=0,Y1=1,V1=1] 
+* CE 85: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):2+ activate(A2,B2):1+ activate(C2,D2):1
+     [X1+3*W1>=6,Z1>=3,X1>=0,W1>=1,W1+2=V,D2=0,C2=1,B2=0,A2=1,Y1=1,V1=1] 
+* CE 86: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,Y1):2+ activate(Z1,A2):1+ activate(V1,B2):2
+     [B2+3*V1>=6,Y1+3*V1>=6,X1+3*W1>=6,B2>=0,V1>=1,Y1>=0,X1>=0,W1>=1,W1+2=V,A2=0,Z1=1] 
+* CE 87: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,Y1):2+ activate(Z1,A2):1+ activate(V1,V1):3
+     [Y1+3*V1>=6,X1+3*W1>=6,V1>=1,Y1>=0,X1>=0,W1>=1,W1+2=V,A2=0,Z1=1] 
+* CE 88: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):2+ activate(A2,B2):2+ activate(C2,D2):1
+     [B2+3*A2>=6,X1+3*W1>=6,B2>=0,A2>=1,Z1>=3,X1>=0,W1>=1,W1+A2+1=V,D2=0,C2=1,Y1=1,V1=1] 
+* CE 89: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,Y1):2+ activate(Z1,A2):2+ activate(V1,B2):2
+     [B2+3*V1>=6,A2+3*Z1>=6,Y1+3*V1>=6,X1+3*W1>=6,B2>=0,V1>=1,A2>=0,Z1>=1,Y1>=0,X1>=0,W1>=1,W1+Z1+1=V] 
+* CE 90: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,Y1):2+ activate(Z1,A2):2+ activate(V1,V1):3
+     [A2+3*Z1>=6,Y1+3*V1>=6,X1+3*W1>=6,V1>=1,A2>=0,Z1>=1,Y1>=0,X1>=0,W1>=1,W1+Z1+1=V] 
+* CE 91: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):2+ activate(A2,A2):3+ activate(B2,C2):1
+     [X1+3*W1>=6,A2>=0,Z1>=3,X1>=0,W1>=1,W1+A2+1=V,C2=0,B2=1,Y1=1,V1=1] 
+* CE 92: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,Y1):2+ activate(Z1,Z1):3+ activate(V1,A2):2
+     [A2+3*V1>=6,Y1+3*V1>=6,X1+3*W1>=6,A2>=0,V1>=1,Z1>=0,Y1>=0,X1>=0,W1>=1,W1+Z1+1=V] 
+* CE 93: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,Y1):2+ activate(Z1,Z1):3+ activate(V1,V1):3
+     [Y1+3*V1>=6,X1+3*W1>=6,V1>=1,Z1>=0,Y1>=0,X1>=0,W1>=1,W1+Z1+1=V] 
+* CE 94: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):3+ activate(A2,B2):1+ activate(C2,D2):1
+     [X1+3*W1>=6,X1>=0,W1>=1,W1+2=V,D2=0,C2=1,B2=0,A2=1,Z1=1,Y1=1,V1=1] 
+* CE 95: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,V1):3+ activate(Y1,Z1):1+ activate(V1,A2):2
+     [A2+3*V1>=6,X1+3*W1>=6,A2>=0,V1>=1,X1>=0,W1>=1,W1+2=V,Z1=0,Y1=1] 
+* CE 96: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,V1):3+ activate(Y1,Z1):1+ activate(V1,V1):3
+     [X1+3*W1>=6,V1>=0,X1>=0,W1>=1,W1+2=V,Z1=0,Y1=1] 
+* CE 97: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):3+ activate(A2,B2):2+ activate(C2,D2):1
+     [B2+3*A2>=6,X1+3*W1>=6,B2>=0,A2>=1,X1>=0,W1>=1,W1+A2+1=V,D2=0,C2=1,Z1=1,Y1=1,V1=1] 
+* CE 98: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,V1):3+ activate(Y1,Z1):2+ activate(V1,A2):2
+     [A2+3*V1>=6,Z1+3*Y1>=6,X1+3*W1>=6,A2>=0,V1>=1,Z1>=0,Y1>=1,X1>=0,W1>=1,W1+Y1+1=V] 
+* CE 99: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,V1):3+ activate(Y1,Z1):2+ activate(V1,V1):3
+     [Z1+3*Y1>=6,X1+3*W1>=6,V1>=0,Z1>=0,Y1>=1,X1>=0,W1>=1,W1+Y1+1=V] 
+* CE 100: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):3+ activate(A2,A2):3+ activate(B2,C2):1
+     [X1+3*W1>=6,A2>=0,X1>=0,W1>=1,W1+A2+1=V,C2=0,B2=1,Z1=1,Y1=1,V1=1] 
+* CE 101: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,V1):3+ activate(Y1,Y1):3+ activate(V1,Z1):2
+     [Z1+3*V1>=6,X1+3*W1>=6,Z1>=0,V1>=1,Y1>=0,X1>=0,W1>=1,W1+Y1+1=V] 
+* CE 102: start(V,V1) = 1+ activate(W1,X1):2+ activate(V1,V1):3+ activate(Y1,Y1):3+ activate(V1,V1):3
+     [X1+3*W1>=6,V1>=0,Y1>=0,X1>=0,W1>=1,W1+Y1+1=V] 
+* CE 103: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,A2):1+ activate(B2,C2):1
+     [W1>=0,W1+2=V,C2=0,B2=1,A2=0,Z1=1,Y1=0,X1=1,V1=1] 
+* CE 104: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,A2):1+ activate(B2,C2):2
+     [C2>=3,W1>=0,W1+2=V,B2=1,A2=0,Z1=1,Y1=0,X1=1,V1=1] 
+* CE 105: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,A2):1+ activate(B2,C2):3
+     [W1>=0,W1+2=V,C2=1,B2=1,A2=0,Z1=1,Y1=0,X1=1,V1=1] 
+* CE 106: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,A2):2+ activate(B2,C2):1
+     [A2+3*Z1>=6,A2>=0,Z1>=1,W1>=0,W1+Z1+1=V,C2=0,B2=1,Y1=0,X1=1,V1=1] 
+* CE 107: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,A2):2+ activate(B2,C2):2
+     [A2+3*Z1>=6,C2>=3,A2>=0,Z1>=1,W1>=0,W1+Z1+1=V,B2=1,Y1=0,X1=1,V1=1] 
+* CE 108: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,A2):2+ activate(B2,C2):3
+     [A2+3*Z1>=6,A2>=0,Z1>=1,W1>=0,W1+Z1+1=V,C2=1,B2=1,Y1=0,X1=1,V1=1] 
+* CE 109: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,Z1):3+ activate(A2,B2):1
+     [Z1>=0,W1>=0,W1+Z1+1=V,B2=0,A2=1,Y1=0,X1=1,V1=1] 
+* CE 110: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,Z1):3+ activate(A2,B2):2
+     [B2>=3,Z1>=0,W1>=0,W1+Z1+1=V,A2=1,Y1=0,X1=1,V1=1] 
+* CE 111: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1+ activate(Z1,Z1):3+ activate(A2,B2):3
+     [Z1>=0,W1>=0,W1+Z1+1=V,B2=1,A2=1,Y1=0,X1=1,V1=1] 
+* CE 112: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):2+ activate(Z1,A2):1+ activate(B2,C2):1
+     [Y1>=3,W1>=0,W1+2=V,C2=0,B2=1,A2=0,Z1=1,X1=1,V1=1] 
+* CE 113: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,X1):2+ activate(Y1,Z1):1+ activate(V1,A2):2
+     [A2+3*V1>=6,X1+3*V1>=6,A2>=0,V1>=1,X1>=0,W1>=0,W1+2=V,Z1=0,Y1=1] 
+* CE 114: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,X1):2+ activate(Y1,Z1):1+ activate(V1,V1):3
+     [X1+3*V1>=6,V1>=1,X1>=0,W1>=0,W1+2=V,Z1=0,Y1=1] 
+* CE 115: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):2+ activate(Z1,A2):2+ activate(B2,C2):1
+     [A2+3*Z1>=6,A2>=0,Z1>=1,Y1>=3,W1>=0,W1+Z1+1=V,C2=0,B2=1,X1=1,V1=1] 
+* CE 116: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,X1):2+ activate(Y1,Z1):2+ activate(V1,A2):2
+     [A2+3*V1>=6,Z1+3*Y1>=6,X1+3*V1>=6,A2>=0,V1>=1,Z1>=0,Y1>=1,X1>=0,W1>=0,W1+Y1+1=V] 
+* CE 117: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,X1):2+ activate(Y1,Z1):2+ activate(V1,V1):3
+     [Z1+3*Y1>=6,X1+3*V1>=6,V1>=1,Z1>=0,Y1>=1,X1>=0,W1>=0,W1+Y1+1=V] 
+* CE 118: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):2+ activate(Z1,Z1):3+ activate(A2,B2):1
+     [Z1>=0,Y1>=3,W1>=0,W1+Z1+1=V,B2=0,A2=1,X1=1,V1=1] 
+* CE 119: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,X1):2+ activate(Y1,Y1):3+ activate(V1,Z1):2
+     [Z1+3*V1>=6,X1+3*V1>=6,Z1>=0,V1>=1,Y1>=0,X1>=0,W1>=0,W1+Y1+1=V] 
+* CE 120: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,X1):2+ activate(Y1,Y1):3+ activate(V1,V1):3
+     [X1+3*V1>=6,V1>=1,Y1>=0,X1>=0,W1>=0,W1+Y1+1=V] 
+* CE 121: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):3+ activate(Z1,A2):1+ activate(B2,C2):1
+     [W1>=0,W1+2=V,C2=0,B2=1,A2=0,Z1=1,Y1=1,X1=1,V1=1] 
+* CE 122: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,V1):3+ activate(X1,Y1):1+ activate(V1,Z1):2
+     [Z1+3*V1>=6,Z1>=0,V1>=1,W1>=0,W1+2=V,Y1=0,X1=1] 
+* CE 123: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,V1):3+ activate(X1,Y1):1+ activate(V1,V1):3
+     [V1>=0,W1>=0,W1+2=V,Y1=0,X1=1] 
+* CE 124: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):3+ activate(Z1,A2):2+ activate(B2,C2):1
+     [A2+3*Z1>=6,A2>=0,Z1>=1,W1>=0,W1+Z1+1=V,C2=0,B2=1,Y1=1,X1=1,V1=1] 
+* CE 125: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,V1):3+ activate(X1,Y1):2+ activate(V1,Z1):2
+     [Z1+3*V1>=6,Y1+3*X1>=6,Z1>=0,V1>=1,Y1>=0,X1>=1,W1>=0,W1+X1+1=V] 
+* CE 126: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,V1):3+ activate(X1,Y1):2+ activate(V1,V1):3
+     [Y1+3*X1>=6,V1>=0,Y1>=0,X1>=1,W1>=0,W1+X1+1=V] 
+* CE 127: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):3+ activate(Z1,Z1):3+ activate(A2,B2):1
+     [Z1>=0,W1>=0,W1+Z1+1=V,B2=0,A2=1,Y1=1,X1=1,V1=1] 
+* CE 128: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,V1):3+ activate(X1,X1):3+ activate(V1,Y1):2
+     [Y1+3*V1>=6,Y1>=0,V1>=1,X1>=0,W1>=0,W1+X1+1=V] 
+* CE 129: start(V,V1) = 1+ activate(W1,W1):3+ activate(V1,V1):3+ activate(X1,X1):3+ activate(V1,V1):3
+     [V1>=0,X1>=0,W1>=0,W1+X1+1=V] 
+* CE 130: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1
+     [Z1=0,Y1=1,X1=0,W1=1,V=3] 
+* CE 131: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):2
+     [Z1+3*Y1>=6,Z1>=0,Y1>=1,Y1+2=V,X1=0,W1=1] 
+* CE 132: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Y1):3
+     [Y1>=0,Y1+2=V,X1=0,W1=1] 
+* CE 133: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1
+     [X1+3*W1>=6,X1>=0,W1>=1,W1+2=V,Z1=0,Y1=1] 
+* CE 134: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):2
+     [Z1+3*Y1>=6,X1+3*W1>=6,Z1>=0,Y1>=1,X1>=0,W1>=1,W1+Y1+1=V] 
+* CE 135: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Y1):3
+     [X1+3*W1>=6,Y1>=0,X1>=0,W1>=1,W1+Y1+1=V] 
+* CE 136: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):1
+     [W1>=0,W1+2=V,Y1=0,X1=1] 
+* CE 137: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,Y1):2
+     [Y1+3*X1>=6,Y1>=0,X1>=1,W1>=0,W1+X1+1=V] 
+* CE 138: start(V,V1) = 1+ activate(W1,W1):3+ activate(X1,X1):3
+     [X1>=0,W1>=0,W1+X1+1=V] 
+* CE 139: start(V,V1) = 1
+     [V>=0] 
+* CE 140: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):1
+     [Z1=0,Y1=1,X1=0,W1=1,V=1] 
+* CE 141: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):2
+     [Z1>=3,Y1=1,X1=0,W1=1,V=1] 
+* CE 142: start(V,V1) = 1+ activate(W1,X1):1+ activate(Y1,Z1):3
+     [Z1=1,Y1=1,X1=0,W1=1,V=1] 
+* CE 143: start(V,V1) = 1+ activate(W1,X1):2+ activate(Y1,Z1):1
+     [X1>=3,Z1=0,Y1=1,W1=1,V=1] 
+* CE 144: start(V,V1) = 1+ activate(V,W1):2+ activate(V,X1):2
+     [X1+3*V>=6,W1+3*V>=6,X1>=0,V>=1,W1>=0] 
+* CE 145: start(V,V1) = 1+ activate(V,W1):2+ activate(V,V):3
+     [W1+3*V>=6,V>=1,W1>=0] 
+* CE 146: start(V,V1) = 1+ activate(W1,X1):3+ activate(Y1,Z1):1
+     [Z1=0,Y1=1,X1=1,W1=1,V=1] 
+* CE 147: start(V,V1) = 1+ activate(V,V):3+ activate(V,W1):2
+     [W1+3*V>=6,W1>=0,V>=1] 
+* CE 148: start(V,V1) = 1+ activate(V,V):3+ activate(V,V):3
+     [V>=0] 
+* CE 149: start(V,V1) = 1+ activate(W1,X1):1
+     [V1>=2,X1=0,W1=1,V=0] 
+* CE 150: start(V,V1) = 1+ activate(W1,X1):2
+     [X1+3*W1>=6,V1>=W1+1,X1>=0,W1>=1,V=0] 
+* CE 151: start(V,V1) = 1+ activate(W1,W1):3
+     [V1>=W1+1,W1>=0,V=0] 
+* CE 152: start(V,V1) = 0+ activate(W1,X1):1
+     [X1=0,W1=1,V=1] 
+* CE 153: start(V,V1) = 0+ activate(V,W1):2
+     [W1+3*V>=6,W1>=0,V>=1] 
+* CE 154: start(V,V1) = 0+ activate(V,V):3
+     [V>=0] 
+* CE 155: start(V,V1) = 0+ sel1(W1,V1,X1):1
+     [X1+3*V1>=9,X1>=0,V1>=2,W1=0,V=0] 
+* CE 156: start(V,V1) = 0+ sel1(W1,V1,X1):2
+     [V1>=X1+1,X1>=0,W1=0,V=0] 
+* CE 157: start(V,V1) = 0+ sel1(V,V1,W1):3
+     [V1>=0,V>=0,W1=0] 
+* CE 158: start(V,V1) = 0+ dbl(W1,X1):1
+     [X1=0,W1=0,V=0] 
+* CE 159: start(V,V1) = 0+ dbl(W1,X1):2
+     [X1>=1,X1=W1+1,X1=V+1] 
+* CE 160: start(V,V1) = 0+ dbl1(W1,X1):1
+     [X1=1,W1=0,V=0] 
+* CE 161: start(V,V1) = 0+ dbl1(V,W1):2
+     [V>=0,W1=0] 
+* CE 162: start(V,V1) = 0+ quote(W1,X1):1
+     [X1=1,W1=0,V=0] 
+* CE 163: start(V,V1) = 0+ quote(V,W1):2
+     [V>=0,W1=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [52,53,54,55,56,57,61,64,70,73,76,77,78,79,80,81,82,83,84,85,88,91,94,97,100,103,104,105,106,107,108,109,110,111,112,115,118,121,124,127] --> Loop 32 
+* CEs [49,50,51,58,59,60,67,68,69,130] --> Loop 33 
+* CEs [140,141,142,143,146,152] --> Loop 34 
+* CEs [48,62,63,65,66,71,72,74,75,86,87,89,90,92,93,95,96,98,99,101,102,113,114,116,117,119,120,122,123,125,126,128,129,131,132,133,134,135,136,137,138,139,144,145,147,148,149,150,151,153,154,155,156,157,158,159,160,161,162,163] --> Loop 35 
+
+#### Loops of start/2 
+* Loop 32: start(V,V1) [V>=1,V1=1] 
+* Loop 33: start(V,V1) [V=3] 
+* Loop 34: start(V,V1) [V=1] 
+* Loop 35: start(V,V1) [V>=0] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [35]
+* [34]
+* [33]
+* [32]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[34],[35]] --> 1 
+* [[33]] --> 2 
+* [[32]] --> 3 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of dbl(V,Out):
+* Chain [17]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [16]: 1
+  with precondition: [V+1=Out,V>=0] 
+
+
+#### Cost of loops [18,19,20,21] 
+
+ * loop 18:activate(V,Out) -> [activate(V',Out'),activate(V'2,Out'2),activate(V'3,Out'3),activate(V'4,Out'4)] 
+2
+ * loop 19:activate(V,Out) -> [activate(V',Out'),activate(V'2,Out'2)] 
+2
+ * loop 20:activate(V,Out) -> [activate(V',Out'),activate(V'2,Out'2)] 
+2
+ * loop 21:activate(V,Out) -> [activate(V',Out')] 
+2
+#### Cost of phase [18,19,20,21]:activate(V,Out) -> [] 
+4*it(18)+6*it(19)+4*it([22])+0
+#### Cost of chains of activate(V,Out):
+* Chain [24]: 2
+  with precondition: [V=1,Out=0] 
+
+* Chain [23]: 2
+  with precondition: [Out=1,V>=2] 
+
+* Chain [22]: 2
+  with precondition: [V=Out,V>=0] 
+
+* Chain [multiple([18,19,20,21],[[24],[23],[22]])]: 4*it(18)+6*it(19)+4*it([22])+0
+  with precondition: [V>=1,Out>=0,Out+3*V>=6] 
+
+
+#### Cost of chains of dbl1(V,Out):
+* Chain [26]: 1
+  with precondition: [V=0,Out=1] 
+
+* Chain [25]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of chains of quote(V,Out):
+* Chain [28]: 1
+  with precondition: [V=0,Out=1] 
+
+* Chain [27]: 0
+  with precondition: [Out=0,V>=0] 
+
+
+#### Cost of chains of sel1(V,V1,Out):
+* Chain [31]: 3
+  with precondition: [V=0,Out>=0,V1>=Out+1] 
+
+* Chain [30]: 1*s(4)+1
+  with precondition: [V=0,V1>=2,Out>=0,Out+3*V1>=9] 
+
+* Chain [29]: 0
+  with precondition: [Out=0,V>=0,V1>=0] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [35]: 1*aux(12)+0
+  with precondition: [V>=0] 
+
+* Chain [34]: 1*aux(13)+0
+  with precondition: [V=1] 
+
+* Chain [33]: 1*aux(14)+0
+  with precondition: [V=3] 
+
+* Chain [32]: 1*aux(15)+0
+  with precondition: [V1=1,V>=1] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [35] with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [34] with precondition: [V=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [33] with precondition: [V=3] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+* Chain [32] with precondition: [V1=1,V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V1): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 85 ms.
+* Invariants computed in 66 ms.
+   - Backward Invariants 25 ms.
+   - Transitive Invariants 14 ms.
+* Refinement performed in 464 ms.
+* Termination proved in 25 ms.
+* Upper bounds computed in 135 ms.
+   - Equation cost structures 88 ms.
+   - Phase cost structures 48 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 871 ms.
+

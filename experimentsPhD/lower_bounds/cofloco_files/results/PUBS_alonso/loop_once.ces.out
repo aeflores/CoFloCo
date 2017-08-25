@@ -1,0 +1,251 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [amor/atva/Loops_foo()V/0]
+1. recursive : [9_loop/2]
+2. recursive : [5_loop/4]
+3. non_recursive : [amor/atva/Loops_once(II)V/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into 9_loop/2
+2. SCC is partially evaluated into 5_loop/4
+3. SCC is partially evaluated into amor/atva/Loops_once(II)V/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations 9_loop/2 
+* CE 8 is refined into CE [9] 
+* CE 7 is refined into CE [10] 
+
+
+#### Refined cost equations 9_loop/2 
+* CE 9: 9_loop(A,A) = 3
+     [A>=0] 
+* CE 10: 9_loop(A,B) = 7+ 9_loop(A,C)
+     [A>=B+1,B>=0,B+1=C] 
+
+### Cost equations --> "Loop" of 9_loop/2 
+* CEs [10] --> Loop 8 
+* CEs [9] --> Loop 9 
+
+#### Loops of 9_loop/2 
+* Loop 8: 9_loop(A,B)->  9_loop(A,B')
+                  [A>=B+1,B>=0,B+1=B'] 
+* Loop 9: 9_loop(A,A) [A>=0] 
+
+### Ranking functions of CR 9_loop(A,B) 
+* RF of phase [8]: [A-B]
+
+#### Partial ranking functions of CR 9_loop(A,B) 
+* Partial RF of phase [8]:
+  - RF of loop [8:1]:
+    A-B
+
+
+### Resulting Chains:9_loop(A,B) 
+* [[8],9]
+* [9]
+
+
+### Specialization of cost equations 5_loop/4 
+* CE 6 is refined into CE [11] 
+* CE 5 is refined into CE [12] 
+* CE 4 is refined into CE [13,14] 
+
+
+#### Refined cost equations 5_loop/4 
+* CE 11: 5_loop(A,B,C,D) = 3
+     [C>=B,D>=0,C>=0,A>=0] 
+* CE 12: 5_loop(A,B,C,D) = 9+ 5_loop(A,B,E,D)
+     [B>=C+1,D>=0,C>=0,A>=0,C+1=E] 
+* CE 13: 5_loop(A,B,C,D) = 13+ 9_loop(A,E):[[8],9]+ 5_loop(F,B,G,H)
+     [H>=A,B>=C+1,A>=1,D>=0,C>=0,C+1=G,F=0,E=0] 
+* CE 14: 5_loop(A,B,C,D) = 13+ 9_loop(E,F):[9]+ 5_loop(G,B,H,I)
+     [B>=C+1,I>=0,D>=0,C>=0,C+1=H,G=0,F=0,E=0,A=0] 
+
+### Cost equations --> "Loop" of 5_loop/4 
+* CEs [12] --> Loop 10 
+* CEs [13] --> Loop 11 
+* CEs [14] --> Loop 12 
+* CEs [11] --> Loop 13 
+
+#### Loops of 5_loop/4 
+* Loop 10: 5_loop(A,B,C,D)->  5_loop(A,B,C',D)
+                  [B>=C+1,D>=0,C>=0,A>=0,C+1=C'] 
+* Loop 11: 5_loop(A,B,C,D)->  5_loop(A',B,C',D')
+                  [B>=C+1,D'>=A,D>=0,C>=0,A>=1,C+1=C',A'=0] 
+* Loop 12: 5_loop(A,B,C,D)->  5_loop(A',B,C',D')
+                  [B>=C+1,D'>=0,D>=0,C>=0,C+1=C',A'=0,A=0] 
+* Loop 13: 5_loop(A,B,C,D) [C>=B,D>=0,C>=0,A>=0] 
+
+### Ranking functions of CR 5_loop(A,B,C,D) 
+* RF of phase [10,11,12]: [B-C]
+
+#### Partial ranking functions of CR 5_loop(A,B,C,D) 
+* Partial RF of phase [10,11,12]:
+  - RF of loop [10:1,11:1,12:1]:
+    B-C
+  - RF of loop [11:1]:
+    A
+
+
+### Resulting Chains:5_loop(A,B,C,D) 
+* [[10,11,12],13]
+* [13]
+
+
+### Specialization of cost equations amor/atva/Loops_once(II)V/2 
+* CE 3 is refined into CE [15,16] 
+* CE 2 is refined into CE [17] 
+
+
+#### Refined cost equations amor/atva/Loops_once(II)V/2 
+* CE 15: amor/atva/Loops_once(II)V(A,B) = 5+ 5_loop(A,B,C,D):[[10,11,12],13]
+     [B>=1,A>=0,D=0,C=0] 
+* CE 16: amor/atva/Loops_once(II)V(A,B) = 5+ 5_loop(A,B,C,D):[13]
+     [A>=0,0>=B,D=0,C=0] 
+* CE 17: amor/atva/Loops_once(II)V(A,B) = 3
+     [0>=A+1] 
+
+### Cost equations --> "Loop" of amor/atva/Loops_once(II)V/2 
+* CEs [15] --> Loop 14 
+* CEs [16] --> Loop 15 
+* CEs [17] --> Loop 16 
+
+#### Loops of amor/atva/Loops_once(II)V/2 
+* Loop 14: amor/atva/Loops_once(II)V(A,B) [B>=1,A>=0] 
+* Loop 15: amor/atva/Loops_once(II)V(A,B) [A>=0,0>=B] 
+* Loop 16: amor/atva/Loops_once(II)V(A,B) [0>=A+1] 
+
+### Ranking functions of CR amor/atva/Loops_once(II)V(A,B) 
+
+#### Partial ranking functions of CR amor/atva/Loops_once(II)V(A,B) 
+
+
+### Resulting Chains:amor/atva/Loops_once(II)V(A,B) 
+* [16]
+* [15]
+* [14]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [8] 
+
+ * loop 8:9_loop(A,B) -> [9_loop(A',B')] 
+7
+#### Cost of phase [8]:9_loop(A,B) -> [9_loop(A',B')] 
+7*it(8)+0
+  Such that:it(8) =< A-B
+it(8) =< A-B-A'+B'
+it(8) >= A-B-A'+B'
+
+#### Cost of chains of 9_loop(A,B):
+* Chain [[8],9]: 7*it(8)+3
+  Such that:it(8) =< A-B
+it(8) >= A-B
+
+  with precondition: [B>=0,A>=B+1] 
+
+* Chain [9]: 3
+  with precondition: [B=A,B>=0] 
+
+
+#### Cost of loops [10,11,12] 
+
+ * loop 10:5_loop(A,B,C,D) -> [5_loop(A',B',C',D')] 
+9
+ * loop 11:5_loop(A,B,C,D) -> [5_loop(A',B',C',D')] 
+7*s(2)+16
+  Such that:s(2) =< A
+s(2) >= A
+
+ * loop 12:5_loop(A,B,C,D) -> [5_loop(A',B',C',D')] 
+16
+#### Cost of phase [10,11,12]:5_loop(A,B,C,D) -> [5_loop(A',B',C',D')] 
+9*it(10)+16*it(11)+16*it(12)+7*s(3)+0
+  Such that:it(10)+it(11)+it(12) =< B-C
+it(10)+it(11)+it(12) =< B-C-B'+C'
+aux(2) =< A
+aux(3) =< A-A'
+it(11) =< aux(2)
+s(3) =< aux(2)
+it(11) =< aux(3)
+s(3) =< aux(3)
+s(3) >= A-A'
+it(10)+it(11)+it(12) >= B-C-B'+C'
+s(3) >= it(11)*aux(1)
+
+#### Cost of chains of 5_loop(A,B,C,D):
+* Chain [[10,11,12],13]: 9*it(10)+16*it(11)+16*it(12)+7*s(3)+3
+  Such that:it(12)+it(11)+it(10) =< B-C
+aux(4) =< A
+it(11) =< aux(4)
+s(3) =< aux(4)
+it(12)+it(11)+it(10) >= B-C
+
+  with precondition: [A>=0,C>=0,D>=0,B>=C+1] 
+
+* Chain [13]: 3
+  with precondition: [A>=0,C>=0,D>=0,C>=B] 
+
+
+#### Cost of chains of amor/atva/Loops_once(II)V(A,B):
+* Chain [16]: 3
+  with precondition: [0>=A+1] 
+
+* Chain [15]: 8
+  with precondition: [0>=B,A>=0] 
+
+* Chain [14]: 16*s(4)+16*s(5)+9*s(6)+7*s(8)+8
+  Such that:s(7) =< A
+s(6)+s(5)+s(4) =< B
+s(5) =< s(7)
+s(8) =< s(7)
+s(6)+s(5)+s(4) >= B
+
+  with precondition: [A>=0,B>=1] 
+
+
+Closed-form bounds of amor/atva/Loops_once(II)V(A,B): 
+-------------------------------------
+* Chain [16] with precondition: [0>=A+1] 
+    - Lower bound: 3 
+    - Complexity: constant
+ * Chain [15] with precondition: [0>=B,A>=0] 
+    - Lower bound: 8 
+    - Complexity: constant
+ * Chain [14] with precondition: [A>=0,B>=1] 
+    - Lower bound: 9*B+8 
+    - Complexity: n
+ 
+### Partitioned lower bound of amor/atva/Loops_once(II)V(A,B): 
+* 3 
+ if [0>=A+1]
+* 8 
+ if [0>=B,A>=0]
+* 9*B+8 
+ if [A>=0,B>=1]
+Possible lower bounds : [3,8,9*B+8]
+Maximum lower bound complexity: n
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 15 ms.
+* Invariants computed in 65 ms.
+   - Backward Invariants 27 ms.
+   - Transitive Invariants 16 ms.
+* Refinement performed in 74 ms.
+* Termination proved in 24 ms.
+* Upper bounds computed in 131 ms.
+   - Equation cost structures 31 ms.
+   - Phase cost structures 81 ms.
+   - Chain cost structures 26 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 351 ms.
+

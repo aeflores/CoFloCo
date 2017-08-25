@@ -1,0 +1,79 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/lcs.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * Description:
+ *   A standard example of dynamic programming that can be found in
+ *   many textbooks (see e.g. Cormen/Leiserson/Rivest/Stein:
+ *   Introduction to Algorithms) is the computation of the length of
+ *   the longest common subsequence (LCS) of two given lists
+ *   (sequences).  Given two sequences a_1,...,a_n and b_1,...,b_m, one
+ *   successively fills an nxm-matrix (here a list of lists) A such
+ *   that A(i,j) contains the length of the LCS of a_1,...,a_i and
+ *   b_1,...,b_j.  It is the case that
+ *
+ *            { 0                      if i=0 or j=0
+ *   A(i,j) = { A(i-1,j-1) + 1         if i,j > 0 and a_i = b_j 
+ *            { max(A(i,j-1),A(i-1,j)) if i,j > 0 and a_i \= b_j
+ *
+ *   This algorithm can be analyzed in our system and is exemplary for
+ *   similar algorithms that use dynamic programming.
+ *)
+
+
+let rec firstline l =
+	match l with
+	| [] -> []
+	| x::xs -> (Raml.tick(1.0); 0::firstline xs);;
+
+let right l =
+	match l with
+	| [] -> 0
+	| x::xs -> (Raml.tick(1.0); x);;
+
+let max a b =
+	if ((a:int) > (b:int)) then a else b;;
+
+let rec newline y lastline l =
+	match l with
+	| [] -> []
+	| x::xs ->
+		match lastline with
+		| [] -> []
+		| belowVal::lastline' ->
+			(Raml.tick(1.0); 
+			let nl = newline y lastline' xs in
+			let rightVal = right nl in
+			let diagVal = right lastline' in
+			let elem =
+				if ((x:int) = (y:int)) then diagVal + 1
+				else max belowVal rightVal
+				in
+				elem::nl);;
+
+let rec lcstable l1 l2 =
+	match l1 with
+	| [] -> [firstline l2]
+	| x::xs ->
+		let m = lcstable xs l2 in
+		match m with
+		| [] -> []
+		| l::ls -> (Raml.tick(1.0); (newline x l l2)::l::ls);;
+
+let lcs l1 l2 =
+	let m = lcstable l1 l2 in
+	match m with
+	| [] -> 0
+	| l1::_ ->
+		match l1 with
+		| [] -> 0
+		| len::_ -> (Raml.tick(1.0); len);;
+
+lcs [1;2;3;4;5;6;7;8;9;10] [5;3;2;6;7;1;8;0;9;11]

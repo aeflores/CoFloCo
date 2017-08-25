@@ -1,0 +1,142 @@
+/* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/sizechange.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   A RAML implementation of the examples that are given in the paper
+ *   "The Size-Change Principle for Program Termination" by Chin Soon Lee,
+ *   Neil D. Jones, and Amir M. Ben-Amram (POPL'01).  All examples are
+ *   tricky to prove terminating but you can prove termination by using
+ *   the size-change principle.
+ *
+ *   Five of the six given examples have actually a polynomial run time
+ *   (the last example is the Ackermann function) and thus can be analyzed
+ *   in RAML.  Four of the five examples can be analyzed in RAML without
+ *   any changes.  One example needed a small rewrite but I would argue
+ *   that our version is more natural.  The computed bounds are all
+ *   asymptotically tight
+ */
+
+module Sizechange;
+
+
+/* Example 1: Accumulation */
+
+def List<A> r1<A>(List<A> ls,List<A> a) =
+	case ls {
+	Nil => a;
+	Cons(x,xs) => r1( xs, Cons(x,a));
+	};
+
+def List<A> rev<A>(List<A> ls) =
+	r1(ls,Nil);
+
+
+/* Example 2: Mutual Recursion */
+
+/* Note that the paper contains a type error in this example.
+   It says g (a,b,c) = f(a, cons(b,c)) but this doesn't type
+   check neither in RAML nor in OCaml.  So I'm using append
+   instead. */
+
+def List<A> append<A>(List<A> l1,List<A> l2) =
+	case l1 {
+	Nil => l2;
+	Cons(x,xs) => Cons(x,append( xs, l2));
+	};
+
+def List<A> f<A>(List<A> i,List<A> x) =
+	case i {
+	Nil => x;
+	Cons(y,ys) => g(ys, x, i);
+	};
+def List<A> g<A>(List<A> a,List<A> b,List<A> c) =
+	f( a, append( b, c));
+
+
+
+
+/* Example 4: Permuted Parameters */
+
+def List<A> p<A>(List<A> m,List<A> n,List<A> r) =
+     case r {
+          Cons( _,rp) => p( m, rp, n);
+          Nil => case n {
+                     Cons( _,np) => p(Nil, np, m);
+                     Nil    => m;
+		     };
+	};
+
+
+/* Example 5: Permuted and Discarded Parameters */
+
+/* The function f2 was originally given in the paper.  It can not be
+   analyzed in RAML. */
+
+
+def List<A> f2<A>(List<A> x,List<A> y) =
+	case y {
+	Nil => x;
+	Cons(p,ps) =>
+		case x {
+		Nil =>  f2(y,ps);
+		Cons(q,qs) =>f2(y, qs);
+		};
+	};
+
+/* The problem is that the recursion unfolds in a way such that case x =
+nil happens at most once.  RAML cannot infer this information.
+
+However, I found this function a bit constructed.  (Although it is
+impressive that the size-change principle can establish termination.)
+Below is a slightly longer version that I find easier to understand.
+
+The function f2' is semantically equivalent to f2.*/
+  
+
+def List<A> last<A>(List<A> l) =
+	case l {
+	Nil => Nil;
+	Cons(x,xs) =>
+		let (List<A> lst)= last( xs) in
+		case lst {
+		Nil => Cons(x,Nil);
+		Cons(y,ys) => lst;
+		};
+	};
+
+def List<A> f2p<A>(List<A>x,List<A> y) =
+	case y {
+	Nil => x;
+	Cons(p,ps) =>
+		case x {
+		Nil => last(y);
+		Cons(b,bs) =>  f2p( y, bs);
+		};
+	};
+
+
+
+/* Example 6: Late-Starting Descending Parameters*/
+
+def List<A> g3<A>(List<A> c,List<A> d) =
+	case c {
+	Nil => d;
+	Cons(x,xs) =>  g3( xs,Cons(x,d));
+	};
+
+def List<A> f3<A>(List<A> a,List<A> b) =
+	case b {
+	Nil => g3(a,Nil);
+	Cons(x,xs) =>  f3(Cons(x,a), xs);
+	};
+
+{}

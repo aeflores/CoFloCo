@@ -1,0 +1,196 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive [multiple] : [dx/2]
+1. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into dx/2
+1. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations dx/2 
+* CE 10 is refined into CE [11] 
+* CE 8 is refined into CE [12] 
+* CE 6 is refined into CE [13] 
+* CE 5 is refined into CE [14] 
+* CE 9 is refined into CE [15] 
+* CE 7 is refined into CE [16] 
+* CE 3 is refined into CE [17] 
+* CE 4 is refined into CE [18] 
+
+
+#### Refined cost equations dx/2 
+* CE 11: dx(V,Out) = 1+ dx(W,X)+ dx(Y,Z)
+     [Y>=0,W>=0,X+Z+3*W+3*Y+10=Out,W+Y+1=V] 
+* CE 12: dx(V,Out) = 1+ dx(W,X)+ dx(Y,Z)
+     [Y>=0,W>=0,W+X+Z+2*Y+7=Out,W+Y+1=V] 
+* CE 13: dx(V,Out) = 1+ dx(W,X)+ dx(Y,Z)
+     [Y>=0,W>=0,W+X+Y+Z+3=Out,W+Y+1=V] 
+* CE 14: dx(V,Out) = 1+ dx(W,X)+ dx(Y,Z)
+     [Y>=0,W>=0,X+Z+1=Out,W+Y+1=V] 
+* CE 15: dx(V,Out) = 1+ dx(W,X)
+     [W>=0,W+X+1=Out,W+1=V] 
+* CE 16: dx(V,Out) = 1+ dx(W,X)
+     [W>=0,X+1=Out,W+1=V] 
+* CE 17: dx(V,Out) = 1
+     [V>=0,Out=1] 
+* CE 18: dx(V,Out) = 1
+     [Out=3,V=0] 
+
+### Cost equations --> "Loop" of dx/2 
+* CEs [17] --> Loop 10 
+* CEs [18] --> Loop 11 
+* CEs [15] --> Loop 12 
+* CEs [16] --> Loop 13 
+* CEs [11] --> Loop 14 
+* CEs [12] --> Loop 15 
+* CEs [13] --> Loop 16 
+* CEs [14] --> Loop 17 
+
+#### Loops of dx/2 
+* Loop 10: dx(V,Out) [V>=0,Out=1] 
+* Loop 11: dx(V,Out) [Out=3,V=0] 
+* Loop 12: dx(V,Out)->  dx(V',Out')
+                  [V>=1,V+Out'=Out,V=V'+1] 
+* Loop 13: dx(V,Out)->  dx(V',Out')
+                  [V>=1,Out=Out'+1,V=V'+1] 
+* Loop 14: dx(V,Out)->  dx(V',Out')  dx(V'2,Out'2)
+                  [V>=V'+1,V'>=0,Out'+Out'2+3*V+7=Out,V'+V'2+1=V] 
+* Loop 15: dx(V,Out)->  dx(V',Out')  dx(V'2,Out'2)
+                  [V>=V'+1,V'>=0,Out+V'=2*V+Out'+Out'2+5,V'+V'2+1=V] 
+* Loop 16: dx(V,Out)->  dx(V',Out')  dx(V'2,Out'2)
+                  [V>=V'+1,V'>=0,V+Out'+Out'2+2=Out,V'+V'2+1=V] 
+* Loop 17: dx(V,Out)->  dx(V',Out')  dx(V'2,Out'2)
+                  [V>=V'+1,V'>=0,Out=Out'+Out'2+1,V'+V'2+1=V] 
+
+### Ranking functions of CR dx(V,Out) 
+* RF of phase [12,13,14,15,16,17]: [V]
+
+#### Partial ranking functions of CR dx(V,Out) 
+* Partial RF of phase [12,13,14,15,16,17]:
+  - RF of loop [12:1,13:1,14:1,14:2,15:1,15:2,16:1,16:2,17:1,17:2]:
+    V
+
+
+### Resulting Chains:dx(V,Out) 
+* [11]
+* [10]
+* [multiple([12,13,14,15,16,17],[[11],[10]])]
+
+
+### Merging Chains  dx/2 into  External patterns of execution 
+* [[11]] --> 1 
+* [[10]] --> 2 
+* [[multiple([12,13,14,15,16,17],[[11],[10]])]] --> 3 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [19,20,21] 
+
+
+#### Refined cost equations start/1 
+* CE 19: start(V) = 0+ dx(W,X):1
+     [X=3,W=0,V=0] 
+* CE 20: start(V) = 0+ dx(V,W):2
+     [V>=0,W=1] 
+* CE 21: start(V) = 0+ dx(V,W):3
+     [W>=2,V>=1] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [19,20,21] --> Loop 18 
+
+#### Loops of start/1 
+* Loop 18: start(V) [V>=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [18]
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[18]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [12,13,14,15,16,17] 
+
+ * loop 12:dx(V,Out) -> [dx(V',Out')] 
+1
+ * loop 13:dx(V,Out) -> [dx(V',Out')] 
+1
+ * loop 14:dx(V,Out) -> [dx(V',Out'),dx(V'2,Out'2)] 
+1
+ * loop 15:dx(V,Out) -> [dx(V',Out'),dx(V'2,Out'2)] 
+1
+ * loop 16:dx(V,Out) -> [dx(V',Out'),dx(V'2,Out'2)] 
+1
+ * loop 17:dx(V,Out) -> [dx(V',Out'),dx(V'2,Out'2)] 
+1
+#### Cost of phase [12,13,14,15,16,17]:dx(V,Out) -> [] 
+6*it(12)+2*it([10])+0
+  Such that:aux(5) =< 1
+aux(6) =< V
+it(12) =< aux(6)
+it([10]) =< it(12)+it(12)+it(12)+it(12)+aux(5)
+
+#### Cost of chains of dx(V,Out):
+* Chain [11]: 1
+  with precondition: [V=0,Out=3] 
+
+* Chain [10]: 1
+  with precondition: [Out=1,V>=0] 
+
+* Chain [multiple([12,13,14,15,16,17],[[11],[10]])]: 6*it(12)+2*it([10])+0
+  Such that:aux(5) =< 1
+aux(6) =< V
+it(12) =< aux(6)
+it([10]) =< it(12)+it(12)+it(12)+it(12)+aux(5)
+
+  with precondition: [V>=1,Out>=2] 
+
+
+#### Cost of chains of start(V):
+* Chain [18]: 6*s(3)+2*s(4)+1
+  Such that:s(1) =< 1
+s(2) =< V
+s(3) =< s(2)
+s(4) =< s(3)+s(3)+s(3)+s(3)+s(1)
+
+  with precondition: [V>=0] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [18] with precondition: [V>=0] 
+    - Upper bound: 14*V+3 
+    - Complexity: n 
+
+### Maximum cost of start(V): 14*V+3 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 21 ms.
+* Invariants computed in 55 ms.
+   - Backward Invariants 20 ms.
+   - Transitive Invariants 13 ms.
+* Refinement performed in 108 ms.
+* Termination proved in 16 ms.
+* Upper bounds computed in 156 ms.
+   - Equation cost structures 25 ms.
+   - Phase cost structures 144 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 407 ms.
+

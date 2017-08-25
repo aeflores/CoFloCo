@@ -1,0 +1,195 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [n6/2]
+1. non_recursive : [m4/1]
+2. non_recursive : [m5/1]
+3. non_recursive : [m3/1]
+4. non_recursive : [m2/1]
+5. non_recursive : [m8/1]
+6. non_recursive : [m9/1]
+7. non_recursive : [m7/1]
+8. non_recursive : [m6/1]
+9. non_recursive : [n2/1]
+10. non_recursive : [n3/1]
+11. non_recursive : [n1/1]
+12. non_recursive : [n0/1]
+13. recursive : [m0/3,m1/3,n7/3,n8/3,n9/3,o0/3,o2/3,o3/3]
+14. non_recursive : [n5/0]
+15. non_recursive : [o1/2]
+16. non_recursive : [n4/2]
+17. non_recursive : [add/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is completely evaluated into other SCCs
+4. SCC is completely evaluated into other SCCs
+5. SCC is completely evaluated into other SCCs
+6. SCC is completely evaluated into other SCCs
+7. SCC is completely evaluated into other SCCs
+8. SCC is completely evaluated into other SCCs
+9. SCC is completely evaluated into other SCCs
+10. SCC is completely evaluated into other SCCs
+11. SCC is completely evaluated into other SCCs
+12. SCC is completely evaluated into other SCCs
+13. SCC is partially evaluated into m0/3
+14. SCC is completely evaluated into other SCCs
+15. SCC is completely evaluated into other SCCs
+16. SCC is completely evaluated into other SCCs
+17. SCC is partially evaluated into add/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations m0/3 
+* CE 6 is refined into CE [7] 
+* CE 5 is refined into CE [8] 
+* CE 4 is refined into CE [9] 
+* CE 3 is refined into CE [10] 
+
+
+#### Refined cost equations m0/3 
+* CE 7: m0(A,B,C) = 3
+     [C>=0,A>=0] 
+* CE 8: m0(A,B,C) = 19+ m0(A,B,D)
+     [A+3>=D,D>=3,D=C+3] 
+* CE 9: m0(A,B,C) = 19+ m0(A,B,D)
+     [A+2>=D,D>=2,D=C+2] 
+* CE 10: m0(A,B,C) = 19+ m0(A,B,D)
+     [A+1>=D,D>=1,D=C+1] 
+
+### Cost equations --> "Loop" of m0/3 
+* CEs [8] --> Loop 6 
+* CEs [9] --> Loop 7 
+* CEs [10] --> Loop 8 
+* CEs [7] --> Loop 9 
+
+#### Loops of m0/3 
+* Loop 6: m0(A,B,C)->  m0(A,B,C')
+                  [A+3>=C',C'>=3,C'=C+3] 
+* Loop 7: m0(A,B,C)->  m0(A,B,C')
+                  [A+2>=C',C'>=2,C'=C+2] 
+* Loop 8: m0(A,B,C)->  m0(A,B,C')
+                  [A+1>=C',C'>=1,C'=C+1] 
+* Loop 9: m0(A,B,C) [C>=0,A>=0] 
+
+### Ranking functions of CR m0(A,B,C) 
+* RF of phase [6,7,8]: [A-C+1]
+
+#### Partial ranking functions of CR m0(A,B,C) 
+* Partial RF of phase [6,7,8]:
+  - RF of loop [6:1,7:1,8:1]:
+    A-C+1
+
+
+### Resulting Chains:m0(A,B,C) 
+* [[6,7,8],9]
+* [9]
+
+
+### Specialization of cost equations add/2 
+* CE 2 is refined into CE [11,12] 
+
+
+#### Refined cost equations add/2 
+* CE 11: add(A,B) = 6+ m0(A,B,C):[[6,7,8],9]
+     [A>=0,C=0] 
+* CE 12: add(A,B) = 6+ m0(A,B,C):[9]
+     [A>=0,C=0] 
+
+### Cost equations --> "Loop" of add/2 
+* CEs [12] --> Loop 10 
+* CEs [11] --> Loop 11 
+
+#### Loops of add/2 
+* Loop 10: add(A,B) [A>=0] 
+* Loop 11: add(A,B) [A>=0] 
+
+### Ranking functions of CR add(A,B) 
+
+#### Partial ranking functions of CR add(A,B) 
+
+
+### Resulting Chains:add(A,B) 
+* [11]
+* [10]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [6,7,8] 
+
+ * loop 6:m0(A,B,C) -> [m0(A',B',C')] 
+19
+ * loop 7:m0(A,B,C) -> [m0(A',B',C')] 
+19
+ * loop 8:m0(A,B,C) -> [m0(A',B',C')] 
+19
+#### Cost of phase [6,7,8]:m0(A,B,C) -> [m0(A',B',C')] 
+19*it(6)+19*it(7)+19*it(8)+0
+  Such that:it(6)+it(7)+it(8) =< A-C-A'+C'
+aux(1) =< A-C+1
+it(6)+it(7)+it(8) =< aux(1)
+it(6)+it(7)+it(8) >= A/3-C/3-A'/3+C'/3
+
+#### Cost of chains of m0(A,B,C):
+* Chain [[6,7,8],9]: 19*it(6)+19*it(7)+19*it(8)+3
+  Such that:aux(1) =< A-C+1
+it(8)+it(7)+it(6) =< A-C+3
+it(6)+it(7)+it(8) =< aux(1)
+it(8)+it(7)+it(6) >= 1/3
+
+  with precondition: [C>=0,A>=C] 
+
+* Chain [9]: 3
+  with precondition: [A>=0,C>=0] 
+
+
+#### Cost of chains of add(A,B):
+* Chain [11]: 19*s(2)+19*s(3)+19*s(4)+9
+  Such that:s(1) =< A+1
+s(4)+s(3)+s(2) =< A+3
+s(2)+s(3)+s(4) =< s(1)
+s(2)+s(3)+s(4) >= 1/3
+
+  with precondition: [A>=0] 
+
+* Chain [10]: 9
+  with precondition: [A>=0] 
+
+
+Closed-form bounds of add(A,B): 
+-------------------------------------
+* Chain [11] with precondition: [A>=0] 
+    - Lower bound: 46/3 
+    - Complexity: constant
+ * Chain [10] with precondition: [A>=0] 
+    - Lower bound: 9 
+    - Complexity: constant
+ 
+### Partitioned lower bound of add(A,B): 
+* 9 
+ if [A>=0]
+Possible lower bounds : [9]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 66 ms.
+* Invariants computed in 37 ms.
+   - Backward Invariants 10 ms.
+   - Transitive Invariants 11 ms.
+* Refinement performed in 51 ms.
+* Termination proved in 16 ms.
+* Upper bounds computed in 64 ms.
+   - Equation cost structures 22 ms.
+   - Phase cost structures 39 ms.
+   - Chain cost structures 11 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 300 ms.
+

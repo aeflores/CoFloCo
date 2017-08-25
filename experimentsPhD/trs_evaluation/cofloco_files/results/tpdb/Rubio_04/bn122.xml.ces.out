@@ -1,0 +1,136 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [times/3]
+1. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into times/3
+1. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations times/3 
+* CE 4 is refined into CE [5] 
+* CE 3 is refined into CE [6] 
+
+
+#### Refined cost equations times/3 
+* CE 5: times(V1,V,Out) = 0
+     [V>=0,V1>=0,Out=0] 
+* CE 6: times(V1,V,Out) = 1+ times(W1,V1,X1)
+     [W1>=0,V1>=0,V1+X1+1=Out,W1+1=V] 
+
+### Cost equations --> "Loop" of times/3 
+* CEs [6] --> Loop 4 
+* CEs [5] --> Loop 5 
+
+#### Loops of times/3 
+* Loop 4: times(V1,V,Out)->  times(A',V1,B')
+                  [A'>=0,V1>=0,V1+B'+1=Out,A'+1=V] 
+* Loop 5: times(V1,V,Out) [V>=0,V1>=0,Out=0] 
+
+### Ranking functions of CR times(V1,V,Out) 
+* RF of phase [4]: [V1+V]
+
+#### Partial ranking functions of CR times(V1,V,Out) 
+* Partial RF of phase [4]:
+  - RF of loop [4:1]:
+    V1+V
+
+
+### Resulting Chains:times(V1,V,Out) 
+* [[4],5]
+* [5]
+
+
+### Merging Chains  times/3 into  External patterns of execution 
+* [[5]] --> 1 
+* [[5,[4]]] --> 2 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [7,8] 
+
+
+#### Refined cost equations start/2 
+* CE 7: start(V1,V) = 0+ times(V1,V,W1):1
+     [V>=0,V1>=0,W1=0] 
+* CE 8: start(V1,V) = 0+ times(V1,V,W1):2
+     [W1>=V1+1,V>=1,V1>=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [7,8] --> Loop 6 
+
+#### Loops of start/2 
+* Loop 6: start(V1,V) [V>=0,V1>=0] 
+
+### Ranking functions of CR start(V1,V) 
+
+#### Partial ranking functions of CR start(V1,V) 
+
+
+### Resulting Chains:start(V1,V) 
+* [6]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[6]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [4] 
+
+ * loop 4:times(V1,V,Out) -> [times(V1',V',Out')] 
+1
+#### Cost of phase [4]:times(V1,V,Out) -> [times(V1',V',Out')] 
+1*it(4)+0
+  Such that:it(4) =< V1+V
+it(4) =< V1+V-V1'-V'
+
+#### Cost of chains of times(V1,V,Out):
+* Chain [[4],5]: 1*it(4)+0
+  Such that:it(4) =< V1+V
+
+  with precondition: [V1>=0,V>=1,Out>=V1+1] 
+
+* Chain [5]: 0
+  with precondition: [Out=0,V1>=0,V>=0] 
+
+
+#### Cost of chains of start(V1,V):
+* Chain [6]: 1*s(1)+0
+  Such that:s(1) =< V1+V
+
+  with precondition: [V1>=0,V>=0] 
+
+
+Closed-form bounds of start(V1,V): 
+-------------------------------------
+* Chain [6] with precondition: [V1>=0,V>=0] 
+    - Upper bound: V1+V 
+    - Complexity: n 
+
+### Maximum cost of start(V1,V): V1+V 
+Asymptotic class: n 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 6 ms.
+* Invariants computed in 19 ms.
+   - Backward Invariants 8 ms.
+   - Transitive Invariants 5 ms.
+* Refinement performed in 28 ms.
+* Termination proved in 5 ms.
+* Upper bounds computed in 27 ms.
+   - Equation cost structures 8 ms.
+   - Phase cost structures 8 ms.
+   - Chain cost structures 9 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 109 ms.
+

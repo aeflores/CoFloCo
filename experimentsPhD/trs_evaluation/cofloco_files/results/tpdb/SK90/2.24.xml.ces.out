@@ -1,0 +1,144 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive [multiple] : [fib/2]
+1. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into fib/2
+1. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations fib/2 
+* CE 4 is refined into CE [7] 
+* CE 3 is refined into CE [8] 
+* CE 6 is refined into CE [9] 
+* CE 5 is refined into CE [10] 
+
+
+#### Refined cost equations fib/2 
+* CE 7: fib(V,Out) = 1
+     [Out=1,V=1] 
+* CE 8: fib(V,Out) = 1
+     [Out=0,V=0] 
+* CE 9: fib(V,Out) = 0
+     [V>=0,Out=0] 
+* CE 10: fib(V,Out) = 1+ fib(W,X)+ fib(Y,Z)
+     [Y>=0,X+Z+1=Out,Y+1=W,Y+2=V] 
+
+### Cost equations --> "Loop" of fib/2 
+* CEs [10] --> Loop 5 
+* CEs [7] --> Loop 6 
+* CEs [8,9] --> Loop 7 
+
+#### Loops of fib/2 
+* Loop 5: fib(V,Out)->  fib(V',Out')  fib(V'2,Out'2)
+                  [V'2>=0,Out=Out'+Out'2+1,V'2+1=V',V'2+2=V] 
+* Loop 6: fib(V,Out) [Out=1,V=1] 
+* Loop 7: fib(V,Out) [V>=0,Out=0] 
+
+### Ranking functions of CR fib(V,Out) 
+* RF of phase [5]: [V-1]
+
+#### Partial ranking functions of CR fib(V,Out) 
+* Partial RF of phase [5]:
+  - RF of loop [5:1,5:2]:
+    V-1
+
+
+### Resulting Chains:fib(V,Out) 
+* [7]
+* [6]
+* [multiple([5],[[7],[6]])]
+
+
+### Merging Chains  fib/2 into  External patterns of execution 
+* [[6]] --> 1 
+* [[7]] --> 2 
+* [[multiple([5],[[7],[6]])]] --> 3 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [11,12,13] 
+
+
+#### Refined cost equations start/1 
+* CE 11: start(V) = 0+ fib(W,X):1
+     [X=1,W=1,V=1] 
+* CE 12: start(V) = 0+ fib(V,W):2
+     [V>=0,W=0] 
+* CE 13: start(V) = 0+ fib(V,W):3
+     [W>=1,V>=2] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [11,12,13] --> Loop 8 
+
+#### Loops of start/1 
+* Loop 8: start(V) [V>=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [8]
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[8]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5] 
+
+ * loop 5:fib(V,Out) -> [fib(V',Out'),fib(V'2,Out'2)] 
+1
+#### Cost of phase [5]:fib(V,Out) -> [] 
+1*it(5)+2*it([6])+0
+#### Cost of chains of fib(V,Out):
+* Chain [7]: 1
+  with precondition: [Out=0,V>=0] 
+
+* Chain [6]: 1
+  with precondition: [V=1,Out=1] 
+
+* Chain [multiple([5],[[7],[6]])]: 1*it(5)+2*it([6])+0
+  with precondition: [V>=2,Out>=1] 
+
+
+#### Cost of chains of start(V):
+* Chain [8]: 1*aux(6)+0
+  with precondition: [V>=0] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [8] with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 2 ms.
+* Invariants computed in 6 ms.
+   - Backward Invariants 3 ms.
+   - Transitive Invariants 1 ms.
+* Refinement performed in 11 ms.
+* Termination proved in 1 ms.
+* Upper bounds computed in 15 ms.
+   - Equation cost structures 3 ms.
+   - Phase cost structures 12 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 43 ms.
+

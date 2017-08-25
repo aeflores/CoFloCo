@@ -1,0 +1,83 @@
+/* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases * *
+ *
+ * File:
+ *   example/calculator.raml
+ *
+ * Author:
+ *   Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   An evaluator for simple arithmetic expressions.
+ *   
+ */
+
+module Calculator;
+
+data Nat = Zero| Succ(Nat nt);
+data Expr= Nt(Nat val) 
+     | Add(Expr e1,Expr e2) 
+     | Sub(Expr es1,Expr es2);
+
+
+def Nat add(Nat n1,Nat n2)=
+    case n1 {
+    Zero => n2;
+    Succ(n) => Succ(add(n,n2));
+     };
+
+def Nat sub(Nat n1,Nat n2)=
+    case n2 {
+    Zero => n1;
+    Succ(n2p) => case n1 {
+        Zero => Zero;
+	Succ(n1p) => sub(n1p,n2p);
+	};
+	};
+
+def Nat mult(Nat n1,Nat n2)=
+    case n1 {
+    Zero => Zero;
+    Succ(n) => add(n,mult(n,n2));
+     };
+
+def Nat eval_simpl(Expr expr)=
+    case expr {
+    Nt(n) => n;
+    Add(e1,e2)=> add(eval_simpl(e1),eval_simpl(e2));
+    Sub(e1,e2)=> sub(eval_simpl(e1),eval_simpl(e2));
+    };
+
+def Nat eval(Expr expr)=
+    case expr {
+    Nt(n) => n;
+    Add(e1,e2)=> 
+              let (Nat n1)=eval(e1) in
+	      case n1 {
+	         Zero=> eval(e2);
+		 Succ(n)=> Succ(eval(Add(Nt(n),e2)));
+		 };
+    Sub(e1,e2)=> 
+              let (Nat n2)=eval(e2) in
+	      case n2 {
+	         Zero=> eval(e1);
+		     Succ(m)=> 
+		     let (Nat n3)=eval(e1) in
+		     case n3 {
+ 		        Zero => Zero;
+		        Succ(n)=> eval(Sub(Nt(n),Nt(m)));
+		      };
+		 };
+    };
+      
+def Int nat_to_int(Nat n) =
+  case n {
+    Zero => 0;
+    Succ(m) =>
+       nat_to_int(m)+1 ;
+    };
+
+{}

@@ -1,0 +1,79 @@
+(* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/LogicAndCodes.raml
+ *
+ * Author:
+ *   Ankush Das (2015)
+ * 
+ * Description:
+ *   The third section (“Logic and Codes“) from the OCaml tutorial
+ *   "99 Problems (solved) in OCaml": 
+ *     https://ocaml.org/learn/tutorials/99problems.html
+ *   
+ *)
+
+type bool_expr =
+    | Var of int
+    | Not of bool_expr
+    | And of bool_expr * bool_expr
+    | Or of bool_expr * bool_expr;;
+
+exception Invalid
+
+let rec eval2 a val_a b val_b = function
+		| Var x -> (Raml.tick(1.0); if x = a then val_a
+               else if x = b then val_b
+               else raise Invalid)
+    | Not e -> (Raml.tick(1.0); not(eval2 a val_a b val_b e))
+    | And(e1, e2) -> (Raml.tick(1.0); eval2 a val_a b val_b e1 && eval2 a val_a b val_b e2)
+    | Or(e1, e2) -> (Raml.tick(1.0); eval2 a val_a b val_b e1 || eval2 a val_a b val_b e2);;
+
+let table2 a b expr =
+    [(true,  true,  eval2 a true  b true  expr);
+     (true,  false, eval2 a true  b false expr);
+     (false, true,  eval2 a false b true  expr);
+     (false, false, eval2 a false b false expr) ];;
+
+exception Not_found
+
+let rec assoc k l =
+	match l with
+	| [] -> raise Not_found
+	| x::xs ->
+		let (a, b) = x in
+		(Raml.tick(1.0);
+		if ((a:int) = (k:int)) then b
+		else assoc k xs);;
+
+let rev list = 
+  let rec aux acc = function
+    | [] -> acc
+    | h::t -> (Raml.tick(1.0); aux (h::acc) t)
+  in aux [] list;;
+
+let rec concat l1 l2 =
+	match l1 with
+	| [] -> l2
+	| x::xs -> (Raml.tick(1.0); x::concat xs l2);;
+
+let rec eval val_vars = function
+		| Var x -> (Raml.tick(1.0); assoc x val_vars)
+    | Not e -> (Raml.tick(1.0); not(eval val_vars e))
+    | And(e1, e2) -> (Raml.tick(1.0); eval val_vars e1 && eval val_vars e2)
+    | Or(e1, e2) -> (Raml.tick(1.0); eval val_vars e1 || eval val_vars e2);;
+
+let rec table_make val_vars vars expr =
+    match vars with
+    | [] -> [(rev val_vars, eval val_vars expr)]
+    | v :: tl ->
+			(Raml.tick(1.0);
+       concat (table_make ((v, true) :: val_vars) tl expr)
+	      (table_make ((v, false) :: val_vars) tl expr));;
+
+
+()

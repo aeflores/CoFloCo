@@ -1,0 +1,85 @@
+/* * * * * * * * * * *
+  Translation to abs from Raml
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/LogicAndCodes.raml
+ *
+ * 
+ * Description:
+ *   The third section (“Logic and Codes“) from the OCaml tutorial
+ *   "99 Problems (solved) in OCaml": 
+ *     https://ocaml.org/learn/tutorials/99problems.html
+ *   
+ */
+module LogicAndCodes;
+
+data Bool_expr=
+    Var(Int val) 
+    | Not(Bool_expr b)
+    | And(Bool_expr ba1,Bool_expr ba2)
+    | Or(Bool_expr bo1,Bool_expr bo2);
+
+
+def Bool eval2(Int a,Bool val_a,Int b,Bool val_b,Bool_expr exp)=
+    case exp {
+     Var(x)=> if x==a then val_a
+     	      else (if x==b then val_b else
+	      False); //should raise exception
+     Not(e) => !eval2(a,val_a,b,val_b,e);
+     And(e1,e2) => eval2(a,val_a,b,val_b,e1) && eval2(a,val_a,b,val_b,e2);
+     Or(e1,e2) => eval2(a,val_a,b,val_b,e1) || eval2(a,val_a,b,val_b,e2);
+     };
+
+
+def List<Triple<Bool,Bool,Bool>> table2(Int a,Int b,Bool_expr expr)=
+      Cons( Triple(True,True, eval2(a,True,b,True,expr)),
+      Cons(Triple(True,False, eval2(a,True,b,False,expr)),  
+      Cons(Triple(False,True, eval2(a,False,b,True,expr)),
+      Cons(Triple(False,False, eval2(a,False,b,False,expr)),Nil))));
+
+
+def Bool assoc(Int k,List<Pair<Int,Bool>> l)=
+    case l {
+     //Nil => raise;
+     Cons(Pair(a,b),xs)=>
+        if a==k then b
+	else assoc(k,xs);
+	};
+
+def List<A> aux_rev<A>(List<A> acc,List<A> l) = 
+   case l { 
+      Nil => acc ; 
+      Cons(h, t) => aux_rev(Cons(h,acc),t) ; 
+   };
+def List<A> rev<A>(List<A> l) = aux_rev(Nil,l);
+
+
+def  List<A> concat<A>(List<A> l1,List<A> l2) =
+	case l1 {
+	 Nil => l2;
+	 Cons(x,xs) => Cons(x,concat(xs,l2));	 
+	};
+
+
+def Bool eval(List<Pair<Int,Bool>> val_vars,Bool_expr exp)=
+      case exp {
+     Var(x)=> assoc(x,val_vars);
+     Not(e) => ! eval(val_vars,e);
+     And(e1,e2) => eval(val_vars,e1) && eval(val_vars,e2);
+     Or(e1,e2) => eval(val_vars,e1) || eval(val_vars,e2);
+     };
+    
+
+def  List<Pair< List<Pair<Int,Bool>>, Bool>> table_make(List<Pair<Int,Bool>> val_vars, List<Int> vars, Bool_expr expr)=
+    case vars {
+    Nil => Cons(Pair(rev(val_vars),eval(val_vars,expr)),Nil);
+    Cons(v,tl) => concat( table_make(Cons(Pair(v,True),val_vars),tl,expr),
+			  table_make(Cons(Pair(v,False),val_vars),tl,expr));
+			  };
+
+
+
+{}

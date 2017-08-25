@@ -1,0 +1,559 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [fun9/1]
+1. non_recursive  : [plus/3]
+2. non_recursive  : [s/2]
+3. non_recursive  : [x/3]
+4. recursive [non_tail,multiple] : [activate/2]
+5. non_recursive  : [fun1/2]
+6. non_recursive  : [fun2/2]
+7. non_recursive  : [fun4/2]
+8. recursive [non_tail,multiple] : [fun/3,fun3/3,isNat/2]
+9. non_recursive  : [fun11/4]
+10. non_recursive  : [fun10/4]
+11. non_recursive  : [fun5/3]
+12. non_recursive  : [fun7/4]
+13. non_recursive  : [fun6/4]
+14. non_recursive  : [fun8/2]
+15. non_recursive  : [start/3]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is completely evaluated into other SCCs
+2. SCC is completely evaluated into other SCCs
+3. SCC is completely evaluated into other SCCs
+4. SCC is partially evaluated into activate/2
+5. SCC is completely evaluated into other SCCs
+6. SCC is completely evaluated into other SCCs
+7. SCC is completely evaluated into other SCCs
+8. SCC is partially evaluated into isNat/2
+9. SCC is partially evaluated into fun11/4
+10. SCC is partially evaluated into fun10/4
+11. SCC is completely evaluated into other SCCs
+12. SCC is partially evaluated into fun7/4
+13. SCC is partially evaluated into fun6/4
+14. SCC is completely evaluated into other SCCs
+15. SCC is partially evaluated into start/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations activate/2 
+* CE 12 is refined into CE [23] 
+* CE 15 is refined into CE [24] 
+* CE 14 is refined into CE [25] 
+* CE 13 is refined into CE [26] 
+
+
+#### Refined cost equations activate/2 
+* CE 23: activate(V3,Out) = 2
+     [Out=0,V3=0] 
+* CE 24: activate(A,A) = 1
+     [A>=0] 
+* CE 25: activate(V3,Out) = 2+ activate(W3,X3)
+     [X3>=0,W3>=0,X3+1=Out,W3+1=V3] 
+* CE 26: activate(V3,Out) = 2+ activate(W3,X3)+ activate(Y3,Z3)
+     [Z3>=0,Y3>=0,X3>=0,W3>=0,X3+Z3+1=Out,W3+Y3+1=V3] 
+
+### Cost equations --> "Loop" of activate/2 
+* CEs [26] --> Loop 12 
+* CEs [25] --> Loop 13 
+* CEs [23,24] --> Loop 14 
+
+#### Loops of activate/2 
+* Loop 12: activate(V3,Out)->  activate(V3',Out')  activate(V3'2,Out'2)
+                  [Out'2>=0,V3'2>=0,Out'>=0,V3'>=0,Out'+Out'2+1=Out,V3'+V3'2+1=V3] 
+* Loop 13: activate(V3,Out)->  activate(V3',Out')
+                  [Out'>=0,V3'>=0,Out'+1=Out,V3'+1=V3] 
+* Loop 14: activate(A,A) [A>=0] 
+
+### Ranking functions of CR activate(V3,Out) 
+* RF of phase [12,13]: [V3]
+
+#### Partial ranking functions of CR activate(V3,Out) 
+* Partial RF of phase [12,13]:
+  - RF of loop [12:1,12:2,13:1]:
+    V3
+
+
+### Resulting Chains:activate(V3,Out) 
+* [14]
+* [multiple([12,13],[[14]])]
+
+
+### Merging Chains  activate/2 into  External patterns of execution 
+* [[14],[multiple([12,13],[[14]])]] --> 1 
+
+
+### Specialization of cost equations isNat/2 
+* CE 18 is refined into CE [27] 
+* CE 17 is refined into CE [28] 
+* CE 16 is refined into CE [29] 
+
+
+#### Refined cost equations isNat/2 
+* CE 27: isNat(V3,Out) = 2+ activate(W3,W3):1+ isNat(W3,X3)
+     [W3>=0,W3+1=V3,X3=0,Out=0] 
+* CE 28: isNat(V3,Out) = 1
+     [Out=0,V3=0] 
+* CE 29: isNat(V3,Out) = 3+ activate(W3,W3):1+ isNat(W3,X3)+ activate(Y3,Y3):1+ activate(Y3,Y3):1+ isNat(Y3,Z3)
+     [Y3>=0,W3>=0,W3+Y3+1=V3,Z3=0,X3=0,Out=0] 
+
+### Cost equations --> "Loop" of isNat/2 
+* CEs [29] --> Loop 15 
+* CEs [28] --> Loop 16 
+* CEs [27] --> Loop 17 
+
+#### Loops of isNat/2 
+* Loop 15: isNat(V3,Out)->  isNat(V3',Out')  isNat(V3'2,Out'2)
+                  [V3'2>=0,V3'>=0,V3'+V3'2+1=V3,Out'2=0,Out'=0,Out=0] 
+* Loop 16: isNat(V3,Out) [Out=0,V3=0] 
+* Loop 17: isNat(V3,Out)->  isNat(V3',Out')
+                  [V3'>=0,V3'+1=V3,Out'=0,Out=0] 
+
+### Ranking functions of CR isNat(V3,Out) 
+* RF of phase [15,17]: [V3]
+
+#### Partial ranking functions of CR isNat(V3,Out) 
+* Partial RF of phase [15,17]:
+  - RF of loop [15:1,15:2,17:1]:
+    V3
+
+
+### Resulting Chains:isNat(V3,Out) 
+* [16]
+* [multiple([15,17],[[16]])]
+
+
+### Merging Chains  isNat/2 into  External patterns of execution 
+* [[16]] --> 1 
+* [[multiple([15,17],[[16]])]] --> 2 
+
+
+### Specialization of cost equations fun11/4 
+* CE 22 is refined into CE [30] 
+
+
+#### Refined cost equations fun11/4 
+* CE 30: fun11(V3,V,V4,Out) = 3+ activate(V4,V4):1+ activate(V,V):1+ activate(V4,V4):1
+     [V4>=0,V>=0,V+2*V4+2=Out,V3=0] 
+
+### Cost equations --> "Loop" of fun11/4 
+* CEs [30] --> Loop 18 
+
+#### Loops of fun11/4 
+* Loop 18: fun11(V3,V,V4,Out) [V4>=0,V>=0,V+2*V4+2=Out,V3=0] 
+
+### Ranking functions of CR fun11(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun11(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun11(V3,V,V4,Out) 
+* [18]
+
+
+### Merging Chains  fun11/4 into  External patterns of execution 
+* [[18]] --> 1 
+
+
+### Specialization of cost equations fun10/4 
+* CE 21 is refined into CE [31,32] 
+
+
+#### Refined cost equations fun10/4 
+* CE 31: fun10(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNat(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ fun11(E5,F5,G5,Out):1
+     [Out>=2,Out=F5+2,Out=B5+2,Out=A5+2,Out=V+2,G5=0,E5=0,D5=0,C5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V3=0] 
+* CE 32: fun10(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNat(Y4,Z4):2+ activate(V,V):1+ activate(A5,B5):1+ fun11(C5,V,D5,Out):1
+     [Out>=V+4,V>=0,Out=2*D5+V+2,Out=2*B5+V+2,Out=2*A5+V+2,Out=2*Y4+V+2,Out=2*X4+V+2,Out=2*W4+V+2,Out=2*V4+V+2,C5=0,Z4=0,V3=0] 
+
+### Cost equations --> "Loop" of fun10/4 
+* CEs [32] --> Loop 19 
+* CEs [31] --> Loop 20 
+
+#### Loops of fun10/4 
+* Loop 19: fun10(V3,V,V4,Out) [V4>=1,V>=0,V+2*V4+2=Out,V3=0] 
+* Loop 20: fun10(V3,V,V4,Out) [V>=0,V+2=Out,V4=0,V3=0] 
+
+### Ranking functions of CR fun10(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun10(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun10(V3,V,V4,Out) 
+* [20]
+* [19]
+
+
+### Merging Chains  fun10/4 into  External patterns of execution 
+* [[20]] --> 1 
+* [[19]] --> 2 
+
+
+### Specialization of cost equations fun7/4 
+* CE 20 is refined into CE [33] 
+
+
+#### Refined cost equations fun7/4 
+* CE 33: fun7(V3,V,V4,Out) = 3+ activate(V4,V4):1+ activate(V,V):1
+     [V>=0,V4>=0,V+V4+2=Out,V3=0] 
+
+### Cost equations --> "Loop" of fun7/4 
+* CEs [33] --> Loop 21 
+
+#### Loops of fun7/4 
+* Loop 21: fun7(V3,V,V4,Out) [V4>=0,V>=0,V+V4+2=Out,V3=0] 
+
+### Ranking functions of CR fun7(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun7(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun7(V3,V,V4,Out) 
+* [21]
+
+
+### Merging Chains  fun7/4 into  External patterns of execution 
+* [[21]] --> 1 
+
+
+### Specialization of cost equations fun6/4 
+* CE 19 is refined into CE [34,35] 
+
+
+#### Refined cost equations fun6/4 
+* CE 34: fun6(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNat(Y4,Z4):1+ activate(A5,B5):1+ activate(C5,D5):1+ fun7(E5,F5,G5,Out):1
+     [Out>=2,Out=F5+2,Out=B5+2,Out=A5+2,Out=V+2,G5=0,E5=0,D5=0,C5=0,Z4=0,Y4=0,X4=0,W4=0,V4=0,V3=0] 
+* CE 35: fun6(V3,V,V4,Out) = 1+ activate(W4,X4):1+ isNat(Y4,Z4):2+ activate(V,V):1+ activate(A5,B5):1+ fun7(C5,V,D5,Out):1
+     [Out>=V+3,V>=0,Out=V+D5+2,Out=V+B5+2,Out=V+A5+2,Out=V+Y4+2,Out=V+X4+2,Out=V+W4+2,Out=V+V4+2,C5=0,Z4=0,V3=0] 
+
+### Cost equations --> "Loop" of fun6/4 
+* CEs [35] --> Loop 22 
+* CEs [34] --> Loop 23 
+
+#### Loops of fun6/4 
+* Loop 22: fun6(V3,V,V4,Out) [V4>=1,V>=0,V+V4+2=Out,V3=0] 
+* Loop 23: fun6(V3,V,V4,Out) [V>=0,V+2=Out,V4=0,V3=0] 
+
+### Ranking functions of CR fun6(V3,V,V4,Out) 
+
+#### Partial ranking functions of CR fun6(V3,V,V4,Out) 
+
+
+### Resulting Chains:fun6(V3,V,V4,Out) 
+* [23]
+* [22]
+
+
+### Merging Chains  fun6/4 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+
+
+### Specialization of cost equations start/3 
+* CE 2 is refined into CE [36,37] 
+* CE 3 is refined into CE [38] 
+* CE 4 is refined into CE [39] 
+* CE 5 is refined into CE [40,41] 
+* CE 6 is refined into CE [42] 
+* CE 7 is refined into CE [43] 
+* CE 8 is refined into CE [44,45] 
+* CE 9 is refined into CE [46] 
+* CE 10 is refined into CE [47,48] 
+* CE 11 is refined into CE [49] 
+
+
+#### Refined cost equations start/3 
+* CE 36: start(V3,V,V4) = 2+ activate(W4,X4):1+ isNat(Y4,Z4):1
+     [Z4=0,Y4=0,X4=0,W4=0,V=0,V3=0] 
+* CE 37: start(V3,V,V4) = 2+ activate(V,V):1+ isNat(V,W4):2
+     [V>=1,W4=0,V3=0] 
+* CE 38: start(V3,V,V4) = 1
+     [] 
+* CE 39: start(V3,V,V4) = 1+ activate(V,V):1
+     [V>=0,V3=0] 
+* CE 40: start(V3,V,V4) = 0+ fun6(W4,X4,Y4,Z4):1
+     [Z4>=2,Z4=X4+2,Z4=V+2,Y4=0,W4=0,V4=0,V3=0] 
+* CE 41: start(V3,V,V4) = 0+ fun6(W4,V,X4,Y4):2
+     [Y4>=V+3,V>=0,Y4=V+X4+2,Y4=V+V4+2,W4=0,V3=0] 
+* CE 42: start(V3,V,V4) = 0+ fun7(W4,V,X4,Y4):1
+     [Y4>=V+2,V>=0,Y4=V+X4+2,Y4=V+V4+2,W4=0,V3=0] 
+* CE 43: start(V3,V,V4) = 2
+     [V3=0] 
+* CE 44: start(V3,V,V4) = 0+ fun10(W4,X4,Y4,Z4):1
+     [Z4>=2,Z4=X4+2,Z4=V+2,Y4=0,W4=0,V4=0,V3=0] 
+* CE 45: start(V3,V,V4) = 0+ fun10(W4,V,X4,Y4):2
+     [Y4>=V+4,V>=0,Y4=2*X4+V+2,Y4=2*V4+V+2,W4=0,V3=0] 
+* CE 46: start(V3,V,V4) = 0+ fun11(W4,V,X4,Y4):1
+     [Y4>=V+2,V>=0,Y4=2*X4+V+2,Y4=2*V4+V+2,W4=0,V3=0] 
+* CE 47: start(V3,V,V4) = 0+ isNat(W4,X4):1
+     [X4=0,W4=0,V3=0] 
+* CE 48: start(V3,V,V4) = 0+ isNat(V3,W4):2
+     [V3>=1,W4=0] 
+* CE 49: start(V3,V,V4) = 0+ activate(V3,V3):1
+     [V3>=0] 
+
+### Cost equations --> "Loop" of start/3 
+* CEs [36,37,38,39,40,41,42,43,44,45,46,47,48,49] --> Loop 24 
+
+#### Loops of start/3 
+* Loop 24: start(V3,V,V4) [] 
+
+### Ranking functions of CR start(V3,V,V4) 
+
+#### Partial ranking functions of CR start(V3,V,V4) 
+
+
+### Resulting Chains:start(V3,V,V4) 
+* [24]
+
+
+### Merging Chains  start/3 into  External patterns of execution 
+* [[24]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [12,13] 
+
+ * loop 12:activate(V3,Out) -> [activate(V3',Out'),activate(V3'2,Out'2)] 
+2
+ * loop 13:activate(V3,Out) -> [activate(V3',Out')] 
+2
+#### Cost of phase [12,13]:activate(V3,Out) -> [] 
+4*it(12)+2*it([14])+0
+  Such that:it([14]) =< V3+1
+aux(1) =< V3
+it(12) =< aux(1)
+
+#### Cost of chains of activate(V3,Out):
+* Chain [14]: 2
+  with precondition: [V3=Out,V3>=0] 
+
+* Chain [multiple([12,13],[[14]])]: 4*it(12)+2*it([14])+0
+  Such that:it([14]) =< V3+1
+aux(1) =< V3
+it(12) =< aux(1)
+
+  with precondition: [V3=Out,V3>=1] 
+
+
+#### Cost of loops [15,17] 
+
+ * loop 15:isNat(V3,Out) -> [isNat(V3',Out'),isNat(V3'2,Out'2)] 
+2*s(14)+4*s(19)+4*s(17)+8*s(18)+9
+  Such that:s(13) =< V3'
+s(14) =< V3'+1
+s(15) =< V3'2
+s(16) =< V3'2+1
+s(17) =< s(16)
+s(18) =< s(15)
+s(19) =< s(13)
+
+ * loop 17:isNat(V3,Out) -> [isNat(V3',Out')] 
+6*s(24)+4
+  Such that:s(23) =< V3
+s(24) =< s(23)
+
+#### Cost of phase [15,17]:isNat(V3,Out) -> [] 
+13*it(15)+1*it([16])+2*s(25)+4*s(26)+10*s(27)+8*s(28)+0
+  Such that:it([16]) =< V3+1
+aux(10) =< V3
+it(15) =< aux(10)
+aux(6) =< aux(10)+1
+aux(7) =< aux(10)
+s(29) =< it(15)*aux(10)
+s(31) =< it(15)*aux(6)
+s(30) =< it(15)*aux(7)
+s(25) =< it(15)*aux(6)
+s(27) =< s(31)
+s(28) =< s(30)
+s(26) =< s(29)
+
+#### Cost of chains of isNat(V3,Out):
+* Chain [16]: 1
+  with precondition: [V3=0,Out=0] 
+
+* Chain [multiple([15,17],[[16]])]: 13*it(15)+1*it([16])+2*s(25)+4*s(26)+10*s(27)+8*s(28)+0
+  Such that:it([16]) =< V3+1
+aux(10) =< V3
+it(15) =< aux(10)
+aux(6) =< aux(10)+1
+aux(7) =< aux(10)
+s(29) =< it(15)*aux(10)
+s(31) =< it(15)*aux(6)
+s(30) =< it(15)*aux(7)
+s(25) =< it(15)*aux(6)
+s(27) =< s(31)
+s(28) =< s(30)
+s(26) =< s(29)
+
+  with precondition: [Out=0,V3>=1] 
+
+
+#### Cost of chains of fun11(V3,V,V4,Out):
+* Chain [18]: 4*s(35)+8*s(36)+2*s(38)+4*s(39)+9
+  Such that:s(37) =< V
+s(38) =< V+1
+aux(11) =< V4
+aux(12) =< V4+1
+s(35) =< aux(12)
+s(36) =< aux(11)
+s(39) =< s(37)
+
+  with precondition: [V3=0,V+2*V4+2=Out,V>=0,V4>=0] 
+
+
+#### Cost of chains of fun10(V3,V,V4,Out):
+* Chain [20]: 8*s(44)+4*s(47)+8*s(48)+17
+  Such that:aux(14) =< 1
+aux(15) =< V
+aux(16) =< V+1
+s(44) =< aux(14)
+s(47) =< aux(16)
+s(48) =< aux(15)
+
+  with precondition: [V3=0,V4=0,V+2=Out,V>=0] 
+
+* Chain [19]: 9*s(60)+29*s(61)+2*s(70)+10*s(71)+8*s(72)+4*s(73)+4*s(75)+8*s(76)+16
+  Such that:aux(17) =< V
+aux(18) =< V+1
+aux(19) =< V4
+aux(20) =< V4+1
+s(75) =< aux(18)
+s(60) =< aux(20)
+s(61) =< aux(19)
+s(76) =< aux(17)
+s(65) =< aux(19)+1
+s(66) =< aux(19)
+s(67) =< s(61)*aux(19)
+s(68) =< s(61)*s(65)
+s(69) =< s(61)*s(66)
+s(70) =< s(61)*s(65)
+s(71) =< s(68)
+s(72) =< s(69)
+s(73) =< s(67)
+
+  with precondition: [V3=0,V+2*V4+2=Out,V>=0,V4>=1] 
+
+
+#### Cost of chains of fun7(V3,V,V4,Out):
+* Chain [21]: 2*s(88)+4*s(89)+2*s(91)+4*s(92)+7
+  Such that:s(90) =< V
+s(91) =< V+1
+s(87) =< V4
+s(88) =< V4+1
+s(92) =< s(90)
+s(89) =< s(87)
+
+  with precondition: [V3=0,V+V4+2=Out,V>=0,V4>=0] 
+
+
+#### Cost of chains of fun6(V3,V,V4,Out):
+* Chain [23]: 6*s(94)+4*s(97)+8*s(98)+15
+  Such that:aux(22) =< 1
+aux(23) =< V
+aux(24) =< V+1
+s(94) =< aux(22)
+s(97) =< aux(24)
+s(98) =< aux(23)
+
+  with precondition: [V3=0,V4=0,V+2=Out,V>=0] 
+
+* Chain [22]: 7*s(109)+25*s(110)+2*s(119)+10*s(120)+8*s(121)+4*s(122)+4*s(124)+8*s(125)+14
+  Such that:aux(25) =< V
+aux(26) =< V+1
+aux(27) =< V4
+aux(28) =< V4+1
+s(124) =< aux(26)
+s(109) =< aux(28)
+s(125) =< aux(25)
+s(110) =< aux(27)
+s(114) =< aux(27)+1
+s(115) =< aux(27)
+s(116) =< s(110)*aux(27)
+s(117) =< s(110)*s(114)
+s(118) =< s(110)*s(115)
+s(119) =< s(110)*s(114)
+s(120) =< s(117)
+s(121) =< s(118)
+s(122) =< s(116)
+
+  with precondition: [V3=0,V+V4+2=Out,V>=0,V4>=1] 
+
+
+#### Cost of chains of start(V3,V,V4):
+* Chain [24]: 16*s(136)+25*s(139)+61*s(140)+2*s(149)+10*s(150)+8*s(151)+4*s(152)+22*s(167)+66*s(169)+4*s(175)+20*s(176)+16*s(177)+8*s(178)+3*s(215)+17*s(217)+2*s(223)+10*s(224)+8*s(225)+4*s(226)+17
+  Such that:aux(31) =< 1
+aux(32) =< V3
+aux(33) =< V3+1
+aux(34) =< V
+aux(35) =< V+1
+aux(36) =< V4
+aux(37) =< V4+1
+s(136) =< aux(31)
+s(215) =< aux(33)
+s(139) =< aux(35)
+s(167) =< aux(37)
+s(140) =< aux(34)
+s(217) =< aux(32)
+s(218) =< aux(32)+1
+s(219) =< aux(32)
+s(220) =< s(217)*aux(32)
+s(221) =< s(217)*s(218)
+s(222) =< s(217)*s(219)
+s(223) =< s(217)*s(218)
+s(224) =< s(221)
+s(225) =< s(222)
+s(226) =< s(220)
+s(144) =< aux(34)+1
+s(145) =< aux(34)
+s(146) =< s(140)*aux(34)
+s(147) =< s(140)*s(144)
+s(148) =< s(140)*s(145)
+s(149) =< s(140)*s(144)
+s(150) =< s(147)
+s(151) =< s(148)
+s(152) =< s(146)
+s(169) =< aux(36)
+s(170) =< aux(36)+1
+s(171) =< aux(36)
+s(172) =< s(169)*aux(36)
+s(173) =< s(169)*s(170)
+s(174) =< s(169)*s(171)
+s(175) =< s(169)*s(170)
+s(176) =< s(173)
+s(177) =< s(174)
+s(178) =< s(172)
+
+  with precondition: [] 
+
+
+Closed-form bounds of start(V3,V,V4): 
+-------------------------------------
+* Chain [24] with precondition: [] 
+    - Upper bound: nat(V3)*29+33+nat(V3)*24*nat(V3)+nat(V)*73+nat(V)*24*nat(V)+nat(V4)*90+nat(V4)*48*nat(V4)+nat(V3+1)*3+nat(V+1)*25+nat(V4+1)*22 
+    - Complexity: n^2 
+
+### Maximum cost of start(V3,V,V4): nat(V3)*29+33+nat(V3)*24*nat(V3)+nat(V)*73+nat(V)*24*nat(V)+nat(V4)*90+nat(V4)*48*nat(V4)+nat(V3+1)*3+nat(V+1)*25+nat(V4+1)*22 
+Asymptotic class: n^2 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 115 ms.
+* Invariants computed in 55 ms.
+   - Backward Invariants 20 ms.
+   - Transitive Invariants 11 ms.
+* Refinement performed in 220 ms.
+* Termination proved in 13 ms.
+* Upper bounds computed in 460 ms.
+   - Equation cost structures 287 ms.
+   - Phase cost structures 160 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 13 ms.
+* Total analysis performed in 984 ms.
+

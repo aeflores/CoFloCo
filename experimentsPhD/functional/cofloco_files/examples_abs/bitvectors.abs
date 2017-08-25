@@ -1,0 +1,130 @@
+/* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/bitvectors.raml
+ *
+ * Author:
+ *   Ankush Das, Jan Hoffmann (2015)
+ * 
+ * Description:
+ *   A library for bit vectors.
+ *    
+ *   A bit vector is an integer list of 0's and 1's.  The first value in
+ *   the list is the least significant bit.  For example [1,0] is 1 and
+ *   [0,1] is 2.  We interpret the empty list as zero., i.e., [] =
+ *   [0].
+ *
+ *   We a assume an arbitrary but fixed word length (e.g. 32 bit) for the
+ *   vectors.
+ *    
+ *   The library contains the following functions.
+ *    
+ *     - add(b1,b2): addition b1+b2 of two bit vectors b1 b2.  Can produce an
+ *          overflow.
+ *    
+ *     - sub(b1,b2): subtraction of b2 from b1 (b1-b2).  Returns [0,...,0] if the
+ *               result is negative.
+ *
+ *     - compare(b1,b2): -1 if b1 is less then b2, 0 if b1 is equal to b2,
+                and 1 if b1 is greater then b2.
+ *    
+ *     - leq(b1,b2): b1 < b2 ?
+ *    
+ *     - mult(b1,b2): multiplication of two bit vectors
+ *    
+ *     - Div(b1,b2): division of b1 by b2.  The result is undefined in case
+ *               of division by zero. (The function name is upper case
+ *               since div is a RAML key word.)
+ */
+
+
+module Bitvectors;
+
+def Int bitToIntp(List<Int> b,Int n) =
+	case b {
+	Nil =>  0;
+	Cons(x,xs)=>   x*n + bitToIntp( xs, n*n);
+	};
+
+def Int bitToInt(List<Int> b) =
+	bitToIntp( b,1);
+
+def Pair<Int,Int> sum(Int x,Int y,Int r) =
+	let (Int s) = x + y + r in
+	if s == 0 then Pair(0, 0)
+	else if s == 1 then Pair(1, 0)
+	else if s == 2 then Pair(0, 1)
+	else Pair(1, 1);
+
+def List<Int> addp(List<Int> b1,List<Int> b2,Int r) =
+	case b1 {
+	Nil =>  Nil;
+	Cons(x,xs) =>
+		case b2 {
+		Nil =>  Nil;
+		Cons(y,ys) => 
+			let (Pair<Int,Int> pair) = sum(x,y,r) in
+			case pair { Pair(z,rp)=> Cons(z,addp(xs,ys,rp));};
+			};
+		};
+
+def List<Int> add(List<Int> b1,List<Int> b2) =
+	addp( b1, b2, 0);
+
+def List<Int> mult(List<Int> b1,List<Int> b2) =
+	case b1 {
+	Nil =>  Nil;
+	Cons(x,xs) =>
+		let (List<Int> zs) = Cons(0,mult(xs, b2)) in 
+		if x == 1 then add(b2, zs)
+		else zs;
+		};
+
+def Pair<Int,Int> diff(Int x,Int y,Int r) =
+	 Pair(x + y + r % 2, if (x - y - r) < 0 then 1 else 0);
+
+
+def Pair<List<Int>,Int> subp(List<Int> b1,List<Int> b2,Int r) =
+	case b1 {
+	Nil =>  Pair(Nil, r);
+	Cons(x,xs) =>
+		case b2 {
+		Nil =>  Pair(Nil, r);
+		Cons(y,ys) => 
+			let (Pair<Int,Int> pair1) = diff(x,y,r) in
+			case pair1 { Pair(z, rp)=> 
+			   let (Pair<List<Int>,Int> pair2) = subp(xs,ys,rp) in
+			   case pair2 { Pair(zs, s) =>
+			   	if s==1 then Pair(Cons(0,zs),s)
+				else Pair(Cons(z,zs),s);}; };
+				};
+		};
+		
+
+def List<Int> sub(List<Int> b1,List<Int> b2) =
+	fst(subp(b1, b2, 0));
+
+def Int compare(List<Int> b1,List<Int> b2) =
+	case b1 {
+	Nil =>  0;
+	Cons(x,xs) => 
+		case b2 {
+		Nil =>  0;
+		Cons(y,ys) => 
+		        let (Int r)=compare(xs,ys) in 	
+			if r == 0 then
+				(if x < y then 0-1
+				else if y < x then 1
+				else 0)
+			else r;
+			};
+		};
+
+def Bool leq(List<Int> b1,List<Int> b2) =
+	compare( b1, b2) < 1;
+
+{}

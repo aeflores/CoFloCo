@@ -1,0 +1,253 @@
+
+Preprocessing Cost Relations
+=====================================
+0. SCC does not have a single cut point : [fun2/3,mark/2]  
+ Merged into fun2mark/3
+
+#### Computed strongly connected components 
+1. non_recursive  : [start/2]
+0. recursive [multiple] : [fun/2,fun1/3,fun2mark/3]
+
+#### Obtained direct recursion through partial evaluation 
+1. SCC is partially evaluated into start/2
+0. SCC is partially evaluated into fun2mark/3
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations fun2mark/3 
+* CE 13 is refined into CE [18] 
+* CE 17 is refined into CE [19] 
+* CE 16 is refined into CE [20] 
+* CE 9 is refined into CE [21] 
+* CE 15 is refined into CE [22] 
+* CE 11 is refined into CE [23] 
+* CE 7 is refined into CE [24] 
+* CE 14 is refined into CE [25] 
+* CE 12 is refined into CE [26] 
+* CE 6 is refined into CE [27] 
+* CE 10 is refined into CE [28] 
+* CE 8 is refined into CE [29] 
+
+
+#### Refined cost equations fun2mark/3 
+* CE 18: fun2mark(A,B,C) = 1
+     [B>=0,A>=0,A+B+1=C] 
+* CE 19: fun2mark(A,B,C) = 1
+     [C=1,A=1] 
+* CE 20: fun2mark(A,B,C) = 1
+     [C=0,A=0] 
+* CE 21: fun2mark(A,B,C) = 2+ fun2mark(D,E,F)
+     [F>=0,D>=0,F+1=C,D+1=A] 
+* CE 22: fun2mark(A,B,C) = 1+ fun2mark(D,E,F)
+     [A+F>=C,C>=F+1,A+F=C+D] 
+* CE 23: fun2mark(A,B,C) = 1+ fun2mark(D,E,C)
+     [B>=D+1,D>=0,A=0] 
+* CE 24: fun2mark(A,B,C) = 2+ fun2mark(D,E,F)+ fun2mark(G,H,I)+ fun2mark(J,K,L)
+     [C+J>=I+L+1,I>=J+1,J>=0,G>=0,D>=0,F+I+L=C+J,D+G+1=A] 
+* CE 25: fun2mark(A,B,C) = 1+ fun2mark(D,E,F)+ fun2mark(G,H,I)+ fun2mark(F,I,C)
+     [G>=0,D>=0,D+G+1=A] 
+* CE 26: fun2mark(A,B,C) = 1+ fun2mark(D,E,F)+ fun2mark(G,H,I)+ fun2mark(F,I,C)
+     [B>=G+1,G>=0,D>=0,D+1=A] 
+* CE 27: fun2mark(A,B,C) = 2+ fun2mark(D,E,F)+ fun2mark(G,H,I)
+     [I>=0,G>=0,F>=0,D>=0,F+I+1=C,D+G+1=A] 
+* CE 28: fun2mark(A,B,C) = 2+ fun2mark(D,E,F)+ fun2mark(F,G,H)
+     [F>=0,D>=0,F+H+3=C,D+1=A] 
+* CE 29: fun2mark(A,B,C) = 2+ fun2mark(D,E,F)+ fun2mark(G,H,I)
+     [I>=0,G>=0,D>=0,D+G+1=A,F=0,C=1] 
+
+### Cost equations --> "Loop" of fun2mark/3 
+* CEs [27] --> Loop 13 
+* CEs [28] --> Loop 14 
+* CEs [29] --> Loop 15 
+* CEs [24] --> Loop 16 
+* CEs [25] --> Loop 17 
+* CEs [26] --> Loop 18 
+* CEs [21,22] --> Loop 19 
+* CEs [23] --> Loop 20 
+* CEs [18] --> Loop 21 
+* CEs [19] --> Loop 22 
+* CEs [20] --> Loop 23 
+
+#### Loops of fun2mark/3 
+* Loop 13: fun2mark(A,B,C)->  fun2mark(A',B',C')  fun2mark(A'2,B'2,C'2)
+                  [C>=C'+1,A>=A'+1,C'>=0,A'>=0,C'+C'2+1=C,A'+A'2+1=A] 
+* Loop 14: fun2mark(A,B,C)->  fun2mark(A',B',C')  fun2mark(C',A'2,B'2)
+                  [C'>=0,A>=1,C'+B'2+3=C,A=A'+1] 
+* Loop 15: fun2mark(A,B,C)->  fun2mark(A',B',C')  fun2mark(A'2,B'2,C'2)
+                  [A>=A'+1,C'2>=0,A'>=0,A'+A'2+1=A,C'=0,C=1] 
+* Loop 16: fun2mark(A,B,C)->  fun2mark(A',B',C')  fun2mark(A'2,B'2,C'2)  fun2mark(A'3,B'3,C'3)
+                  [C'2>=A'3+1,A>=A'+1,A'3>=0,C'>=1,A'>=0,C'+C'2+C'3=C+A'3,A'+A'2+1=A] 
+* Loop 17: fun2mark(A,B,C)->  fun2mark(A',B',C')  fun2mark(A'2,B'2,C'2)  fun2mark(C',C'2,C)
+                  [A>=A'+1,A'>=0,A'+A'2+1=A] 
+* Loop 18: fun2mark(A,B,C)->  fun2mark(A',B',C')  fun2mark(A'2,B'2,C'2)  fun2mark(C',C'2,C)
+                  [B>=A'2+1,A'2>=0,A>=1,A=A'+1] 
+* Loop 19: fun2mark(A,B,C)->  fun2mark(A',B',C')
+                  [A>=A'+1,A'>=0,C+A'=A+C'] 
+* Loop 20: fun2mark(A,B,C)->  fun2mark(A',B',C)
+                  [B>=A'+1,A'>=0,A=0] 
+* Loop 21: fun2mark(A,B,C) [B>=0,A>=0,A+B+1=C] 
+* Loop 22: fun2mark(A,B,C) [C=1,A=1] 
+* Loop 23: fun2mark(A,B,C) [C=0,A=0] 
+
+### Ranking functions of CR fun2mark(A,B,C) 
+
+#### Partial ranking functions of CR fun2mark(A,B,C) 
+* Partial RF of phase [13,14,15,16,17,18,19,20]:
+  - RF of loop [13:1,13:2,14:1,15:1,15:2,16:1,16:2,17:1,17:2,18:1,19:1]:
+    A depends on loops [14:2,16:3,17:3,18:2,18:3,20:1] 
+
+
+### Resulting Chains:fun2mark(A,B,C) 
+* [multiple([13,14,15,16,17,18,19,20],[[],[23],[22],[21]])]...
+* [23]
+* [22]
+* [21]
+
+
+### Merging Chains  fun2mark/3 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+* [[21]] --> 3 
+* [[multiple([13,14,15,16,17,18,19,20],[[],[23],[22],[21]])]] --> 4 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [30] 
+* CE 3 is refined into CE [31,32,33,34] 
+* CE 4 is refined into CE [35,36,37,38] 
+* CE 5 is refined into CE [39,40,41,42] 
+
+
+#### Refined cost equations start/2 
+* CE 30: start(V,V1) = 1
+     [V>=0] 
+* CE 31: start(V,V1) = 1+ fun2mark(W1,X1,Y1):1
+     [V1>=1,V>=1,Y1=0,W1=0] 
+* CE 32: start(V,V1) = 1+ fun2mark(W1,X1,Y1):2
+     [V1>=2,V>=1,Y1=1,W1=1] 
+* CE 33: start(V,V1) = 1+ fun2mark(W1,X1,Y1):3
+     [Y1>=W1+1,V1>=W1+1,W1>=0,V>=1,Y1=W1+X1+1] 
+* CE 34: start(V,V1) = 1+ fun2mark(W1,X1,Y1):4
+     [V1>=W1+1,W1>=0,V>=1] 
+* CE 35: start(V,V1) = 1+ fun2mark(W1,X1,Y1):1
+     [Y1=0,W1=0,V=0] 
+* CE 36: start(V,V1) = 1+ fun2mark(W1,X1,Y1):2
+     [Y1=1,W1=1,V=1] 
+* CE 37: start(V,V1) = 1+ fun2mark(V,W1,X1):3
+     [X1>=V+1,V>=0,X1=V+W1+1] 
+* CE 38: start(V,V1) = 1+ fun2mark(V,W1,X1):4
+     [V>=0] 
+* CE 39: start(V,V1) = 0+ fun2mark(W1,X1,Y1):1
+     [Y1=0,W1=0,V=0] 
+* CE 40: start(V,V1) = 0+ fun2mark(W1,X1,Y1):2
+     [Y1=1,W1=1,V=1] 
+* CE 41: start(V,V1) = 0+ fun2mark(V,W1,X1):3
+     [X1>=V+1,V>=0,X1=V+W1+1] 
+* CE 42: start(V,V1) = 0+ fun2mark(V,W1,X1):4
+     [V>=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [34,38,42] --> Loop 24 
+* CEs [36,40] --> Loop 25 
+* CEs [30,31,32,33,35,37,39,41] --> Loop 26 
+
+#### Loops of start/2 
+* Loop 24: start(V,V1) [V>=0] 
+* Loop 25: start(V,V1) [V=1] 
+* Loop 26: start(V,V1) [V>=0] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [26]
+* [25]
+* [24]...
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[25],[26]] --> 1 
+* [[24]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [13,14,15,16,17,18,19,20] 
+
+ * loop 13:fun2mark(A,B,C) -> [fun2mark(A',B',C'),fun2mark(A'2,B'2,C'2)] 
+2
+ * loop 14:fun2mark(A,B,C) -> [fun2mark(A',B',C'),fun2mark(A'2,B'2,C'2)] 
+2
+ * loop 15:fun2mark(A,B,C) -> [fun2mark(A',B',C'),fun2mark(A'2,B'2,C'2)] 
+2
+ * loop 16:fun2mark(A,B,C) -> [fun2mark(A',B',C'),fun2mark(A'2,B'2,C'2),fun2mark(A'3,B'3,C'3)] 
+2
+ * loop 17:fun2mark(A,B,C) -> [fun2mark(A',B',C'),fun2mark(A'2,B'2,C'2),fun2mark(A'3,B'3,C'3)] 
+1
+ * loop 18:fun2mark(A,B,C) -> [fun2mark(A',B',C'),fun2mark(A'2,B'2,C'2),fun2mark(A'3,B'3,C'3)] 
+1
+ * loop 19:fun2mark(A,B,C) -> [fun2mark(A',B',C')] 
+2
+ * loop 20:fun2mark(A,B,C) -> [fun2mark(A',B',C')] 
+1
+#### Cost of phase [13,14,15,16,17,18,19,20]:fun2mark(A,B,C) -> [] 
+7*it(13)+7*it(14)+2*it([21])+0
+#### Cost of chains of fun2mark(A,B,C):
+* Chain [multiple([13,14,15,16,17,18,19,20],[[],[23],[22],[21]])]...: 7*it(13)+7*it(14)+2*it([21])+0
+  with precondition: [A>=0] 
+
+* Chain [23]: 1
+  with precondition: [A=0,C=0] 
+
+* Chain [22]: 1
+  with precondition: [A=1,C=1] 
+
+* Chain [21]: 1
+  with precondition: [A+B+1=C,A>=0,B>=0] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [26]: 2
+  with precondition: [V>=0] 
+
+* Chain [25]: 2
+  with precondition: [V=1] 
+
+* Chain [24]...: 1*aux(24)+0
+  with precondition: [V>=0] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [26] with precondition: [V>=0] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [25] with precondition: [V=1] 
+    - Upper bound: 2 
+    - Complexity: constant 
+* Chain [24]... with precondition: [V>=0] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V,V1): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 21 ms.
+* Invariants computed in 27 ms.
+   - Backward Invariants 2 ms.
+   - Transitive Invariants 9 ms.
+* Refinement performed in 67 ms.
+* Termination proved in 11 ms.
+* Upper bounds computed in 120 ms.
+   - Equation cost structures 13 ms.
+   - Phase cost structures 113 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 277 ms.
+

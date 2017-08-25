@@ -1,0 +1,209 @@
+/* * * * * * * * * * *
+ Translation to ABS from RAML
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases * *
+ *
+ * File:
+ *   examples/power_radio.raml
+ *
+ * 
+ * Description:
+ *   Modelling a reactive system whose power consumption depends crucially on
+ *   the power consumption of the (GSM) radio. We use the tick metric to model
+ *   the power consumption in the function send_msg.
+ */
+
+module Power_radio;
+
+/* Using the (gsm) radio: Sending a list of integers costs 200 Millijoule to */
+/* power the radio on and 32 Millijoule to per integer that is sent. */
+
+
+def Unit transmit()= Unit;
+
+def Unit send(List<Int> msg)=
+    case msg {
+         Nil => Unit; 
+         Cons(x, xs)=> 
+            let (Unit nothing)=transmit() in
+	    send(xs);
+	    };
+
+def Unit send_msg(List<Int> msg)=send(msg);
+
+/* Events that can be handled by the system. */
+data Event= 
+    Eidle
+  | Edata(List<Int> dat)   /*The sensor reads a list of data.*/
+  | Esend_buf
+  | Esend_all; // cannot store functions
+
+
+/* A simple implementation that just sends the sensor data as soon as */
+/* it is produced. */
+
+def Unit process_main1(List<Event> events)=
+     case events {
+         Nil => Unit; 
+         Cons(e, es)=> 
+           let (Unit nothing)=case e {
+	   Eidle => Unit;
+           Esend_buf=> Unit;
+           Esend_all => Unit;
+	   Edata(dat) => send_msg(dat);
+	   } in 
+	   process_main1(es);
+	   };
+
+def  Unit main1(List<Event> events)=
+     process_main1(events);
+
+def  List<A> append<A>(List<A> l1,List<A> l2) =
+	case l1 {
+	 Nil => l2;
+	 Cons(x,xs) => Cons(x,append(xs,l2));	 
+	};
+
+/* Store sensor data in a buffer and send the buffer only at */
+/* Esend_buf events. */
+
+def Unit process_main2(List<Event> events,List<Int> buffer)=
+     case events {
+         Nil => Unit; 
+         Cons(e, es)=> 
+           let (List<Int> buffer2)=case e {
+	   Eidle => buffer;
+           Esend_buf=> 
+			let (Unit nothing)=send_msg(buffer) in
+			Nil;
+           Esend_all => buffer;
+	   Edata(dat) => append(dat,buffer);
+	   } in 
+	   process_main2(es,buffer);
+	   };
+
+def  Unit main2(List<Event> events)=
+     process_main2(events,Nil);
+
+
+def Unit process_main3(List<Event> events,List<Int> buffer,List<Int> all_data)=
+     case events {
+         Nil => Unit; 
+         Cons(e, es)=> 
+           let (Pair<List<Int>,List<Int>> pair)=case e {
+	   Eidle => Pair(buffer,all_data);
+           Esend_buf=> 
+			let (Unit nothing)=send_msg(buffer) in
+			Pair(Nil,all_data);
+           Esend_all => let (Unit nothing)=send_msg(all_data) in
+			Pair(buffer,all_data);
+	   Edata(dat) => Pair(append(dat,buffer),append(dat,all_data));
+	   } in 
+           case pair { Pair(buffer2,all_data2) => process_main3(es,buffer2,all_data2);};
+	   };
+
+def  Unit main3(List<Event> events)=
+     process_main3(events,Nil,Nil);
+
+//the "higher" order function
+def Unit fun(List<Int> d)=send_msg(d);
+
+def Unit process_main4(List<Event> events,List<Int> buffer,List<Int> all_data)=
+     case events {
+         Nil => Unit; 
+         Cons(e, es)=> 
+           let (Pair<List<Int>,List<Int>> pair)=case e {
+	   Eidle => Pair(buffer,all_data);
+           Esend_buf=> 
+			let (Unit nothing)=send_msg(buffer) in
+			Pair(Nil,all_data);
+           Esend_all => let (Unit nothing)=fun(all_data) in
+			Pair(buffer,all_data);
+	   Edata(dat) => Pair(append(dat,buffer),append(dat,all_data));
+	   } in 
+           case pair { Pair(buffer2,all_data2) => process_main4(es,buffer2,all_data2);};
+	   };
+
+def  Unit main4(List<Event> events)=
+     process_main4(events,Nil,Nil);
+
+
+
+
+/* Similar to main4. However, we ignore Esend_buf events and send the 
+   buffer after 5 Edata events. */
+
+
+def Unit process_main5(List<Event> events,Int c,List<Int> buffer)=
+     case events {
+         Nil => Unit; 
+         Cons(e, es)=> 
+           let (Pair<List<Int>,Int> pair)=case e {
+	   Eidle => Pair(buffer,c);
+           Esend_buf=> Pair(buffer,c);
+           Esend_all => Pair(buffer,c); 
+	   Edata(dat) =>		
+	   	        let (List<Int> buffer2)=append(dat,buffer) in
+ 			 if c>=5 then
+	   	      	    let (Unit nothing)=send_msg(buffer2) in
+			    Pair(Nil,1)
+			  
+			  else
+			    Pair(buffer2,c+1);
+	   } in 
+           case pair { Pair(buffer2,c2) => process_main5(es,c2,buffer2);};
+	   };
+
+def  Unit main5(List<Event> events)=
+     process_main5(events,0,Nil);
+
+
+/*
+type count =
+  | C1
+  | C2
+  | C3
+  | C4
+  | C5
+
+let next = function
+  | C1 -> C2
+  | C2 -> C3
+  | C3 -> C4
+  | C4 -> C5
+  | C5 -> C1
+
+
+
+let main5 events =
+
+  let rec process events c buffer =
+    match events with
+      | e::es -> 
+	let buffer,c =
+	  match e with
+	    | Eidle -> buffer,c
+	    | Esend_buf -> buffer,c
+	    | Esend_all _ -> buffer,c
+	    | Edata data -> 
+	      let buffer = append data buffer in
+	      let buffer = 
+		match c with
+		  | C1 -> buffer
+		  | C2 -> buffer
+		  | C3 -> buffer
+		  | C4 -> buffer
+		  | C5 -> send_msg buffer; []
+	      in
+	      (buffer, next c)
+	in
+	process es c buffer
+      | [] -> ()
+  in
+  process events C1 []
+
+*/
+
+
+{}

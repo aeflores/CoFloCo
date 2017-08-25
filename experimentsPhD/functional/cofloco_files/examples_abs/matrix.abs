@@ -1,0 +1,298 @@
+/* * * * * * * * * * *
+ * Resource Aware ML *
+ * * * * * * * * * * *
+ *
+ * * *  Use Cases  * *
+ *
+ * File:
+ *   examples/matrix.raml
+ *
+ * Author:
+ *   Ankush Das (2015)
+ * 
+ * Description:
+ *   Several operation on matrices that represented as lists of lists.
+ */
+
+
+module Matrix;
+//import * from ABS.StdLib;
+//import List from ABS.StdLib;
+
+ 
+
+data Matrix = Matrix(Int m,Int n,List<List<Int>> val);
+
+def Int sizeL<A>(List<A> l)=
+    case l {
+    Nil => 0;
+    Cons(x,xs) => 1+sizeL(xs);
+    };
+
+def Bool check_lists(List<List<Int>> v,Int n)=
+    case v {
+    Nil => True;
+    Cons(r,rs) => if sizeL(r)==n then check_lists(rs,n)
+    	       	  else False;
+    };
+
+def Bool check_mat(Int m,Int n,List<List<Int>> v)=
+    if sizeL(v)==m then 
+       check_lists(v,n)
+       else False;
+
+def Bool check_matrix(Matrix mat)=
+    case mat {
+    Matrix(m,n,v) => check_mat(m,n,v);
+    };
+
+// we don't have exceptions in abs
+
+def Matrix construct_matrix(Int m,Int n,List<List<Int>> v)=
+    if check_mat(m,n,v) then 
+       Matrix(m,n,v)
+       else
+       Matrix(0,0,Nil);
+
+def Int get_elem(List<Int> l,Int i)=
+    case l {
+ //   Nil => 
+      Cons(x,xs) => if i==0 then x
+      		 else get_elem(xs,i-1);
+		 };
+def List<Int> get_elemL(List<List<Int>> l,Int i)=
+    case l {
+ //   Nil => 
+      Cons(x,xs) => if i==0 then x
+      		 else get_elemL(xs,i-1);
+		 };
+
+
+def Int get_elemMat(Matrix m,Int i,Int j)=
+    case m { Matrix(_,_,v) => 
+	       get_elem(get_elemL(v,i),j);
+	       };
+
+
+data Arith_exp =
+     Constant(Int ma,Int na,List<List<Int>> va)
+     | Plus(Arith_exp mp1,Arith_exp mp2)
+     | Minus(Arith_exp mm1,Arith_exp mm2)
+     | Mult(Arith_exp mt1,Arith_exp mt2);
+
+def Int op(Int sign,Int x1,Int x2)=
+    if sign>0 then x1+x2
+    else x1-x2;
+
+def List<Int> rec_list(List<Int> l1,List<Int> l2,Int sign)=
+    case l1 {
+      Nil => Nil;
+      Cons(x1,x1s) =>
+       		   case l2 {
+      		   Nil => Nil;
+      		   Cons(x2,x2s) => Cons(op(sign,x1,x2),rec_list(x1s,x2s,sign));
+		   };
+     };
+
+def List<List<Int>> rec_mat(List<List<Int>> m1,List<List<Int>> m2,Int sign)=
+ case m1 {
+      Nil => Nil;
+      Cons(r1,r1s) =>
+       		   case m2 {
+      		   Nil => Nil;
+      		   Cons(r2,r2s) => Cons(rec_list(r1,r2,sign),rec_mat(r1s,r2s,sign));
+		   };
+     };
+
+def Bool check_sanity(Matrix m1,Matrix m2)=
+    case m1 {
+        Matrix(r1,c1,_) =>
+	  case m2{
+	    Matrix(r2,c2,_) =>
+	      check_matrix(m1) && check_matrix(m2) && 
+	      r1==r2 && c1==c2;
+	      };
+
+
+	   };
+
+def Matrix plus(Matrix m1, Matrix m2)=
+    if check_sanity(m1,m2) then
+        case m1 { Matrix(m,n,v1) =>
+	case m2{ Matrix(_,_,v2) =>
+	   construct_matrix(m,n,rec_mat(v1,v2,1));
+	   };
+	   }
+    else Matrix(0,0,Nil);
+
+def Matrix minus(Matrix m1, Matrix m2)=
+    if check_sanity(m1,m2) then
+        case m1 { Matrix(m,n,v1) =>
+	case m2{ Matrix(_,_,v2) =>
+    	let (List<List<Int>> v)= rec_mat(v1,v2,-1) in
+	   construct_matrix(m,n,v);
+	   };
+	   }
+    else Matrix(0,0,Nil);
+
+def List<Int> append(List<Int> l,Int x)=
+    case l {
+    	 Nil => Cons(x,Nil);
+    	 Cons(y,ys) => Cons(y,append(ys,x));
+    };
+
+def List<List<Int>> append_row(List<List<Int>> m, List<Int> row)=
+    case row {
+    	 Nil => m;
+    	 Cons(x,xs) =>
+	     case m {
+	     Nil => Cons(Cons(x,Nil),append_row(Nil,xs));
+	     Cons(r,rs) => Cons(append(r,x),append_row(rs,xs));
+	     };
+    };
+
+def List<List<Int>> transpose_helper(List<List<Int>> m, List<List<Int>> m_trans)=
+    case m {
+    	 Nil => m_trans;
+    	 Cons(r,rs) => transpose_helper(rs,append_row(m_trans,r));
+	 };
+
+def List<List<Int>> transpose(List<List<Int>> m)= transpose_helper(m,Nil);
+
+def List<A> reverse_helper<A>(List<A> l,List<A> acc) = 
+   case l { 
+      Nil => acc ; 
+      Cons(x, xs) => reverse_helper(xs,Cons(x,acc)) ; 
+   };
+def List<A> reverseL<A>(List<A> l) = reverse_helper(l,Nil);
+
+
+def List<List<Int>> reverse_rows_helper(List<List<Int>> m, List<List<Int>> m_rev) = 
+   case m { 
+      Nil => m_rev ; 
+      Cons(r, rs) => reverse_rows_helper(rs,reverseL(Cons(r,m_rev))); 
+   };
+
+def List<List<Int>> reverse_rows(List<List<Int>> m)=
+    reverseL(reverse_rows_helper(m,Nil));
+
+
+def List<List<Int>> append_start(List<List<Int>> m, List<Int> row)=
+   case row {
+    	 Nil => reverse_rows(m);
+    	 Cons(x,xs) =>
+	     case m {
+	     Nil => Cons(Cons(x,Nil),append_start(Nil,xs));
+	     Cons(r,rs) => Cons(Cons(x,r),append_start(rs,xs));
+	     };
+    };
+
+def List<List<Int>> new_transpose_helper(List<List<Int>> m,List<List<Int>> m_trans)=
+    case m {
+     	 Nil => m_trans;
+    	 Cons(r,rs) =>new_transpose_helper(rs,append_start(m_trans,r));
+	 };
+
+def List<List<Int>> new_transpose(List<List<Int>> m)= 
+    	reverse_rows(new_transpose_helper(m,Nil));
+
+
+def Int prod(List<Int> l1,List<Int> l2)=
+    case l1 {
+    	 Nil => 0;
+    	 Cons(x1,x1s) =>
+	     case l2 {
+	     Nil => 0;
+	     Cons(x2,x2s) => (x1*x2)+prod(x1s,x2s);
+	     };
+    };
+
+def List<Int> prod_mat(List<Int> row,List<List<Int>> mat)=
+    case mat {
+    Nil=> Nil;
+    Cons(r,rs)=> Cons(prod(row,r),prod_mat(row,rs));
+    };
+
+def List<List<Int>> mat_mult(List<List<Int>> m1,List<List<Int>> m2)=
+    let (List<List<Int>> m2t)=transpose(m2) in
+    	case m1 {
+    	Nil=> Nil;
+    	Cons(r,rs)=> Cons(prod_mat(r,m2t),mat_mult(rs,m2));
+    	};
+
+
+def List<Int> lineMult(Int n,List<Int> l1,List<Int> l2)=
+    case l1 {
+    	 Nil => Nil;
+    	 Cons(x,xs) =>
+	     case l2 {
+	     Nil => Cons(x*n,lineMult(n,xs,Nil));
+	     Cons(y,ys) => Cons(x*n+y,lineMult(n,xs,ys));
+	     };
+    };
+
+def List<Int> computeLine(List<Int> line,List<List<Int>> m,List<Int> acc)=
+    case line {
+    	 Nil => acc;
+    	 Cons(x,xs) =>
+	     case m {
+	     Nil => Nil;
+	     Cons(l,ls) => computeLine(xs,ls,lineMult(x,l,acc));
+	     };
+    };
+
+def List<List<Int>> mat_mult_jan(List<List<Int>> m1,List<List<Int>> m2)=
+    case m1 {
+     Nil => Nil;
+     Cons(l,ls) => Cons(computeLine(l,m2,Nil),mat_mult_jan(ls,m2));
+     };
+
+
+def Bool check_mult_sanity(Matrix m1,Matrix m2)=
+    check_matrix(m1) && check_matrix(m2) &&
+        case m1 { Matrix(_,c1,_) =>
+	case m2 {  Matrix(_,c2,_) => c1==c2;};};
+
+def Matrix mult(Matrix m1,Matrix m2)=
+    if check_mult_sanity(m1,m2) then
+        case m1 { Matrix(m,n,v1) =>
+	case m2 { Matrix(mp,np,v2) => 
+	   let (List<List<Int>> v)=mat_mult_jan(v1,v2) in
+	   construct_matrix(m,n,v)
+	;};}
+    else
+         Matrix(0,0,Nil);
+
+
+def Matrix evaluate(Arith_exp expr)=
+    case expr {
+    Constant(m,n,v) => construct_matrix(m,n,v);
+    Plus(e1,e2) => plus(evaluate(e1),evaluate(e2));
+    Minus(e1,e2) => minus(evaluate(e1),evaluate(e2));
+    Mult(e1,e2) => mult(evaluate(e1),evaluate(e2));
+    };
+
+def List<Int> del(List<Int> l, Int i)=
+    case l {
+    Nil => Nil;
+    Cons(x,xs) => if i==0 then xs
+    	          else Cons(x,del(xs,i-1));
+		  };
+
+def List<List<Int>> submat(List<List<Int>> m, Int i,Int j)=
+    case m {
+    Nil => Nil;
+    Cons(r,rs) => if i==0 then submat(rs,i-1,j)
+    	          else  Cons(del(r,j),submat(rs,i-1,j));
+		  };
+
+
+def List<List<Int>> remFirstRow(List<List<Int>> m)=
+    case m {
+       Cons(r,rs) => rs;
+// no empty case
+       };
+
+
+
+{}  

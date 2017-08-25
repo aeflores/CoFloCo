@@ -1,0 +1,147 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [number42/2]
+1. recursive  : [increase/2]
+2. non_recursive  : [goal/2]
+3. non_recursive  : [start/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into increase/2
+2. SCC is completely evaluated into other SCCs
+3. SCC is partially evaluated into start/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations increase/2 
+* CE 6 is refined into CE [7] 
+* CE 5 is refined into CE [8] 
+
+
+#### Refined cost equations increase/2 
+* CE 7: increase(V,Out) = 1+ increase(W,Out)
+     [V>=1,V+2=W] 
+* CE 8: increase(V,Out) = 2
+     [Out=42,V=0] 
+
+### Cost equations --> "Loop" of increase/2 
+* CEs [8] --> Loop 4 
+* CEs [7] --> Loop 5 
+
+#### Loops of increase/2 
+* Loop 4: increase(V,Out) [Out=42,V=0] 
+* Loop 5: increase(V,Out)->  increase(V',Out)
+                  [V>=1,V+2=V'] 
+
+### Ranking functions of CR increase(V,Out) 
+
+#### Partial ranking functions of CR increase(V,Out) 
+
+
+### Resulting Chains:increase(V,Out) 
+* [[5]]...
+* [4]
+
+
+### Merging Chains  increase/2 into  External patterns of execution 
+* [[4]] --> 1 
+* [[[5]]] --> 2 
+
+
+### Specialization of cost equations start/1 
+* CE 2 is refined into CE [9,10] 
+* CE 3 is refined into CE [11] 
+* CE 4 is refined into CE [12,13] 
+
+
+#### Refined cost equations start/1 
+* CE 9: start(V) = 0+ increase(W,X):1
+     [X=42,W=0,V=0] 
+* CE 10: start(V) = 0+ increase(V,W):2
+     [V>=1] 
+* CE 11: start(V) = 1
+     [V>=0] 
+* CE 12: start(V) = 1+ increase(W,X):1
+     [X=42,W=0,V=0] 
+* CE 13: start(V) = 1+ increase(V,W):2
+     [V>=1] 
+
+### Cost equations --> "Loop" of start/1 
+* CEs [10,13] --> Loop 6 
+* CEs [9,11,12] --> Loop 7 
+
+#### Loops of start/1 
+* Loop 6: start(V) [V>=1] 
+* Loop 7: start(V) [V>=0] 
+
+### Ranking functions of CR start(V) 
+
+#### Partial ranking functions of CR start(V) 
+
+
+### Resulting Chains:start(V) 
+* [7]
+* [6]...
+
+
+### Merging Chains  start/1 into  External patterns of execution 
+* [[7]] --> 1 
+* [[6]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5] 
+
+ * loop 5:increase(V,Out) -> [increase(V',Out')] 
+1
+#### Cost of phase [5]:increase(V,Out) -> [increase(V',Out')] 
+1*it(5)+0
+#### Cost of chains of increase(V,Out):
+* Chain [[5]]...: 1*it(5)+0
+  with precondition: [V>=1] 
+
+* Chain [4]: 2
+  with precondition: [V=0,Out=42] 
+
+
+#### Cost of chains of start(V):
+* Chain [7]: 3
+  with precondition: [V>=0] 
+
+* Chain [6]...: 1*aux(1)+0
+  with precondition: [V>=1] 
+
+
+Closed-form bounds of start(V): 
+-------------------------------------
+* Chain [7] with precondition: [V>=0] 
+    - Upper bound: 3 
+    - Complexity: constant 
+* Chain [6]... with precondition: [V>=1] 
+    - Upper bound: inf 
+    - Complexity: infinity 
+
+### Maximum cost of start(V): inf 
+Asymptotic class: infinity 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 3 ms.
+* Invariants computed in 3 ms.
+   - Backward Invariants 1 ms.
+   - Transitive Invariants 1 ms.
+* Refinement performed in 7 ms.
+* Termination proved in 1 ms.
+* Upper bounds computed in 5 ms.
+   - Equation cost structures 3 ms.
+   - Phase cost structures 1 ms.
+   - Chain cost structures 1 ms.
+   - Solving cost expressions 1 ms.
+* Total analysis performed in 27 ms.
+

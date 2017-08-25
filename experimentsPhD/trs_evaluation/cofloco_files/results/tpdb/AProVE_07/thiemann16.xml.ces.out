@@ -1,0 +1,1548 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive  : [check/2]
+1. recursive  : [half/2]
+2. non_recursive  : [p/2]
+3. recursive  : [plus/3]
+4. recursive [non_tail,multiple] : [if/6,timesIter/4]
+5. non_recursive  : [times/3]
+6. non_recursive  : [start/5]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into check/2
+1. SCC is partially evaluated into half/2
+2. SCC is partially evaluated into p/2
+3. SCC is partially evaluated into plus/3
+4. SCC is partially evaluated into timesIter/4
+5. SCC is completely evaluated into other SCCs
+6. SCC is partially evaluated into start/5
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations check/2 
+* CE 24 is refined into CE [25] 
+* CE 23 is refined into CE [26] 
+* CE 22 is refined into CE [27] 
+* CE 21 is refined into CE [28] 
+
+
+#### Refined cost equations check/2 
+* CE 25: check(V,Out) = 1+ check(W,Out)
+     [V>=3,V=W+2] 
+* CE 26: check(V,Out) = 1
+     [Out=0,V=2] 
+* CE 27: check(V,Out) = 1
+     [Out=1,V=1] 
+* CE 28: check(V,Out) = 1
+     [Out=2,V=0] 
+
+### Cost equations --> "Loop" of check/2 
+* CEs [26] --> Loop 18 
+* CEs [27] --> Loop 19 
+* CEs [28] --> Loop 20 
+* CEs [25] --> Loop 21 
+
+#### Loops of check/2 
+* Loop 18: check(V,Out) [Out=0,V=2] 
+* Loop 19: check(V,Out) [Out=1,V=1] 
+* Loop 20: check(V,Out) [Out=2,V=0] 
+* Loop 21: check(V,Out)->  check(V',Out)
+                  [V>=3,V=V'+2] 
+
+### Ranking functions of CR check(V,Out) 
+* RF of phase [21]: [V/2-1]
+
+#### Partial ranking functions of CR check(V,Out) 
+* Partial RF of phase [21]:
+  - RF of loop [21:1]:
+    V/2-1
+
+
+### Resulting Chains:check(V,Out) 
+* [[21],19]
+* [[21],18]
+* [20]
+* [19]
+* [18]
+
+
+### Merging Chains  check/2 into  External patterns of execution 
+* [[20]] --> 1 
+* [[19]] --> 2 
+* [[18]] --> 3 
+* [[18,[21]]] --> 4 
+* [[19,[21]]] --> 5 
+
+
+### Specialization of cost equations half/2 
+* CE 13 is refined into CE [29] 
+* CE 12 is refined into CE [30] 
+* CE 11 is refined into CE [31] 
+
+
+#### Refined cost equations half/2 
+* CE 29: half(V,Out) = 1+ half(W,X)
+     [W>=0,X+1=Out,W+2=V] 
+* CE 30: half(V,Out) = 1
+     [Out=0,V=1] 
+* CE 31: half(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of half/2 
+* CEs [30] --> Loop 22 
+* CEs [31] --> Loop 23 
+* CEs [29] --> Loop 24 
+
+#### Loops of half/2 
+* Loop 22: half(V,Out) [Out=0,V=1] 
+* Loop 23: half(V,Out) [Out=0,V=0] 
+* Loop 24: half(V,Out)->  half(V',Out')
+                  [V'>=0,Out=Out'+1,V'+2=V] 
+
+### Ranking functions of CR half(V,Out) 
+* RF of phase [24]: [V-1]
+
+#### Partial ranking functions of CR half(V,Out) 
+* Partial RF of phase [24]:
+  - RF of loop [24:1]:
+    V-1
+
+
+### Resulting Chains:half(V,Out) 
+* [[24],23]
+* [[24],22]
+* [23]
+* [22]
+
+
+### Merging Chains  half/2 into  External patterns of execution 
+* [[23]] --> 1 
+* [[22]] --> 2 
+* [[23,[24]]] --> 3 
+* [[22,[24]]] --> 4 
+
+
+### Specialization of cost equations p/2 
+* CE 19 is refined into CE [32] 
+* CE 20 is refined into CE [33] 
+
+
+#### Refined cost equations p/2 
+* CE 32: p(V,Out) = 1
+     [Out>=0,Out+1=V] 
+* CE 33: p(V,Out) = 1
+     [Out=0,V=0] 
+
+### Cost equations --> "Loop" of p/2 
+* CEs [32] --> Loop 25 
+* CEs [33] --> Loop 26 
+
+#### Loops of p/2 
+* Loop 25: p(V,Out) [V>=1,V=Out+1] 
+* Loop 26: p(V,Out) [Out=0,V=0] 
+
+### Ranking functions of CR p(V,Out) 
+
+#### Partial ranking functions of CR p(V,Out) 
+
+
+### Resulting Chains:p(V,Out) 
+* [26]
+* [25]
+
+
+### Merging Chains  p/2 into  External patterns of execution 
+* [[26]] --> 1 
+* [[25]] --> 2 
+
+
+### Specialization of cost equations plus/3 
+* CE 18 is refined into CE [34] 
+* CE 17 is refined into CE [35] 
+
+
+#### Refined cost equations plus/3 
+* CE 34: plus(V,V3,Out) = 1+ plus(W3,V3,X3)
+     [W3>=0,V3>=0,X3+1=Out,W3+1=V] 
+* CE 35: plus(A,B,B) = 1
+     [B>=0,A=0] 
+
+### Cost equations --> "Loop" of plus/3 
+* CEs [35] --> Loop 27 
+* CEs [34] --> Loop 28 
+
+#### Loops of plus/3 
+* Loop 27: plus(A,B,B) [B>=0,A=0] 
+* Loop 28: plus(V,V3,Out)->  plus(V',V3,Out')
+                  [V'>=0,V3>=0,Out=Out'+1,V'+1=V] 
+
+### Ranking functions of CR plus(V,V3,Out) 
+* RF of phase [28]: [V]
+
+#### Partial ranking functions of CR plus(V,V3,Out) 
+* Partial RF of phase [28]:
+  - RF of loop [28:1]:
+    V
+
+
+### Resulting Chains:plus(V,V3,Out) 
+* [[28],27]
+* [27]
+
+
+### Merging Chains  plus/3 into  External patterns of execution 
+* [[27]] --> 1 
+* [[27,[28]]] --> 2 
+
+
+### Specialization of cost equations timesIter/4 
+* CE 16 is refined into CE [36,37] 
+* CE 15 is refined into CE [38,39,40,41] 
+* CE 14 is refined into CE [42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101] 
+
+
+#### Refined cost equations timesIter/4 
+* CE 36: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):1+ plus(Y12,V3,V3):1
+     [V3>=0,Y12=0,X12=2,W12=0,Out=0,V12=0,V=0] 
+* CE 37: timesIter(A,B,C,C) = 2+ check(D,E):1+ plus(C,F,G):2
+     [G>=C,C>=1,G=C+F,G=B+C,E=2,D=0,A=0] 
+* CE 38: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):2+ plus(Y12,V3,V3):1+ p(Z12,A13):2+ timesIter(B13,V3,V3,Out)
+     [V3>=0,B13=0,A13=0,Z12=1,Y12=0,X12=1,W12=1,V12=0,V=1] 
+* CE 39: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):2+ plus(V12,Y12,Z12):2+ p(A13,B13):2+ timesIter(C13,D13,Z12,Out)
+     [Z12>=V12,V12>=1,Z12=V12+D13,Z12=V12+Y12,Z12=V3+V12,C13=0,B13=0,A13=1,X12=1,W12=1,V=1] 
+* CE 40: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):5+ plus(Y12,V3,V3):1+ p(Z12,A13):2+ timesIter(A13,V3,V3,Out)
+     [A13>=2,V3>=0,A13+1=Z12,A13+1=W12,A13+1=V,Y12=0,X12=1,V12=0] 
+* CE 41: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):5+ plus(V12,Y12,Z12):2+ p(A13,B13):2+ timesIter(B13,C13,Z12,Out)
+     [Z12>=V12,B13>=2,V12>=1,Z12=V12+C13,Z12=V12+Y12,Z12=V3+V12,B13+1=A13,B13+1=W12,B13+1=V,X12=1] 
+* CE 42: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,V3,V3):1+ half(Z12,A13):3+ half(B13,C13):1+ timesIter(D13,V3,E13,F13)+ half(G13,H13):3+ half(I13,J13):2+ timesIter(K13,V3,L13,Out)+ plus(M13,Out,Out):1
+     [Out>=0,V3>=0,L13=0,K13=1,F13=0,E13=0,D13=1,M13=0,J13=0,I13=1,H13=1,G13=2,C13=0,B13=0,A13=1,Z12=2,Y12=0,X12=0,W12=2,V12=0,V=2] 
+* CE 43: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,V3,V3):1+ half(Z12,A13):3+ half(B13,C13):1+ timesIter(D13,V3,E13,F13)+ half(G13,H13):3+ half(I13,J13):2+ timesIter(K13,V3,L13,M13)+ plus(F13,N13,Out):2
+     [Out>=F13,F13>=1,V3>=0,Out=F13+M13,Out=F13+N13,L13=0,K13=1,E13=0,D13=1,J13=0,I13=1,H13=1,G13=2,C13=0,B13=0,A13=1,Z12=2,Y12=0,X12=0,W12=2,V12=0,V=2] 
+* CE 44: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):2+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(N13,O13,P13,Out)+ plus(Q13,Out,Out):1
+     [Out>=0,A13>=1,A13=O13+1,A13=G13+1,A13=Z12+1,A13=V3+1,P13=1,N13=1,I13=0,H13=0,F13=1,Q13=0,M13=1,L13=2,K13=1,J13=2,E13=0,D13=1,C13=1,B13=2,Y12=1,X12=0,W12=2,V12=1,V=2] 
+* CE 45: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):2+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(N13,O13,P13,Q13)+ plus(I13,R13,Out):2
+     [Out>=I13,I13>=1,A13>=1,Out=I13+Q13,Out=I13+R13,A13=O13+1,A13=G13+1,A13=Z12+1,A13=V3+1,P13=1,N13=1,H13=0,F13=1,M13=1,L13=2,K13=1,J13=2,E13=0,D13=1,C13=1,B13=2,Y12=1,X12=0,W12=2,V12=1,V=2] 
+* CE 46: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(N13,O13,M13,Out)+ plus(P13,Out,Out):1
+     [A13+1>=2*M13,2*M13>=3,Out>=0,O13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,2*M13=L13,2*M13=D13+1,2*M13=Y12+1,2*M13=V12+1,2*M13=2*H13+1,2*M13=2*E13+1,N13=1,I13=0,F13=1,P13=0,K13=1,J13=2,C13=1,B13=2,X12=0,W12=2,V=2] 
+* CE 47: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(N13,O13,M13,P13)+ plus(I13,Q13,Out):2
+     [Out>=I13,A13+1>=2*M13,2*M13>=3,I13>=1,Out=I13+P13,Out=I13+Q13,O13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,2*M13=L13,2*M13=D13+1,2*M13=Y12+1,2*M13=V12+1,2*M13=2*H13+1,2*M13=2*E13+1,N13=1,F13=1,K13=1,J13=2,C13=1,B13=2,X12=0,W12=2,V=2] 
+* CE 48: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(F13,G13,E13,H13)+ half(I13,J13):3+ half(K13,E13):4+ timesIter(L13,M13,E13,Out)+ plus(N13,Out,Out):1
+     [A13>=2*E13,Out>=0,E13>=1,M13+2*E13=A13,G13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=K13,2*E13=D13,2*E13=Y12,2*E13=V12,L13=1,H13=0,F13=1,N13=0,J13=1,I13=2,C13=1,B13=2,X12=0,W12=2,V=2] 
+* CE 49: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(F13,G13,E13,H13)+ half(I13,J13):3+ half(K13,E13):4+ timesIter(L13,M13,E13,N13)+ plus(H13,O13,Out):2
+     [Out>=H13,A13>=2*E13,H13>=1,E13>=1,Out=H13+N13,Out=H13+O13,M13+2*E13=A13,G13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=K13,2*E13=D13,2*E13=Y12,2*E13=V12,L13=1,F13=1,J13=1,I13=2,C13=1,B13=2,X12=0,W12=2,V=2] 
+* CE 50: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(N13,O13,M13,Out)+ plus(P13,Out,Out):1
+     [A13+1>=2*M13,Out>=0,M13>=2,O13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,M13=H13+1,2*M13=L13,M13=E13+1,2*M13=D13+1,2*M13=Y12+1,2*M13=V12+1,N13=1,I13=0,F13=1,P13=0,K13=1,J13=2,C13=1,B13=2,X12=0,W12=2,V=2] 
+* CE 51: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(N13,O13,M13,P13)+ plus(I13,Q13,Out):2
+     [Out>=I13,A13+1>=2*M13,I13>=1,M13>=2,Out=I13+P13,Out=I13+Q13,O13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,M13=H13+1,2*M13=L13,M13=E13+1,2*M13=D13+1,2*M13=Y12+1,2*M13=V12+1,N13=1,F13=1,K13=1,J13=2,C13=1,B13=2,X12=0,W12=2,V=2] 
+* CE 52: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):4+ timesIter(N13,O13,M13,Out)+ plus(P13,Out,Out):1
+     [A13>=2*M13,2*M13>=3,Out>=0,O13+2*M13=A13,G13+2*M13=A13,Z12+2*M13=A13,V3+2*M13=A13,2*M13+1=L13,2*M13=D13,2*M13=Y12,2*M13=V12,2*M13=2*H13+1,2*M13=2*E13+1,N13=1,I13=0,F13=1,P13=0,K13=1,J13=2,C13=1,B13=2,X12=0,W12=2,V=2] 
+* CE 53: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):3+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):4+ timesIter(N13,O13,M13,P13)+ plus(I13,Q13,Out):2
+     [Out>=I13,A13>=2*M13,2*M13>=3,I13>=1,Out=I13+P13,Out=I13+Q13,O13+2*M13=A13,G13+2*M13=A13,Z12+2*M13=A13,V3+2*M13=A13,2*M13+1=L13,2*M13=D13,2*M13=Y12,2*M13=V12,2*M13=2*H13+1,2*M13=2*E13+1,N13=1,F13=1,K13=1,J13=2,C13=1,B13=2,X12=0,W12=2,V=2] 
+* CE 54: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,V3,V3):1+ half(Z12,A13):3+ half(B13,C13):1+ timesIter(A13,V3,D13,E13)+ half(F13,A13):3+ half(G13,H13):2+ timesIter(A13,V3,I13,Out)+ plus(J13,Out,Out):1
+     [Out>=0,A13>=2,V3>=0,2*A13=F13,2*A13=Z12,2*A13=W12,2*A13=V,I13=0,E13=0,D13=0,J13=0,H13=0,G13=1,C13=0,B13=0,Y12=0,X12=0,V12=0] 
+* CE 55: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,V3,V3):1+ half(Z12,A13):3+ half(B13,C13):1+ timesIter(A13,V3,D13,E13)+ half(F13,A13):3+ half(G13,H13):2+ timesIter(A13,V3,I13,J13)+ plus(E13,K13,Out):2
+     [Out>=E13,E13>=1,A13>=2,V3>=0,Out=E13+J13,Out=E13+K13,2*A13=F13,2*A13=Z12,2*A13=W12,2*A13=V,I13=0,D13=0,H13=0,G13=1,C13=0,B13=0,Y12=0,X12=0,V12=0] 
+* CE 56: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,V3,V3):1+ half(Z12,A13):3+ half(B13,C13):1+ timesIter(D13,V3,E13,F13)+ half(G13,H13):4+ half(I13,J13):2+ timesIter(H13,V3,K13,Out)+ plus(L13,Out,Out):1
+     [2*H13>=3,Out>=0,V3>=0,2*H13+1=G13,2*H13+1=Z12,2*H13+1=W12,2*H13+1=V,2*H13+1=2*D13,2*H13+1=2*A13,K13=0,F13=0,E13=0,L13=0,J13=0,I13=1,C13=0,B13=0,Y12=0,X12=0,V12=0] 
+* CE 57: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,V3,V3):1+ half(Z12,A13):3+ half(B13,C13):1+ timesIter(D13,V3,E13,F13)+ half(G13,H13):4+ half(I13,J13):2+ timesIter(H13,V3,K13,L13)+ plus(F13,M13,Out):2
+     [Out>=F13,2*H13>=3,F13>=1,V3>=0,Out=F13+L13,Out=F13+M13,2*H13+1=G13,2*H13+1=Z12,2*H13+1=W12,2*H13+1=V,2*H13+1=2*D13,2*H13+1=2*A13,K13=0,E13=0,J13=0,I13=1,C13=0,B13=0,Y12=0,X12=0,V12=0] 
+* CE 58: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,V3,V3):1+ half(Z12,A13):4+ half(B13,C13):1+ timesIter(D13,V3,E13,F13)+ half(G13,H13):3+ half(I13,J13):2+ timesIter(H13,V3,K13,Out)+ plus(L13,Out,Out):1
+     [Out>=0,H13>=2,V3>=0,2*H13=G13,2*H13=Z12,2*H13=W12,2*H13=V,2*H13=2*D13+1,2*H13=2*A13+1,K13=0,F13=0,E13=0,L13=0,J13=0,I13=1,C13=0,B13=0,Y12=0,X12=0,V12=0] 
+* CE 59: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,V3,V3):1+ half(Z12,A13):4+ half(B13,C13):1+ timesIter(D13,V3,E13,F13)+ half(G13,H13):3+ half(I13,J13):2+ timesIter(H13,V3,K13,L13)+ plus(F13,M13,Out):2
+     [Out>=F13,F13>=1,H13>=2,V3>=0,Out=F13+L13,Out=F13+M13,2*H13=G13,2*H13=Z12,2*H13=W12,2*H13=V,2*H13=2*D13+1,2*H13=2*A13+1,K13=0,E13=0,J13=0,I13=1,C13=0,B13=0,Y12=0,X12=0,V12=0] 
+* CE 60: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,V3,V3):1+ half(Z12,A13):4+ half(B13,C13):1+ timesIter(A13,V3,D13,E13)+ half(F13,A13):4+ half(G13,H13):2+ timesIter(A13,V3,I13,Out)+ plus(J13,Out,Out):1
+     [2*A13>=3,Out>=0,V3>=0,2*A13+1=F13,2*A13+1=Z12,2*A13+1=W12,2*A13+1=V,I13=0,E13=0,D13=0,J13=0,H13=0,G13=1,C13=0,B13=0,Y12=0,X12=0,V12=0] 
+* CE 61: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,V3,V3):1+ half(Z12,A13):4+ half(B13,C13):1+ timesIter(A13,V3,D13,E13)+ half(F13,A13):4+ half(G13,H13):2+ timesIter(A13,V3,I13,J13)+ plus(E13,K13,Out):2
+     [Out>=E13,2*A13>=3,E13>=1,V3>=0,Out=E13+J13,Out=E13+K13,2*A13+1=F13,2*A13+1=Z12,2*A13+1=W12,2*A13+1=V,I13=0,D13=0,H13=0,G13=1,C13=0,B13=0,Y12=0,X12=0,V12=0] 
+* CE 62: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):2+ timesIter(C13,F13,G13,H13)+ half(I13,C13):3+ half(J13,K13):3+ timesIter(C13,L13,M13,Out)+ plus(N13,Out,Out):1
+     [Out>=0,C13>=2,A13>=1,A13=L13+1,A13=F13+1,2*C13=I13,2*C13=B13,A13=Z12+1,2*C13=W12,A13=V3+1,2*C13=V,M13=1,H13=0,G13=0,N13=0,K13=1,J13=2,E13=0,D13=1,Y12=1,X12=0,V12=1] 
+* CE 63: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):2+ timesIter(C13,F13,G13,H13)+ half(I13,C13):3+ half(J13,K13):3+ timesIter(C13,L13,M13,N13)+ plus(H13,O13,Out):2
+     [Out>=H13,H13>=1,C13>=2,A13>=1,Out=H13+N13,Out=H13+O13,A13=L13+1,A13=F13+1,2*C13=I13,2*C13=B13,A13=Z12+1,2*C13=W12,A13=V3+1,2*C13=V,M13=1,G13=0,K13=1,J13=2,E13=0,D13=1,Y12=1,X12=0,V12=1] 
+* CE 64: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):2+ timesIter(F13,G13,H13,I13)+ half(J13,K13):4+ half(L13,M13):3+ timesIter(K13,N13,O13,Out)+ plus(P13,Out,Out):1
+     [2*K13>=3,Out>=0,A13>=1,A13=N13+1,A13=G13+1,2*K13+1=J13,2*K13+1=B13,A13=Z12+1,2*K13+1=W12,A13=V3+1,2*K13+1=V,2*K13+1=2*F13,2*K13+1=2*C13,O13=1,I13=0,H13=0,P13=0,M13=1,L13=2,E13=0,D13=1,Y12=1,X12=0,V12=1] 
+* CE 65: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):2+ timesIter(F13,G13,H13,I13)+ half(J13,K13):4+ half(L13,M13):3+ timesIter(K13,N13,O13,P13)+ plus(I13,Q13,Out):2
+     [Out>=I13,2*K13>=3,I13>=1,A13>=1,Out=I13+P13,Out=I13+Q13,A13=N13+1,A13=G13+1,2*K13+1=J13,2*K13+1=B13,A13=Z12+1,2*K13+1=W12,A13=V3+1,2*K13+1=V,2*K13+1=2*F13,2*K13+1=2*C13,O13=1,H13=0,M13=1,L13=2,E13=0,D13=1,Y12=1,X12=0,V12=1] 
+* CE 66: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(C13,F13,G13,H13)+ half(I13,C13):3+ half(J13,K13):3+ timesIter(C13,L13,K13,Out)+ plus(M13,Out,Out):1
+     [A13+1>=2*K13,2*K13>=3,Out>=0,C13>=2,L13+2*K13=A13+1,F13+2*K13=A13+1,Z12+2*K13=A13+1,V3+2*K13=A13+1,2*K13=J13,2*C13=I13,2*K13=D13+1,2*C13=B13,2*K13=Y12+1,2*C13=W12,2*K13=V12+1,2*C13=V,2*K13=2*G13+1,2*K13=2*E13+1,H13=0,M13=0,X12=0] 
+* CE 67: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(C13,F13,G13,H13)+ half(I13,C13):3+ half(J13,K13):3+ timesIter(C13,L13,K13,M13)+ plus(H13,N13,Out):2
+     [Out>=H13,A13+1>=2*K13,2*K13>=3,H13>=1,C13>=2,Out=H13+M13,Out=H13+N13,L13+2*K13=A13+1,F13+2*K13=A13+1,Z12+2*K13=A13+1,V3+2*K13=A13+1,2*K13=J13,2*C13=I13,2*K13=D13+1,2*C13=B13,2*K13=Y12+1,2*C13=W12,2*K13=V12+1,2*C13=V,2*K13=2*G13+1,2*K13=2*E13+1,X12=0] 
+* CE 68: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(C13,F13,E13,G13)+ half(H13,C13):3+ half(I13,E13):4+ timesIter(C13,J13,E13,Out)+ plus(K13,Out,Out):1
+     [A13>=2*E13,Out>=0,E13>=1,C13>=2,J13+2*E13=A13,F13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=I13,2*C13=H13,2*E13=D13,2*C13=B13,2*E13=Y12,2*C13=W12,2*E13=V12,2*C13=V,G13=0,K13=0,X12=0] 
+* CE 69: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(C13,F13,E13,G13)+ half(H13,C13):3+ half(I13,E13):4+ timesIter(C13,J13,E13,K13)+ plus(G13,L13,Out):2
+     [Out>=G13,A13>=2*E13,G13>=1,E13>=1,C13>=2,Out=G13+K13,Out=G13+L13,J13+2*E13=A13,F13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=I13,2*C13=H13,2*E13=D13,2*C13=B13,2*E13=Y12,2*C13=W12,2*E13=V12,2*C13=V,X12=0] 
+* CE 70: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(F13,G13,H13,I13)+ half(J13,K13):4+ half(L13,M13):3+ timesIter(K13,N13,M13,Out)+ plus(O13,Out,Out):1
+     [A13+1>=2*M13,2*M13>=3,2*K13>=3,Out>=0,N13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,2*M13=L13,2*K13+1=J13,2*M13=D13+1,2*K13+1=B13,2*M13=Y12+1,2*K13+1=W12,2*M13=V12+1,2*K13+1=V,2*M13=2*H13+1,2*K13+1=2*F13,2*M13=2*E13+1,2*K13+1=2*C13,I13=0,O13=0,X12=0] 
+* CE 71: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(F13,G13,H13,I13)+ half(J13,K13):4+ half(L13,M13):3+ timesIter(K13,N13,M13,O13)+ plus(I13,P13,Out):2
+     [Out>=I13,A13+1>=2*M13,2*M13>=3,2*K13>=3,I13>=1,Out=I13+O13,Out=I13+P13,N13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,2*M13=L13,2*K13+1=J13,2*M13=D13+1,2*K13+1=B13,2*M13=Y12+1,2*K13+1=W12,2*M13=V12+1,2*K13+1=V,2*M13=2*H13+1,2*K13+1=2*F13,2*M13=2*E13+1,2*K13+1=2*C13,X12=0] 
+* CE 72: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(F13,G13,E13,H13)+ half(I13,J13):4+ half(K13,E13):4+ timesIter(J13,L13,E13,Out)+ plus(M13,Out,Out):1
+     [A13>=2*E13,2*J13>=3,Out>=0,E13>=1,L13+2*E13=A13,G13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=K13,2*J13+1=I13,2*E13=D13,2*J13+1=B13,2*E13=Y12,2*J13+1=W12,2*E13=V12,2*J13+1=V,2*J13+1=2*F13,2*J13+1=2*C13,H13=0,M13=0,X12=0] 
+* CE 73: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):3+ timesIter(F13,G13,E13,H13)+ half(I13,J13):4+ half(K13,E13):4+ timesIter(J13,L13,E13,M13)+ plus(H13,N13,Out):2
+     [Out>=H13,A13>=2*E13,2*J13>=3,H13>=1,E13>=1,Out=H13+M13,Out=H13+N13,L13+2*E13=A13,G13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=K13,2*J13+1=I13,2*E13=D13,2*J13+1=B13,2*E13=Y12,2*J13+1=W12,2*E13=V12,2*J13+1=V,2*J13+1=2*F13,2*J13+1=2*C13,X12=0] 
+* CE 74: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(C13,F13,G13,H13)+ half(I13,C13):3+ half(J13,K13):3+ timesIter(C13,L13,K13,Out)+ plus(M13,Out,Out):1
+     [A13+1>=2*K13,Out>=0,K13>=2,C13>=2,L13+2*K13=A13+1,F13+2*K13=A13+1,Z12+2*K13=A13+1,V3+2*K13=A13+1,K13=G13+1,2*K13=J13,2*C13=I13,K13=E13+1,2*K13=D13+1,2*C13=B13,2*K13=Y12+1,2*C13=W12,2*K13=V12+1,2*C13=V,H13=0,M13=0,X12=0] 
+* CE 75: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(C13,F13,G13,H13)+ half(I13,C13):3+ half(J13,K13):3+ timesIter(C13,L13,K13,M13)+ plus(H13,N13,Out):2
+     [Out>=H13,A13+1>=2*K13,H13>=1,K13>=2,C13>=2,Out=H13+M13,Out=H13+N13,L13+2*K13=A13+1,F13+2*K13=A13+1,Z12+2*K13=A13+1,V3+2*K13=A13+1,K13=G13+1,2*K13=J13,2*C13=I13,K13=E13+1,2*K13=D13+1,2*C13=B13,2*K13=Y12+1,2*C13=W12,2*K13=V12+1,2*C13=V,X12=0] 
+* CE 76: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(C13,F13,G13,H13)+ half(I13,C13):3+ half(J13,K13):4+ timesIter(C13,L13,K13,Out)+ plus(M13,Out,Out):1
+     [A13>=2*K13,2*K13>=3,Out>=0,C13>=2,L13+2*K13=A13,F13+2*K13=A13,Z12+2*K13=A13,V3+2*K13=A13,2*K13+1=J13,2*C13=I13,2*K13=D13,2*C13=B13,2*K13=Y12,2*C13=W12,2*K13=V12,2*C13=V,2*K13=2*G13+1,2*K13=2*E13+1,H13=0,M13=0,X12=0] 
+* CE 77: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(C13,F13,G13,H13)+ half(I13,C13):3+ half(J13,K13):4+ timesIter(C13,L13,K13,M13)+ plus(H13,N13,Out):2
+     [Out>=H13,A13>=2*K13,2*K13>=3,H13>=1,C13>=2,Out=H13+M13,Out=H13+N13,L13+2*K13=A13,F13+2*K13=A13,Z12+2*K13=A13,V3+2*K13=A13,2*K13+1=J13,2*C13=I13,2*K13=D13,2*C13=B13,2*K13=Y12,2*C13=W12,2*K13=V12,2*C13=V,2*K13=2*G13+1,2*K13=2*E13+1,X12=0] 
+* CE 78: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):4+ half(L13,M13):3+ timesIter(K13,N13,M13,Out)+ plus(O13,Out,Out):1
+     [A13+1>=2*M13,2*K13>=3,Out>=0,M13>=2,N13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,M13=H13+1,2*M13=L13,2*K13+1=J13,M13=E13+1,2*M13=D13+1,2*K13+1=B13,2*M13=Y12+1,2*K13+1=W12,2*M13=V12+1,2*K13+1=V,2*K13+1=2*F13,2*K13+1=2*C13,I13=0,O13=0,X12=0] 
+* CE 79: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):4+ half(L13,M13):3+ timesIter(K13,N13,M13,O13)+ plus(I13,P13,Out):2
+     [Out>=I13,A13+1>=2*M13,2*K13>=3,I13>=1,M13>=2,Out=I13+O13,Out=I13+P13,N13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,M13=H13+1,2*M13=L13,2*K13+1=J13,M13=E13+1,2*M13=D13+1,2*K13+1=B13,2*M13=Y12+1,2*K13+1=W12,2*M13=V12+1,2*K13+1=V,2*K13+1=2*F13,2*K13+1=2*C13,X12=0] 
+* CE 80: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):4+ half(L13,M13):4+ timesIter(K13,N13,M13,Out)+ plus(O13,Out,Out):1
+     [A13>=2*M13,2*M13>=3,2*K13>=3,Out>=0,N13+2*M13=A13,G13+2*M13=A13,Z12+2*M13=A13,V3+2*M13=A13,2*M13+1=L13,2*K13+1=J13,2*M13=D13,2*K13+1=B13,2*M13=Y12,2*K13+1=W12,2*M13=V12,2*K13+1=V,2*M13=2*H13+1,2*K13+1=2*F13,2*M13=2*E13+1,2*K13+1=2*C13,I13=0,O13=0,X12=0] 
+* CE 81: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):3+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):4+ half(L13,M13):4+ timesIter(K13,N13,M13,O13)+ plus(I13,P13,Out):2
+     [Out>=I13,A13>=2*M13,2*M13>=3,2*K13>=3,I13>=1,Out=I13+O13,Out=I13+P13,N13+2*M13=A13,G13+2*M13=A13,Z12+2*M13=A13,V3+2*M13=A13,2*M13+1=L13,2*K13+1=J13,2*M13=D13,2*K13+1=B13,2*M13=Y12,2*K13+1=W12,2*M13=V12,2*K13+1=V,2*M13=2*H13+1,2*K13+1=2*F13,2*M13=2*E13+1,2*K13+1=2*C13,X12=0] 
+* CE 82: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):2+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(K13,N13,O13,Out)+ plus(P13,Out,Out):1
+     [Out>=0,K13>=2,A13>=1,A13=N13+1,A13=G13+1,2*K13=J13,2*K13=B13,A13=Z12+1,2*K13=W12,A13=V3+1,2*K13=V,2*K13=2*F13+1,2*K13=2*C13+1,O13=1,I13=0,H13=0,P13=0,M13=1,L13=2,E13=0,D13=1,Y12=1,X12=0,V12=1] 
+* CE 83: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):2+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(K13,N13,O13,P13)+ plus(I13,Q13,Out):2
+     [Out>=I13,I13>=1,K13>=2,A13>=1,Out=I13+P13,Out=I13+Q13,A13=N13+1,A13=G13+1,2*K13=J13,2*K13=B13,A13=Z12+1,2*K13=W12,A13=V3+1,2*K13=V,2*K13=2*F13+1,2*K13=2*C13+1,O13=1,H13=0,M13=1,L13=2,E13=0,D13=1,Y12=1,X12=0,V12=1] 
+* CE 84: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):2+ timesIter(C13,F13,G13,H13)+ half(I13,C13):4+ half(J13,K13):3+ timesIter(C13,L13,M13,Out)+ plus(N13,Out,Out):1
+     [2*C13>=3,Out>=0,A13>=1,A13=L13+1,A13=F13+1,2*C13+1=I13,2*C13+1=B13,A13=Z12+1,2*C13+1=W12,A13=V3+1,2*C13+1=V,M13=1,H13=0,G13=0,N13=0,K13=1,J13=2,E13=0,D13=1,Y12=1,X12=0,V12=1] 
+* CE 85: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):2+ timesIter(C13,F13,G13,H13)+ half(I13,C13):4+ half(J13,K13):3+ timesIter(C13,L13,M13,N13)+ plus(H13,O13,Out):2
+     [Out>=H13,2*C13>=3,H13>=1,A13>=1,Out=H13+N13,Out=H13+O13,A13=L13+1,A13=F13+1,2*C13+1=I13,2*C13+1=B13,A13=Z12+1,2*C13+1=W12,A13=V3+1,2*C13+1=V,M13=1,G13=0,K13=1,J13=2,E13=0,D13=1,Y12=1,X12=0,V12=1] 
+* CE 86: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):3+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(K13,N13,M13,Out)+ plus(O13,Out,Out):1
+     [A13+1>=2*M13,2*M13>=3,Out>=0,K13>=2,N13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,2*M13=L13,2*K13=J13,2*M13=D13+1,2*K13=B13,2*M13=Y12+1,2*K13=W12,2*M13=V12+1,2*K13=V,2*M13=2*H13+1,2*K13=2*F13+1,2*M13=2*E13+1,2*K13=2*C13+1,I13=0,O13=0,X12=0] 
+* CE 87: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):3+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(K13,N13,M13,O13)+ plus(I13,P13,Out):2
+     [Out>=I13,A13+1>=2*M13,2*M13>=3,I13>=1,K13>=2,Out=I13+O13,Out=I13+P13,N13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,2*M13=L13,2*K13=J13,2*M13=D13+1,2*K13=B13,2*M13=Y12+1,2*K13=W12,2*M13=V12+1,2*K13=V,2*M13=2*H13+1,2*K13=2*F13+1,2*M13=2*E13+1,2*K13=2*C13+1,X12=0] 
+* CE 88: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):3+ timesIter(F13,G13,E13,H13)+ half(I13,J13):3+ half(K13,E13):4+ timesIter(J13,L13,E13,Out)+ plus(M13,Out,Out):1
+     [A13>=2*E13,Out>=0,E13>=1,J13>=2,L13+2*E13=A13,G13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=K13,2*J13=I13,2*E13=D13,2*J13=B13,2*E13=Y12,2*J13=W12,2*E13=V12,2*J13=V,2*J13=2*F13+1,2*J13=2*C13+1,H13=0,M13=0,X12=0] 
+* CE 89: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):3+ timesIter(F13,G13,E13,H13)+ half(I13,J13):3+ half(K13,E13):4+ timesIter(J13,L13,E13,M13)+ plus(H13,N13,Out):2
+     [Out>=H13,A13>=2*E13,H13>=1,E13>=1,J13>=2,Out=H13+M13,Out=H13+N13,L13+2*E13=A13,G13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=K13,2*J13=I13,2*E13=D13,2*J13=B13,2*E13=Y12,2*J13=W12,2*E13=V12,2*J13=V,2*J13=2*F13+1,2*J13=2*C13+1,X12=0] 
+* CE 90: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):3+ timesIter(C13,F13,G13,H13)+ half(I13,C13):4+ half(J13,K13):3+ timesIter(C13,L13,K13,Out)+ plus(M13,Out,Out):1
+     [A13+1>=2*K13,2*K13>=3,2*C13>=3,Out>=0,L13+2*K13=A13+1,F13+2*K13=A13+1,Z12+2*K13=A13+1,V3+2*K13=A13+1,2*K13=J13,2*C13+1=I13,2*K13=D13+1,2*C13+1=B13,2*K13=Y12+1,2*C13+1=W12,2*K13=V12+1,2*C13+1=V,2*K13=2*G13+1,2*K13=2*E13+1,H13=0,M13=0,X12=0] 
+* CE 91: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):3+ timesIter(C13,F13,G13,H13)+ half(I13,C13):4+ half(J13,K13):3+ timesIter(C13,L13,K13,M13)+ plus(H13,N13,Out):2
+     [Out>=H13,A13+1>=2*K13,2*K13>=3,2*C13>=3,H13>=1,Out=H13+M13,Out=H13+N13,L13+2*K13=A13+1,F13+2*K13=A13+1,Z12+2*K13=A13+1,V3+2*K13=A13+1,2*K13=J13,2*C13+1=I13,2*K13=D13+1,2*C13+1=B13,2*K13=Y12+1,2*C13+1=W12,2*K13=V12+1,2*C13+1=V,2*K13=2*G13+1,2*K13=2*E13+1,X12=0] 
+* CE 92: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):3+ timesIter(C13,F13,E13,G13)+ half(H13,C13):4+ half(I13,E13):4+ timesIter(C13,J13,E13,Out)+ plus(K13,Out,Out):1
+     [A13>=2*E13,2*C13>=3,Out>=0,E13>=1,J13+2*E13=A13,F13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=I13,2*C13+1=H13,2*E13=D13,2*C13+1=B13,2*E13=Y12,2*C13+1=W12,2*E13=V12,2*C13+1=V,G13=0,K13=0,X12=0] 
+* CE 93: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):3+ timesIter(C13,F13,E13,G13)+ half(H13,C13):4+ half(I13,E13):4+ timesIter(C13,J13,E13,K13)+ plus(G13,L13,Out):2
+     [Out>=G13,A13>=2*E13,2*C13>=3,G13>=1,E13>=1,Out=G13+K13,Out=G13+L13,J13+2*E13=A13,F13+2*E13=A13,Z12+2*E13=A13,V3+2*E13=A13,2*E13+1=I13,2*C13+1=H13,2*E13=D13,2*C13+1=B13,2*E13=Y12,2*C13+1=W12,2*E13=V12,2*C13+1=V,X12=0] 
+* CE 94: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(K13,N13,M13,Out)+ plus(O13,Out,Out):1
+     [A13+1>=2*M13,Out>=0,M13>=2,K13>=2,N13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,M13=H13+1,2*M13=L13,2*K13=J13,M13=E13+1,2*M13=D13+1,2*K13=B13,2*M13=Y12+1,2*K13=W12,2*M13=V12+1,2*K13=V,2*K13=2*F13+1,2*K13=2*C13+1,I13=0,O13=0,X12=0] 
+* CE 95: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):3+ timesIter(K13,N13,M13,O13)+ plus(I13,P13,Out):2
+     [Out>=I13,A13+1>=2*M13,I13>=1,M13>=2,K13>=2,Out=I13+O13,Out=I13+P13,N13+2*M13=A13+1,G13+2*M13=A13+1,Z12+2*M13=A13+1,V3+2*M13=A13+1,M13=H13+1,2*M13=L13,2*K13=J13,M13=E13+1,2*M13=D13+1,2*K13=B13,2*M13=Y12+1,2*K13=W12,2*M13=V12+1,2*K13=V,2*K13=2*F13+1,2*K13=2*C13+1,X12=0] 
+* CE 96: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):4+ timesIter(K13,N13,M13,Out)+ plus(O13,Out,Out):1
+     [A13>=2*M13,2*M13>=3,Out>=0,K13>=2,N13+2*M13=A13,G13+2*M13=A13,Z12+2*M13=A13,V3+2*M13=A13,2*M13+1=L13,2*K13=J13,2*M13=D13,2*K13=B13,2*M13=Y12,2*K13=W12,2*M13=V12,2*K13=V,2*M13=2*H13+1,2*K13=2*F13+1,2*M13=2*E13+1,2*K13=2*C13+1,I13=0,O13=0,X12=0] 
+* CE 97: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):4+ timesIter(F13,G13,H13,I13)+ half(J13,K13):3+ half(L13,M13):4+ timesIter(K13,N13,M13,O13)+ plus(I13,P13,Out):2
+     [Out>=I13,A13>=2*M13,2*M13>=3,I13>=1,K13>=2,Out=I13+O13,Out=I13+P13,N13+2*M13=A13,G13+2*M13=A13,Z12+2*M13=A13,V3+2*M13=A13,2*M13+1=L13,2*K13=J13,2*M13=D13,2*K13=B13,2*M13=Y12,2*K13=W12,2*M13=V12,2*K13=V,2*M13=2*H13+1,2*K13=2*F13+1,2*M13=2*E13+1,2*K13=2*C13+1,X12=0] 
+* CE 98: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):4+ timesIter(C13,F13,G13,H13)+ half(I13,C13):4+ half(J13,K13):3+ timesIter(C13,L13,K13,Out)+ plus(M13,Out,Out):1
+     [A13+1>=2*K13,2*C13>=3,Out>=0,K13>=2,L13+2*K13=A13+1,F13+2*K13=A13+1,Z12+2*K13=A13+1,V3+2*K13=A13+1,K13=G13+1,2*K13=J13,2*C13+1=I13,K13=E13+1,2*K13=D13+1,2*C13+1=B13,2*K13=Y12+1,2*C13+1=W12,2*K13=V12+1,2*C13+1=V,H13=0,M13=0,X12=0] 
+* CE 99: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):4+ timesIter(C13,F13,G13,H13)+ half(I13,C13):4+ half(J13,K13):3+ timesIter(C13,L13,K13,M13)+ plus(H13,N13,Out):2
+     [Out>=H13,A13+1>=2*K13,2*C13>=3,H13>=1,K13>=2,Out=H13+M13,Out=H13+N13,L13+2*K13=A13+1,F13+2*K13=A13+1,Z12+2*K13=A13+1,V3+2*K13=A13+1,K13=G13+1,2*K13=J13,2*C13+1=I13,K13=E13+1,2*K13=D13+1,2*C13+1=B13,2*K13=Y12+1,2*C13+1=W12,2*K13=V12+1,2*C13+1=V,X12=0] 
+* CE 100: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):4+ timesIter(C13,F13,G13,H13)+ half(I13,C13):4+ half(J13,K13):4+ timesIter(C13,L13,K13,Out)+ plus(M13,Out,Out):1
+     [A13>=2*K13,2*K13>=3,2*C13>=3,Out>=0,L13+2*K13=A13,F13+2*K13=A13,Z12+2*K13=A13,V3+2*K13=A13,2*K13+1=J13,2*C13+1=I13,2*K13=D13,2*C13+1=B13,2*K13=Y12,2*C13+1=W12,2*K13=V12,2*C13+1=V,2*K13=2*G13+1,2*K13=2*E13+1,H13=0,M13=0,X12=0] 
+* CE 101: timesIter(V,V3,V12,Out) = 2+ check(W12,X12):4+ plus(Y12,Z12,A13):2+ half(B13,C13):4+ half(D13,E13):4+ timesIter(C13,F13,G13,H13)+ half(I13,C13):4+ half(J13,K13):4+ timesIter(C13,L13,K13,M13)+ plus(H13,N13,Out):2
+     [Out>=H13,A13>=2*K13,2*K13>=3,2*C13>=3,H13>=1,Out=H13+M13,Out=H13+N13,L13+2*K13=A13,F13+2*K13=A13,Z12+2*K13=A13,V3+2*K13=A13,2*K13+1=J13,2*C13+1=I13,2*K13=D13,2*C13+1=B13,2*K13=Y12,2*C13+1=W12,2*K13=V12,2*C13+1=V,2*K13=2*G13+1,2*K13=2*E13+1,X12=0] 
+
+### Cost equations --> "Loop" of timesIter/4 
+* CEs [69] --> Loop 29 
+* CEs [93] --> Loop 30 
+* CEs [77] --> Loop 31 
+* CEs [101] --> Loop 32 
+* CEs [75] --> Loop 33 
+* CEs [99] --> Loop 34 
+* CEs [67] --> Loop 35 
+* CEs [91] --> Loop 36 
+* CEs [89] --> Loop 37 
+* CEs [97] --> Loop 38 
+* CEs [95] --> Loop 39 
+* CEs [87] --> Loop 40 
+* CEs [73] --> Loop 41 
+* CEs [81] --> Loop 42 
+* CEs [79] --> Loop 43 
+* CEs [71] --> Loop 44 
+* CEs [68] --> Loop 45 
+* CEs [92] --> Loop 46 
+* CEs [76] --> Loop 47 
+* CEs [100] --> Loop 48 
+* CEs [74] --> Loop 49 
+* CEs [98] --> Loop 50 
+* CEs [66] --> Loop 51 
+* CEs [90] --> Loop 52 
+* CEs [88] --> Loop 53 
+* CEs [96] --> Loop 54 
+* CEs [94] --> Loop 55 
+* CEs [86] --> Loop 56 
+* CEs [72] --> Loop 57 
+* CEs [80] --> Loop 58 
+* CEs [78] --> Loop 59 
+* CEs [70] --> Loop 60 
+* CEs [63] --> Loop 61 
+* CEs [85] --> Loop 62 
+* CEs [83] --> Loop 63 
+* CEs [65] --> Loop 64 
+* CEs [62] --> Loop 65 
+* CEs [84] --> Loop 66 
+* CEs [82] --> Loop 67 
+* CEs [64] --> Loop 68 
+* CEs [55] --> Loop 69 
+* CEs [61] --> Loop 70 
+* CEs [59] --> Loop 71 
+* CEs [57] --> Loop 72 
+* CEs [54] --> Loop 73 
+* CEs [60] --> Loop 74 
+* CEs [58] --> Loop 75 
+* CEs [56] --> Loop 76 
+* CEs [49] --> Loop 77 
+* CEs [53] --> Loop 78 
+* CEs [51] --> Loop 79 
+* CEs [47] --> Loop 80 
+* CEs [48] --> Loop 81 
+* CEs [52] --> Loop 82 
+* CEs [50] --> Loop 83 
+* CEs [46] --> Loop 84 
+* CEs [45] --> Loop 85 
+* CEs [44] --> Loop 86 
+* CEs [43] --> Loop 87 
+* CEs [42] --> Loop 88 
+* CEs [41] --> Loop 89 
+* CEs [40] --> Loop 90 
+* CEs [39] --> Loop 91 
+* CEs [38] --> Loop 92 
+* CEs [37] --> Loop 93 
+* CEs [36] --> Loop 94 
+
+#### Loops of timesIter/4 
+* Loop 29: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,V>=4,Out'+Out'2=Out,V12=2*V12'2,V=2*V'2,V12=2*V12',V=2*V'] 
+* Loop 30: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,V>=4,Out'+Out'2=Out,V12=2*V12'2,V=2*V'2+1,V12=2*V12',V=2*V'+1] 
+* Loop 31: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,V>=4,Out'+Out'2=Out,V12=2*V12'2,V=2*V'2,V12=2*V12'+1,V=2*V'] 
+* Loop 32: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,V>=4,Out'+Out'2=Out,V12=2*V12'2,V=2*V'2+1,V12=2*V12'+1,V=2*V'+1] 
+* Loop 33: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,V>=4,Out'+Out'2=Out,V12+1=2*V12'2,V=2*V'2,V12=2*V12'+1,V=2*V'] 
+* Loop 34: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,V>=4,Out'+Out'2=Out,V12+1=2*V12'2,V=2*V'2+1,V12=2*V12'+1,V=2*V'+1] 
+* Loop 35: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,V>=4,Out'+Out'2=Out,V12+1=2*V12'2,V=2*V'2,V12=2*V12',V=2*V'] 
+* Loop 36: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,V>=4,Out'+Out'2=Out,V12+1=2*V12'2,V=2*V'2+1,V12=2*V12',V=2*V'+1] 
+* Loop 37: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,V>=4,Out'+Out'2=Out,V12=2*V12'2,V=2*V'2,V12=2*V12',V=2*V'+1] 
+* Loop 38: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,V>=4,Out'+Out'2=Out,V12=2*V12'2,V=2*V'2,V12=2*V12'+1,V=2*V'+1] 
+* Loop 39: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,V>=4,Out'+Out'2=Out,V12+1=2*V12'2,V=2*V'2,V12=2*V12'+1,V=2*V'+1] 
+* Loop 40: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,V>=4,Out'+Out'2=Out,V12+1=2*V12'2,V=2*V'2,V12=2*V12',V=2*V'+1] 
+* Loop 41: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,V>=4,Out'+Out'2=Out,V12=2*V12'2,V=2*V'2+1,V12=2*V12',V=2*V'] 
+* Loop 42: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,V>=4,Out'+Out'2=Out,V12=2*V12'2,V=2*V'2+1,V12=2*V12'+1,V=2*V'] 
+* Loop 43: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,V>=4,Out'+Out'2=Out,V12+1=2*V12'2,V=2*V'2+1,V12=2*V12'+1,V=2*V'] 
+* Loop 44: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,V>=4,Out'+Out'2=Out,V12+1=2*V12'2,V=2*V'2+1,V12=2*V12',V=2*V'] 
+* Loop 45: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V>=4,V12=2*V12'2,V=2*V'2,V12=2*V12',V=2*V',Out'=0] 
+* Loop 46: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V>=4,V12=2*V12'2,V=2*V'2+1,V12=2*V12',V=2*V'+1,Out'=0] 
+* Loop 47: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V>=4,V12=2*V12'2,V=2*V'2,V12=2*V12'+1,V=2*V',Out'=0] 
+* Loop 48: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V>=4,V12=2*V12'2,V=2*V'2+1,V12=2*V12'+1,V=2*V'+1,Out'=0] 
+* Loop 49: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V>=4,V12+1=2*V12'2,V=2*V'2,V12=2*V12'+1,V=2*V',Out'=0] 
+* Loop 50: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V>=4,V12+1=2*V12'2,V=2*V'2+1,V12=2*V12'+1,V=2*V'+1,Out'=0] 
+* Loop 51: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V>=4,V12+1=2*V12'2,V=2*V'2,V12=2*V12',V=2*V',Out'=0] 
+* Loop 52: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V>=4,V12+1=2*V12'2,V=2*V'2+1,V12=2*V12',V=2*V'+1,Out'=0] 
+* Loop 53: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V>=4,V12=2*V12'2,V=2*V'2,V12=2*V12',V=2*V'+1,Out'=0] 
+* Loop 54: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V>=4,V12=2*V12'2,V=2*V'2,V12=2*V12'+1,V=2*V'+1,Out'=0] 
+* Loop 55: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V>=4,V12+1=2*V12'2,V=2*V'2,V12=2*V12'+1,V=2*V'+1,Out'=0] 
+* Loop 56: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V>=4,V12+1=2*V12'2,V=2*V'2,V12=2*V12',V=2*V'+1,Out'=0] 
+* Loop 57: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V>=4,V12=2*V12'2,V=2*V'2+1,V12=2*V12',V=2*V',Out'=0] 
+* Loop 58: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V>=4,V12=2*V12'2,V=2*V'2+1,V12=2*V12'+1,V=2*V',Out'=0] 
+* Loop 59: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V>=4,V12+1=2*V12'2,V=2*V'2+1,V12=2*V12'+1,V=2*V',Out'=0] 
+* Loop 60: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V>=4,V12+1=2*V12'2,V=2*V'2+1,V12=2*V12',V=2*V',Out'=0] 
+* Loop 61: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,V>=4,Out'+Out'2=Out,V=2*V'2,V=2*V',V12'2=1,V12'=0,V12=1] 
+* Loop 62: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,V>=4,Out'+Out'2=Out,V=2*V'2+1,V=2*V'+1,V12'2=1,V12'=0,V12=1] 
+* Loop 63: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,V>=4,Out'+Out'2=Out,V=2*V'2,V=2*V'+1,V12'2=1,V12'=0,V12=1] 
+* Loop 64: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,V>=4,Out'+Out'2=Out,V=2*V'2+1,V=2*V',V12'2=1,V12'=0,V12=1] 
+* Loop 65: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V>=4,V=2*V'2,V=2*V',V12'2=1,Out'=0,V12'=0,V12=1] 
+* Loop 66: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V>=4,V=2*V'2+1,V=2*V'+1,V12'2=1,Out'=0,V12'=0,V12=1] 
+* Loop 67: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V>=4,V=2*V'2,V=2*V'+1,V12'2=1,Out'=0,V12'=0,V12=1] 
+* Loop 68: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V>=4,V=2*V'2+1,V=2*V',V12'2=1,Out'=0,V12'=0,V12=1] 
+* Loop 69: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,V>=4,Out'+Out'2=Out,V=2*V'2,V=2*V',V12'2=0,V12'=0,V12=0] 
+* Loop 70: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,V>=4,Out'+Out'2=Out,V=2*V'2+1,V=2*V'+1,V12'2=0,V12'=0,V12=0] 
+* Loop 71: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,V>=4,Out'+Out'2=Out,V=2*V'2,V=2*V'+1,V12'2=0,V12'=0,V12=0] 
+* Loop 72: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,V>=4,Out'+Out'2=Out,V=2*V'2+1,V=2*V',V12'2=0,V12'=0,V12=0] 
+* Loop 73: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V>=4,V=2*V'2,V=2*V',V12'2=0,Out'=0,V12'=0,V12=0] 
+* Loop 74: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V>=4,V=2*V'2+1,V=2*V'+1,V12'2=0,Out'=0,V12'=0,V12=0] 
+* Loop 75: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V>=4,V=2*V'2,V=2*V'+1,V12'2=0,Out'=0,V12'=0,V12=0] 
+* Loop 76: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V>=4,V=2*V'2+1,V=2*V',V12'2=0,Out'=0,V12'=0,V12=0] 
+* Loop 77: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,Out'+Out'2=Out,V12=2*V12'2,V12=2*V12',V'2=1,V'=1,V=2] 
+* Loop 78: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,Out'+Out'2=Out,V12=2*V12'2,V12=2*V12'+1,V'2=1,V'=1,V=2] 
+* Loop 79: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=3,V3>=0,Out'+Out'2=Out,V12+1=2*V12'2,V12=2*V12'+1,V'2=1,V'=1,V=2] 
+* Loop 80: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V12>=2,V3>=0,Out'+Out'2=Out,V12+1=2*V12'2,V12=2*V12',V'2=1,V'=1,V=2] 
+* Loop 81: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V12=2*V12'2,V12=2*V12',V'2=1,Out'=0,V'=1,V=2] 
+* Loop 82: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V12=2*V12'2,V12=2*V12'+1,V'2=1,Out'=0,V'=1,V=2] 
+* Loop 83: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=3,V3>=0,V12+1=2*V12'2,V12=2*V12'+1,V'2=1,Out'=0,V'=1,V=2] 
+* Loop 84: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V12>=2,V3>=0,V12+1=2*V12'2,V12=2*V12',V'2=1,Out'=0,V'=1,V=2] 
+* Loop 85: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,Out'+Out'2=Out,V12'2=1,V'2=1,V12'=0,V'=1,V12=1,V=2] 
+* Loop 86: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V12'2=1,V'2=1,Out'=0,V12'=0,V'=1,V12=1,V=2] 
+* Loop 87: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out'2)
+                  [Out>=Out',Out'>=1,V3>=0,Out'+Out'2=Out,V12'2=0,V'2=1,V12'=0,V'=1,V12=0,V=2] 
+* Loop 88: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out')  timesIter(V'2,V3,V12'2,Out)
+                  [Out>=0,V3>=0,V12'2=0,V'2=1,Out'=0,V12'=0,V'=1,V12=0,V=2] 
+* Loop 89: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out)
+                  [V12>=1,V3>=0,V>=3,V3+V12=V12',V=V'+1] 
+* Loop 90: timesIter(V,V3,V12,Out)->  timesIter(A',V3,V3,Out)
+                  [V3>=0,V>=3,V=A'+1,V12=0] 
+* Loop 91: timesIter(V,V3,V12,Out)->  timesIter(V',V3,V12',Out)
+                  [V12>=1,V3>=0,V3+V12=V12',V'=0,V=1] 
+* Loop 92: timesIter(V,V3,V12,Out)->  timesIter(A',V3,V3,Out)
+                  [V3>=0,A'=0,V12=0,V=1] 
+* Loop 93: timesIter(A,B,C,C) [C>=1,B>=0,A=0] 
+* Loop 94: timesIter(V,V3,V12,Out) [V3>=0,Out=0,V12=0,V=0] 
+
+### Ranking functions of CR timesIter(V,V3,V12,Out) 
+* RF of phase [29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,89,90]: [V-2]
+
+#### Partial ranking functions of CR timesIter(V,V3,V12,Out) 
+* Partial RF of phase [29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,89,90]:
+  - RF of loop [29:1,29:2,30:1,30:2,35:1,36:1,37:1,37:2,40:1,41:1,41:2,44:1,45:1,45:2,46:1,46:2,51:1,52:1,53:1,53:2,56:1,57:1,57:2,60:1]:
+    V12-1 depends on loops [89:1,90:1] 
+  - RF of loop [29:1,29:2,31:1,31:2,33:1,33:2,35:1,35:2,37:2,38:2,39:2,40:2,41:1,42:1,43:1,44:1,45:1,45:2,47:1,47:2,49:1,49:2,51:1,51:2,53:2,54:2,55:2,56:2,57:1,58:1,59:1,60:1,61:1,61:2,63:2,64:1,65:1,65:2,67:2,68:1]:
+    V/2-3/2
+  - RF of loop [30:1,30:2,32:1,32:2,34:1,34:2,36:1,36:2,37:1,38:1,39:1,40:1,41:2,42:2,43:2,44:2,46:1,46:2,48:1,48:2,50:1,50:2,52:1,52:2,53:1,54:1,55:1,56:1,57:2,58:2,59:2,60:2,62:1,62:2,63:1,64:2,66:1,66:2,67:1,68:2,70:1,70:2,71:1,72:2,74:1,74:2,75:1,76:2]:
+    2/5*V-7/5
+  - RF of loop [31:1,32:1,33:1,34:1,38:1,39:1,42:1,43:1,47:1,48:1,49:1,50:1,54:1,55:1,58:1,59:1]:
+    V12/2-1 depends on loops [89:1,90:1] 
+  - RF of loop [31:2,32:2,38:2,42:2,47:2,48:2,54:2,58:2]:
+    2/3*V12-5/3 depends on loops [89:1,90:1] 
+  - RF of loop [33:2,34:2,39:2,43:2,49:2,50:2,55:2,59:2]:
+    V12-2 depends on loops [89:1,90:1] 
+  - RF of loop [35:2,36:2,40:2,44:2,51:2,52:2,56:2,60:2]:
+    2*V12-3 depends on loops [89:1,90:1] 
+  - RF of loop [61:1,62:1,63:1,64:1,65:1,66:1,67:1,68:1]:
+    V12 depends on loops [89:1,90:1] 
+  - RF of loop [69:1,69:2,71:2,72:1,73:1,73:2,75:2,76:1]:
+    V-3
+  - RF of loop [89:1,90:1]:
+    V-2
+
+
+### Resulting Chains:timesIter(V,V3,V12,Out) 
+* [94]
+* [93]
+* [92,94]
+* [92,93]
+* [91,93]
+* [multiple(88,[[92,94],[92,93]])]
+* [multiple(87,[[92,94],[92,93]])]
+* [multiple(86,[[92,94],[92,93],[91,93]])]
+* [multiple(85,[[92,94],[92,93],[91,93]])]
+* [multiple(80,[[91,93]])]
+* [multiple(79,[[91,93]])]
+* [multiple(78,[[91,93]])]
+* [multiple(77,[[91,93]])]
+* [multiple([29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,89,90],[[multiple(88,[[92,94],[92,93]])],[multiple(87,[[92,94],[92,93]])],[multiple(86,[[92,94],[92,93],[91,93]])],[multiple(85,[[92,94],[92,93],[91,93]])],[multiple(84,[[91,93]])],[multiple(83,[[91,93]])],[multiple(82,[[91,93]])],[multiple(81,[[91,93]])],[multiple(80,[[91,93]])],[multiple(79,[[91,93]])],[multiple(78,[[91,93]])],[multiple(77,[[91,93]])]])]
+
+
+### Merging Chains  timesIter/4 into  External patterns of execution 
+* [[94]] --> 1 
+* [[93]] --> 2 
+* [[94,92]] --> 3 
+* [[93,92]] --> 4 
+* [[93,91]] --> 5 
+* [[multiple(88,[[92,94],[92,93]])]] --> 6 
+* [[multiple(86,[[92,94],[92,93],[91,93]])]] --> 7 
+* [[multiple(87,[[92,94],[92,93]])]] --> 8 
+* [[multiple(85,[[92,94],[92,93],[91,93]])]] --> 9 
+* [[multiple(80,[[91,93]])]] --> 10 
+* [[multiple(78,[[91,93]])]] --> 11 
+* [[multiple(77,[[91,93]])],[multiple(79,[[91,93]])]] --> 12 
+* [[multiple([29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,89,90],[[multiple(88,[[92,94],[92,93]])],[multiple(87,[[92,94],[92,93]])],[multiple(86,[[92,94],[92,93],[91,93]])],[multiple(85,[[92,94],[92,93],[91,93]])],[multiple(84,[[91,93]])],[multiple(83,[[91,93]])],[multiple(82,[[91,93]])],[multiple(81,[[91,93]])],[multiple(80,[[91,93]])],[multiple(79,[[91,93]])],[multiple(78,[[91,93]])],[multiple(77,[[91,93]])]])]] --> 13 
+
+
+### Specialization of cost equations start/5 
+* CE 4 is refined into CE [102] 
+* CE 3 is refined into CE [103,104,105,106,107,108,109,110,111,112,113,114,115,116,117] 
+* CE 2 is refined into CE [118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285] 
+* CE 5 is refined into CE [286,287,288,289,290] 
+* CE 6 is refined into CE [291,292,293,294] 
+* CE 7 is refined into CE [295,296] 
+* CE 8 is refined into CE [297,298,299,300,301,302] 
+* CE 9 is refined into CE [303,304,305,306,307,308,309,310,311,312,313,314,315] 
+* CE 10 is refined into CE [316,317] 
+
+
+#### Refined cost equations start/5 
+* CE 102: start(V,V3,V12,V18,V19) = 1
+     [V19>=0,V18>=0,V12>=0,V3>=0,V=2] 
+* CE 103: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):1+ timesIter(Y19,V12,Z19,A20):1
+     [V12>=0,V18>=0,A20=0,Z19=0,Y19=0,X19=0,W19=0,V19=0,V3=0,V=1] 
+* CE 104: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):1+ timesIter(Y19,V12,V19,V19):2
+     [V19>=1,V12>=0,V18>=0,Y19=0,X19=0,W19=0,V3=0,V=1] 
+* CE 105: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,V12,Z19,A20):1
+     [V12>=0,V18>=0,A20=0,Z19=0,Y19=0,X19=0,W19=1,V19=0,V3=1,V=1] 
+* CE 106: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,V12,V19,V19):2
+     [V19>=1,V12>=0,V18>=0,Y19=0,X19=0,W19=1,V3=1,V=1] 
+* CE 107: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,Z19,A20,B20):3
+     [V18>=0,B20=0,A20=0,Z19=0,Y19=1,X19=1,W19=2,V19=0,V12=0,V3=2,V=1] 
+* CE 108: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,V12,Z19,V12):4
+     [V12>=1,V18>=0,Z19=0,Y19=1,X19=1,W19=2,V19=0,V3=2,V=1] 
+* CE 109: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,V12,Z19,A20):5
+     [A20>=V12+1,V12>=0,V18>=0,A20=V12+Z19,A20=V12+V19,Y19=1,X19=1,W19=2,V3=2,V=1] 
+* CE 110: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,Z19,A20,B20):6
+     [V18>=0,B20=0,A20=0,Z19=0,Y19=2,X19=2,W19=3,V19=0,V12=0,V3=3,V=1] 
+* CE 111: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,Z19,A20,B20):7
+     [V18>=0,B20=1,A20=1,Z19=0,Y19=2,X19=2,W19=3,V19=1,V12=0,V3=3,V=1] 
+* CE 112: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,Z19,A20,B20):8
+     [B20>=2,V18>=0,B20=2*Z19,B20=2*V12,A20=0,Y19=2,X19=2,W19=3,V19=0,V3=3,V=1] 
+* CE 113: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,Z19,A20,B20):9
+     [B20>=3,V18>=0,B20=2*Z19+1,B20=2*V12+1,A20=1,Y19=2,X19=2,W19=3,V19=1,V3=3,V=1] 
+* CE 114: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,Z19,V19,A20):10
+     [2*A20>=2*V19+1,V19>=2,V18>=0,2*A20=4*Z19+2*V19+1,2*A20=4*V12+2*V19+1,Y19=2,X19=2,W19=3,V3=3,V=1] 
+* CE 115: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,Z19,V19,A20):11
+     [2*A20+1>=2*V19,V19>=3,V18>=0,2*A20+1=4*Z19+2*V19,2*A20+1=4*V12+2*V19,Y19=2,X19=2,W19=3,V3=3,V=1] 
+* CE 116: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(Y19,Z19,V19,A20):12
+     [A20>=V19,V19>=2,V18>=0,A20=2*Z19+V19,A20=2*V12+V19,Y19=2,X19=2,W19=3,V3=3,V=1] 
+* CE 117: start(V,V3,V12,V18,V19) = 1+ p(W19,X19):2+ timesIter(X19,V12,V19,Y19):13
+     [2*X19+2*Y19>=6*V12+2*V19+5,X19+2*Y19>=6*V12+2*V19+1,5*X19+12*Y19>=34*V12+10*V19+15,8*X19+12*Y19>=35*V12+11*V19+21,7*X19+14*Y19>=42*V12+13*V19+14,5*X19+24*Y19>=68*V12+20*V19+10,17*X19+48*Y19>=140*V12+44*V19+24,15*X19+72*Y19>=204*V12+55*V19+45,65*X19+228*Y19>=656*V12+190*V19+165,107*X19+228*Y19>=680*V12+209*V19+219,175*X19+828*Y19>=2346*V12+640*V19+525,251*X19+1188*Y19>=3368*V12+920*V19+747,V19>=0,V12>=0,X19>=3,V18>=0,X19+1=W19,X19+1=V3,V=1] 
+* CE 118: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):1+ half(Y19,Z19):1+ timesIter(A20,V12,B20,C20):1+ half(D20,E20):1+ half(F20,G20):2+ timesIter(H20,V12,I20,J20):1+ plus(K20,L20,M20):1
+     [V12>=0,V19>=0,M20=0,L20=0,K20=0,J20=0,I20=0,H20=0,G20=0,F20=1,E20=0,D20=0,C20=0,B20=0,A20=0,Z19=0,Y19=0,X19=0,W19=0,V18=0,V3=0,V=0] 
+* CE 119: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):1+ half(Y19,Z19):2+ timesIter(A20,V12,B20,C20):1+ half(D20,E20):1+ half(F20,G20):3+ timesIter(H20,V12,I20,J20):2+ plus(K20,L20,M20):1
+     [V12>=0,V19>=0,M20=1,L20=1,K20=0,J20=1,I20=1,H20=0,G20=1,F20=2,E20=0,D20=0,C20=0,B20=0,A20=0,Z19=0,Y19=1,X19=0,W19=0,V18=1,V3=0,V=0] 
+* CE 120: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):1+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):2+ half(D20,E20):1+ half(F20,G20):3+ timesIter(H20,V12,I20,J20):2+ plus(K20,L20,M20):2
+     [2*M20>=5,V12>=0,V19>=0,2*M20+1=2*F20,2*M20=2*Y19+1,2*M20=2*V18+1,2*M20+1=4*L20,2*M20=4*K20+1,2*M20+1=4*J20,2*M20+1=4*I20,2*M20+1=4*G20,2*M20=4*C20+1,2*M20=4*B20+1,2*M20=4*Z19+1,H20=0,E20=0,D20=0,A20=0,X19=0,W19=0,V3=0,V=0] 
+* CE 121: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):1+ half(V18,Y19):3+ timesIter(Z19,V12,A20,B20):2+ half(C20,D20):1+ half(E20,F20):4+ timesIter(G20,V12,H20,I20):2+ plus(J20,K20,V18):2
+     [V18>=2,V12>=0,V19>=0,V18+1=E20,V18=2*K20,V18=2*J20,V18=2*I20,V18=2*H20,V18=2*F20,V18=2*B20,V18=2*A20,V18=2*Y19,G20=0,D20=0,C20=0,Z19=0,X19=0,W19=0,V3=0,V=0] 
+* CE 122: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):1+ half(V18,Y19):4+ timesIter(Z19,V12,A20,B20):2+ half(C20,D20):1+ half(E20,F20):3+ timesIter(G20,V12,H20,I20):2+ plus(J20,K20,V18):2
+     [V18>=3,V12>=0,V19>=0,V18+1=E20,V18+1=2*K20,V18=2*J20+1,V18+1=2*I20,V18+1=2*H20,V18+1=2*F20,V18=2*B20+1,V18=2*A20+1,V18=2*Y19+1,G20=0,D20=0,C20=0,Z19=0,X19=0,W19=0,V3=0,V=0] 
+* CE 123: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):1+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):2+ half(D20,E20):1+ half(F20,G20):4+ timesIter(H20,V12,I20,J20):2+ plus(K20,L20,M20):2
+     [2*M20>=5,V12>=0,V19>=0,2*M20+3=2*F20,2*M20+1=2*Y19,2*M20+1=2*V18,2*M20+1=4*L20,2*M20=4*K20+1,2*M20+1=4*J20,2*M20+1=4*I20,2*M20+1=4*G20,2*M20=4*C20+1,2*M20=4*B20+1,2*M20=4*Z19+1,H20=0,E20=0,D20=0,A20=0,X19=0,W19=0,V3=0,V=0] 
+* CE 124: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):2+ half(Y19,Z19):1+ timesIter(A20,V12,B20,C20):1+ half(D20,E20):2+ half(F20,G20):2+ timesIter(H20,V12,I20,J20):1+ plus(K20,L20,M20):1
+     [V12>=0,V19>=0,M20=0,L20=0,K20=0,J20=0,I20=0,H20=0,G20=0,F20=1,E20=0,D20=1,C20=0,B20=0,A20=0,Z19=0,Y19=0,X19=0,W19=1,V18=0,V3=1,V=0] 
+* CE 125: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):2+ half(Y19,Z19):2+ timesIter(A20,V12,B20,C20):1+ half(D20,E20):2+ half(F20,G20):3+ timesIter(H20,V12,I20,J20):2+ plus(K20,L20,M20):1
+     [V12>=0,V19>=0,M20=1,L20=1,K20=0,J20=1,I20=1,H20=0,G20=1,F20=2,E20=0,D20=1,C20=0,B20=0,A20=0,Z19=0,Y19=1,X19=0,W19=1,V18=1,V3=1,V=0] 
+* CE 126: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):2+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):2+ half(D20,E20):2+ half(F20,G20):3+ timesIter(H20,V12,I20,J20):2+ plus(K20,L20,M20):2
+     [2*M20>=5,V12>=0,V19>=0,2*M20+1=2*F20,2*M20=2*Y19+1,2*M20=2*V18+1,2*M20+1=4*L20,2*M20=4*K20+1,2*M20+1=4*J20,2*M20+1=4*I20,2*M20+1=4*G20,2*M20=4*C20+1,2*M20=4*B20+1,2*M20=4*Z19+1,H20=0,E20=0,D20=1,A20=0,X19=0,W19=1,V3=1,V=0] 
+* CE 127: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):2+ half(V18,Y19):3+ timesIter(Z19,V12,A20,B20):2+ half(C20,D20):2+ half(E20,F20):4+ timesIter(G20,V12,H20,I20):2+ plus(J20,K20,V18):2
+     [V18>=2,V12>=0,V19>=0,V18+1=E20,V18=2*K20,V18=2*J20,V18=2*I20,V18=2*H20,V18=2*F20,V18=2*B20,V18=2*A20,V18=2*Y19,G20=0,D20=0,C20=1,Z19=0,X19=0,W19=1,V3=1,V=0] 
+* CE 128: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):2+ half(V18,Y19):4+ timesIter(Z19,V12,A20,B20):2+ half(C20,D20):2+ half(E20,F20):3+ timesIter(G20,V12,H20,I20):2+ plus(J20,K20,V18):2
+     [V18>=3,V12>=0,V19>=0,V18+1=E20,V18+1=2*K20,V18=2*J20+1,V18+1=2*I20,V18+1=2*H20,V18+1=2*F20,V18=2*B20+1,V18=2*A20+1,V18=2*Y19+1,G20=0,D20=0,C20=1,Z19=0,X19=0,W19=1,V3=1,V=0] 
+* CE 129: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):2+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):2+ half(D20,E20):2+ half(F20,G20):4+ timesIter(H20,V12,I20,J20):2+ plus(K20,L20,M20):2
+     [2*M20>=5,V12>=0,V19>=0,2*M20+3=2*F20,2*M20+1=2*Y19,2*M20+1=2*V18,2*M20+1=4*L20,2*M20=4*K20+1,2*M20+1=4*J20,2*M20+1=4*I20,2*M20+1=4*G20,2*M20=4*C20+1,2*M20=4*B20+1,2*M20=4*Z19+1,H20=0,E20=0,D20=1,A20=0,X19=0,W19=1,V3=1,V=0] 
+* CE 130: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):1+ timesIter(A20,B20,C20,D20):3+ half(E20,F20):3+ half(G20,H20):2+ timesIter(I20,J20,K20,L20):3+ plus(M20,N20,O20):1
+     [V19>=0,O20=0,N20=0,M20=0,L20=0,K20=0,J20=0,I20=1,H20=0,G20=1,F20=1,E20=2,D20=0,C20=0,B20=0,A20=1,Z19=0,Y19=0,X19=1,W19=2,V18=0,V12=0,V3=2,V=0] 
+* CE 131: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):1+ timesIter(A20,B20,C20,D20):4+ half(E20,F20):3+ half(G20,H20):2+ timesIter(I20,J20,K20,L20):4+ plus(M20,N20,O20):2
+     [O20>=2,V19>=0,O20=2*N20,O20=2*M20,O20=2*L20,O20=2*J20,O20=2*D20,O20=2*B20,O20=2*V12,K20=0,I20=1,H20=0,G20=1,F20=1,E20=2,C20=0,A20=1,Z19=0,Y19=0,X19=1,W19=2,V18=0,V3=2,V=0] 
+* CE 132: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):1+ timesIter(A20,B20,C20,D20):6+ half(E20,F20):3+ half(G20,H20):2+ timesIter(I20,J20,K20,L20):6+ plus(M20,N20,O20):1
+     [V19>=0,O20=0,N20=0,M20=0,L20=0,K20=0,J20=0,I20=2,H20=0,G20=1,F20=2,E20=4,D20=0,C20=0,B20=0,A20=2,Z19=0,Y19=0,X19=2,W19=4,V18=0,V12=0,V3=4,V=0] 
+* CE 133: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):1+ timesIter(A20,B20,C20,D20):8+ half(E20,F20):3+ half(G20,H20):2+ timesIter(I20,J20,K20,L20):8+ plus(M20,N20,O20):2
+     [O20>=4,V19>=0,O20=2*N20,O20=2*M20,O20=2*L20,O20=2*D20,O20=4*J20,O20=4*B20,O20=4*V12,K20=0,I20=2,H20=0,G20=1,F20=2,E20=4,C20=0,A20=2,Z19=0,Y19=0,X19=2,W19=4,V18=0,V3=4,V=0] 
+* CE 134: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):1+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):2+ timesIter(X19,V12,F20,G20):13+ plus(H20,G20,G20):1
+     [5*X19>=68*V12+15,G20>=0,V12>=0,V19>=0,2*X19=C20,2*X19=W19,2*X19=V3,H20=0,F20=0,E20=0,D20=1,B20=0,A20=0,Z19=0,Y19=0,V18=0,V=0] 
+* CE 135: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):1+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):2+ timesIter(X19,V12,F20,G20):13+ plus(B20,H20,I20):2
+     [X19+2*I20>=6*V12+2*B20+2,5*X19+24*I20>=68*V12+24*B20+15,X19+2*B20>=6*V12+2,5*X19+24*B20>=68*V12+15,I20>=B20,B20>=1,V12>=0,X19>=3,V19>=0,I20=B20+H20,I20=B20+G20,2*X19=C20,2*X19=W19,2*X19=V3,F20=0,E20=0,D20=1,A20=0,Z19=0,Y19=0,V18=0,V=0] 
+* CE 136: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):1+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):2+ timesIter(E20,V12,H20,I20):13+ plus(J20,I20,I20):1
+     [5*E20+24*I20>=68*V12+15,10*E20>=136*V12+25,I20>=0,V12>=0,E20>=3,V19>=0,2*E20+1=D20,2*E20+1=W19,2*E20+1=V3,2*E20+1=2*A20,2*E20+1=2*X19,J20=0,H20=0,G20=0,F20=1,C20=0,B20=0,Z19=0,Y19=0,V18=0,V=0] 
+* CE 137: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):1+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):2+ timesIter(E20,V12,H20,I20):13+ plus(C20,J20,K20):2
+     [E20+2*K20>=6*V12+2*C20+2,5*E20+24*K20>=68*V12+24*C20+15,2*E20+4*C20>=12*V12+3,10*E20+48*C20>=136*V12+25,K20>=C20,C20>=1,V12>=0,E20>=3,V19>=0,K20=C20+J20,K20=C20+I20,2*E20+1=D20,2*E20+1=W19,2*E20+1=V3,2*E20+1=2*A20,2*E20+1=2*X19,H20=0,G20=0,F20=1,B20=0,Z19=0,Y19=0,V18=0,V=0] 
+* CE 138: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):2+ timesIter(A20,B20,C20,D20):3+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):5+ plus(M20,N20,O20):1
+     [V19>=0,O20=1,N20=1,M20=0,L20=1,K20=1,J20=0,I20=1,H20=1,G20=2,F20=1,E20=2,D20=0,C20=0,B20=0,A20=1,Z19=0,Y19=1,X19=1,W19=2,V18=1,V12=0,V3=2,V=0] 
+* CE 139: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):2+ timesIter(A20,B20,C20,D20):4+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):5+ plus(M20,N20,O20):2
+     [O20>=3,V19>=0,O20+1=2*N20,O20=2*M20+1,O20+1=2*L20,O20=2*J20+1,O20=2*D20+1,O20=2*B20+1,O20=2*V12+1,K20=1,I20=1,H20=1,G20=2,F20=1,E20=2,C20=0,A20=1,Z19=0,Y19=1,X19=1,W19=2,V18=1,V3=2,V=0] 
+* CE 140: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):2+ timesIter(A20,B20,C20,D20):6+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):7+ plus(M20,N20,O20):1
+     [V19>=0,O20=1,N20=1,M20=0,L20=1,K20=1,J20=0,I20=2,H20=1,G20=2,F20=2,E20=4,D20=0,C20=0,B20=0,A20=2,Z19=0,Y19=1,X19=2,W19=4,V18=1,V12=0,V3=4,V=0] 
+* CE 141: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):2+ timesIter(A20,B20,C20,D20):8+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):9+ plus(M20,N20,O20):2
+     [O20>=5,V19>=0,O20+1=2*N20,O20=2*M20+1,O20+1=2*L20,O20=2*D20+1,O20=4*J20+1,O20=4*B20+1,O20=4*V12+1,K20=1,I20=2,H20=1,G20=2,F20=2,E20=4,C20=0,A20=2,Z19=0,Y19=1,X19=2,W19=4,V18=1,V3=4,V=0] 
+* CE 142: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):2+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):3+ timesIter(X19,V12,F20,G20):13+ plus(H20,G20,G20):1
+     [5*X19+12*G20>=34*V12+25,15*X19+72*G20>=204*V12+100,175*X19+828*G20>=2346*V12+1165,5*X19>=68*V12+15,G20>=0,V12>=0,V19>=0,2*X19=C20,2*X19=W19,2*X19=V3,H20=0,F20=1,E20=1,D20=2,B20=0,A20=0,Z19=0,Y19=1,V18=1,V=0] 
+* CE 143: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):2+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):3+ timesIter(X19,V12,F20,G20):13+ plus(B20,H20,I20):2
+     [2*X19+2*I20>=6*V12+2*B20+7,5*X19+12*I20>=34*V12+12*B20+25,8*X19+12*I20>=35*V12+12*B20+32,7*X19+14*I20>=42*V12+14*B20+27,15*X19+72*I20>=204*V12+72*B20+100,65*X19+228*I20>=656*V12+228*B20+355,107*X19+228*I20>=680*V12+228*B20+428,175*X19+828*I20>=2346*V12+828*B20+1165,251*X19+1188*I20>=3368*V12+1188*B20+1667,X19+2*B20>=6*V12+2,5*X19+24*B20>=68*V12+15,I20>=B20,B20>=1,V12>=0,X19>=3,V19>=0,I20=B20+H20,I20=B20+G20,2*X19=C20,2*X19=W19,2*X19=V3,F20=1,E20=1,D20=2,A20=0,Z19=0,Y19=1,V18=1,V=0] 
+* CE 144: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):2+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):3+ timesIter(E20,V12,H20,I20):13+ plus(J20,I20,I20):1
+     [5*E20+12*I20>=34*V12+25,15*E20+72*I20>=204*V12+100,175*E20+828*I20>=2346*V12+1165,10*E20>=136*V12+25,I20>=0,V12>=0,E20>=3,V19>=0,2*E20+1=D20,2*E20+1=W19,2*E20+1=V3,2*E20+1=2*A20,2*E20+1=2*X19,J20=0,H20=1,G20=1,F20=2,C20=0,B20=0,Z19=0,Y19=1,V18=1,V=0] 
+* CE 145: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):2+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):3+ timesIter(E20,V12,H20,I20):13+ plus(C20,J20,K20):2
+     [2*E20+2*K20>=6*V12+2*C20+7,5*E20+12*K20>=34*V12+12*C20+25,8*E20+12*K20>=35*V12+12*C20+32,7*E20+14*K20>=42*V12+14*C20+27,15*E20+72*K20>=204*V12+72*C20+100,65*E20+228*K20>=656*V12+228*C20+355,107*E20+228*K20>=680*V12+228*C20+428,175*E20+828*K20>=2346*V12+828*C20+1165,251*E20+1188*K20>=3368*V12+1188*C20+1667,2*E20+4*C20>=12*V12+3,10*E20+48*C20>=136*V12+25,K20>=C20,C20>=1,V12>=0,E20>=3,V19>=0,K20=C20+J20,K20=C20+I20,2*E20+1=D20,2*E20+1=W19,2*E20+1=V3,2*E20+1=2*A20,2*E20+1=2*X19,H20=1,G20=1,F20=2,B20=0,Z19=0,Y19=1,V18=1,V=0] 
+* CE 146: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):5+ half(D20,E20):3+ half(F20,G20):3+ timesIter(H20,V12,I20,J20):5+ plus(K20,L20,M20):2
+     [2*M20>=4*V12+5,V12>=0,V19>=0,2*M20+1=4*V12+2*F20,2*M20=4*V12+2*Y19+1,2*M20=4*V12+2*V18+1,2*M20+1=4*V12+4*I20,2*M20+1=4*V12+4*G20,2*M20=4*V12+4*B20+1,2*M20=4*V12+4*Z19+1,2*M20+1=4*L20,2*M20=4*K20+1,2*M20+1=4*J20,2*M20=4*C20+1,H20=1,E20=1,D20=2,A20=1,X19=1,W19=2,V3=2,V=0] 
+* CE 147: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):5+ half(D20,E20):3+ half(F20,G20):4+ timesIter(H20,V12,I20,J20):5+ plus(K20,L20,M20):2
+     [M20>=2*V12+2,V12>=0,V19>=0,M20+1=2*V12+F20,M20=2*V12+Y19,M20=2*V12+V18,M20=2*V12+2*I20,M20=2*V12+2*G20,M20=2*V12+2*B20,M20=2*V12+2*Z19,M20=2*L20,M20=2*K20,M20=2*J20,M20=2*C20,H20=1,E20=1,D20=2,A20=1,X19=1,W19=2,V3=2,V=0] 
+* CE 148: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):7+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,K20,L20):7+ plus(M20,N20,O20):2
+     [V19>=0,O20=2,N20=1,M20=1,L20=1,K20=1,J20=0,I20=2,H20=1,G20=3,F20=2,E20=4,D20=1,C20=1,B20=0,A20=2,Z19=1,Y19=2,X19=2,W19=4,V18=2,V12=0,V3=4,V=0] 
+* CE 149: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):9+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,K20,L20):9+ plus(M20,N20,O20):2
+     [O20>=6,V19>=0,O20=2*N20,O20=2*M20,O20=2*L20,O20=2*D20,O20=4*J20+2,O20=4*B20+2,O20=4*V12+2,K20=1,I20=2,H20=1,G20=3,F20=2,E20=4,C20=1,A20=2,Z19=1,Y19=2,X19=2,W19=4,V18=2,V3=4,V=0] 
+* CE 150: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20>=4*H20+1,2*H20>=5,V19>=0,2*N20=8*J20+4*H20+1,2*N20=8*B20+4*H20+1,2*N20=8*V12+4*H20+1,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 151: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,H20>=3,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20=4*M20+1,2*N20+1=4*L20,2*N20=4*K20+1,2*N20+1=4*D20,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 152: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20>=2*H20,2*H20>=5,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 153: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):10+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):10+ plus(J20,K20,L20):2
+     [L20>=2*Z19+1,Z19>=2,V19>=0,L20=4*H20+2*Z19+1,L20=4*B20+2*Z19+1,L20=4*V12+2*Z19+1,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20=2*K20,L20=2*J20,L20=2*I20,L20=2*C20,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 154: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):10+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):11+ plus(J20,K20,L20):2
+     [L20>=2*Z19,Z19>=3,V19>=0,L20=4*H20+2*Z19,L20=4*B20+2*Z19,L20=4*V12+2*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20=2*K20+1,L20+1=2*J20,L20=2*I20+1,L20+1=2*C20,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 155: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):10+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):12+ plus(J20,K20,L20):2
+     [2*L20>=4*Z19+1,Z19>=2,V19>=0,2*L20=8*H20+4*Z19+1,2*L20=8*B20+4*Z19+1,2*L20=8*V12+4*Z19+1,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,2*L20=4*K20+1,2*L20+1=4*J20,2*L20=4*I20+1,2*L20+1=4*C20,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 156: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,2*H20>=7,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+3=4*M20,2*N20=4*L20+3,2*N20+3=4*K20,2*N20=4*D20+3,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 157: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+3>=4*H20,2*H20>=7,V19>=0,2*N20+3=8*J20+4*H20,2*N20+3=8*B20+4*H20,2*N20+3=8*V12+4*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 158: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,2*H20>=7,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 159: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):11+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):10+ plus(J20,K20,L20):2
+     [L20>=2*Z19,Z19>=3,V19>=0,L20=4*H20+2*Z19,L20=4*B20+2*Z19,L20=4*V12+2*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20+1=2*K20,L20=2*J20+1,L20+1=2*I20,L20=2*C20+1,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 160: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):11+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):11+ plus(J20,K20,L20):2
+     [L20+1>=2*Z19,Z19>=3,V19>=0,L20+1=4*H20+2*Z19,L20+1=4*B20+2*Z19,L20+1=4*V12+2*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20=2*K20,L20=2*J20,L20=2*I20,L20=2*C20,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 161: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):11+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):12+ plus(J20,K20,L20):2
+     [2*L20+1>=4*Z19,Z19>=3,V19>=0,2*L20+1=8*H20+4*Z19,2*L20+1=8*B20+4*Z19,2*L20+1=8*V12+4*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,2*L20+1=4*K20,2*L20=4*J20+1,2*L20+1=4*I20,2*L20=4*C20+1,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 162: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [N20>=2*H20,2*H20>=5,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 163: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=3,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 164: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,2*H20>=5,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 165: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):12+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):10+ plus(J20,K20,L20):2
+     [2*L20>=4*Z19+1,Z19>=2,V19>=0,2*L20=8*H20+4*Z19+1,2*L20=8*B20+4*Z19+1,2*L20=8*V12+4*Z19+1,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,2*L20+1=4*K20,2*L20=4*J20+1,2*L20+1=4*I20,2*L20=4*C20+1,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 166: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):12+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):11+ plus(J20,K20,L20):2
+     [2*L20+1>=4*Z19,Z19>=3,V19>=0,2*L20+1=8*H20+4*Z19,2*L20+1=8*B20+4*Z19,2*L20+1=8*V12+4*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,2*L20=4*K20+1,2*L20+1=4*J20,2*L20=4*I20+1,2*L20+1=4*C20,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 167: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):12+ half(D20,E20):3+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):12+ plus(J20,K20,L20):2
+     [L20>=2*Z19,Z19>=2,V19>=0,L20=4*H20+2*Z19,L20=4*B20+2*Z19,L20=4*V12+2*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20=2*K20,L20=2*J20,L20=2*I20,L20=2*C20,G20=2,E20=2,D20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 168: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):3+ timesIter(X19,V12,E20,F20):13+ plus(G20,F20,F20):1
+     [5*X19+24*F20>=68*V12+20*E20+10,15*X19+72*F20>=204*V12+55*E20+45,175*X19+828*F20>=2346*V12+640*E20+525,5*X19>=68*V12+20*E20,30*X19>=408*V12+110*E20+35,2*E20>=3,F20>=0,V12>=0,V19>=0,2*E20=D20,2*X19=C20,2*E20=Y19+1,2*X19=W19,2*E20=V18+1,2*X19=V3,2*E20=2*A20+1,2*E20=2*Z19+1,G20=0,B20=0,V=0] 
+* CE 169: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):3+ timesIter(X19,V12,E20,F20):13+ plus(B20,G20,H20):2
+     [2*X19+2*H20>=6*V12+2*B20+2*E20+5,X19+2*H20>=6*V12+2*B20+2*E20+1,5*X19+12*H20>=34*V12+12*B20+10*E20+15,8*X19+12*H20>=35*V12+12*B20+11*E20+21,7*X19+14*H20>=42*V12+14*B20+13*E20+14,5*X19+24*H20>=68*V12+24*B20+20*E20+10,17*X19+48*H20>=140*V12+48*B20+44*E20+24,15*X19+72*H20>=204*V12+72*B20+55*E20+45,65*X19+228*H20>=656*V12+228*B20+190*E20+165,107*X19+228*H20>=680*V12+228*B20+209*E20+219,175*X19+828*H20>=2346*V12+828*B20+640*E20+525,251*X19+1188*H20>=3368*V12+1188*B20+920*E20+747,X19+B20>=3*V12+E20+2,X19+2*B20>=6*V12+2*E20,5*X19+12*B20>=34*V12+10*E20+10,5*X19+24*B20>=68*V12+20*E20,16*X19+24*B20>=70*V12+22*E20+31,14*X19+28*B20>=84*V12+26*E20+15,17*X19+48*B20>=140*V12+44*E20+2,30*X19+144*B20>=408*V12+110*E20+35,65*X19+228*B20>=656*V12+190*E20+70,214*X19+456*B20>=1360*V12+418*E20+229,175*X19+828*B20>=2346*V12+640*E20+205,251*X19+1188*B20>=3368*V12+920*E20+287,H20>=B20,2*E20>=3,B20>=1,V12>=0,X19>=3,V19>=0,H20=B20+G20,H20=B20+F20,2*E20=D20,2*X19=C20,2*E20=Y19+1,2*X19=W19,2*E20=V18+1,2*X19=V3,2*E20=2*A20+1,2*E20=2*Z19+1,V=0] 
+* CE 170: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(X19,V12,Z19,A20):13+ half(B20,X19):3+ half(C20,Z19):4+ timesIter(X19,V12,Z19,D20):13+ plus(E20,D20,D20):1
+     [5*X19>=68*V12+20*Z19+10,15*X19>=204*V12+55*Z19+45,D20>=0,Z19>=1,V12>=0,V19>=0,2*Z19+1=C20,2*X19=B20,2*Z19=Y19,2*X19=W19,2*Z19=V18,2*X19=V3,E20=0,A20=0,V=0] 
+* CE 171: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(X19,V12,Z19,A20):13+ half(B20,X19):3+ half(C20,Z19):4+ timesIter(X19,V12,Z19,D20):13+ plus(A20,E20,F20):2
+     [2*X19+2*F20>=6*V12+2*Z19+2*A20+5,X19+2*F20>=6*V12+2*Z19+2*A20+1,5*X19+12*F20>=34*V12+12*A20+10*Z19+15,8*X19+12*F20>=35*V12+12*A20+11*Z19+21,7*X19+14*F20>=42*V12+14*A20+13*Z19+14,5*X19+24*F20>=68*V12+24*A20+20*Z19+10,17*X19+48*F20>=140*V12+48*A20+44*Z19+24,15*X19+72*F20>=204*V12+72*A20+55*Z19+45,65*X19+228*F20>=656*V12+228*A20+190*Z19+165,107*X19+228*F20>=680*V12+228*A20+209*Z19+219,175*X19+828*F20>=2346*V12+828*A20+640*Z19+525,251*X19+1188*F20>=3368*V12+1188*A20+920*Z19+747,2*X19+2*A20>=6*V12+2*Z19+5,X19+2*A20>=6*V12+2*Z19+1,5*X19+12*A20>=34*V12+10*Z19+15,8*X19+12*A20>=35*V12+11*Z19+21,7*X19+14*A20>=42*V12+13*Z19+14,5*X19+24*A20>=68*V12+20*Z19+10,17*X19+48*A20>=140*V12+44*Z19+24,15*X19+72*A20>=204*V12+55*Z19+45,65*X19+228*A20>=656*V12+190*Z19+165,107*X19+228*A20>=680*V12+209*Z19+219,175*X19+828*A20>=2346*V12+640*Z19+525,251*X19+1188*A20>=3368*V12+920*Z19+747,F20>=A20,A20>=1,Z19>=1,V12>=0,X19>=3,V19>=0,F20=A20+E20,F20=A20+D20,2*Z19+1=C20,2*X19=B20,2*Z19=Y19,2*X19=W19,2*Z19=V18,2*X19=V3,V=0] 
+* CE 172: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):3+ timesIter(E20,V12,G20,H20):13+ plus(I20,H20,H20):1
+     [5*E20+24*H20>=68*V12+20*G20+10,15*E20+72*H20>=204*V12+55*G20+45,175*E20+828*H20>=2346*V12+640*G20+525,251*E20+1188*H20>=3368*V12+920*G20+747,10*E20+5>=136*V12+40*G20,15*E20>=204*V12+55*G20+10,2*G20>=3,H20>=0,V12>=0,V19>=0,2*G20=F20,2*E20+1=D20,2*G20=Y19+1,2*E20+1=W19,2*G20=V18+1,2*E20+1=V3,2*G20=2*B20+1,2*E20+1=2*A20,2*G20=2*Z19+1,2*E20+1=2*X19,I20=0,C20=0,V=0] 
+* CE 173: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):3+ timesIter(E20,V12,G20,H20):13+ plus(C20,I20,J20):2
+     [2*E20+2*J20>=6*V12+2*C20+2*G20+5,E20+2*J20>=6*V12+2*C20+2*G20+1,5*E20+12*J20>=34*V12+12*C20+10*G20+15,8*E20+12*J20>=35*V12+12*C20+11*G20+21,7*E20+14*J20>=42*V12+14*C20+13*G20+14,5*E20+24*J20>=68*V12+24*C20+20*G20+10,17*E20+48*J20>=140*V12+48*C20+44*G20+24,15*E20+72*J20>=204*V12+72*C20+55*G20+45,65*E20+228*J20>=656*V12+228*C20+190*G20+165,107*E20+228*J20>=680*V12+228*C20+209*G20+219,175*E20+828*J20>=2346*V12+828*C20+640*G20+525,251*E20+1188*J20>=3368*V12+1188*C20+920*G20+747,2*C20+2*E20>=6*V12+2*G20+3,2*E20+4*C20+1>=12*V12+4*G20,7*E20+14*C20>=42*V12+13*G20+4,10*E20+24*C20>=68*V12+20*G20+15,16*E20+24*C20>=70*V12+22*G20+23,10*E20+48*C20+5>=136*V12+40*G20,15*E20+72*C20>=204*V12+55*G20+10,34*E20+96*C20+13>=280*V12+88*G20,107*E20+228*C20>=680*V12+209*G20+61,130*E20+456*C20>=1312*V12+380*G20+75,350*E20+1656*C20>=4692*V12+1280*G20+235,502*E20+2376*C20>=6736*V12+1840*G20+323,J20>=C20,2*G20>=3,C20>=1,V12>=0,E20>=3,V19>=0,J20=C20+I20,J20=C20+H20,2*G20=F20,2*E20+1=D20,2*G20=Y19+1,2*E20+1=W19,2*G20=V18+1,2*E20+1=V3,2*G20=2*B20+1,2*E20+1=2*A20,2*G20=2*Z19+1,2*E20+1=2*X19,V=0] 
+* CE 174: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,V12,Z19,B20):13+ half(C20,D20):4+ half(E20,Z19):4+ timesIter(D20,V12,Z19,F20):13+ plus(G20,F20,F20):1
+     [5*D20+24*F20>=68*V12+20*Z19+10,15*D20+72*F20>=204*V12+55*Z19+45,10*D20>=136*V12+40*Z19+15,30*D20>=408*V12+110*Z19+75,F20>=0,Z19>=1,V12>=0,V19>=0,2*Z19+1=E20,2*D20+1=C20,2*Z19=Y19,2*D20+1=W19,2*Z19=V18,2*D20+1=V3,2*D20+1=2*A20,2*D20+1=2*X19,G20=0,B20=0,V=0] 
+* CE 175: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):3+ timesIter(A20,V12,Z19,B20):13+ half(C20,D20):4+ half(E20,Z19):4+ timesIter(D20,V12,Z19,F20):13+ plus(B20,G20,H20):2
+     [2*D20+2*H20>=6*V12+2*Z19+2*B20+5,D20+2*H20>=6*V12+2*Z19+2*B20+1,5*D20+12*H20>=34*V12+12*B20+10*Z19+15,8*D20+12*H20>=35*V12+12*B20+11*Z19+21,7*D20+14*H20>=42*V12+14*B20+13*Z19+14,5*D20+24*H20>=68*V12+24*B20+20*Z19+10,17*D20+48*H20>=140*V12+48*B20+44*Z19+24,15*D20+72*H20>=204*V12+72*B20+55*Z19+45,65*D20+228*H20>=656*V12+228*B20+190*Z19+165,107*D20+228*H20>=680*V12+228*B20+209*Z19+219,175*D20+828*H20>=2346*V12+828*B20+640*Z19+525,251*D20+1188*H20>=3368*V12+1188*B20+920*Z19+747,B20+D20>=3*V12+Z19+2,2*D20+4*B20>=12*V12+4*Z19+1,8*D20+12*B20>=35*V12+11*Z19+17,10*D20+24*B20>=68*V12+20*Z19+25,14*D20+28*B20>=84*V12+26*Z19+21,10*D20+48*B20>=136*V12+40*Z19+15,34*D20+96*B20>=280*V12+88*Z19+31,30*D20+144*B20>=408*V12+110*Z19+75,130*D20+456*B20>=1312*V12+380*Z19+265,214*D20+456*B20>=1360*V12+418*Z19+331,350*D20+1656*B20>=4692*V12+1280*Z19+875,502*D20+2376*B20>=6736*V12+1840*Z19+1243,H20>=B20,B20>=1,Z19>=1,V12>=0,D20>=3,V19>=0,H20=B20+G20,H20=B20+F20,2*Z19+1=E20,2*D20+1=C20,2*Z19=Y19,2*D20+1=W19,2*Z19=V18,2*D20+1=V3,2*D20+1=2*A20,2*D20+1=2*X19,V=0] 
+* CE 176: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):5+ half(D20,E20):3+ half(F20,G20):3+ timesIter(H20,V12,I20,J20):5+ plus(K20,L20,M20):2
+     [M20>=2*V12+3,V12>=0,V19>=0,M20+1=2*V12+F20,M20=2*V12+Y19,M20=2*V12+V18,M20+1=2*V12+2*I20,M20+1=2*V12+2*G20,M20=2*V12+2*B20+1,M20=2*V12+2*Z19+1,M20+1=2*L20,M20=2*K20+1,M20+1=2*J20,M20=2*C20+1,H20=1,E20=1,D20=2,A20=1,X19=1,W19=2,V3=2,V=0] 
+* CE 177: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):5+ half(D20,E20):3+ half(F20,G20):4+ timesIter(H20,V12,I20,J20):5+ plus(K20,L20,M20):2
+     [2*M20>=4*V12+5,V12>=0,V19>=0,2*M20+3=4*V12+2*F20,2*M20+1=4*V12+2*Y19,2*M20+1=4*V12+2*V18,2*M20+1=4*V12+4*I20,2*M20+1=4*V12+4*G20,2*M20=4*V12+4*B20+1,2*M20=4*V12+4*Z19+1,2*M20+1=4*L20,2*M20=4*K20+1,2*M20+1=4*J20,2*M20=4*C20+1,H20=1,E20=1,D20=2,A20=1,X19=1,W19=2,V3=2,V=0] 
+* CE 178: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):7+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):10+ plus(M20,N20,O20):2
+     [V19>=0,2*O20=7,2*N20=5,2*L20=5,M20=1,K20=2,J20=0,I20=2,H20=2,G20=4,F20=2,E20=4,D20=1,C20=1,B20=0,A20=2,Z19=1,Y19=3,X19=2,W19=4,V18=3,V12=0,V3=4,V=0] 
+* CE 179: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):7+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):12+ plus(M20,N20,O20):2
+     [V19>=0,O20=3,N20=2,M20=1,L20=2,K20=2,J20=0,I20=2,H20=2,G20=4,F20=2,E20=4,D20=1,C20=1,B20=0,A20=2,Z19=1,Y19=3,X19=2,W19=4,V18=3,V12=0,V3=4,V=0] 
+* CE 180: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):9+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):10+ plus(M20,N20,O20):2
+     [2*O20>=15,V19>=0,2*O20+3=4*N20,2*O20=4*M20+3,2*O20+3=4*L20,2*O20=4*D20+3,2*O20=8*J20+7,2*O20=8*B20+7,2*O20=8*V12+7,K20=2,I20=2,H20=2,G20=4,F20=2,E20=4,C20=1,A20=2,Z19=1,Y19=3,X19=2,W19=4,V18=3,V3=4,V=0] 
+* CE 181: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):9+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):12+ plus(M20,N20,O20):2
+     [O20>=7,V19>=0,O20+1=2*N20,O20=2*M20+1,O20+1=2*L20,O20=2*D20+1,O20=4*J20+3,O20=4*B20+3,O20=4*V12+3,K20=2,I20=2,H20=2,G20=4,F20=2,E20=4,C20=1,A20=2,Z19=1,Y19=3,X19=2,W19=4,V18=3,V3=4,V=0] 
+* CE 182: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [N20>=2*H20,H20>=3,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 183: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=3,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 184: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,H20>=3,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 185: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20>=4*H20+1,2*H20>=5,V19>=0,2*N20=8*J20+4*H20+1,2*N20=8*B20+4*H20+1,2*N20=8*V12+4*H20+1,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 186: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,H20>=3,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20=4*M20+1,2*N20+1=4*L20,2*N20=4*K20+1,2*N20+1=4*D20,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 187: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20>=2*H20,2*H20>=5,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 188: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=4,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20+2=2*M20,N20=2*L20+2,N20+2=2*K20,N20=2*D20+2,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 189: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [N20+2>=2*H20,H20>=4,V19>=0,N20+2=4*J20+2*H20,N20+2=4*B20+2*H20,N20+2=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 190: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [2*N20+3>=4*H20,H20>=4,V19>=0,2*N20+3=8*J20+4*H20,2*N20+3=8*B20+4*H20,2*N20+3=8*V12+4*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,2*N20+3=4*M20,2*N20=4*L20+3,2*N20+3=4*K20,2*N20=4*D20+3,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 191: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,2*H20>=7,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+3=4*M20,2*N20=4*L20+3,2*N20+3=4*K20,2*N20=4*D20+3,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 192: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+3>=4*H20,2*H20>=7,V19>=0,2*N20+3=8*J20+4*H20,2*N20+3=8*B20+4*H20,2*N20+3=8*V12+4*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 193: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,2*H20>=7,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 194: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,H20>=3,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,2*N20+3=4*M20,2*N20=4*L20+3,2*N20+3=4*K20,2*N20=4*D20+3,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 195: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+3>=4*H20,H20>=3,V19>=0,2*N20+3=8*J20+4*H20,2*N20+3=8*B20+4*H20,2*N20+3=8*V12+4*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 196: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=3,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 197: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [N20>=2*H20,2*H20>=5,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 198: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=3,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 199: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):3+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,2*H20>=5,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=4,A20=2,X19=2,W19=4,V3=4,V=0] 
+* CE 200: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):3+ timesIter(X19,V12,E20,F20):13+ plus(G20,F20,F20):1
+     [5*X19+24*F20>=68*V12+20*E20+10,15*X19+72*F20>=204*V12+55*E20+45,175*X19+828*F20>=2346*V12+640*E20+525,251*X19+1188*F20>=3368*V12+920*E20+747,5*X19+10>=68*V12+20*E20,15*X19+10>=204*V12+55*E20,F20>=0,E20>=2,V12>=0,V19>=0,2*E20=D20,2*X19=C20,E20=A20+1,E20=Z19+1,2*E20=Y19+1,2*X19=W19,2*E20=V18+1,2*X19=V3,G20=0,B20=0,V=0] 
+* CE 201: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):3+ timesIter(X19,V12,E20,F20):13+ plus(B20,G20,H20):2
+     [2*X19+2*H20>=6*V12+2*B20+2*E20+5,X19+2*H20>=6*V12+2*B20+2*E20+1,5*X19+12*H20>=34*V12+12*B20+10*E20+15,8*X19+12*H20>=35*V12+12*B20+11*E20+21,7*X19+14*H20>=42*V12+14*B20+13*E20+14,5*X19+24*H20>=68*V12+24*B20+20*E20+10,17*X19+48*H20>=140*V12+48*B20+44*E20+24,15*X19+72*H20>=204*V12+72*B20+55*E20+45,65*X19+228*H20>=656*V12+228*B20+190*E20+165,107*X19+228*H20>=680*V12+228*B20+209*E20+219,175*X19+828*H20>=2346*V12+828*B20+640*E20+525,251*X19+1188*H20>=3368*V12+1188*B20+920*E20+747,2*X19+2*B20>=6*V12+2*E20+3,X19+2*B20+1>=6*V12+2*E20,5*X19+12*B20>=34*V12+10*E20+5,8*X19+12*B20>=35*V12+11*E20+10,7*X19+14*B20>=42*V12+13*E20+1,5*X19+24*B20+10>=68*V12+20*E20,17*X19+48*B20+20>=140*V12+44*E20,15*X19+72*B20+10>=204*V12+55*E20,65*X19+228*B20+25>=656*V12+190*E20,107*X19+228*B20>=680*V12+209*E20+10,175*X19+828*B20+115>=2346*V12+640*E20,251*X19+1188*B20+173>=3368*V12+920*E20,H20>=B20,B20>=1,E20>=2,V12>=0,X19>=3,V19>=0,H20=B20+G20,H20=B20+F20,2*E20=D20,2*X19=C20,E20=A20+1,E20=Z19+1,2*E20=Y19+1,2*X19=W19,2*E20=V18+1,2*X19=V3,V=0] 
+* CE 202: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):4+ timesIter(X19,V12,E20,F20):13+ plus(G20,F20,F20):1
+     [5*X19+24*F20>=68*V12+20*E20+10,15*X19+72*F20>=204*V12+55*E20+45,175*X19+828*F20>=2346*V12+640*E20+525,5*X19>=68*V12+20*E20,30*X19>=408*V12+110*E20+35,2*E20>=3,F20>=0,V12>=0,V19>=0,2*E20+1=D20,2*X19=C20,2*E20=Y19,2*X19=W19,2*E20=V18,2*X19=V3,2*E20=2*A20+1,2*E20=2*Z19+1,G20=0,B20=0,V=0] 
+* CE 203: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):3+ half(D20,E20):4+ timesIter(X19,V12,E20,F20):13+ plus(B20,G20,H20):2
+     [2*X19+2*H20>=6*V12+2*B20+2*E20+5,X19+2*H20>=6*V12+2*B20+2*E20+1,5*X19+12*H20>=34*V12+12*B20+10*E20+15,8*X19+12*H20>=35*V12+12*B20+11*E20+21,7*X19+14*H20>=42*V12+14*B20+13*E20+14,5*X19+24*H20>=68*V12+24*B20+20*E20+10,17*X19+48*H20>=140*V12+48*B20+44*E20+24,15*X19+72*H20>=204*V12+72*B20+55*E20+45,65*X19+228*H20>=656*V12+228*B20+190*E20+165,107*X19+228*H20>=680*V12+228*B20+209*E20+219,175*X19+828*H20>=2346*V12+828*B20+640*E20+525,251*X19+1188*H20>=3368*V12+1188*B20+920*E20+747,X19+B20>=3*V12+E20+2,X19+2*B20>=6*V12+2*E20,5*X19+12*B20>=34*V12+10*E20+10,5*X19+24*B20>=68*V12+20*E20,16*X19+24*B20>=70*V12+22*E20+31,14*X19+28*B20>=84*V12+26*E20+15,17*X19+48*B20>=140*V12+44*E20+2,30*X19+144*B20>=408*V12+110*E20+35,65*X19+228*B20>=656*V12+190*E20+70,214*X19+456*B20>=1360*V12+418*E20+229,175*X19+828*B20>=2346*V12+640*E20+205,251*X19+1188*B20>=3368*V12+920*E20+287,H20>=B20,2*E20>=3,B20>=1,V12>=0,X19>=3,V19>=0,H20=B20+G20,H20=B20+F20,2*E20+1=D20,2*X19=C20,2*E20=Y19,2*X19=W19,2*E20=V18,2*X19=V3,2*E20=2*A20+1,2*E20=2*Z19+1,V=0] 
+* CE 204: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):3+ timesIter(E20,V12,G20,H20):13+ plus(I20,H20,H20):1
+     [5*E20+24*H20>=68*V12+20*G20+10,15*E20+72*H20>=204*V12+55*G20+45,175*E20+828*H20>=2346*V12+640*G20+525,251*E20+1188*H20>=3368*V12+920*G20+747,10*E20+25>=136*V12+40*G20,30*E20+35>=408*V12+110*G20,H20>=0,G20>=2,V12>=0,V19>=0,2*G20=F20,2*E20+1=D20,G20=B20+1,G20=Z19+1,2*G20=Y19+1,2*E20+1=W19,2*G20=V18+1,2*E20+1=V3,2*E20+1=2*A20,2*E20+1=2*X19,I20=0,C20=0,V=0] 
+* CE 205: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):3+ timesIter(E20,V12,G20,H20):13+ plus(C20,I20,J20):2
+     [2*E20+2*J20>=6*V12+2*C20+2*G20+5,E20+2*J20>=6*V12+2*C20+2*G20+1,5*E20+12*J20>=34*V12+12*C20+10*G20+15,8*E20+12*J20>=35*V12+12*C20+11*G20+21,7*E20+14*J20>=42*V12+14*C20+13*G20+14,5*E20+24*J20>=68*V12+24*C20+20*G20+10,17*E20+48*J20>=140*V12+48*C20+44*G20+24,15*E20+72*J20>=204*V12+72*C20+55*G20+45,65*E20+228*J20>=656*V12+228*C20+190*G20+165,107*E20+228*J20>=680*V12+228*C20+209*G20+219,175*E20+828*J20>=2346*V12+828*C20+640*G20+525,251*E20+1188*J20>=3368*V12+1188*C20+920*G20+747,C20+E20>=3*V12+G20+1,2*E20+4*C20+3>=12*V12+4*G20,8*E20+12*C20>=35*V12+11*G20+6,10*E20+24*C20>=68*V12+20*G20+5,14*E20+28*C20+5>=84*V12+26*G20,10*E20+48*C20+25>=136*V12+40*G20,34*E20+96*C20+57>=280*V12+88*G20,30*E20+144*C20+35>=408*V12+110*G20,130*E20+456*C20+115>=1312*V12+380*G20,214*E20+456*C20+87>=1360*V12+418*G20,350*E20+1656*C20+405>=4692*V12+1280*G20,502*E20+2376*C20+597>=6736*V12+1840*G20,J20>=C20,C20>=1,G20>=2,V12>=0,E20>=3,V19>=0,J20=C20+I20,J20=C20+H20,2*G20=F20,2*E20+1=D20,G20=B20+1,G20=Z19+1,2*G20=Y19+1,2*E20+1=W19,2*G20=V18+1,2*E20+1=V3,2*E20+1=2*A20,2*E20+1=2*X19,V=0] 
+* CE 206: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):4+ timesIter(E20,V12,G20,H20):13+ plus(I20,H20,H20):1
+     [5*E20+24*H20>=68*V12+20*G20+10,15*E20+72*H20>=204*V12+55*G20+45,175*E20+828*H20>=2346*V12+640*G20+525,251*E20+1188*H20>=3368*V12+920*G20+747,10*E20+5>=136*V12+40*G20,15*E20>=204*V12+55*G20+10,2*G20>=3,H20>=0,V12>=0,V19>=0,2*G20+1=F20,2*E20+1=D20,2*G20=Y19,2*E20+1=W19,2*G20=V18,2*E20+1=V3,2*G20=2*B20+1,2*E20+1=2*A20,2*G20=2*Z19+1,2*E20+1=2*X19,I20=0,C20=0,V=0] 
+* CE 207: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):3+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):4+ half(F20,G20):4+ timesIter(E20,V12,G20,H20):13+ plus(C20,I20,J20):2
+     [2*E20+2*J20>=6*V12+2*C20+2*G20+5,E20+2*J20>=6*V12+2*C20+2*G20+1,5*E20+12*J20>=34*V12+12*C20+10*G20+15,8*E20+12*J20>=35*V12+12*C20+11*G20+21,7*E20+14*J20>=42*V12+14*C20+13*G20+14,5*E20+24*J20>=68*V12+24*C20+20*G20+10,17*E20+48*J20>=140*V12+48*C20+44*G20+24,15*E20+72*J20>=204*V12+72*C20+55*G20+45,65*E20+228*J20>=656*V12+228*C20+190*G20+165,107*E20+228*J20>=680*V12+228*C20+209*G20+219,175*E20+828*J20>=2346*V12+828*C20+640*G20+525,251*E20+1188*J20>=3368*V12+1188*C20+920*G20+747,2*C20+2*E20>=6*V12+2*G20+3,2*E20+4*C20+1>=12*V12+4*G20,7*E20+14*C20>=42*V12+13*G20+4,10*E20+24*C20>=68*V12+20*G20+15,16*E20+24*C20>=70*V12+22*G20+23,10*E20+48*C20+5>=136*V12+40*G20,15*E20+72*C20>=204*V12+55*G20+10,34*E20+96*C20+13>=280*V12+88*G20,107*E20+228*C20>=680*V12+209*G20+61,130*E20+456*C20>=1312*V12+380*G20+75,350*E20+1656*C20>=4692*V12+1280*G20+235,502*E20+2376*C20>=6736*V12+1840*G20+323,J20>=C20,2*G20>=3,C20>=1,V12>=0,E20>=3,V19>=0,J20=C20+I20,J20=C20+H20,2*G20+1=F20,2*E20+1=D20,2*G20=Y19,2*E20+1=W19,2*G20=V18,2*E20+1=V3,2*G20=2*B20+1,2*E20+1=2*A20,2*G20=2*Z19+1,2*E20+1=2*X19,V=0] 
+* CE 208: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):1+ timesIter(A20,B20,C20,D20):3+ half(E20,F20):4+ half(G20,H20):2+ timesIter(I20,J20,K20,L20):3+ plus(M20,N20,O20):1
+     [V19>=0,O20=0,N20=0,M20=0,L20=0,K20=0,J20=0,I20=1,H20=0,G20=1,F20=1,E20=3,D20=0,C20=0,B20=0,A20=1,Z19=0,Y19=0,X19=1,W19=3,V18=0,V12=0,V3=3,V=0] 
+* CE 209: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):1+ timesIter(A20,B20,C20,D20):4+ half(E20,F20):4+ half(G20,H20):2+ timesIter(I20,J20,K20,L20):4+ plus(M20,N20,O20):2
+     [O20>=2,V19>=0,O20=2*N20,O20=2*M20,O20=2*L20,O20=2*J20,O20=2*D20,O20=2*B20,O20=2*V12,K20=0,I20=1,H20=0,G20=1,F20=1,E20=3,C20=0,A20=1,Z19=0,Y19=0,X19=1,W19=3,V18=0,V3=3,V=0] 
+* CE 210: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):1+ timesIter(A20,B20,C20,D20):6+ half(E20,F20):4+ half(G20,H20):2+ timesIter(I20,J20,K20,L20):6+ plus(M20,N20,O20):1
+     [V19>=0,O20=0,N20=0,M20=0,L20=0,K20=0,J20=0,I20=2,H20=0,G20=1,F20=2,E20=5,D20=0,C20=0,B20=0,A20=2,Z19=0,Y19=0,X19=2,W19=5,V18=0,V12=0,V3=5,V=0] 
+* CE 211: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):1+ timesIter(A20,B20,C20,D20):8+ half(E20,F20):4+ half(G20,H20):2+ timesIter(I20,J20,K20,L20):8+ plus(M20,N20,O20):2
+     [O20>=4,V19>=0,O20=2*N20,O20=2*M20,O20=2*L20,O20=2*D20,O20=4*J20,O20=4*B20,O20=4*V12,K20=0,I20=2,H20=0,G20=1,F20=2,E20=5,C20=0,A20=2,Z19=0,Y19=0,X19=2,W19=5,V18=0,V3=5,V=0] 
+* CE 212: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):1+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):2+ timesIter(E20,V12,H20,I20):13+ plus(J20,I20,I20):1
+     [10*E20>=136*V12+35,I20>=0,V12>=0,V19>=0,2*E20=D20,2*E20=W19,2*E20=V3,2*E20=2*A20+1,2*E20=2*X19+1,J20=0,H20=0,G20=0,F20=1,C20=0,B20=0,Z19=0,Y19=0,V18=0,V=0] 
+* CE 213: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):1+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):2+ timesIter(E20,V12,H20,I20):13+ plus(C20,J20,K20):2
+     [E20+2*K20>=6*V12+2*C20+2,5*E20+24*K20>=68*V12+24*C20+15,2*E20+4*C20>=12*V12+5,10*E20+48*C20>=136*V12+35,K20>=C20,2*E20>=7,C20>=1,V12>=0,V19>=0,K20=C20+J20,K20=C20+I20,2*E20=D20,2*E20=W19,2*E20=V3,2*E20=2*A20+1,2*E20=2*X19+1,H20=0,G20=0,F20=1,B20=0,Z19=0,Y19=0,V18=0,V=0] 
+* CE 214: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):1+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):2+ timesIter(X19,V12,F20,G20):13+ plus(H20,G20,G20):1
+     [5*X19>=68*V12+15,G20>=0,V12>=0,V19>=0,2*X19+1=C20,2*X19+1=W19,2*X19+1=V3,H20=0,F20=0,E20=0,D20=1,B20=0,A20=0,Z19=0,Y19=0,V18=0,V=0] 
+* CE 215: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):1+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):2+ timesIter(X19,V12,F20,G20):13+ plus(B20,H20,I20):2
+     [X19+2*I20>=6*V12+2*B20+2,5*X19+24*I20>=68*V12+24*B20+15,X19+2*B20>=6*V12+2,5*X19+24*B20>=68*V12+15,I20>=B20,B20>=1,V12>=0,X19>=3,V19>=0,I20=B20+H20,I20=B20+G20,2*X19+1=C20,2*X19+1=W19,2*X19+1=V3,F20=0,E20=0,D20=1,A20=0,Z19=0,Y19=0,V18=0,V=0] 
+* CE 216: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):2+ timesIter(A20,B20,C20,D20):3+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):5+ plus(M20,N20,O20):1
+     [V19>=0,O20=1,N20=1,M20=0,L20=1,K20=1,J20=0,I20=1,H20=1,G20=2,F20=1,E20=3,D20=0,C20=0,B20=0,A20=1,Z19=0,Y19=1,X19=1,W19=3,V18=1,V12=0,V3=3,V=0] 
+* CE 217: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):2+ timesIter(A20,B20,C20,D20):4+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):5+ plus(M20,N20,O20):2
+     [O20>=3,V19>=0,O20+1=2*N20,O20=2*M20+1,O20+1=2*L20,O20=2*J20+1,O20=2*D20+1,O20=2*B20+1,O20=2*V12+1,K20=1,I20=1,H20=1,G20=2,F20=1,E20=3,C20=0,A20=1,Z19=0,Y19=1,X19=1,W19=3,V18=1,V3=3,V=0] 
+* CE 218: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):2+ timesIter(A20,B20,C20,D20):6+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):7+ plus(M20,N20,O20):1
+     [V19>=0,O20=1,N20=1,M20=0,L20=1,K20=1,J20=0,I20=2,H20=1,G20=2,F20=2,E20=5,D20=0,C20=0,B20=0,A20=2,Z19=0,Y19=1,X19=2,W19=5,V18=1,V12=0,V3=5,V=0] 
+* CE 219: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):2+ timesIter(A20,B20,C20,D20):8+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):9+ plus(M20,N20,O20):2
+     [O20>=5,V19>=0,O20+1=2*N20,O20=2*M20+1,O20+1=2*L20,O20=2*D20+1,O20=4*J20+1,O20=4*B20+1,O20=4*V12+1,K20=1,I20=2,H20=1,G20=2,F20=2,E20=5,C20=0,A20=2,Z19=0,Y19=1,X19=2,W19=5,V18=1,V3=5,V=0] 
+* CE 220: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):2+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):3+ timesIter(E20,V12,H20,I20):13+ plus(J20,I20,I20):1
+     [15*E20+72*I20>=204*V12+100,175*E20+828*I20>=2346*V12+1165,10*E20>=136*V12+35,I20>=0,V12>=0,V19>=0,2*E20=D20,2*E20=W19,2*E20=V3,2*E20=2*A20+1,2*E20=2*X19+1,J20=0,H20=1,G20=1,F20=2,C20=0,B20=0,Z19=0,Y19=1,V18=1,V=0] 
+* CE 221: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):2+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):3+ timesIter(E20,V12,H20,I20):13+ plus(C20,J20,K20):2
+     [7*E20+14*K20>=42*V12+14*C20+27,15*E20+72*K20>=204*V12+72*C20+100,65*E20+228*K20>=656*V12+228*C20+355,107*E20+228*K20>=680*V12+228*C20+428,175*E20+828*K20>=2346*V12+828*C20+1165,251*E20+1188*K20>=3368*V12+1188*C20+1667,2*E20+4*C20>=12*V12+5,10*E20+48*C20>=136*V12+35,K20>=C20,2*E20>=7,C20>=1,V12>=0,V19>=0,K20=C20+J20,K20=C20+I20,2*E20=D20,2*E20=W19,2*E20=V3,2*E20=2*A20+1,2*E20=2*X19+1,H20=1,G20=1,F20=2,B20=0,Z19=0,Y19=1,V18=1,V=0] 
+* CE 222: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):2+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):3+ timesIter(X19,V12,F20,G20):13+ plus(H20,G20,G20):1
+     [5*X19+12*G20>=34*V12+25,15*X19+72*G20>=204*V12+100,175*X19+828*G20>=2346*V12+1165,5*X19>=68*V12+15,G20>=0,V12>=0,V19>=0,2*X19+1=C20,2*X19+1=W19,2*X19+1=V3,H20=0,F20=1,E20=1,D20=2,B20=0,A20=0,Z19=0,Y19=1,V18=1,V=0] 
+* CE 223: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):2+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):3+ timesIter(X19,V12,F20,G20):13+ plus(B20,H20,I20):2
+     [2*X19+2*I20>=6*V12+2*B20+7,5*X19+12*I20>=34*V12+12*B20+25,8*X19+12*I20>=35*V12+12*B20+32,7*X19+14*I20>=42*V12+14*B20+27,15*X19+72*I20>=204*V12+72*B20+100,65*X19+228*I20>=656*V12+228*B20+355,107*X19+228*I20>=680*V12+228*B20+428,175*X19+828*I20>=2346*V12+828*B20+1165,251*X19+1188*I20>=3368*V12+1188*B20+1667,X19+2*B20>=6*V12+2,5*X19+24*B20>=68*V12+15,I20>=B20,B20>=1,V12>=0,X19>=3,V19>=0,I20=B20+H20,I20=B20+G20,2*X19+1=C20,2*X19+1=W19,2*X19+1=V3,F20=1,E20=1,D20=2,A20=0,Z19=0,Y19=1,V18=1,V=0] 
+* CE 224: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):5+ half(D20,E20):4+ half(F20,G20):3+ timesIter(H20,V12,I20,J20):5+ plus(K20,L20,M20):2
+     [2*M20>=4*V12+5,V12>=0,V19>=0,2*M20+1=4*V12+2*F20,2*M20=4*V12+2*Y19+1,2*M20=4*V12+2*V18+1,2*M20+1=4*V12+4*I20,2*M20+1=4*V12+4*G20,2*M20=4*V12+4*B20+1,2*M20=4*V12+4*Z19+1,2*M20+1=4*L20,2*M20=4*K20+1,2*M20+1=4*J20,2*M20=4*C20+1,H20=1,E20=1,D20=3,A20=1,X19=1,W19=3,V3=3,V=0] 
+* CE 225: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):5+ half(D20,E20):4+ half(F20,G20):4+ timesIter(H20,V12,I20,J20):5+ plus(K20,L20,M20):2
+     [M20>=2*V12+2,V12>=0,V19>=0,M20+1=2*V12+F20,M20=2*V12+Y19,M20=2*V12+V18,M20=2*V12+2*I20,M20=2*V12+2*G20,M20=2*V12+2*B20,M20=2*V12+2*Z19,M20=2*L20,M20=2*K20,M20=2*J20,M20=2*C20,H20=1,E20=1,D20=3,A20=1,X19=1,W19=3,V3=3,V=0] 
+* CE 226: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):7+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,K20,L20):7+ plus(M20,N20,O20):2
+     [V19>=0,O20=2,N20=1,M20=1,L20=1,K20=1,J20=0,I20=2,H20=1,G20=3,F20=2,E20=5,D20=1,C20=1,B20=0,A20=2,Z19=1,Y19=2,X19=2,W19=5,V18=2,V12=0,V3=5,V=0] 
+* CE 227: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):9+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,K20,L20):9+ plus(M20,N20,O20):2
+     [O20>=6,V19>=0,O20=2*N20,O20=2*M20,O20=2*L20,O20=2*D20,O20=4*J20+2,O20=4*B20+2,O20=4*V12+2,K20=1,I20=2,H20=1,G20=3,F20=2,E20=5,C20=1,A20=2,Z19=1,Y19=2,X19=2,W19=5,V18=2,V3=5,V=0] 
+* CE 228: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20>=4*H20+1,2*H20>=5,V19>=0,2*N20=8*J20+4*H20+1,2*N20=8*B20+4*H20+1,2*N20=8*V12+4*H20+1,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 229: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,H20>=3,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20=4*M20+1,2*N20+1=4*L20,2*N20=4*K20+1,2*N20+1=4*D20,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 230: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20>=2*H20,2*H20>=5,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 231: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):10+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):10+ plus(J20,K20,L20):2
+     [L20>=2*Z19+1,Z19>=2,V19>=0,L20=4*H20+2*Z19+1,L20=4*B20+2*Z19+1,L20=4*V12+2*Z19+1,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20=2*K20,L20=2*J20,L20=2*I20,L20=2*C20,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 232: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):10+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):11+ plus(J20,K20,L20):2
+     [L20>=2*Z19,Z19>=3,V19>=0,L20=4*H20+2*Z19,L20=4*B20+2*Z19,L20=4*V12+2*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20=2*K20+1,L20+1=2*J20,L20=2*I20+1,L20+1=2*C20,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 233: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):10+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):12+ plus(J20,K20,L20):2
+     [2*L20>=4*Z19+1,Z19>=2,V19>=0,2*L20=8*H20+4*Z19+1,2*L20=8*B20+4*Z19+1,2*L20=8*V12+4*Z19+1,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,2*L20=4*K20+1,2*L20+1=4*J20,2*L20=4*I20+1,2*L20+1=4*C20,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 234: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,2*H20>=7,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+3=4*M20,2*N20=4*L20+3,2*N20+3=4*K20,2*N20=4*D20+3,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 235: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+3>=4*H20,2*H20>=7,V19>=0,2*N20+3=8*J20+4*H20,2*N20+3=8*B20+4*H20,2*N20+3=8*V12+4*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 236: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,2*H20>=7,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 237: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):11+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):10+ plus(J20,K20,L20):2
+     [L20>=2*Z19,Z19>=3,V19>=0,L20=4*H20+2*Z19,L20=4*B20+2*Z19,L20=4*V12+2*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20+1=2*K20,L20=2*J20+1,L20+1=2*I20,L20=2*C20+1,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 238: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):11+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):11+ plus(J20,K20,L20):2
+     [L20+1>=2*Z19,Z19>=3,V19>=0,L20+1=4*H20+2*Z19,L20+1=4*B20+2*Z19,L20+1=4*V12+2*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20=2*K20,L20=2*J20,L20=2*I20,L20=2*C20,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 239: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):11+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):12+ plus(J20,K20,L20):2
+     [2*L20+1>=4*Z19,Z19>=3,V19>=0,2*L20+1=8*H20+4*Z19,2*L20+1=8*B20+4*Z19,2*L20+1=8*V12+4*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,2*L20+1=4*K20,2*L20=4*J20+1,2*L20+1=4*I20,2*L20=4*C20+1,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 240: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [N20>=2*H20,2*H20>=5,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 241: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=3,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 242: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,2*H20>=5,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,2*H20=Y19+1,2*H20=V18+1,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 243: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):12+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):10+ plus(J20,K20,L20):2
+     [2*L20>=4*Z19+1,Z19>=2,V19>=0,2*L20=8*H20+4*Z19+1,2*L20=8*B20+4*Z19+1,2*L20=8*V12+4*Z19+1,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,2*L20+1=4*K20,2*L20=4*J20+1,2*L20+1=4*I20,2*L20=4*C20+1,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 244: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):12+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):11+ plus(J20,K20,L20):2
+     [2*L20+1>=4*Z19,Z19>=3,V19>=0,2*L20+1=8*H20+4*Z19,2*L20+1=8*B20+4*Z19,2*L20+1=8*V12+4*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,2*L20=4*K20+1,2*L20+1=4*J20,2*L20=4*I20+1,2*L20+1=4*C20,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 245: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,B20,Z19,C20):12+ half(D20,E20):4+ half(F20,Z19):4+ timesIter(G20,H20,Z19,I20):12+ plus(J20,K20,L20):2
+     [L20>=2*Z19,Z19>=2,V19>=0,L20=4*H20+2*Z19,L20=4*B20+2*Z19,L20=4*V12+2*Z19,2*Z19+1=F20,2*Z19=Y19,2*Z19=V18,L20=2*K20,L20=2*J20,L20=2*I20,L20=2*C20,G20=2,E20=2,D20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 246: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):3+ timesIter(E20,V12,G20,H20):13+ plus(I20,H20,H20):1
+     [5*E20+24*H20>=68*V12+20*G20+10,15*E20+72*H20>=204*V12+55*G20+45,175*E20+828*H20>=2346*V12+640*G20+525,10*E20>=136*V12+40*G20+5,15*E20>=204*V12+55*G20+25,2*G20>=3,H20>=0,V12>=0,V19>=0,2*G20=F20,2*E20=D20,2*G20=Y19+1,2*E20=W19,2*G20=V18+1,2*E20=V3,2*G20=2*B20+1,2*E20=2*A20+1,2*G20=2*Z19+1,2*E20=2*X19+1,I20=0,C20=0,V=0] 
+* CE 247: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):3+ timesIter(E20,V12,G20,H20):13+ plus(C20,I20,J20):2
+     [2*E20+2*J20>=6*V12+2*C20+2*G20+5,E20+2*J20>=6*V12+2*C20+2*G20+1,5*E20+12*J20>=34*V12+12*C20+10*G20+15,8*E20+12*J20>=35*V12+12*C20+11*G20+21,7*E20+14*J20>=42*V12+14*C20+13*G20+14,5*E20+24*J20>=68*V12+24*C20+20*G20+10,17*E20+48*J20>=140*V12+48*C20+44*G20+24,15*E20+72*J20>=204*V12+72*C20+55*G20+45,65*E20+228*J20>=656*V12+228*C20+190*G20+165,107*E20+228*J20>=680*V12+228*C20+209*G20+219,175*E20+828*J20>=2346*V12+828*C20+640*G20+525,251*E20+1188*J20>=3368*V12+1188*C20+920*G20+747,2*C20+2*E20>=6*V12+2*G20+5,2*E20+4*C20>=12*V12+4*G20+1,7*E20+14*C20>=42*V12+13*G20+11,10*E20+24*C20>=68*V12+20*G20+25,16*E20+24*C20>=70*V12+22*G20+39,10*E20+48*C20>=136*V12+40*G20+5,15*E20+72*C20>=204*V12+55*G20+25,34*E20+96*C20>=280*V12+88*G20+21,107*E20+228*C20>=680*V12+209*G20+168,130*E20+456*C20>=1312*V12+380*G20+205,350*E20+1656*C20>=4692*V12+1280*G20+585,502*E20+2376*C20>=6736*V12+1840*G20+825,J20>=C20,2*G20>=3,2*E20>=7,C20>=1,V12>=0,V19>=0,J20=C20+I20,J20=C20+H20,2*G20=F20,2*E20=D20,2*G20=Y19+1,2*E20=W19,2*G20=V18+1,2*E20=V3,2*G20=2*B20+1,2*E20=2*A20+1,2*G20=2*Z19+1,2*E20=2*X19+1,V=0] 
+* CE 248: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,V12,Z19,B20):13+ half(C20,D20):3+ half(E20,Z19):4+ timesIter(D20,V12,Z19,F20):13+ plus(G20,F20,F20):1
+     [10*D20>=136*V12+40*Z19+25,30*D20>=408*V12+110*Z19+105,F20>=0,Z19>=1,V12>=0,V19>=0,2*Z19+1=E20,2*D20=C20,2*Z19=Y19,2*D20=W19,2*Z19=V18,2*D20=V3,2*D20=2*A20+1,2*D20=2*X19+1,G20=0,B20=0,V=0] 
+* CE 249: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(A20,V12,Z19,B20):13+ half(C20,D20):3+ half(E20,Z19):4+ timesIter(D20,V12,Z19,F20):13+ plus(B20,G20,H20):2
+     [2*D20+2*H20>=6*V12+2*Z19+2*B20+5,D20+2*H20>=6*V12+2*Z19+2*B20+1,5*D20+12*H20>=34*V12+12*B20+10*Z19+15,8*D20+12*H20>=35*V12+12*B20+11*Z19+21,7*D20+14*H20>=42*V12+14*B20+13*Z19+14,5*D20+24*H20>=68*V12+24*B20+20*Z19+10,17*D20+48*H20>=140*V12+48*B20+44*Z19+24,15*D20+72*H20>=204*V12+72*B20+55*Z19+45,65*D20+228*H20>=656*V12+228*B20+190*Z19+165,107*D20+228*H20>=680*V12+228*B20+209*Z19+219,175*D20+828*H20>=2346*V12+828*B20+640*Z19+525,251*D20+1188*H20>=3368*V12+1188*B20+920*Z19+747,B20+D20>=3*V12+Z19+3,2*D20+4*B20>=12*V12+4*Z19+3,8*D20+12*B20>=35*V12+11*Z19+25,10*D20+24*B20>=68*V12+20*Z19+35,14*D20+28*B20>=84*V12+26*Z19+35,10*D20+48*B20>=136*V12+40*Z19+25,34*D20+96*B20>=280*V12+88*Z19+65,30*D20+144*B20>=408*V12+110*Z19+105,130*D20+456*B20>=1312*V12+380*Z19+395,214*D20+456*B20>=1360*V12+418*Z19+545,350*D20+1656*B20>=4692*V12+1280*Z19+1225,502*D20+2376*B20>=6736*V12+1840*Z19+1745,H20>=B20,2*D20>=7,B20>=1,Z19>=1,V12>=0,V19>=0,H20=B20+G20,H20=B20+F20,2*Z19+1=E20,2*D20=C20,2*Z19=Y19,2*D20=W19,2*Z19=V18,2*D20=V3,2*D20=2*A20+1,2*D20=2*X19+1,V=0] 
+* CE 250: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):3+ timesIter(X19,V12,E20,F20):13+ plus(G20,F20,F20):1
+     [5*X19+24*F20>=68*V12+20*E20+10,15*X19+72*F20>=204*V12+55*E20+45,175*X19+828*F20>=2346*V12+640*E20+525,5*X19>=68*V12+20*E20,30*X19>=408*V12+110*E20+35,2*E20>=3,F20>=0,V12>=0,V19>=0,2*E20=D20,2*X19+1=C20,2*E20=Y19+1,2*X19+1=W19,2*E20=V18+1,2*X19+1=V3,2*E20=2*A20+1,2*E20=2*Z19+1,G20=0,B20=0,V=0] 
+* CE 251: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):3+ timesIter(X19,V12,E20,F20):13+ plus(B20,G20,H20):2
+     [2*X19+2*H20>=6*V12+2*B20+2*E20+5,X19+2*H20>=6*V12+2*B20+2*E20+1,5*X19+12*H20>=34*V12+12*B20+10*E20+15,8*X19+12*H20>=35*V12+12*B20+11*E20+21,7*X19+14*H20>=42*V12+14*B20+13*E20+14,5*X19+24*H20>=68*V12+24*B20+20*E20+10,17*X19+48*H20>=140*V12+48*B20+44*E20+24,15*X19+72*H20>=204*V12+72*B20+55*E20+45,65*X19+228*H20>=656*V12+228*B20+190*E20+165,107*X19+228*H20>=680*V12+228*B20+209*E20+219,175*X19+828*H20>=2346*V12+828*B20+640*E20+525,251*X19+1188*H20>=3368*V12+1188*B20+920*E20+747,X19+B20>=3*V12+E20+2,X19+2*B20>=6*V12+2*E20,5*X19+12*B20>=34*V12+10*E20+10,5*X19+24*B20>=68*V12+20*E20,16*X19+24*B20>=70*V12+22*E20+31,14*X19+28*B20>=84*V12+26*E20+15,17*X19+48*B20>=140*V12+44*E20+2,30*X19+144*B20>=408*V12+110*E20+35,65*X19+228*B20>=656*V12+190*E20+70,214*X19+456*B20>=1360*V12+418*E20+229,175*X19+828*B20>=2346*V12+640*E20+205,251*X19+1188*B20>=3368*V12+920*E20+287,H20>=B20,2*E20>=3,B20>=1,V12>=0,X19>=3,V19>=0,H20=B20+G20,H20=B20+F20,2*E20=D20,2*X19+1=C20,2*E20=Y19+1,2*X19+1=W19,2*E20=V18+1,2*X19+1=V3,2*E20=2*A20+1,2*E20=2*Z19+1,V=0] 
+* CE 252: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(X19,V12,Z19,A20):13+ half(B20,X19):4+ half(C20,Z19):4+ timesIter(X19,V12,Z19,D20):13+ plus(E20,D20,D20):1
+     [5*X19>=68*V12+20*Z19+10,15*X19>=204*V12+55*Z19+45,D20>=0,Z19>=1,V12>=0,V19>=0,2*Z19+1=C20,2*X19+1=B20,2*Z19=Y19,2*X19+1=W19,2*Z19=V18,2*X19+1=V3,E20=0,A20=0,V=0] 
+* CE 253: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):3+ timesIter(X19,V12,Z19,A20):13+ half(B20,X19):4+ half(C20,Z19):4+ timesIter(X19,V12,Z19,D20):13+ plus(A20,E20,F20):2
+     [2*X19+2*F20>=6*V12+2*Z19+2*A20+5,X19+2*F20>=6*V12+2*Z19+2*A20+1,5*X19+12*F20>=34*V12+12*A20+10*Z19+15,8*X19+12*F20>=35*V12+12*A20+11*Z19+21,7*X19+14*F20>=42*V12+14*A20+13*Z19+14,5*X19+24*F20>=68*V12+24*A20+20*Z19+10,17*X19+48*F20>=140*V12+48*A20+44*Z19+24,15*X19+72*F20>=204*V12+72*A20+55*Z19+45,65*X19+228*F20>=656*V12+228*A20+190*Z19+165,107*X19+228*F20>=680*V12+228*A20+209*Z19+219,175*X19+828*F20>=2346*V12+828*A20+640*Z19+525,251*X19+1188*F20>=3368*V12+1188*A20+920*Z19+747,2*X19+2*A20>=6*V12+2*Z19+5,X19+2*A20>=6*V12+2*Z19+1,5*X19+12*A20>=34*V12+10*Z19+15,8*X19+12*A20>=35*V12+11*Z19+21,7*X19+14*A20>=42*V12+13*Z19+14,5*X19+24*A20>=68*V12+20*Z19+10,17*X19+48*A20>=140*V12+44*Z19+24,15*X19+72*A20>=204*V12+55*Z19+45,65*X19+228*A20>=656*V12+190*Z19+165,107*X19+228*A20>=680*V12+209*Z19+219,175*X19+828*A20>=2346*V12+640*Z19+525,251*X19+1188*A20>=3368*V12+920*Z19+747,F20>=A20,A20>=1,Z19>=1,V12>=0,X19>=3,V19>=0,F20=A20+E20,F20=A20+D20,2*Z19+1=C20,2*X19+1=B20,2*Z19=Y19,2*X19+1=W19,2*Z19=V18,2*X19+1=V3,V=0] 
+* CE 254: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):5+ half(D20,E20):4+ half(F20,G20):3+ timesIter(H20,V12,I20,J20):5+ plus(K20,L20,M20):2
+     [M20>=2*V12+3,V12>=0,V19>=0,M20+1=2*V12+F20,M20=2*V12+Y19,M20=2*V12+V18,M20+1=2*V12+2*I20,M20+1=2*V12+2*G20,M20=2*V12+2*B20+1,M20=2*V12+2*Z19+1,M20+1=2*L20,M20=2*K20+1,M20+1=2*J20,M20=2*C20+1,H20=1,E20=1,D20=3,A20=1,X19=1,W19=3,V3=3,V=0] 
+* CE 255: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):5+ half(D20,E20):4+ half(F20,G20):4+ timesIter(H20,V12,I20,J20):5+ plus(K20,L20,M20):2
+     [2*M20>=4*V12+5,V12>=0,V19>=0,2*M20+3=4*V12+2*F20,2*M20+1=4*V12+2*Y19,2*M20+1=4*V12+2*V18,2*M20+1=4*V12+4*I20,2*M20+1=4*V12+4*G20,2*M20=4*V12+4*B20+1,2*M20=4*V12+4*Z19+1,2*M20+1=4*L20,2*M20=4*K20+1,2*M20+1=4*J20,2*M20=4*C20+1,H20=1,E20=1,D20=3,A20=1,X19=1,W19=3,V3=3,V=0] 
+* CE 256: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):7+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):10+ plus(M20,N20,O20):2
+     [V19>=0,2*O20=7,2*N20=5,2*L20=5,M20=1,K20=2,J20=0,I20=2,H20=2,G20=4,F20=2,E20=5,D20=1,C20=1,B20=0,A20=2,Z19=1,Y19=3,X19=2,W19=5,V18=3,V12=0,V3=5,V=0] 
+* CE 257: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):7+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):12+ plus(M20,N20,O20):2
+     [V19>=0,O20=3,N20=2,M20=1,L20=2,K20=2,J20=0,I20=2,H20=2,G20=4,F20=2,E20=5,D20=1,C20=1,B20=0,A20=2,Z19=1,Y19=3,X19=2,W19=5,V18=3,V12=0,V3=5,V=0] 
+* CE 258: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):9+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):10+ plus(M20,N20,O20):2
+     [2*O20>=15,V19>=0,2*O20+3=4*N20,2*O20=4*M20+3,2*O20+3=4*L20,2*O20=4*D20+3,2*O20=8*J20+7,2*O20=8*B20+7,2*O20=8*V12+7,K20=2,I20=2,H20=2,G20=4,F20=2,E20=5,C20=1,A20=2,Z19=1,Y19=3,X19=2,W19=5,V18=3,V3=5,V=0] 
+* CE 259: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):9+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,K20,L20):12+ plus(M20,N20,O20):2
+     [O20>=7,V19>=0,O20+1=2*N20,O20=2*M20+1,O20+1=2*L20,O20=2*D20+1,O20=4*J20+3,O20=4*B20+3,O20=4*V12+3,K20=2,I20=2,H20=2,G20=4,F20=2,E20=5,C20=1,A20=2,Z19=1,Y19=3,X19=2,W19=5,V18=3,V3=5,V=0] 
+* CE 260: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [N20>=2*H20,H20>=3,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 261: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=3,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 262: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,H20>=3,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 263: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20>=4*H20+1,2*H20>=5,V19>=0,2*N20=8*J20+4*H20+1,2*N20=8*B20+4*H20+1,2*N20=8*V12+4*H20+1,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 264: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,H20>=3,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20=4*M20+1,2*N20+1=4*L20,2*N20=4*K20+1,2*N20+1=4*D20,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 265: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):10+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20>=2*H20,2*H20>=5,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 266: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=4,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20+2=2*M20,N20=2*L20+2,N20+2=2*K20,N20=2*D20+2,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 267: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [N20+2>=2*H20,H20>=4,V19>=0,N20+2=4*J20+2*H20,N20+2=4*B20+2*H20,N20+2=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 268: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [2*N20+3>=4*H20,H20>=4,V19>=0,2*N20+3=8*J20+4*H20,2*N20+3=8*B20+4*H20,2*N20+3=8*V12+4*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,2*N20+3=4*M20,2*N20=4*L20+3,2*N20+3=4*K20,2*N20=4*D20+3,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 269: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,2*H20>=7,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+3=4*M20,2*N20=4*L20+3,2*N20+3=4*K20,2*N20=4*D20+3,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 270: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+3>=4*H20,2*H20>=7,V19>=0,2*N20+3=8*J20+4*H20,2*N20+3=8*B20+4*H20,2*N20+3=8*V12+4*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 271: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):11+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,2*H20>=7,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 272: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,H20>=3,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,2*N20+3=4*M20,2*N20=4*L20+3,2*N20+3=4*K20,2*N20=4*D20+3,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 273: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [2*N20+3>=4*H20,H20>=3,V19>=0,2*N20+3=8*J20+4*H20,2*N20+3=8*B20+4*H20,2*N20+3=8*V12+4*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 274: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):3+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=3,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20=G20,H20=C20+1,H20=Z19+1,2*H20=Y19+1,2*H20=V18+1,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 275: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):10+ plus(L20,M20,N20):2
+     [N20>=2*H20,2*H20>=5,V19>=0,N20=4*J20+2*H20,N20=4*B20+2*H20,N20=4*V12+2*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,N20+1=2*M20,N20=2*L20+1,N20+1=2*K20,N20=2*D20+1,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 276: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):11+ plus(L20,M20,N20):2
+     [N20+1>=2*H20,H20>=3,V19>=0,N20+1=4*J20+2*H20,N20+1=4*B20+2*H20,N20+1=4*V12+2*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,N20=2*M20,N20=2*L20,N20=2*K20,N20=2*D20,2*H20=2*C20+1,2*H20=2*Z19+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 277: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,B20,C20,D20):12+ half(E20,F20):4+ half(G20,H20):4+ timesIter(I20,J20,H20,K20):12+ plus(L20,M20,N20):2
+     [2*N20+1>=4*H20,2*H20>=5,V19>=0,2*N20+1=8*J20+4*H20,2*N20+1=8*B20+4*H20,2*N20+1=8*V12+4*H20,2*H20+1=G20,2*H20=Y19,2*H20=V18,2*H20=2*C20+1,2*H20=2*Z19+1,2*N20+1=4*M20,2*N20=4*L20+1,2*N20+1=4*K20,2*N20=4*D20+1,I20=2,F20=2,E20=5,A20=2,X19=2,W19=5,V3=5,V=0] 
+* CE 278: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):3+ timesIter(E20,V12,G20,H20):13+ plus(I20,H20,H20):1
+     [5*E20+24*H20>=68*V12+20*G20+10,15*E20+72*H20>=204*V12+55*G20+45,175*E20+828*H20>=2346*V12+640*G20+525,251*E20+1188*H20>=3368*V12+920*G20+747,10*E20+15>=136*V12+40*G20,30*E20+5>=408*V12+110*G20,H20>=0,G20>=2,V12>=0,V19>=0,2*G20=F20,2*E20=D20,G20=B20+1,G20=Z19+1,2*G20=Y19+1,2*E20=W19,2*G20=V18+1,2*E20=V3,2*E20=2*A20+1,2*E20=2*X19+1,I20=0,C20=0,V=0] 
+* CE 279: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):3+ timesIter(E20,V12,G20,H20):13+ plus(C20,I20,J20):2
+     [2*E20+2*J20>=6*V12+2*C20+2*G20+5,E20+2*J20>=6*V12+2*C20+2*G20+1,5*E20+12*J20>=34*V12+12*C20+10*G20+15,8*E20+12*J20>=35*V12+12*C20+11*G20+21,7*E20+14*J20>=42*V12+14*C20+13*G20+14,5*E20+24*J20>=68*V12+24*C20+20*G20+10,17*E20+48*J20>=140*V12+48*C20+44*G20+24,15*E20+72*J20>=204*V12+72*C20+55*G20+45,65*E20+228*J20>=656*V12+228*C20+190*G20+165,107*E20+228*J20>=680*V12+228*C20+209*G20+219,175*E20+828*J20>=2346*V12+828*C20+640*G20+525,251*E20+1188*J20>=3368*V12+1188*C20+920*G20+747,C20+E20>=3*V12+G20+2,2*E20+4*C20+1>=12*V12+4*G20,8*E20+12*C20>=35*V12+11*G20+14,10*E20+24*C20>=68*V12+20*G20+15,14*E20+28*C20>=84*V12+26*G20+9,10*E20+48*C20+15>=136*V12+40*G20,34*E20+96*C20+23>=280*V12+88*G20,30*E20+144*C20+5>=408*V12+110*G20,130*E20+456*C20>=1312*V12+380*G20+15,214*E20+456*C20>=1360*V12+418*G20+127,350*E20+1656*C20+55>=4692*V12+1280*G20,502*E20+2376*C20+95>=6736*V12+1840*G20,J20>=C20,2*E20>=7,C20>=1,G20>=2,V12>=0,V19>=0,J20=C20+I20,J20=C20+H20,2*G20=F20,2*E20=D20,G20=B20+1,G20=Z19+1,2*G20=Y19+1,2*E20=W19,2*G20=V18+1,2*E20=V3,2*E20=2*A20+1,2*E20=2*X19+1,V=0] 
+* CE 280: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):4+ timesIter(E20,V12,G20,H20):13+ plus(I20,H20,H20):1
+     [5*E20+24*H20>=68*V12+20*G20+10,15*E20+72*H20>=204*V12+55*G20+45,175*E20+828*H20>=2346*V12+640*G20+525,10*E20>=136*V12+40*G20+5,15*E20>=204*V12+55*G20+25,2*G20>=3,H20>=0,V12>=0,V19>=0,2*G20+1=F20,2*E20=D20,2*G20=Y19,2*E20=W19,2*G20=V18,2*E20=V3,2*G20=2*B20+1,2*E20=2*A20+1,2*G20=2*Z19+1,2*E20=2*X19+1,I20=0,C20=0,V=0] 
+* CE 281: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(A20,V12,B20,C20):13+ half(D20,E20):3+ half(F20,G20):4+ timesIter(E20,V12,G20,H20):13+ plus(C20,I20,J20):2
+     [2*E20+2*J20>=6*V12+2*C20+2*G20+5,E20+2*J20>=6*V12+2*C20+2*G20+1,5*E20+12*J20>=34*V12+12*C20+10*G20+15,8*E20+12*J20>=35*V12+12*C20+11*G20+21,7*E20+14*J20>=42*V12+14*C20+13*G20+14,5*E20+24*J20>=68*V12+24*C20+20*G20+10,17*E20+48*J20>=140*V12+48*C20+44*G20+24,15*E20+72*J20>=204*V12+72*C20+55*G20+45,65*E20+228*J20>=656*V12+228*C20+190*G20+165,107*E20+228*J20>=680*V12+228*C20+209*G20+219,175*E20+828*J20>=2346*V12+828*C20+640*G20+525,251*E20+1188*J20>=3368*V12+1188*C20+920*G20+747,2*C20+2*E20>=6*V12+2*G20+5,2*E20+4*C20>=12*V12+4*G20+1,7*E20+14*C20>=42*V12+13*G20+11,10*E20+24*C20>=68*V12+20*G20+25,16*E20+24*C20>=70*V12+22*G20+39,10*E20+48*C20>=136*V12+40*G20+5,15*E20+72*C20>=204*V12+55*G20+25,34*E20+96*C20>=280*V12+88*G20+21,107*E20+228*C20>=680*V12+209*G20+168,130*E20+456*C20>=1312*V12+380*G20+205,350*E20+1656*C20>=4692*V12+1280*G20+585,502*E20+2376*C20>=6736*V12+1840*G20+825,J20>=C20,2*G20>=3,2*E20>=7,C20>=1,V12>=0,V19>=0,J20=C20+I20,J20=C20+H20,2*G20+1=F20,2*E20=D20,2*G20=Y19,2*E20=W19,2*G20=V18,2*E20=V3,2*G20=2*B20+1,2*E20=2*A20+1,2*G20=2*Z19+1,2*E20=2*X19+1,V=0] 
+* CE 282: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):3+ timesIter(X19,V12,E20,F20):13+ plus(G20,F20,F20):1
+     [5*X19+24*F20>=68*V12+20*E20+10,15*X19+72*F20>=204*V12+55*E20+45,175*X19+828*F20>=2346*V12+640*E20+525,251*X19+1188*F20>=3368*V12+920*E20+747,5*X19+10>=68*V12+20*E20,15*X19+10>=204*V12+55*E20,F20>=0,E20>=2,V12>=0,V19>=0,2*E20=D20,2*X19+1=C20,E20=A20+1,E20=Z19+1,2*E20=Y19+1,2*X19+1=W19,2*E20=V18+1,2*X19+1=V3,G20=0,B20=0,V=0] 
+* CE 283: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):3+ timesIter(X19,V12,E20,F20):13+ plus(B20,G20,H20):2
+     [2*X19+2*H20>=6*V12+2*B20+2*E20+5,X19+2*H20>=6*V12+2*B20+2*E20+1,5*X19+12*H20>=34*V12+12*B20+10*E20+15,8*X19+12*H20>=35*V12+12*B20+11*E20+21,7*X19+14*H20>=42*V12+14*B20+13*E20+14,5*X19+24*H20>=68*V12+24*B20+20*E20+10,17*X19+48*H20>=140*V12+48*B20+44*E20+24,15*X19+72*H20>=204*V12+72*B20+55*E20+45,65*X19+228*H20>=656*V12+228*B20+190*E20+165,107*X19+228*H20>=680*V12+228*B20+209*E20+219,175*X19+828*H20>=2346*V12+828*B20+640*E20+525,251*X19+1188*H20>=3368*V12+1188*B20+920*E20+747,2*X19+2*B20>=6*V12+2*E20+3,X19+2*B20+1>=6*V12+2*E20,5*X19+12*B20>=34*V12+10*E20+5,8*X19+12*B20>=35*V12+11*E20+10,7*X19+14*B20>=42*V12+13*E20+1,5*X19+24*B20+10>=68*V12+20*E20,17*X19+48*B20+20>=140*V12+44*E20,15*X19+72*B20+10>=204*V12+55*E20,65*X19+228*B20+25>=656*V12+190*E20,107*X19+228*B20>=680*V12+209*E20+10,175*X19+828*B20+115>=2346*V12+640*E20,251*X19+1188*B20+173>=3368*V12+920*E20,H20>=B20,B20>=1,E20>=2,V12>=0,X19>=3,V19>=0,H20=B20+G20,H20=B20+F20,2*E20=D20,2*X19+1=C20,E20=A20+1,E20=Z19+1,2*E20=Y19+1,2*X19+1=W19,2*E20=V18+1,2*X19+1=V3,V=0] 
+* CE 284: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):4+ timesIter(X19,V12,E20,F20):13+ plus(G20,F20,F20):1
+     [5*X19+24*F20>=68*V12+20*E20+10,15*X19+72*F20>=204*V12+55*E20+45,175*X19+828*F20>=2346*V12+640*E20+525,5*X19>=68*V12+20*E20,30*X19>=408*V12+110*E20+35,2*E20>=3,F20>=0,V12>=0,V19>=0,2*E20+1=D20,2*X19+1=C20,2*E20=Y19,2*X19+1=W19,2*E20=V18,2*X19+1=V3,2*E20=2*A20+1,2*E20=2*Z19+1,G20=0,B20=0,V=0] 
+* CE 285: start(V,V3,V12,V18,V19) = 1+ half(W19,X19):4+ half(Y19,Z19):4+ timesIter(X19,V12,A20,B20):13+ half(C20,X19):4+ half(D20,E20):4+ timesIter(X19,V12,E20,F20):13+ plus(B20,G20,H20):2
+     [2*X19+2*H20>=6*V12+2*B20+2*E20+5,X19+2*H20>=6*V12+2*B20+2*E20+1,5*X19+12*H20>=34*V12+12*B20+10*E20+15,8*X19+12*H20>=35*V12+12*B20+11*E20+21,7*X19+14*H20>=42*V12+14*B20+13*E20+14,5*X19+24*H20>=68*V12+24*B20+20*E20+10,17*X19+48*H20>=140*V12+48*B20+44*E20+24,15*X19+72*H20>=204*V12+72*B20+55*E20+45,65*X19+228*H20>=656*V12+228*B20+190*E20+165,107*X19+228*H20>=680*V12+228*B20+209*E20+219,175*X19+828*H20>=2346*V12+828*B20+640*E20+525,251*X19+1188*H20>=3368*V12+1188*B20+920*E20+747,X19+B20>=3*V12+E20+2,X19+2*B20>=6*V12+2*E20,5*X19+12*B20>=34*V12+10*E20+10,5*X19+24*B20>=68*V12+20*E20,16*X19+24*B20>=70*V12+22*E20+31,14*X19+28*B20>=84*V12+26*E20+15,17*X19+48*B20>=140*V12+44*E20+2,30*X19+144*B20>=408*V12+110*E20+35,65*X19+228*B20>=656*V12+190*E20+70,214*X19+456*B20>=1360*V12+418*E20+229,175*X19+828*B20>=2346*V12+640*E20+205,251*X19+1188*B20>=3368*V12+920*E20+287,H20>=B20,2*E20>=3,B20>=1,V12>=0,X19>=3,V19>=0,H20=B20+G20,H20=B20+F20,2*E20+1=D20,2*X19+1=C20,2*E20=Y19,2*X19+1=W19,2*E20=V18,2*X19+1=V3,2*E20=2*A20+1,2*E20=2*Z19+1,V=0] 
+* CE 286: start(V,V3,V12,V18,V19) = 0+ check(W19,X19):1
+     [X19=2,W19=0,V=0] 
+* CE 287: start(V,V3,V12,V18,V19) = 0+ check(W19,X19):2
+     [X19=1,W19=1,V=1] 
+* CE 288: start(V,V3,V12,V18,V19) = 0+ check(W19,X19):3
+     [X19=0,W19=2,V=2] 
+* CE 289: start(V,V3,V12,V18,V19) = 0+ check(V,W19):4
+     [V>=4,W19=0] 
+* CE 290: start(V,V3,V12,V18,V19) = 0+ check(V,W19):5
+     [V>=3,W19=1] 
+* CE 291: start(V,V3,V12,V18,V19) = 0+ half(W19,X19):1
+     [X19=0,W19=0,V=0] 
+* CE 292: start(V,V3,V12,V18,V19) = 0+ half(W19,X19):2
+     [X19=0,W19=1,V=1] 
+* CE 293: start(V,V3,V12,V18,V19) = 0+ half(W19,X19):3
+     [X19>=1,2*X19=W19,2*X19=V] 
+* CE 294: start(V,V3,V12,V18,V19) = 0+ half(W19,X19):4
+     [X19>=1,2*X19+1=W19,2*X19+1=V] 
+* CE 295: start(V,V3,V12,V18,V19) = 0+ plus(W19,V3,V3):1
+     [V3>=0,W19=0,V=0] 
+* CE 296: start(V,V3,V12,V18,V19) = 0+ plus(V,W19,X19):2
+     [X19>=V,V>=1,X19=V+W19,X19=V+V3] 
+* CE 297: start(V,V3,V12,V18,V19) = 1+ timesIter(W19,V3,X19,Y19):1
+     [V3>=0,Y19=0,X19=0,W19=0,V=0] 
+* CE 298: start(V,V3,V12,V18,V19) = 1+ timesIter(W19,X19,Y19,Z19):3
+     [Z19=0,Y19=0,X19=0,W19=1,V3=0,V=1] 
+* CE 299: start(V,V3,V12,V18,V19) = 1+ timesIter(W19,V3,X19,V3):4
+     [V3>=1,X19=0,W19=1,V=1] 
+* CE 300: start(V,V3,V12,V18,V19) = 1+ timesIter(W19,X19,Y19,Z19):6
+     [Z19=0,Y19=0,X19=0,W19=2,V3=0,V=2] 
+* CE 301: start(V,V3,V12,V18,V19) = 1+ timesIter(W19,X19,Y19,Z19):8
+     [Z19>=2,Z19=2*X19,Z19=2*V3,Y19=0,W19=2,V=2] 
+* CE 302: start(V,V3,V12,V18,V19) = 1+ timesIter(V,V3,W19,X19):13
+     [V+2*X19>=6*V3+2,5*V+24*X19>=68*V3+15,V3>=0,V>=3,W19=0] 
+* CE 303: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,V3,X19,Y19):1
+     [V3>=0,Y19=0,X19=0,W19=0,V12=0,V=0] 
+* CE 304: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,V3,V12,V12):2
+     [V12>=1,V3>=0,W19=0,V=0] 
+* CE 305: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,X19,Y19,Z19):3
+     [Z19=0,Y19=0,X19=0,W19=1,V12=0,V3=0,V=1] 
+* CE 306: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,V3,X19,V3):4
+     [V3>=1,X19=0,W19=1,V12=0,V=1] 
+* CE 307: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,V3,X19,Y19):5
+     [Y19>=V3+1,V3>=0,Y19=V3+X19,Y19=V3+V12,W19=1,V=1] 
+* CE 308: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,X19,Y19,Z19):6
+     [Z19=0,Y19=0,X19=0,W19=2,V12=0,V3=0,V=2] 
+* CE 309: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,X19,Y19,Z19):7
+     [Z19=1,Y19=1,X19=0,W19=2,V12=1,V3=0,V=2] 
+* CE 310: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,X19,Y19,Z19):8
+     [Z19>=2,Z19=2*X19,Z19=2*V3,Y19=0,W19=2,V12=0,V=2] 
+* CE 311: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,X19,Y19,Z19):9
+     [Z19>=3,Z19=2*X19+1,Z19=2*V3+1,Y19=1,W19=2,V12=1,V=2] 
+* CE 312: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,X19,V12,Y19):10
+     [2*Y19>=2*V12+1,V12>=2,2*Y19=4*X19+2*V12+1,2*Y19=4*V3+2*V12+1,W19=2,V=2] 
+* CE 313: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,X19,V12,Y19):11
+     [2*Y19+1>=2*V12,V12>=3,2*Y19+1=4*X19+2*V12,2*Y19+1=4*V3+2*V12,W19=2,V=2] 
+* CE 314: start(V,V3,V12,V18,V19) = 0+ timesIter(W19,X19,V12,Y19):12
+     [Y19>=V12,V12>=2,Y19=2*X19+V12,Y19=2*V3+V12,W19=2,V=2] 
+* CE 315: start(V,V3,V12,V18,V19) = 0+ timesIter(V,V3,V12,W19):13
+     [2*V+2*W19>=6*V3+2*V12+5,V+2*W19>=6*V3+2*V12+1,5*V+12*W19>=34*V3+10*V12+15,8*V+12*W19>=35*V3+11*V12+21,7*V+14*W19>=42*V3+13*V12+14,5*V+24*W19>=68*V3+20*V12+10,17*V+48*W19>=140*V3+44*V12+24,15*V+72*W19>=204*V3+55*V12+45,65*V+228*W19>=656*V3+190*V12+165,107*V+228*W19>=680*V3+209*V12+219,175*V+828*W19>=2346*V3+640*V12+525,251*V+1188*W19>=3368*V3+920*V12+747,V12>=0,V3>=0,V>=3] 
+* CE 316: start(V,V3,V12,V18,V19) = 0+ p(W19,X19):1
+     [X19=0,W19=0,V=0] 
+* CE 317: start(V,V3,V12,V18,V19) = 0+ p(W19,X19):2
+     [X19>=0,X19+1=W19,X19+1=V] 
+
+### Cost equations --> "Loop" of start/5 
+* CEs [102,288,300,301,308,309,310,311,312,313,314] --> Loop 95 
+* CEs [103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,287,289,290,292,293,294,296,298,299,302,305,306,307,315,317] --> Loop 96 
+* CEs [118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,291,295,297,303,304,316] --> Loop 97 
+
+#### Loops of start/5 
+* Loop 95: start(V,V3,V12,V18,V19) [V=2] 
+* Loop 96: start(V,V3,V12,V18,V19) [V>=1] 
+* Loop 97: start(V,V3,V12,V18,V19) [V=0] 
+
+### Ranking functions of CR start(V,V3,V12,V18,V19) 
+
+#### Partial ranking functions of CR start(V,V3,V12,V18,V19) 
+
+
+### Resulting Chains:start(V,V3,V12,V18,V19) 
+* [97]
+* [96]
+* [95]
+
+
+### Merging Chains  start/5 into  External patterns of execution 
+* [[97]] --> 1 
+* [[95],[96]] --> 2 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [21] 
+
+ * loop 21:check(V,Out) -> [check(V',Out')] 
+1
+#### Cost of phase [21]:check(V,Out) -> [check(V',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V/2
+it(21) =< V/2-V'/2
+
+#### Cost of phase [21]:check(V,Out) -> [check(V',Out')] 
+1*it(21)+0
+  Such that:it(21) =< V/2
+it(21) =< V/2-V'/2
+
+#### Cost of chains of check(V,Out):
+* Chain [[21],19]: 1*it(21)+1
+  Such that:it(21) =< V/2
+
+  with precondition: [Out=1,V>=3] 
+
+* Chain [[21],18]: 1*it(21)+1
+  Such that:it(21) =< V/2
+
+  with precondition: [Out=0,V>=4] 
+
+* Chain [20]: 1
+  with precondition: [V=0,Out=2] 
+
+* Chain [19]: 1
+  with precondition: [V=1,Out=1] 
+
+* Chain [18]: 1
+  with precondition: [V=2,Out=0] 
+
+
+#### Cost of loops [24] 
+
+ * loop 24:half(V,Out) -> [half(V',Out')] 
+1
+#### Cost of phase [24]:half(V,Out) -> [half(V',Out')] 
+1*it(24)+0
+  Such that:it(24) =< V
+it(24) =< V-V'
+
+#### Cost of phase [24]:half(V,Out) -> [half(V',Out')] 
+1*it(24)+0
+  Such that:it(24) =< V
+it(24) =< V-V'
+
+#### Cost of chains of half(V,Out):
+* Chain [[24],23]: 1*it(24)+1
+  Such that:it(24) =< 2*Out
+
+  with precondition: [V=2*Out,V>=2] 
+
+* Chain [[24],22]: 1*it(24)+1
+  Such that:it(24) =< 2*Out
+
+  with precondition: [V=2*Out+1,V>=3] 
+
+* Chain [23]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [22]: 1
+  with precondition: [V=1,Out=0] 
+
+
+#### Cost of chains of p(V,Out):
+* Chain [26]: 1
+  with precondition: [V=0,Out=0] 
+
+* Chain [25]: 1
+  with precondition: [V=Out+1,V>=1] 
+
+
+#### Cost of loops [28] 
+
+ * loop 28:plus(V,V3,Out) -> [plus(V',V3',Out')] 
+1
+#### Cost of phase [28]:plus(V,V3,Out) -> [plus(V',V3',Out')] 
+1*it(28)+0
+  Such that:it(28) =< V
+it(28) =< V-V'
+
+#### Cost of chains of plus(V,V3,Out):
+* Chain [[28],27]: 1*it(28)+1
+  Such that:it(28) =< -V3+Out
+
+  with precondition: [V+V3=Out,V>=1,V3>=0] 
+
+* Chain [27]: 1
+  with precondition: [V=0,V3=Out,V3>=0] 
+
+
+#### Cost of loops [29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,89,90] 
+
+ * loop 29:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(68)+3*s(72)+2*s(71)+1*s(73)+9
+  Such that:s(68) =< V/2
+s(69) =< V
+s(70) =< 2*V12'2
+s(71) =< s(69)
+s(72) =< s(70)
+
+ * loop 30:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(81)+3*s(85)+2*s(84)+1*s(86)+9
+  Such that:s(81) =< V/2
+s(82) =< V
+s(83) =< 2*V12'2
+s(84) =< s(82)
+s(85) =< s(83)
+
+ * loop 31:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(94)+3*s(98)+2*s(97)+1*s(99)+9
+  Such that:s(94) =< V/2
+s(95) =< V
+s(96) =< 2*V12'2
+s(97) =< s(95)
+s(98) =< s(96)
+
+ * loop 32:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(107)+3*s(111)+2*s(110)+1*s(112)+9
+  Such that:s(107) =< V/2
+s(108) =< V
+s(109) =< 2*V12'2
+s(110) =< s(108)
+s(111) =< s(109)
+
+ * loop 33:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(120)+3*s(124)+2*s(123)+1*s(125)+9
+  Such that:s(120) =< V/2
+s(121) =< V
+s(122) =< 2*V12'2
+s(123) =< s(121)
+s(124) =< s(122)
+
+ * loop 34:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(133)+3*s(137)+2*s(136)+1*s(138)+9
+  Such that:s(133) =< V/2
+s(134) =< V
+s(135) =< 2*V12'2
+s(136) =< s(134)
+s(137) =< s(135)
+
+ * loop 35:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(146)+3*s(150)+2*s(149)+1*s(151)+9
+  Such that:s(146) =< V/2
+s(147) =< V
+s(148) =< 2*V12'2
+s(149) =< s(147)
+s(150) =< s(148)
+
+ * loop 36:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(159)+3*s(163)+2*s(162)+1*s(164)+9
+  Such that:s(159) =< V/2
+s(160) =< V
+s(161) =< 2*V12'2
+s(162) =< s(160)
+s(163) =< s(161)
+
+ * loop 37:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(172)+3*s(176)+2*s(175)+1*s(177)+9
+  Such that:s(172) =< V/2
+s(173) =< V
+s(174) =< 2*V12'2
+s(175) =< s(173)
+s(176) =< s(174)
+
+ * loop 38:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(185)+3*s(189)+2*s(188)+1*s(190)+9
+  Such that:s(185) =< V/2
+s(186) =< V
+s(187) =< 2*V12'2
+s(188) =< s(186)
+s(189) =< s(187)
+
+ * loop 39:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(198)+3*s(202)+2*s(201)+1*s(203)+9
+  Such that:s(198) =< V/2
+s(199) =< V
+s(200) =< 2*V12'2
+s(201) =< s(199)
+s(202) =< s(200)
+
+ * loop 40:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(211)+3*s(215)+2*s(214)+1*s(216)+9
+  Such that:s(211) =< V/2
+s(212) =< V
+s(213) =< 2*V12'2
+s(214) =< s(212)
+s(215) =< s(213)
+
+ * loop 41:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(224)+3*s(228)+2*s(227)+1*s(229)+9
+  Such that:s(224) =< V/2
+s(225) =< V
+s(226) =< 2*V12'2
+s(227) =< s(225)
+s(228) =< s(226)
+
+ * loop 42:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(237)+3*s(241)+2*s(240)+1*s(242)+9
+  Such that:s(237) =< V/2
+s(238) =< V
+s(239) =< 2*V12'2
+s(240) =< s(238)
+s(241) =< s(239)
+
+ * loop 43:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(250)+3*s(254)+2*s(253)+1*s(255)+9
+  Such that:s(250) =< V/2
+s(251) =< V
+s(252) =< 2*V12'2
+s(253) =< s(251)
+s(254) =< s(252)
+
+ * loop 44:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(263)+3*s(267)+2*s(266)+1*s(268)+9
+  Such that:s(263) =< V/2
+s(264) =< V
+s(265) =< 2*V12'2
+s(266) =< s(264)
+s(267) =< s(265)
+
+ * loop 45:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(275)+3*s(279)+2*s(278)+9
+  Such that:s(275) =< V'2
+s(276) =< 2*V'2
+s(277) =< 2*V12'2
+s(278) =< s(276)
+s(279) =< s(277)
+
+ * loop 46:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(286)+3*s(290)+2*s(289)+9
+  Such that:s(286) =< V'2+1/2
+s(287) =< 2*V'2
+s(288) =< 2*V12'2
+s(289) =< s(287)
+s(290) =< s(288)
+
+ * loop 47:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(297)+3*s(301)+2*s(300)+9
+  Such that:s(297) =< V'2
+s(298) =< 2*V'2
+s(299) =< 2*V12'2
+s(300) =< s(298)
+s(301) =< s(299)
+
+ * loop 48:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(308)+3*s(312)+2*s(311)+9
+  Such that:s(308) =< V'2+1/2
+s(309) =< 2*V'2
+s(310) =< 2*V12'2
+s(311) =< s(309)
+s(312) =< s(310)
+
+ * loop 49:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(319)+3*s(323)+2*s(322)+9
+  Such that:s(319) =< V'2
+s(320) =< 2*V'2
+s(321) =< 2*V12'2
+s(322) =< s(320)
+s(323) =< s(321)
+
+ * loop 50:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(330)+3*s(334)+2*s(333)+9
+  Such that:s(330) =< V'2+1/2
+s(331) =< 2*V'2
+s(332) =< 2*V12'2
+s(333) =< s(331)
+s(334) =< s(332)
+
+ * loop 51:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(341)+3*s(345)+2*s(344)+9
+  Such that:s(341) =< V'2
+s(342) =< 2*V'2
+s(343) =< 2*V12'2
+s(344) =< s(342)
+s(345) =< s(343)
+
+ * loop 52:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(352)+3*s(356)+2*s(355)+9
+  Such that:s(352) =< V'2+1/2
+s(353) =< 2*V'2
+s(354) =< 2*V12'2
+s(355) =< s(353)
+s(356) =< s(354)
+
+ * loop 53:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(363)+3*s(367)+2*s(366)+9
+  Such that:s(363) =< V'2
+s(364) =< 2*V'2
+s(365) =< 2*V12'2
+s(366) =< s(364)
+s(367) =< s(365)
+
+ * loop 54:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(374)+3*s(378)+2*s(377)+9
+  Such that:s(374) =< V'2
+s(375) =< 2*V'2
+s(376) =< 2*V12'2
+s(377) =< s(375)
+s(378) =< s(376)
+
+ * loop 55:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(385)+3*s(389)+2*s(388)+9
+  Such that:s(385) =< V'2
+s(386) =< 2*V'2
+s(387) =< 2*V12'2
+s(388) =< s(386)
+s(389) =< s(387)
+
+ * loop 56:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(396)+3*s(400)+2*s(399)+9
+  Such that:s(396) =< V'2
+s(397) =< 2*V'2
+s(398) =< 2*V12'2
+s(399) =< s(397)
+s(400) =< s(398)
+
+ * loop 57:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(407)+3*s(411)+1*s(409)+1*s(408)+9
+  Such that:s(407) =< V'2+1/2
+s(408) =< 2*V'2
+s(409) =< 2*V'2+1
+s(410) =< 2*V12'2
+s(411) =< s(410)
+
+ * loop 58:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(418)+3*s(422)+1*s(420)+1*s(419)+9
+  Such that:s(418) =< V'2+1/2
+s(419) =< 2*V'2
+s(420) =< 2*V'2+1
+s(421) =< 2*V12'2
+s(422) =< s(421)
+
+ * loop 59:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(429)+3*s(433)+1*s(431)+1*s(430)+9
+  Such that:s(429) =< V'2+1/2
+s(430) =< 2*V'2
+s(431) =< 2*V'2+1
+s(432) =< 2*V12'2
+s(433) =< s(432)
+
+ * loop 60:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(440)+3*s(444)+1*s(442)+1*s(441)+9
+  Such that:s(440) =< V'2+1/2
+s(441) =< 2*V'2
+s(442) =< 2*V'2+1
+s(443) =< 2*V12'2
+s(444) =< s(443)
+
+ * loop 61:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(453)+1*s(451)+2*s(455)+1*s(452)+1*s(456)+9
+  Such that:s(451) =< 1
+s(452) =< 2
+s(453) =< V'2
+s(454) =< 2*V'2
+s(455) =< s(454)
+
+ * loop 62:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(465)+1*s(463)+2*s(467)+1*s(464)+1*s(468)+9
+  Such that:s(463) =< 1
+s(464) =< 2
+s(465) =< V'2+1/2
+s(466) =< 2*V'2
+s(467) =< s(466)
+
+ * loop 63:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(477)+1*s(475)+2*s(479)+1*s(476)+1*s(480)+9
+  Such that:s(475) =< 1
+s(476) =< 2
+s(477) =< V'2
+s(478) =< 2*V'2
+s(479) =< s(478)
+
+ * loop 64:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(489)+1*s(487)+1*s(491)+1*s(490)+1*s(488)+1*s(492)+9
+  Such that:s(487) =< 1
+s(488) =< 2
+s(489) =< V'2+1/2
+s(490) =< 2*V'2
+s(491) =< 2*V'2+1
+
+ * loop 65:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(500)+1*s(498)+2*s(502)+1*s(499)+9
+  Such that:s(498) =< 1
+s(499) =< 2
+s(500) =< V'2
+s(501) =< 2*V'2
+s(502) =< s(501)
+
+ * loop 66:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(510)+1*s(508)+2*s(512)+1*s(509)+9
+  Such that:s(508) =< 1
+s(509) =< 2
+s(510) =< V'2+1/2
+s(511) =< 2*V'2
+s(512) =< s(511)
+
+ * loop 67:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(520)+1*s(518)+2*s(522)+1*s(519)+9
+  Such that:s(518) =< 1
+s(519) =< 2
+s(520) =< V'2
+s(521) =< 2*V'2
+s(522) =< s(521)
+
+ * loop 68:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(530)+1*s(528)+1*s(532)+1*s(531)+1*s(529)+9
+  Such that:s(528) =< 1
+s(529) =< 2
+s(530) =< V'2+1/2
+s(531) =< 2*V'2
+s(532) =< 2*V'2+1
+
+ * loop 69:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(537)+2*s(539)+1*s(540)+9
+  Such that:s(537) =< V'2
+s(538) =< 2*V'2
+s(539) =< s(538)
+
+ * loop 70:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(545)+2*s(547)+1*s(548)+9
+  Such that:s(545) =< V'2+1/2
+s(546) =< 2*V'2
+s(547) =< s(546)
+
+ * loop 71:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(553)+2*s(555)+1*s(556)+9
+  Such that:s(553) =< V'2
+s(554) =< 2*V'2
+s(555) =< s(554)
+
+ * loop 72:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(561)+1*s(563)+1*s(562)+1*s(564)+9
+  Such that:s(561) =< V'2+1/2
+s(562) =< 2*V'2
+s(563) =< 2*V'2+1
+
+ * loop 73:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(568)+2*s(570)+9
+  Such that:s(568) =< V'2
+s(569) =< 2*V'2
+s(570) =< s(569)
+
+ * loop 74:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(574)+2*s(576)+9
+  Such that:s(574) =< V'2+1/2
+s(575) =< 2*V'2
+s(576) =< s(575)
+
+ * loop 75:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(580)+2*s(582)+9
+  Such that:s(580) =< V'2
+s(581) =< 2*V'2
+s(582) =< s(581)
+
+ * loop 76:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out'),timesIter(V'2,V3'2,V12'2,Out'2)] 
+1*s(586)+1*s(588)+1*s(587)+9
+  Such that:s(586) =< V'2+1/2
+s(587) =< 2*V'2
+s(588) =< 2*V'2+1
+
+ * loop 89:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out')] 
+1*s(591)+1*s(592)+5
+  Such that:s(591) =< V'/2+1/2
+s(592) =< -V3'+V12'
+
+ * loop 90:timesIter(V,V3,V12,Out) -> [timesIter(V',V3',V12',Out')] 
+1*s(594)+5
+  Such that:s(594) =< V/2

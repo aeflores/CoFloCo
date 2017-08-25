@@ -1,0 +1,156 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. recursive : [merge/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is partially evaluated into merge/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations merge/2 
+* CE 5 is refined into CE [6] 
+* CE 4 is refined into CE [7] 
+* CE 2 is refined into CE [8] 
+* CE 3 is refined into CE [9] 
+
+
+#### Refined cost equations merge/2 
+* CE 6: merge(A,B) = 0
+     [A>=0,B=0] 
+* CE 7: merge(A,B) = 0
+     [B>=0,A=0] 
+* CE 8: merge(A,B) = 9+ merge(C,B)
+     [B>=1,A>=1,A=C+1] 
+* CE 9: merge(A,B) = 9+ merge(A,C)
+     [B>=1,A>=1,B=C+1] 
+
+### Cost equations --> "Loop" of merge/2 
+* CEs [8] --> Loop 5 
+* CEs [9] --> Loop 6 
+* CEs [6] --> Loop 7 
+* CEs [7] --> Loop 8 
+
+#### Loops of merge/2 
+* Loop 5: merge(A,B)->  merge(A',B)
+                  [B>=1,A>=1,A=A'+1] 
+* Loop 6: merge(A,B)->  merge(A,B')
+                  [B>=1,A>=1,B=B'+1] 
+* Loop 7: merge(A,B) [A>=0,B=0] 
+* Loop 8: merge(A,B) [B>=0,A=0] 
+
+### Ranking functions of CR merge(A,B) 
+* RF of phase [5,6]: [A+B-1]
+
+#### Partial ranking functions of CR merge(A,B) 
+* Partial RF of phase [5,6]:
+  - RF of loop [5:1]:
+    A
+  - RF of loop [6:1]:
+    B
+
+
+### Resulting Chains:merge(A,B) 
+* [[5,6],8]
+* [[5,6],7]
+* [8]
+* [7]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [5,6] 
+
+ * loop 5:merge(A,B) -> [merge(A',B')] 
+9
+ * loop 6:merge(A,B) -> [merge(A',B')] 
+9
+#### Cost of phase [5,6]:merge(A,B) -> [merge(A',B')] 
+9*it(5)+9*it(6)+0
+  Such that:it(5) =< A
+it(5)+it(6) =< A+B-1
+it(5)+it(6) =< A+B-A'-B'
+it(5) =< A-A'
+it(6) =< B
+it(6) =< B-B'
+it(5)+it(6) >= A+B-A'-B'
+it(5) >= A-A'
+it(6) >= B-B'
+
+#### Cost of phase [5,6]:merge(A,B) -> [merge(A',B')] 
+9*it(5)+9*it(6)+0
+  Such that:it(5) =< A
+it(5)+it(6) =< A+B-1
+it(5)+it(6) =< A+B-A'-B'
+it(5) =< A-A'
+it(6) =< B
+it(6) =< B-B'
+it(5)+it(6) >= A+B-A'-B'
+it(5) >= A-A'
+it(6) >= B-B'
+
+#### Cost of chains of merge(A,B):
+* Chain [[5,6],8]: 9*it(5)+9*it(6)+0
+  Such that:it(5) =< A
+it(6) =< B-1
+it(5) >= A
+
+  with precondition: [A>=1,B>=1] 
+
+* Chain [[5,6],7]: 9*it(5)+9*it(6)+0
+  Such that:it(5) =< A-1
+it(6) =< B
+it(6) >= B
+
+  with precondition: [A>=1,B>=1] 
+
+* Chain [8]: 0
+  with precondition: [A=0,B>=0] 
+
+* Chain [7]: 0
+  with precondition: [B=0,A>=0] 
+
+
+Closed-form bounds of merge(A,B): 
+-------------------------------------
+* Chain [[5,6],8] with precondition: [A>=1,B>=1] 
+    - Lower bound: 9*A 
+    - Complexity: n
+ * Chain [[5,6],7] with precondition: [A>=1,B>=1] 
+    - Lower bound: 9*B 
+    - Complexity: n
+ * Chain [8] with precondition: [A=0,B>=0] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [7] with precondition: [B=0,A>=0] 
+    - Lower bound: 0 
+    - Complexity: constant
+ 
+### Partitioned lower bound of merge(A,B): 
+* 0 
+ if [A=0,B>=1]
+ or [B=0,A>=0]
+* min([9*B,9*A]) 
+ if [A>=1,B>=1]
+Possible lower bounds : [0,min([9*B,9*A])]
+Maximum lower bound complexity: n
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 7 ms.
+* Invariants computed in 26 ms.
+   - Backward Invariants 13 ms.
+   - Transitive Invariants 6 ms.
+* Refinement performed in 27 ms.
+* Termination proved in 8 ms.
+* Upper bounds computed in 69 ms.
+   - Equation cost structures 8 ms.
+   - Phase cost structures 20 ms.
+   - Chain cost structures 30 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 159 ms.
+

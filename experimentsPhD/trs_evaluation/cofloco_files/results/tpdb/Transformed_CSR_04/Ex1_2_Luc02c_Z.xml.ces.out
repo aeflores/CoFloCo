@@ -1,0 +1,177 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive  : [cons/3]
+1. non_recursive  : [from/2]
+2. non_recursive  : [activate/2]
+3. non_recursive  : [start/2]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into from/2
+2. SCC is partially evaluated into activate/2
+3. SCC is partially evaluated into start/2
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations from/2 
+* CE 6 is refined into CE [10] 
+* CE 5 is refined into CE [11] 
+
+
+#### Refined cost equations from/2 
+* CE 10: from(V,Out) = 1
+     [V>=0,V+1=Out] 
+* CE 11: from(V,Out) = 2
+     [Out>=3,Out=2*V+3] 
+
+### Cost equations --> "Loop" of from/2 
+* CEs [10] --> Loop 6 
+* CEs [11] --> Loop 7 
+
+#### Loops of from/2 
+* Loop 6: from(V,Out) [V>=0,V+1=Out] 
+* Loop 7: from(V,Out) [V>=0,2*V+3=Out] 
+
+### Ranking functions of CR from(V,Out) 
+
+#### Partial ranking functions of CR from(V,Out) 
+
+
+### Resulting Chains:from(V,Out) 
+* [7]
+* [6]
+
+
+### Merging Chains  from/2 into  External patterns of execution 
+* [[6]] --> 1 
+* [[7]] --> 2 
+
+
+### Specialization of cost equations activate/2 
+* CE 7 is refined into CE [12,13] 
+* CE 8 is refined into CE [14] 
+* CE 9 is refined into CE [15] 
+
+
+#### Refined cost equations activate/2 
+* CE 12: activate(A,A) = 1+ from(B,A):1
+     [A>=1,A=B+1] 
+* CE 13: activate(V,Out) = 1+ from(W,Out):2
+     [Out>=3,Out=2*W+3,Out=2*V+1] 
+* CE 14: activate(A,A) = 1
+     [A>=0] 
+* CE 15: activate(A,A) = 2
+     [A>=1] 
+
+### Cost equations --> "Loop" of activate/2 
+* CEs [13] --> Loop 8 
+* CEs [12,14,15] --> Loop 9 
+
+#### Loops of activate/2 
+* Loop 8: activate(V,Out) [V>=1,2*V+1=Out] 
+* Loop 9: activate(A,A) [A>=0] 
+
+### Ranking functions of CR activate(V,Out) 
+
+#### Partial ranking functions of CR activate(V,Out) 
+
+
+### Resulting Chains:activate(V,Out) 
+* [9]
+* [8]
+
+
+### Merging Chains  activate/2 into  External patterns of execution 
+* [[9]] --> 1 
+* [[8]] --> 2 
+
+
+### Specialization of cost equations start/2 
+* CE 2 is refined into CE [16,17] 
+* CE 3 is refined into CE [18,19] 
+* CE 4 is refined into CE [20] 
+
+
+#### Refined cost equations start/2 
+* CE 16: start(V,V1) = 0+ from(W1,X1):1
+     [X1>=1,X1=W1+1,X1=V+1] 
+* CE 17: start(V,V1) = 0+ from(W1,X1):2
+     [X1>=3,X1=2*W1+3,X1=2*V+3] 
+* CE 18: start(V,V1) = 0+ activate(V,V):1
+     [V>=0] 
+* CE 19: start(V,V1) = 0+ activate(W1,X1):2
+     [X1>=3,X1=2*W1+1,X1=2*V+1] 
+* CE 20: start(V,V1) = 1
+     [V1>=0,V>=0] 
+
+### Cost equations --> "Loop" of start/2 
+* CEs [16,17,18,19,20] --> Loop 10 
+
+#### Loops of start/2 
+* Loop 10: start(V,V1) [V>=0] 
+
+### Ranking functions of CR start(V,V1) 
+
+#### Partial ranking functions of CR start(V,V1) 
+
+
+### Resulting Chains:start(V,V1) 
+* [10]
+
+
+### Merging Chains  start/2 into  External patterns of execution 
+* [[10]] --> 1 
+
+
+Computing Bounds
+=====================================
+
+#### Cost of chains of from(V,Out):
+* Chain [7]: 2
+  with precondition: [2*V+3=Out,V>=0] 
+
+* Chain [6]: 1
+  with precondition: [V+1=Out,V>=0] 
+
+
+#### Cost of chains of activate(V,Out):
+* Chain [9]: 2
+  with precondition: [V=Out,V>=0] 
+
+* Chain [8]: 3
+  with precondition: [2*V+1=Out,V>=1] 
+
+
+#### Cost of chains of start(V,V1):
+* Chain [10]: 3
+  with precondition: [V>=0] 
+
+
+Closed-form bounds of start(V,V1): 
+-------------------------------------
+* Chain [10] with precondition: [V>=0] 
+    - Upper bound: 3 
+    - Complexity: constant 
+
+### Maximum cost of start(V,V1): 3 
+Asymptotic class: constant 
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 5 ms.
+* Invariants computed in 1 ms.
+   - Backward Invariants 0 ms.
+   - Transitive Invariants 0 ms.
+* Refinement performed in 11 ms.
+* Termination proved in 1 ms.
+* Upper bounds computed in 5 ms.
+   - Equation cost structures 2 ms.
+   - Phase cost structures 0 ms.
+   - Chain cost structures 0 ms.
+   - Solving cost expressions 0 ms.
+* Total analysis performed in 33 ms.
+

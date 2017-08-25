@@ -1,0 +1,389 @@
+
+Preprocessing Cost Relations
+=====================================
+
+#### Computed strongly connected components 
+0. non_recursive : [amor/atva/Erathostenes_foo()V/0]
+1. recursive : [11_loop/2]
+2. recursive : [8_loop/5]
+3. recursive : [6_loop/6]
+4. recursive : [21_loop/2]
+5. non_recursive : [amor/atva/Erathostenes_createSieve(I)[I/1]
+6. non_recursive : [amor/atva/Erathostenes_eratos(I)V/1]
+
+#### Obtained direct recursion through partial evaluation 
+0. SCC is completely evaluated into other SCCs
+1. SCC is partially evaluated into 11_loop/2
+2. SCC is partially evaluated into 8_loop/5
+3. SCC is partially evaluated into 6_loop/6
+4. SCC is partially evaluated into 21_loop/2
+5. SCC is completely evaluated into other SCCs
+6. SCC is partially evaluated into amor/atva/Erathostenes_eratos(I)V/1
+
+Control-Flow Refinement of Cost Relations
+=====================================
+
+### Specialization of cost equations 11_loop/2 
+* CE 13 is refined into CE [14] 
+* CE 12 is refined into CE [15] 
+
+
+#### Refined cost equations 11_loop/2 
+* CE 14: 11_loop(A,B) = 0
+     [B>=A,A>=1] 
+* CE 15: 11_loop(A,B) = 1+ 11_loop(A,C)
+     [A>=B+1,B>=1,B+1=C] 
+
+### Cost equations --> "Loop" of 11_loop/2 
+* CEs [15] --> Loop 13 
+* CEs [14] --> Loop 14 
+
+#### Loops of 11_loop/2 
+* Loop 13: 11_loop(A,B)->  11_loop(A,B')
+                  [A>=B+1,B>=1,B+1=B'] 
+* Loop 14: 11_loop(A,B) [B>=A,A>=1] 
+
+### Ranking functions of CR 11_loop(A,B) 
+* RF of phase [13]: [A-B]
+
+#### Partial ranking functions of CR 11_loop(A,B) 
+* Partial RF of phase [13]:
+  - RF of loop [13:1]:
+    A-B
+
+
+### Resulting Chains:11_loop(A,B) 
+* [[13],14]
+* [14]
+
+
+### Specialization of cost equations 8_loop/5 
+* CE 11 is refined into CE [16] 
+* CE 9 is refined into CE [17] 
+* CE 10 is refined into CE [18] 
+
+
+#### Refined cost equations 8_loop/5 
+* CE 16: 8_loop(A,B,C,D,B) = 0
+     [B>=D,A>=B,D>=1] 
+* CE 17: 8_loop(A,B,C,D,E) = 0+ 8_loop(A,B,C,D,F)
+     [B>=E+1,E>=D,A>=B,D>=1,E+1=F] 
+* CE 18: 8_loop(A,B,C,D,E) = 0+ 8_loop(A,B,C,F,G)
+     [B>=E+1,E>=D,A>=B,D>=1,E+1=G,D+1=F] 
+
+### Cost equations --> "Loop" of 8_loop/5 
+* CEs [17] --> Loop 15 
+* CEs [18] --> Loop 16 
+* CEs [16] --> Loop 17 
+
+#### Loops of 8_loop/5 
+* Loop 15: 8_loop(A,B,C,D,E)->  8_loop(A,B,C,D,E')
+                  [B>=E+1,E>=D,A>=B,D>=1,E+1=E'] 
+* Loop 16: 8_loop(A,B,C,D,E)->  8_loop(A,B,C,D',E')
+                  [B>=E+1,E>=D,A>=B,D>=1,E+1=E',D+1=D'] 
+* Loop 17: 8_loop(A,B,C,D,B) [B>=D,A>=B,D>=1] 
+
+### Ranking functions of CR 8_loop(A,B,C,D,E) 
+* RF of phase [15,16]: [A-E,B-E]
+
+#### Partial ranking functions of CR 8_loop(A,B,C,D,E) 
+* Partial RF of phase [15,16]:
+  - RF of loop [15:1,16:1]:
+    A-E
+    B-E
+  - RF of loop [16:1]:
+    A-D
+    B-D
+
+
+### Resulting Chains:8_loop(A,B,C,D,E) 
+* [[15,16],17]
+* [17]
+
+
+### Specialization of cost equations 6_loop/6 
+* CE 8 is refined into CE [19] 
+* CE 6 is refined into CE [20,21] 
+* CE 7 is refined into CE [22] 
+
+
+#### Refined cost equations 6_loop/6 
+* CE 19: 6_loop(A,B,C,D,E,F) = 0
+     [E>=C,C>=B,A>=B,B>=1] 
+* CE 20: 6_loop(A,B,C,D,E,F) = 0+ 8_loop(A,B,G,H,H):[[15,16],17]+ 11_loop(B,I):[14]+ 6_loop(A,B,H,G,I,J)
+     [J>=I,I>=B,A>=B,B>=H+1,E+1>=H,H>=1,H=C+1] 
+* CE 21: 6_loop(A,B,C,D,E,F) = 0+ 8_loop(A,B,G,B,B):[17]+ 11_loop(B,H):[14]+ 6_loop(A,B,B,G,H,I)
+     [I>=H,H>=B,A>=B,E+1>=B,B>=1,B=C+1] 
+* CE 22: 6_loop(A,B,C,D,E,F) = 0+ 8_loop(A,B,G,H,H):[[15,16],17]+ 11_loop(B,I):[[13],14]+ 6_loop(A,I,H,G,I,J)
+     [B>=I+1,J>=B,A>=B,I>=H,E+1>=H,H>=1,H=C+1] 
+
+### Cost equations --> "Loop" of 6_loop/6 
+* CEs [22] --> Loop 18 
+* CEs [20] --> Loop 19 
+* CEs [21] --> Loop 20 
+* CEs [19] --> Loop 21 
+
+#### Loops of 6_loop/6 
+* Loop 18: 6_loop(A,B,C,D,E,F)->  6_loop(A,A',B',C',A',D')
+                  [A'>=B',E+1>=B',B>=A'+1,D'>=B,A>=B,B'>=1,B'=C+1] 
+* Loop 19: 6_loop(A,B,C,D,E,F)->  6_loop(A,B,C',D',E',F')
+                  [F'>=E',E+1>=C',B>=C'+1,E'>=B,A>=B,C'>=1,C'=C+1] 
+* Loop 20: 6_loop(A,B,C,D,E,F)->  6_loop(A,B,B,A',B',C')
+                  [C'>=B',B'>=B,E+1>=B,A>=B,B>=1,B=C+1] 
+* Loop 21: 6_loop(A,B,C,D,E,F) [E>=C,C>=B,A>=B,B>=1] 
+
+### Ranking functions of CR 6_loop(A,B,C,D,E,F) 
+* RF of phase [18,19]: [A-C-1,B-C-1]
+
+#### Partial ranking functions of CR 6_loop(A,B,C,D,E,F) 
+* Partial RF of phase [18,19]:
+  - RF of loop [18:1]:
+    B-1
+    B/2-C/2-1/2
+  - RF of loop [18:1,19:1]:
+    A-C-1
+  - RF of loop [19:1]:
+    B-C-1
+
+
+### Resulting Chains:6_loop(A,B,C,D,E,F) 
+* [[18,19],21]
+* [[18,19],20,21]
+* [20,21]
+
+
+### Specialization of cost equations 21_loop/2 
+* CE 5 is refined into CE [23] 
+* CE 4 is refined into CE [24] 
+
+
+#### Refined cost equations 21_loop/2 
+* CE 23: 21_loop(A,B) = 0
+     [B>=A,A>=1] 
+* CE 24: 21_loop(A,B) = 0+ 21_loop(A,C)
+     [A>=B+1,B>=0,B+1=C] 
+
+### Cost equations --> "Loop" of 21_loop/2 
+* CEs [24] --> Loop 22 
+* CEs [23] --> Loop 23 
+
+#### Loops of 21_loop/2 
+* Loop 22: 21_loop(A,B)->  21_loop(A,B')
+                  [A>=B+1,B>=0,B+1=B'] 
+* Loop 23: 21_loop(A,B) [B>=A,A>=1] 
+
+### Ranking functions of CR 21_loop(A,B) 
+* RF of phase [22]: [A-B]
+
+#### Partial ranking functions of CR 21_loop(A,B) 
+* Partial RF of phase [22]:
+  - RF of loop [22:1]:
+    A-B
+
+
+### Resulting Chains:21_loop(A,B) 
+* [[22],23]
+
+
+### Specialization of cost equations amor/atva/Erathostenes_eratos(I)V/1 
+* CE 3 is refined into CE [25,26,27] 
+* CE 2 is refined into CE [28] 
+
+
+#### Refined cost equations amor/atva/Erathostenes_eratos(I)V/1 
+* CE 25: amor/atva/Erathostenes_eratos(I)V(A) = 0+ 21_loop(A,B):[[22],23]+ 6_loop(A,A,C,D,E,F):[[18,19],21]
+     [A>=2,F=0,E=0,D=0,C=0,B=0] 
+* CE 26: amor/atva/Erathostenes_eratos(I)V(A) = 0+ 21_loop(A,B):[[22],23]+ 6_loop(A,A,C,D,E,F):[[18,19],20,21]
+     [A>=2,F=0,E=0,D=0,C=0,B=0] 
+* CE 27: amor/atva/Erathostenes_eratos(I)V(A) = 0+ 21_loop(B,C):[[22],23]+ 6_loop(D,E,F,G,H,I):[20,21]
+     [I=0,H=0,G=0,F=0,E=1,D=1,C=0,B=1,A=1] 
+* CE 28: amor/atva/Erathostenes_eratos(I)V(A) = 0
+     [0>=A] 
+
+### Cost equations --> "Loop" of amor/atva/Erathostenes_eratos(I)V/1 
+* CEs [26] --> Loop 24 
+* CEs [25] --> Loop 25 
+* CEs [28] --> Loop 26 
+* CEs [27] --> Loop 27 
+
+#### Loops of amor/atva/Erathostenes_eratos(I)V/1 
+* Loop 24: amor/atva/Erathostenes_eratos(I)V(A) [A>=2] 
+* Loop 25: amor/atva/Erathostenes_eratos(I)V(A) [A>=2] 
+* Loop 26: amor/atva/Erathostenes_eratos(I)V(A) [0>=A] 
+* Loop 27: amor/atva/Erathostenes_eratos(I)V(A) [A=1] 
+
+### Ranking functions of CR amor/atva/Erathostenes_eratos(I)V(A) 
+
+#### Partial ranking functions of CR amor/atva/Erathostenes_eratos(I)V(A) 
+
+
+### Resulting Chains:amor/atva/Erathostenes_eratos(I)V(A) 
+* [27]
+* [26]
+* [25]
+* [24]
+
+
+Computing Bounds
+=====================================
+
+#### Cost of loops [13] 
+
+ * loop 13:11_loop(A,B) -> [11_loop(A',B')] 
+1
+#### Cost of phase [13]:11_loop(A,B) -> [11_loop(A',B')] 
+1*it(13)+0
+  Such that:it(13) =< A-B
+it(13) =< A-B-A'+B'
+it(13) >= A-B-A'+B'
+
+#### Cost of chains of 11_loop(A,B):
+* Chain [[13],14]: 1*it(13)+0
+  Such that:it(13) =< A-B
+it(13) >= A-B
+
+  with precondition: [B>=1,A>=B+1] 
+
+* Chain [14]: 0
+  with precondition: [A>=1,B>=A] 
+
+
+#### Cost of loops [15,16] 
+
+ * loop 15:8_loop(A,B,C,D,E) -> [8_loop(A',B',C',D',E')] 
+0
+ * loop 16:8_loop(A,B,C,D,E) -> [8_loop(A',B',C',D',E')] 
+0
+#### Cost of phase [15,16]:8_loop(A,B,C,D,E) -> [8_loop(A',B',C',D',E')] 
+0
+#### Cost of chains of 8_loop(A,B,C,D,E):
+* Chain [[15,16],17]: 0
+  with precondition: [D>=1,A>=B,E>=D,B>=E+1] 
+
+* Chain [17]: 0
+  with precondition: [E=B,D>=1,E>=D,A>=E] 
+
+
+#### Cost of loops [18,19] 
+
+ * loop 18:6_loop(A,B,C,D,E,F) -> [6_loop(A',B',C',D',E',F')] 
+1*s(2)+0
+  Such that:s(2) =< B-E'
+s(2) >= B-E'
+
+ * loop 19:6_loop(A,B,C,D,E,F) -> [6_loop(A',B',C',D',E',F')] 
+0
+#### Cost of phase [18,19]:6_loop(A,B,C,D,E,F) -> [6_loop(A',B',C',D',E',F')] 
+1*s(3)+0
+  Such that:aux(2) =< B-C-1
+aux(3) =< B-C-B'+C'
+s(3) =< aux(2)
+s(3) =< aux(3)
+aux(1) >= 1
+s(3) >= B-B'
+s(3) >= it(18)*aux(1)
+
+#### Cost of phase [18,19]:6_loop(A,B,C,D,E,F) -> [6_loop(A',B',C',D',E',F')] 
+1*s(3)+0
+  Such that:aux(2) =< B-C-1
+aux(3) =< B-C-B'+C'
+s(3) =< aux(2)
+s(3) =< aux(3)
+aux(1) >= 1
+s(3) >= B-B'
+s(3) >= it(18)*aux(1)
+
+#### Cost of chains of 6_loop(A,B,C,D,E,F):
+* Chain [[18,19],21]: 1*s(3)+0
+  Such that:aux(2) =< B-C-1
+aux(3) =< B-C
+s(3) =< aux(2)
+s(3) =< aux(3)
+aux(4) >= 1
+aux(4) >= aux(4)
+s(3) >= aux(4)
+
+  with precondition: [C>=0,A>=B,B>=C+2,E>=C] 
+
+* Chain [[18,19],20,21]: 1*s(3)+0
+  Such that:aux(5) =< B-C-1
+s(3) =< aux(5)
+
+  with precondition: [C>=0,A>=B,B>=C+2,E>=C] 
+
+* Chain [20,21]: 0
+  with precondition: [B=C+1,B>=1,A>=B,E+1>=B] 
+
+
+#### Cost of loops [22] 
+
+ * loop 22:21_loop(A,B) -> [21_loop(A',B')] 
+0
+#### Cost of phase [22]:21_loop(A,B) -> [21_loop(A',B')] 
+0
+#### Cost of chains of 21_loop(A,B):
+* Chain [[22],23]: 0
+  with precondition: [B>=0,A>=B+1] 
+
+
+#### Cost of chains of amor/atva/Erathostenes_eratos(I)V(A):
+* Chain [27]: 0
+  with precondition: [A=1] 
+
+* Chain [26]: 0
+  with precondition: [0>=A] 
+
+* Chain [25]: 1*s(7)+0
+  Such that:s(4) =< A-1
+s(5) =< A
+s(7) =< s(4)
+s(7) =< s(5)
+s(6) >= 1
+s(6) >= s(6)
+s(7) >= s(6)
+
+  with precondition: [A>=2] 
+
+* Chain [24]: 1*s(9)+0
+  Such that:s(8) =< A-1
+s(9) =< s(8)
+
+  with precondition: [A>=2] 
+
+
+Closed-form bounds of amor/atva/Erathostenes_eratos(I)V(A): 
+-------------------------------------
+* Chain [27] with precondition: [A=1] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [26] with precondition: [0>=A] 
+    - Lower bound: 0 
+    - Complexity: constant
+ * Chain [25] with precondition: [A>=2] 
+    - Lower bound: 1 
+    - Complexity: constant
+ * Chain [24] with precondition: [A>=2] 
+    - Lower bound: 0 
+    - Complexity: constant
+ 
+### Partitioned lower bound of amor/atva/Erathostenes_eratos(I)V(A): 
+* 0 
+ if []
+Possible lower bounds : [0]
+Maximum lower bound complexity: constant
+
+Time statistics: 
+-------------------------------------
+* Partial evaluation computed in 37 ms.
+* Invariants computed in 159 ms.
+   - Backward Invariants 62 ms.
+   - Transitive Invariants 37 ms.
+* Refinement performed in 195 ms.
+* Termination proved in 62 ms.
+* Upper bounds computed in 310 ms.
+   - Equation cost structures 75 ms.
+   - Phase cost structures 184 ms.
+   - Chain cost structures 74 ms.
+   - Solving cost expressions 2 ms.
+* Total analysis performed in 865 ms.
+
