@@ -20,6 +20,7 @@ CoFloCo is intended to be used as a backend. Here are some systems that use CoFl
 The main techniques used in CoFloCo are described in the papers:
  * [Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295](https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf)
  * [Antonio Flores-Montoya: Upper and Lower Amortized Cost Bounds of Programs Expressed as Cost Relations. FM 2016](https://www.informatik.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Publications/FM2016_extended.pdf) 
+ * [Antonio Flores-Montoya: Cost Analysis of Programs Based on the Refinement of Cost Relations. PhD thesis](http://tuprints.ulb.tu-darmstadt.de/6746/) 
 
 Using Vagrant
 -------------
@@ -36,7 +37,7 @@ Requirements:
 --------------
  * Linux or Mac: In principle it should be possible to use CoFloCo in Windows but it might require some slight changes.
    
- * [SWI-Prolog](http://www.swi-prolog.org/) (Version 6.6.6) or [YAP-Prolog](http://www.dcc.fc.up.pt/~vsc/Yap/) (Development version 6.3.3)
+ * [SWI-Prolog](http://www.swi-prolog.org/) (Tried on Versions 6.6.6 and 7.4.2) or [YAP-Prolog](http://www.dcc.fc.up.pt/~vsc/Yap/) (Development version 6.3.3)
      
      
  * [GMP](https://gmplib.org/): The GNU Multiple Precision Arithmetic Library (It is required by SWI-Prolog)
@@ -47,20 +48,19 @@ Requirements:
 
 Complete Installation
 --------------
- * Install SWI-Prolog 6.6.6 or YAP 6.3.3 and the GMP library
+ * Install SWI-Prolog or YAP and the GMP library
  
  * CoFloCo requires the Parma Polyhedra Library (PPL) with the SWI-Prolog interface
    or YAP-Prolog installed (Depending on which prolog system you are using).
    The distributions that are available with apt-get (linux) or port (mac) do not include these 
    interfaces at the moment.
 
-   For convenience, we included a binary of PPL for Linux x64  in  `src/lib/`. If you have this system,
-   you can use CoFloCo with SWI-Prolog without compiling and installing the library. 
+   For convenience, the binary of PPL for Linux x64 and SWI-Prolog 7.4.2 is included in  `src/lib/`. If you have this system, you can use CoFloCo with SWI-Prolog 7.4.2 without compiling and installing the library. 
    Just make sure the make sure the libraries are found by cofloco before you execute it:
     
      `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./src/lib/`
    
-   If you want to use your own installation of PPL (say you have a mac), you can download the sources from
+   If you want to use your own installation of PPL (say you have a mac of a different prolog), you can download the sources from
    the official page http://bugseng.com/products/ppl/download.
    In the directory of ppl execute:
    
@@ -70,8 +70,7 @@ Complete Installation
 
       `sudo make install`
    
-	Some extra options might be necessary depending on your system. PPL provides documentation
-	on how to configure and compile in different systems.
+	Some extra options might be necessary depending on your system. PPL provides documentation on how to configure and compile in different systems.
 
     Note: According to our experience, using a sparse representation for polyhedra generally results in better performance. To compile PPL with this option, you have to change the following line in Polyhedron_defs.hh:
 
@@ -103,12 +102,19 @@ Files:
       - `src/main_cofloco.pl`: The main module
       - ...
   * `interfaces`: Scripts to generate cost relations from other languages
+  * `static_binary`: Makefile to generate a statically linked binary
   * `cofloco`: main script for executing CoFloCo
   * `cofloco_yap`:  script for executing CoFloCo with YAP
   * `cofloco_mac`: script for executing CoFloCo in a MAC
   * `README`: this file
   * `USAGE`: basic instructions of how to use CoFloCo
   
+Experiments:
+------------------
+
+CoFloCo has been compared to other cost analysis tools in several experimental evaluations.
+The most recent evaluation can be found [here](http://aeflores.github.io/CoFloCo/experimentsPhD/).
+
 
 Contact:
 ------------------

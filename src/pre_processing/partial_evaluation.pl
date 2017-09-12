@@ -30,7 +30,13 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 */
 :- module(partial_evaluation,[partial_evaluation/0]).
 
-:- use_module('SCCs',[crs_scc/6,crs_btc/2,ignored_scc/1,crs_node_scc/3,crs_residual_scc/2]).
+:- use_module('SCCs',[crs_scc/6,
+			crs_btc/2,
+			ignored_scc/1,
+			crs_node_scc/3,
+			crs_residual_scc/2,
+			assign_new_scc_if_not_cutpoint/1,
+			remove_auxiliar_scc/1]).
 :- use_module('../db',[entry_eq/2, input_eq/5 ,add_eq_ph/2,cofloco_aux_entry_name/1]).
 :- use_module('../IO/output',[print_warning/2]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify_ctx_free/2]).
@@ -54,10 +60,9 @@ The module implementation is adapted from the module pubs_pe.pl in PUBS implemen
 % after the partial evaluation, record the SCCs that are never called
 % for SCCs that have recursive calls, add an auxiliary empty equation that will serve to simulate non-terminating chains
 partial_evaluation :-
-	retractall(pe_eq(_,_,_,_)),
-	cofloco_aux_entry_name(Call),
+	retractall(pe_eq(_,_,_,_)),	
 	compress_segments,
-	pe_aux(Call),%FIXME take the entry condition into account
+	pe_aux,%FIXME take the entry condition into account
 	findall(F1/A1,
 	        (
 	        input_eq(Head,_,_,_,_),
@@ -81,10 +86,15 @@ compress_segments:-
 	from_list_sl(Nodes,Nodes_set),
 	crs_residual_scc(SCC_N,BTC/BTC_a),
 	difference_sl(Nodes_set,[BTC/BTC_a],Unfoldable_nodes),
-	compress_segments_in_scc(Unfoldable_nodes,[],1),
+	exclude(is_entry,Unfoldable_nodes,Unfoldable_nodes_without_entries),
+	compress_segments_in_scc(Unfoldable_nodes_without_entries,[],1),
 	fail.
 compress_segments.	
 
+is_entry(F/A):-
+	functor(Head,F,A),
+	entry_eq(Head,_).
+		
 compress_segments_in_scc([F/A|Unfoldable_nodes],Not_compressed,Level):-
 	functor(Head,F,A),
 	findall(Id,input_eq(Head,Id,_,_,_),Ids),
@@ -168,10 +178,20 @@ substitute_call_2([Other|Calls1],Head_callee,Calls0,[Other|Calls1_sub]):-
 add_ignored_scc(X):-
 	assert('SCCs':ignored_scc(X)).
 
-pe_aux(Entry):-
-	partially_evaluate_cost_rel([Entry]),
+pe_aux:-
+	collect_entries(Entries),
+	maplist(assign_new_scc_if_not_cutpoint,Entries),
+	partially_evaluate_cost_rel(Entries),
 	replace_cost_relations.
 
+collect_entries(Entries):-
+	cofloco_aux_entry_name(Cofloco_entry),
+	remove_auxiliar_scc(Cofloco_entry),
+	findall(Entry,
+		(input_eq(Cofloco_entry,_,_,Calls,_),
+		member(Entry,Calls)),Entries).
+				
+		
 partially_evaluate_cost_rel(Entries):-
 	reset_atoms,
 	global_control(Entries).

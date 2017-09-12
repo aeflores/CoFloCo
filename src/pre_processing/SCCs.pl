@@ -37,7 +37,9 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
     crs_btc/2,
     crs_residual_scc/2,
     crs_node_scc/3,
-    ignored_scc/1
+    ignored_scc/1,
+    assign_new_scc_if_not_cutpoint/1,
+    remove_auxiliar_scc/1
 ]).
 
 :- use_module('../db',[
@@ -46,7 +48,7 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 		get_input_output_arities/3,
 		get_input_output_vars/3,
 		save_input_output_vars/3]).
-:- use_module('../IO/output',[print_merging_cover_points/3]).		
+:- use_module('../IO/output',[print_merging_cover_points/3,print_new_scc/2]).		
 :- use_module('../utils/cofloco_utils',[sort_with/3,tuple/3]).	
 %:- use_module(recursion_loop_extraction,[try_loop_extraction/1]).
 
@@ -115,6 +117,28 @@ init_sccs:-
 	retractall(ignored_scc(_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+assign_new_scc_if_not_cutpoint(Entry):-
+	functor(Entry,F,A),
+	crs_btc(F,A),!.
+assign_new_scc_if_not_cutpoint(Entry):-
+	functor(Entry,F,A),
+	retract(crs_max_scc_id(N)),
+	N1 is N+1,
+	assert(crs_max_scc_id(N1)),
+	retractall(crs_node_scc(F,A,_)),
+	assert(crs_node_scc(F,A,N1)),
+	assert(crs_scc(N1,non_recursive,[F/A],[],[F/A],[entry_scc])),
+	assert(crs_residual_scc(N1,F/A)),
+	print_new_scc(F/A,N1).
+
+remove_auxiliar_scc(Cofloco_auxiliar):-
+	retract(crs_max_scc_id(N)),
+	retractall(crs_residual_scc(N,_)),
+	N1 is N-1,
+	assert(crs_max_scc_id(N1)),
+	retractall(crs_node_scc(Cofloco_auxiliar,0,_)),
+	retract(crs_scc(N,_,_,_,_,_)).
+	
 %! compute_btcs is det
 % compute a cover point for each SCC
 % if it fails, throw an exception

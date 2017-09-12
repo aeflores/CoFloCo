@@ -301,6 +301,9 @@ get_edge(O,D):-
 	    assertz(not_edge(O,D)),fail
 	    ).
 
+%% this can be uncommented to deactivate chain refinement (obtain a single iterative phase)
+%is_edge_possible(_Head2,[_|_],_Cs):-!.
+
 is_edge_possible(Head2,Calls,Cs):-
 	member(Head2,Calls),
 	Head2=..[_|Relevant_vars],
