@@ -20,6 +20,7 @@ CoFloCo is intended to be used as a backend. Here are some systems that use CoFl
 The main techniques used in CoFloCo are described in the papers:
  * [Antonio Flores-Montoya, Reiner Hähnle: Resource Analysis of Complex Programs with Cost Equations. APLAS 2014: 275-295](https://www.se.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Page_Content/Group_Members/Antonio_Flores-Montoya/APLAS14techReport.pdf)
  * [Antonio Flores-Montoya: Upper and Lower Amortized Cost Bounds of Programs Expressed as Cost Relations. FM 2016](https://www.informatik.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Publications/FM2016_extended.pdf) 
+ * [Antonio Flores-Montoya: Cost Analysis of Programs Based on the Refinement of Cost Relations. PhD thesis](http://tuprints.ulb.tu-darmstadt.de/6746/) 
 
 Using Vagrant
 -------------
@@ -108,6 +109,12 @@ Files:
   * `README`: this file
   * `USAGE`: basic instructions of how to use CoFloCo
   
+Experiments:
+------------------
+
+CoFloCo has been compared to other cost analysis tools in several experimental evaluations.
+The most recent evaluation can be found [here](http://aeflores.github.io/CoFloCo/experimentsPhD/).
+
 
 Contact:
 ------------------
