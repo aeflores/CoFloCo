@@ -117,6 +117,25 @@ This module computes different kinds of invariants for the chains:
 % Inv is expressed in terms of the variables of Head and Call
 :- dynamic  phase_transitive_star_closure/5.
 
+%! partial_backward_invariant(Chain:chain,Head:term,Hash_forward_inv:(int,polyhedron),InvPlus:polyhedron,InvStar:polyhedron)
+% This is a cacheing mechanism to increase performance. many chains have a common 
+% prefix and that can be used to avoid redundant computations.
+%
+% partial_backward_invariant stores the backward invariant of a fragment of chain Chain
+% because the backward invariant might depend  on the forward invariants, it contains the 
+% forward invariant that was used. 
+% Any chain that has Chain as a prefix and has the same forward invariant Hash_forward_inv will have the same backward invariant
+% InvPlus is with 1 or more iterations
+% InvStar is with 0 or more iterations
+:-dynamic partial_backward_invariant/5.
+
+
+%! unfeasible_chain_suffix(Head:term,RefCnt:int,Chain_suffix:chain)
+% store suffixes of chains that are not feasible in order to avoid repeating computation of invariants
+% that are going to fail.
+:-dynamic unfeasible_chain_prefix/3.
+
+
 get_context_insensitive_backward_invariant(Head,Phase,Backward_invariant):-
 	context_insensitive_backward_invariant(Head,Phase,Backward_invariant),!.
 	
@@ -159,7 +178,9 @@ clean_invariants:-
 	retractall(forward_invariant(_,_,_,_)),
 	retractall(context_insensitive_backward_invariant(_,_,_)),
 	retractall(context_insensitive_forward_invariant(_,_,_)),
-	retractall(scc_forward_invariant(_,_,_)).
+	retractall(scc_forward_invariant(_,_,_)),
+	retractall(partial_backward_invariant(_,_,_,_,_)),
+	retractall(unfeasible_chain_prefix(_,_,_)).
 
 
 %! add_backward_invariant(+Head:term,+Chain_RefCnt:(chain,int),+Inv:polyhedron)
@@ -234,17 +255,7 @@ compute_invariants_for_scc(_N,_) :-
 
 
 
-%! partial_backward_invariant(Chain:chain,Head:term,Hash_forward_inv:(int,polyhedron),InvPlus:polyhedron,InvStar:polyhedron)
-% This is a cacheing mechanism to increase performance. many chains have a common 
-% prefix and that can be used to avoid redundant computations.
-%
-% partial_backward_invariant stores the backward invariant of a fragment of chain Chain
-% because the backward invariant might depend  on the forward invariants, it contains the 
-% forward invariant that was used. 
-% Any chain that has Chain as a prefix and has the same forward invariant Hash_forward_inv will have the same backward invariant
-% InvPlus is with 1 or more iterations
-% InvStar is with 0 or more iterations
-:-dynamic partial_backward_invariant/5.
+
 
 
 
@@ -423,10 +434,7 @@ compute_backward_invariant_aux(Prev_chain,Head,RefCnt,Chain,Entry_pattern):-
 	).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
-%! unfeasible_chain_suffix(Head:term,RefCnt:int,Chain_suffix:chain)
-% store suffixes of chains that are not feasible in order to avoid repeating computation of invariants
-% that are going to fail.
-:-dynamic unfeasible_chain_prefix/3.
+
 
 %! compute_forward_invariants(Entry_Call:term,RefCnt:int) is det
 % for each chain, if none of the suffixes is clearly unfeasible (because we computed it before)

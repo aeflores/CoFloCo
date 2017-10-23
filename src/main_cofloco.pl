@@ -146,6 +146,7 @@ The main "data types" used in CoFloCo are the following:
 		      print_help/0]).
 :- use_module('IO/input',[read_cost_equations/1,store_cost_equations/1]).
 :-use_module('IO/params',[set_default_params/0,set_competition_params/0,parse_params/1,get_param/2]).
+:-use_module('utils/cost_structures',[init_cost_structures/0]).
 :-use_module('utils/cofloco_utils',[tuple/3]).
 
 
@@ -157,6 +158,7 @@ The main "data types" used in CoFloCo are the following:
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
+
 %! cofloco_shell_main is det
 % main predicate to be called form the console.  
 % it performs the complete analysis
@@ -257,7 +259,8 @@ init_database:-
 	clean_invariants,
 	init_phase_solver,
 	init_cost_equation_solver,
-	init_chain_solver.
+	init_chain_solver,
+	init_cost_structures.
 	
 %! preprocess_cost_equations is det
 % Computes the SCC (strongly connected components)

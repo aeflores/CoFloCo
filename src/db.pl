@@ -186,7 +186,7 @@ This module acts as a database that stores:
 init_db:-
 	retractall(input_eq(_,_,_,_,_)),
 	retractall(entry_eq(_,_)),
-	retractall(ground_eq_header(_)),
+	retractall(ground_equation_header(_)),
 	
 	retractall(reset_scc(_,_,_)),
 	retractall(input_output_vars(_,_,_)),
@@ -288,8 +288,8 @@ non_terminating_chain_2(Head,[multiple(_Phase,Tails)|_Chain]):-
 	
 
 %! add_ground_equation_header(+Non_ground:term,+Ground:term) is det
-% store the ground term Ground if there is no ground_eq_header that can be unified with Non_ground.
-% that is, we store on ground_eq_header per cost equation header
+% store the ground term Ground if there is no ground_equation_header that can be unified with Non_ground.
+% that is, we store on ground_equation_header per cost equation header
 add_ground_equation_header(Non_ground,_Ground):-
 	copy_term(Non_ground,Non_ground2),
 	ground_equation_header(Non_ground2),!.

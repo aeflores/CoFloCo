@@ -78,6 +78,7 @@
 
 
 :- module(cost_structures,[
+		init_cost_structures/0,
 		opposite_ub_lb/2,
 		max_min_ub_lb/2,
 		new_itvar/1,
@@ -169,8 +170,10 @@
 :-use_module(library(rbtrees)).
 
 
-
-
+init_cost_structures:-
+	retractall(short_db(_,_,_)),
+	retractall(short_db_no_list(_,_,_)).
+	
 opposite_ub_lb(ub,lb).
 opposite_ub_lb(lb,ub).
 

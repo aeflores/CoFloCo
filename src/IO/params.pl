@@ -98,6 +98,7 @@ clean_params:-
 %  * -n_rankings 2
 %  * -maximize_fast 5
 set_default_params:-
+	clean_params,
 	parse_params(['-v','2',
 		      '-n_candidates','1',
 		      '-context_sensitive','1',
