@@ -51,6 +51,11 @@ key:categories
 		related categories and one can select to check only some of the categories.
 	default: By default all categories are taken
 
+key:excluded_preds
+	value: a list of predicate names as defined in predicate facts e.g. input_eq, entry_eq ...
+	description:This option specifies predicates that are not going to be checked (they are excluded)
+	default: By default no predicate is excluded
+
 
 Examples:
 
@@ -90,7 +95,9 @@ check_regression([benchmark:testing,  discar output:no,  verbosity:3, profiles:[
 	save_regression_file/1,
 	save_regression_file/2,
 	check_regression_file/1,
-	check_regression_file/2
+	check_regression_file/2,
+	check_regression_files/1,
+	check_regression_files/2
 	]).
 
 :-use_module('../src/main_cofloco').
@@ -101,6 +108,7 @@ check_regression([benchmark:testing,  discar output:no,  verbosity:3, profiles:[
 benchmark(testing,['../examples/testing'],[default,complete,completeCompress1,completeCompress2]).
 benchmark(all,['../examples'],[ubsCompress2]).
 benchmark(imperative,['../examples/examples_from_literature'],[ubs,lbs]).
+benchmark(pubs,['../examples/examplesPUBS'],[ubs,lbs]).
 benchmark(imperative_long,['../examples/examples_from_literature','../examples/challenging_patterns'],[ubsCompress1,ubsCandidatesCompress]).
 benchmark(functional,['../examples/raML'],[ubs,lbs]).
 
@@ -201,10 +209,13 @@ get_option(Options,profiles,DefaultProfiles):-
 	get_option(Options,benchmark,Benchmark),
 	benchmark(Benchmark,_,DefaultProfiles).
 	
+get_option(_,excluded_preds,[]).
+	
 get_option(_,categories,CategoryNames):-
 	facts(Categories),
 	maplist(get_category_name,Categories,CategoryNames).
 get_category_name(category(Name,_),Name).
+
 
 
 save_regression:-
@@ -230,6 +241,12 @@ check_regression(Options):-
 	foldl(analyze_file(check,Options),Entries,[],ResultSummary),
 	print_summary(ResultSummary).
 
+check_regression_files(Files):-
+	check_regression_files(Files,[]).
+check_regression_files(Files,Options):-
+	foldl(analyze_file(check,Options),Files,[],ResultSummary),
+	print_summary(ResultSummary).
+	
 		
 save_regression_file(File):-
 	save_regression_file(File,[]).		
@@ -304,24 +321,28 @@ compare_results(result(ProfileName,Categories,Exception),
 	
 	get_option(Options,verbosity,Verbosity),
 	get_option(Options,categories,CategoryNames),
+	get_option(Options,excluded_preds,ExcludedPreds),
 	
     cond_message(Verbosity,1,print_diffs(ResException,Exception,Exception2)),	
-	foldl(compare_category(Verbosity,CategoryNames),Categories,Categories2,true,ResCategories),
+	foldl(compare_category(Verbosity,CategoryNames,ExcludedPreds),Categories,Categories2,true,ResCategories),
 	and(ResException,ResCategories,Res),
 	result_message(Res,'Run profile ~p ',[ProfileName]).
 
 	
 
-compare_category(Verbosity,Categories,categoryRes(Name,PredicateRes),categoryRes(Name,PredicateRes2),ResAccum,ResOut):-
+compare_category(Verbosity,Categories,ExcludedPreds,categoryRes(Name,PredicateRes),categoryRes(Name,PredicateRes2),ResAccum,ResOut):-
 	member(Name,Categories),!,
 	cond_message(Verbosity,1,ansi_format([bold],'Checking category ~p~n',[Name])), 		
-	foldl(compare_predicate(Verbosity),PredicateRes,PredicateRes2,true,Res),
+	foldl(compare_predicate(Verbosity,ExcludedPreds),PredicateRes,PredicateRes2,true,Res),
 	cond_message(Verbosity,1,result_message(Res,'Category ~p ',[Name])),
 	and(ResAccum,Res,ResOut).
  
-compare_category(_Verbosity,_Categories,categoryRes(Name,_PredicateRes),categoryRes(Name,_PredicateRes2),Res,Res).
+compare_category(_Verbosity,_Categories,_ExcludedPreds,categoryRes(Name,_PredicateRes),categoryRes(Name,_PredicateRes2),Res,Res).
 	
-compare_predicate(Verbosity,predicateRes(Name/Arity,Set),predicateRes(Name/Arity,Set2),ResAccum,ResOut):-
+compare_predicate(_Verbosity,ExcludedPreds,predicateRes(Name/Arity,_Set),predicateRes(Name/Arity,_Set2),Res,Res):-
+	member(Name,ExcludedPreds),!.
+	
+compare_predicate(Verbosity,_ExcludedPreds,predicateRes(Name/Arity,Set),predicateRes(Name/Arity,Set2),ResAccum,ResOut):-
 	difference_sl(Set,Set2,Diff1),
 	difference_sl(Set2,Set,Diff2),	
 	((Diff1=[],Diff2=[])->	Res=true;Res=false),
