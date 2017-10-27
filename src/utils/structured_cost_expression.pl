@@ -25,8 +25,9 @@
 
 This module uses the following auxiliary cost structures:
  *strexp: a nested sum of products with max and min operator and linear expressions as basic factors:
-       strexp:=add(list(summand)) | nat(add(list(summand))) |  nat(linexp)
+       strexp:=add(list(summand)) | nat(add(list(summand))) |  nat(linexp) | inf | -inf
        summand:=mult(list(factor),rational)
+       		rational cannot be zero
        factor:= strexp | max(list(strexp)) | min(list(strexp))
        
  * partial_strexp: partial(index,strexp_var) | strexp
@@ -74,6 +75,31 @@ strexp_is_zero(add([])):-!.
 strexp_is_zero(nat(Add)):-
 	nonvar(Add),
 	Add==add([]),!.
+
+%! check that the expression is well formed according to the definition
+strexp_check_well_formed(inf).
+strexp_check_well_formed(-inf).
+
+strexp_check_well_formed(nat(Lin_exp)):-
+	is_linear_exp(Lin_exp),!.
+
+strexp_check_well_formed(nat(add(Summands))):-
+	maplist(summand_check_well_formed,Summands).
+strexp_check_well_formed(add(Summands)):-	
+	maplist(summand_check_well_formed,Summands).
+	
+
+summand_check_well_formed(mult(Factors,Coeff)):-
+	ground(Coeff),
+	Coeff\=0,
+	maplist(factor_check_well_formed,Factors).
+
+factor_check_well_formed(max(Strexprs)):-
+	maplist(strexp_check_well_formed,Strexprs).
+factor_check_well_formed(min(Strexprs)):-
+	maplist(strexp_check_well_formed,Strexprs).
+factor_check_well_formed(Strexpr):-
+	strexp_check_well_formed(Strexpr).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % obtain complexity of strexp and partial_strexp
@@ -281,6 +307,7 @@ strexp_var_simplify_summands(Summands,Sign,Summands_sorted):-
 compress_summands(mult(Content,Coeff),Compressed,Compressed1):-
 	add_content(Compressed,Content,Coeff,Compressed1).
 
+add_content(Compressed,_Content,0,Compressed):-!.
 add_content([],Content2,Coeff2,[mult(Content2,Coeff2)]).
 
 add_content([mult(Content1,Coeff1)|Rest],Content2,Coeff2,Compressed):-
@@ -301,14 +328,16 @@ strexp_var_simplify_summand(mult(Factors,Coeff),Summands):-
 strexp_apply_distributibity(mult(Factors,Coeff),Summands_flat):-
 	select_not_var(Factors,add(Summands),Factors1),!,
 	maplist(multiply_by_factors(Factors1,Coeff),Summands,Summands1),
+	
 	maplist(strexp_apply_distributibity,Summands1,Summands2),
 	ut_flat_list(Summands2,Summands_flat).
 
 strexp_apply_distributibity(mult(Factors,Coeff),mult(Factors,Coeff)).
 
-multiply_by_factors(Factors1,Coeff,mult(Summand,Coeff2),mult(Factors2,Coeff3)):-
+multiply_by_factors(Factors1,Coeff,mult(Summand,Coeff2),mult(Factors_sorted,Coeff3)):-
 	multiply_fr(Coeff,Coeff2,Coeff3),
-	append(Factors1,Summand,Factors2).	
+	append(Factors1,Summand,Factors2),
+	ut_sort(Factors2,Factors_sorted).
 	
 strexp_var_simplify_factor(Var,Var):-var(Var),!.
 
@@ -338,9 +367,10 @@ strexp_var_simplify_factor(Factor,Factor_simple):-
 % 2nat(x)+ max(nat(x)+2*nat(y),0)=2nat(x)+ nat(x)+2*nat(y)=3*nat(x)+2*nat(y)
 strexp_simplify_max_min(Expr,add(Common_summands_compressed)):-
 	Expr=..[Max_min,Strexp_list],
+	assertion(maplist(strexp_check_well_formed,Strexp_list)),
 	strexp_extract_common_summands(Strexp_list,Max_min,Common_summands),
 	foldl(compress_summands,Common_summands,[],Common_summands_compressed).
-	
+			
 %! strexp_extract_common_summands(Strexp_list:list(strexp_var),Max_min:flag,Common_summands:list(summand))
 % Given a list of strexp that we want to obtain the maximum or minimum accroding ot Max_min,
 % extract common summands and simplify the expressions
