@@ -31,7 +31,7 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 */
 :- module(loops,[compute_loops/2,compute_phase_loops/2,split_multiple_loops/2,get_extended_phase/2]).
 
-:- use_module('../db',[eq_ph/8,loop_ph/6, add_loop_ph/6,add_phase_loop/5]).
+:- use_module('../db',[add_phase_loop/5]).
 :- use_module(chains,[phase/3]).
 
 :-use_module('../IO/params',[get_param/2]).
@@ -40,20 +40,43 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 :- use_module('../utils/cofloco_utils',[
 			assign_right_vars/3,
 			merge_implied_summaries/3]).
+
+:- use_module('../utils/crs',[
+	cr_get_loops/3,
+	cr_set_loops/2
+]).
+						
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).		
 :- use_module(stdlib(set_list),[is_subset_sl/2,union_sl/3]).	
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3]).
-:-use_module(library(apply_macros)).
-:-use_module(library(lists)).
+:- use_module(library(apply_macros)).
+:- use_module(library(lists)).
+:- use_module(library(lambda)).
+
+
+
+
+loops_empty(loops(range(1,1),Map)):-
+	empty_lm(Map).
+
+loops_add_loop(loops(range(I,F),Map),Loop,loops(range(I,F2),Map2)):-
+	assertion(Loop=loop(_Head,_Calls,_Inv,_Info)),
+	insert_lm(Map,F,Loop,Map2),
+	F2 is F+1.
+
+
+
 %! compute_loops(Head:term,RefCnt:int) is det
 % compute a loop for each cost equation
-compute_loops(Head,RefCnt):-
-	findall(((Head,Rec_Calls,Term_flag),(Inv,Eq_Id)),(
-		    get_equation(Head,Rec_Calls,RefCnt,Eq_Id,Cs,Term_flag),
-		    term_variables((Head,Rec_Calls),Vs),
-	        nad_project_group(Vs,Cs,Inv)
-	        ),Loops),
-	      
+compute_loops(CR,CR2):-
+	cr_get_ceList_with_id(CR,CE_list_id),
+	maplist(
+		\Eq_pair_l^Res_l^(
+					Eq_pair_l=(Eq_Id,eq_ref(Head,_,_NR_calls,R_calls,_Calls,Cs,Info)),
+				    term_variables((Head,R_calls),Vs),
+	        	    nad_project_group(Vs,Cs,Inv),	
+	        	    Res_l=((Head,R_calls,Info),(Inv,Eq_Id))
+	        	    ),CE_list_id,Loops),
 	%make groups according to number of calls and term_flag       
 	foldl(group_loop_vars,Loops,[],_),
 	maplist(normalize_loop,Loops,Normalized_loops),
@@ -64,8 +87,11 @@ compute_loops(Head,RefCnt):-
 	;
 	maplist(put_in_list,Grouped_loops,Simplified_loops)
 	),	
-	maplist(save_loop(RefCnt),Simplified_loops).
+	loops_empty(Empty_loops),
+	foldl(save_loop,Simplified_loops,Empty_loops,Loops),
+	cr_set_loops(CR,Loops,CR2).
 
+	 
 %unify the variables if the patterns match												
 group_loop_vars(((Head,Rec_Calls,Term_flag),_Info),Groups,Groups):-
 	member((Head,Rec_Calls,Term_flag),Groups),!.
@@ -82,18 +108,17 @@ group_equal_loops(2,(Header,Info),(Header,Info_compressed2)):-
 	term_variables(Header,Vars),
 	merge_implied_summaries(Vars,Info_compressed,Info_compressed2).
 							        	 	 	    
-get_equation(Head,Rec_Calls,RefCnt,Eq_Id,Cs,Term_flag):-
-	 eq_ph(Head,(Eq_Id,RefCnt),_,_,Rec_Calls,_,Cs,Term_flag).
+
 	 
-normalize_loop(((Head,Rec_Calls,Term_flag),(Inv,Eq_id)),((Head,Rec_Calls,Term_flag),(Inv_normalized,Eq_id))):-
+normalize_loop(((Head,Rec_Calls,Info),(Inv,Eq_id)),((Head,Rec_Calls,Info),(Inv_normalized,Eq_id))):-
 	nad_normalize_polyhedron(Inv,Inv_normalized).
 	
-save_loop(RefCnt,((Head,Calls,Term_flag),List_Inv_Eqs)):-
+save_loop(((Head,Calls,Info),List_Inv_Eqs),CR,CR2):-
 	reverse(List_Inv_Eqs,List_Inv_Eqs1),
-	maplist(save_loop_1(RefCnt,Head,Calls,Term_flag),List_Inv_Eqs1).
+	foldl(save_loop_1(Head,Calls,Info),List_Inv_Eqs1,CR,CR2).
 
-save_loop_1(RefCnt,Head,Calls,Term_flag,(Inv,Equations)):-
-	add_loop_ph(Head,RefCnt,Calls,Inv, Equations,Term_flag).
+save_loop_1(Head,Calls,Info,(Inv,Equations),CR,CR2):-
+	loops_add_loop(CR,loop(Head,Calls,Inv,[eqs(Equations)|Info]),CR2).
 	
 put_in_list((Header,List_Inv_Eqs),(Header,List_Inv_Eqs1)):-
 	maplist(put_in_list_1,List_Inv_Eqs,List_Inv_Eqs1).
