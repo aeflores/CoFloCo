@@ -22,14 +22,21 @@ This module reads cost equations and stores them in the database after normalizi
 */
 
 
-:- module(input,[read_cost_equations/1,store_cost_equations/1]).
+:- module(input,[read_cost_equations/2,store_cost_equations/2]).
 :- use_module(output,[print_warning/2]).
-:- use_module('../db',[input_eq/5,
-					entry_eq/2,
+:- use_module('../db',[
 					reset_scc/3,
-					save_input_output_vars/3,
-					cofloco_aux_entry_name/1,
 					add_ground_equation_header/2]).
+					
+:- use_module('../utils/crs',[
+		crs_empty/2,
+		crs_add_eq/3,
+		crs_get_ce_by_id/3,
+		crs_get_cr/3,
+		crs_save_IOvars/3,
+		crse_empty/2,
+		crse_remove_undefined_calls/2]).
+				
 :- use_module('../utils/cofloco_utils',[normalize_constraint/2,zip_with_op2/4]).
 :- use_module('../utils/cost_expressions',[is_linear_exp/1,parse_cost_expression/2]).
 :- use_module('../utils/cost_structures',[cstr_from_cexpr/2]).
@@ -42,123 +49,108 @@ This module reads cost equations and stores them in the database after normalizi
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 :-use_module(library(varnumbers)).
-%! read_cost_equations(+File:filename) is det
-%  read a set of cost equations from a file and call store_cost_equations/1.
-read_cost_equations(File) :-
-	read_crs(File,Eqs),
-	store_cost_equations(Eqs).
+%! read_cost_equations(+File:filename,-CRSE:crse) is det
+%  read a set of cost equations from a file generate a cost relation sytem with entries (crse)
+read_cost_equations(File,CRSE) :-
+	read_crs(File,Terms),
+	store_cost_equations(Terms,CRSE).
 
-%! store_cost_equations(+Eqs:list(cost_equation/(cost_equation,var_binding))) is det
-%  * store the given equations in the database
+%! store_cost_equations(+Terms:list(cost_equation/(cost_equation,var_binding)),-CRSE3:crse) is det
+%  * store the given equations in a crse
 %  * declare the first one as the main entry
 %  * remove the calls to equations that are not defined (and show a warning)	
-store_cost_equations(Eqs):-
-	maplist(add_equation,Eqs),
-	declare_entry,
-	remove_undefined_calls.
+store_cost_equations(Terms,CRSE3):-
+	crse_empty(1,CRSE_empty),
+	foldl(process_initial_crse,Terms,CRSE_empty,CRSE),
+	declare_entry(CRSE,CRSE2),
+	crse_remove_undefined_calls(CRSE2,CRSE3).
 
 %! declare_entry is det
 % If there are entries, the auxiliary entry (cofloco_aux_entry_name) makes a call to each of them
 % otherwise, the first cost equation becomes the entry
-declare_entry:-
-	findall(Entry,
-	   entry_eq(Entry,_)
-	   ,Entries),
-	   Entries=[_|_],!,
-	cofloco_aux_entry_name(Aux_Entry),
-	normalize_input_equation(eq(Aux_Entry,0,Entries,[]),eq(Aux_Entry_Normalized,Expr_Normalized,Calls_Normalized,Cs_Normalized)),
-	asserta(db:input_eq(Aux_Entry_Normalized,0,Expr_Normalized,Calls_Normalized,Cs_Normalized)).
-declare_entry:-
-	input_eq(Call,_,_,_,_),
-	cofloco_aux_entry_name(Aux_Entry),
-	normalize_input_equation(eq(Aux_Entry,0,[Call],[]),eq(Aux_Entry_Normalized,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
-	asserta(db:input_eq(Aux_Entry_Normalized,0,Expr_Normalized,[Call_Normalized],Cs_Normalized)),
-	assertz(db:entry_eq(Call,[])).
+declare_entry(crse(Entries,CRs),crse(Entries,CRs)):-
+	Entries=[_|_],!.
+	
+declare_entry(crse([],CRs),crse([entry(Head,[])],CRs)):-
+	crs_get_ce_by_id(CRs,1,eq(Head,_Cost,_Calls,_Cs)).
 	
 
 
-%! read_crs(+File:filename,-EQs:list(cost_equation/(entry,variable_bindings))) is det
+entry_head(entry(Head,_),Head).
+		
+%! read_crs(+File:filename,-Terms:list(cost_equation/(entry,variable_bindings))) is det
 % read from the file Filename and returns a list of cost equations
 
-read_crs(File,EQs) :-
+read_crs(File,Terms) :-
 	atom(File),
 	!,
 	open(File,read,S),
-	read_crs_from_file(S,EQs),
+	read_crs_from_file(S,Terms),
 	close(S).
 
-read_crs(CRs,_EQs) :-
+read_crs(CRs,_Terms) :-
 	throw(err(unknown_crs_format,read_crs/2,[crs=CRs])).
 
 
-read_crs_from_file(S,EQs) :-
+read_crs_from_file(S,Terms) :-
 	read_term(S,Term,[variable_names(Bindings)]),
 	( 
 	  Term == end_of_file -> 
-	    EQs = []
+	    Terms = []
 	;
-	    EQs = [(Term,Bindings)|EQs_aux],
-	    read_crs_from_file(S,EQs_aux)
+	    Terms = [(Term,Bindings)|Terms_aux],
+	    read_crs_from_file(S,Terms_aux)
 	).
 
 	
 %! add_equation(+Cost_equation:cost_equation) is det
 % @throws failed_to_add_equation 
 % normalize the cost equation and add it to the database
-add_equation((Eq,Var_binding)):-!,
-   get_eq_head(Eq,Header),
+
+process_initial_crse((Term,Var_binding),Accum,Problem):-
+   get_term_head(Term,Header),
    get_ground_term(Header,Var_binding,Ground_header),
    add_ground_equation_header(Header,Ground_header),
-   add_equation(Eq).
+   process_initial_crse(Term,Accum,Problem),!.
 
-	
-add_equation(eq(Name,Vars,Exp,Body_Calls,Size_Rel)) :-!,
+%alternative format 
+process_initial_crse(eq(Name,Vars,Exp,Body_Calls,Size_Rel),Accum,Problem):-!,
      Head=..[Name|Vars],
-     add_equation(eq(Head,Exp,Body_Calls,Size_Rel)).
+     process_initial_crse(eq(Head,Exp,Body_Calls,Size_Rel),Accum,Problem).
      
-
-add_equation(eq(Head,Exp,Body_Calls,Size_Rel)) :-!,
+process_initial_crse(eq(Head,Exp,Body_Calls,Size_Rel),crse(Entries,CRs),crse(Entries,CRs2)):-!,
 	normalize_input_equation(eq(Head,Exp,Body_Calls,Size_Rel), eq(NHead,Cost_structure,NCalls,NSize_Rel)), % Normalize the equation
 	term_variables((NHead,Cost_structure,NCalls),Relevant_Vars),
 	%remove constraints that do not affect anything
 	from_list_sl(Relevant_Vars,Relevant_Vars_set),
 	from_list_sl(NSize_Rel,NSize_Rel_set),
 	slice_relevant_constraints(Relevant_Vars_set,NSize_Rel_set,_,NSize_Rel_filtered),
-	%check the equation doesn't exist yet
-	((input_eq(NHead,_,Cost_structure1,NCalls,NSize_Rel1),
-	  NSize_Rel1==NSize_Rel_filtered,
-	  Cost_structure1==Cost_structure
-	)->
-	 true
-	;
-	counter_increase(input_eqs,1,Id),% get new id
-	assertz(db:input_eq(NHead,Id,Cost_structure,NCalls,NSize_Rel_filtered))
-	),			% add the equation to db
-	!.
+	crs_add_eq(CRs,eq(NHead,Cost_structure,NCalls,NSize_Rel_filtered),CRs2).
 	
-	
-add_equation(entry(Term:Size_Rel)):-!,
-	  normalize_entry(entry(Term:Size_Rel), Entry_Normalized),
-	  assertz(db:Entry_Normalized).
 
-add_equation(reset_scc(Head,Vars,Type)):-!,
+	
+process_initial_crse(entry(Term:Size_Rel),crse(Entries,CRs),crse(Entries2,CRs)):-!,	
+	  normalize_entry(entry(Term:Size_Rel), Entry_normalized),
+	  insert_sl(Entries,Entry_normalized,Entries2).
+	
+process_initial_crse(reset_scc(Head,Vars,Type),Crse,Crse):-!,	
 	  assertz(db:reset_scc(Head,Vars,Type)).	  
 
-add_equation(input_output_vars(Head,IVars,OVars)):-!,
-	  save_input_output_vars(Head,IVars,OVars).
+process_initial_crse(input_output_vars(Head,IVars,OVars),crse(Entries,CRs),crse(Entries,CRs2)):-!,	
+	  crs_save_IOvars(CRs,ioVars(Head,IVars,OVars),CRs2).
 	  
 % throw an exception on failure
-add_equation(Eq) :-
+process_initial_crse(Eq,_Accum,_Problem) :-
 	throw(cofloco_err(failed_to_add_equation,add_equation/1,[eq=Eq])).
 
-%! get_eq_head(+Eq:cost_equation,-Head:term) is det
-% get the head of the different types of input cost equations
-get_eq_head(entry(Head:_),Head).
-get_eq_head(reset_scc(Head,_,_),Head).
-get_eq_head(input_output_vars(Head,_,_),Head).
-get_eq_head(eq(Name,Vars,_Exp,_Body_Calls,_Size_Rel),Head) :-	
+%! get_term_head(+Term:term,-Head:term) is det
+% get the head of the different types of input terms
+get_term_head(entry(Head:_),Head).
+get_term_head(reset_scc(Head,_,_),Head).
+get_term_head(input_output_vars(Head,_,_),Head).
+get_term_head(eq(Name,Vars,_Exp,_Body_Calls,_Size_Rel),Head) :-	
      Head=..[Name|Vars].
-get_eq_head(eq(Head,_Exp,_Body_Calls,_Size_Rel),Head).
+get_term_head(eq(Head,_Exp,_Body_Calls,_Size_Rel),Head).
 
 %! get_ground_term(+Term:term,+Bindings:list(atom=var),-Ground_term:term) is det
 % apply the bindings of Bindings to Term
@@ -221,28 +213,6 @@ subtitute_constants_by_vars(N,_):-
 subtitute_constants_by_vars(X,X).
 
 
-%! remove_undefined_calls is det
-% remove the calls to equations that are not defined (and show a warning)
-remove_undefined_calls :-
-	retract(db:input_eq(Head,Id,Exp,Calls,Cs)),
-	remove_undefined_calls_1(Calls,Head,Calls_1),
-	assertz(db:input_eq(Head,Id,Exp,Calls_1,Cs)),
-	fail.
-remove_undefined_calls.
-
-remove_undefined_calls_1([],_Head,[]).
-remove_undefined_calls_1([C|Cs],Head,Cs_1) :-
-	\+ input_eq(C,_,_,_,_), \+ C=Head,
-	!,
-	functor(C,Cname,C_arity),functor(Head,Headname,Head_arity),
-	print_warning('Warning: Ignored call to ~p in equation ~p ~n',[Cname/C_arity,Headname/Head_arity]),
-	remove_undefined_calls_1(Cs,Head,Cs_1).
-remove_undefined_calls_1([C|Cs],Head,[C|Cs_1]) :-
-	remove_undefined_calls_1(Cs,Head,Cs_1).
-	
-	
-	
-	
 normalize_input_equation(EQ,EQ_Normalized) :-
     EQ = eq(Head,Cost_Expr,Body,Cs),
 	normalize_atoms([Head|Body],[],[Head_Normalized|Body_Normalized],Cs_aux-Cs),
@@ -264,7 +234,9 @@ normalize_input_equation(EQ,EQ_Normalized) :-
 normalize_entry(entry(Call:Cs), Entry_Normalized) :-
 	normalize_atom(Call,[],Call_Normalized,_,Cs_aux-Cs),
     maplist(transform_strict_inequality,Cs_aux,Cs_aux2),
-	Entry_Normalized = entry_eq(Call_Normalized,Cs_aux2).
+    maplist(normalize_constraint,Cs_aux2,Cs_aux_Normalized),
+    nad_normalize_polyhedron(Cs_aux_Normalized,Cs_aux_Normalized1),
+	Entry_Normalized = entry(Call_Normalized,Cs_aux_Normalized1).
 
 transform_strict_inequality(A > B,A >= B+1):-!.
 transform_strict_inequality(A < B,A+1 =< B):-!.

@@ -89,13 +89,9 @@ The main "data types" used in CoFloCo are the following:
 :-include('search_paths.pl').
 
 
-:- use_module(db,[entry_eq/2,init_db/0,init_timers/0]).
-:- use_module('pre_processing/SCCs',[compute_sccs_and_btcs/0,
-				ignored_scc/1,
-				crs_residual_scc/2,
-				crs_max_scc_id/1,  
-				crs_node_scc/3]).
-:- use_module('pre_processing/partial_evaluation',[partial_evaluation/0]).
+:- use_module(db,[init_db/0,init_timers/0]).
+:- use_module('pre_processing/SCCs',[compute_sccs_and_btcs/3,scc_get_cover_points/2]).
+:- use_module('pre_processing/partial_evaluation',[partial_evaluation/4]).
 
 :- use_module('refinement/invariants',[compute_invariants_for_scc/2,
 			  compute_forward_invariants/2,
@@ -111,7 +107,7 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('refinement/loops',[compute_loops/2,compute_phase_loops/2]).
 
 
-:- use_module(ranking_functions,[init_ranking_functions/0,find_ranking_functions/2]).
+:- use_module(ranking_functions,[init_ranking_functions/0,find_ranking_functions/3]).
 :- use_module(termination_checker,[init_termination/0,prove_termination/2]).
 
 :- use_module('bound_computation/bounds_main',[compute_bound_for_scc/3,
@@ -128,8 +124,8 @@ The main "data types" used in CoFloCo are the following:
 			  print_header/3,
 			  print_or_log/2,
 			  print_results/2,
-			  print_sccs/0,
-			  print_partially_evaluated_sccs/0,
+			  print_sccs/1,
+			  print_partially_evaluated_sccs/1,
 	          print_equations_refinement/2,
 	          print_loops_refinement/2,
 	          print_external_pattern_refinement/2,
@@ -144,12 +140,15 @@ The main "data types" used in CoFloCo are the following:
 		      print_stats/0,
 		      print_log/0,
 		      print_help/0]).
-:- use_module('IO/input',[read_cost_equations/1,store_cost_equations/1]).
+:- use_module('IO/input',[read_cost_equations/2,store_cost_equations/2]).
 :-use_module('IO/params',[set_default_params/0,set_competition_params/0,parse_params/1,get_param/2]).
 :-use_module('utils/cost_structures',[init_cost_structures/0]).
+
+:-use_module('utils/crs',[crs_IOvars/3]).
+
 :-use_module('utils/cofloco_utils',[tuple/3]).
 
-
+:- use_module(stdlib(set_list),[contains_sl/2]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_set_domain/1]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
@@ -158,6 +157,7 @@ The main "data types" used in CoFloCo are the following:
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
+:-use_module(library(lambda)).
 
 %! cofloco_shell_main is det
 % main predicate to be called form the console.  
@@ -192,8 +192,8 @@ cofloco_bin_main:-
 % perform the main analysis on the equations Eqs with the parameters Params
 cofloco_query(Eqs,Params):-
 	cofloco_query_part1(Params),
-	store_cost_equations(Eqs),
-	cofloco_query_part2.
+	store_cost_equations(Eqs,CRSE),
+	cofloco_query_part2(CRSE).
 
 	
 %! cofloco_query(+Params:list(atom)) is det
@@ -202,12 +202,12 @@ cofloco_query(Eqs,Params):-
 cofloco_query(Params):-
 	cofloco_query_part1(Params),
 	(get_param(input,[File])->
-		(read_cost_equations(File)->
+		(read_cost_equations(File,CRSE)->
 			true
 			;
 			throw(error('Failed to parse input file'))
 		),	
-		cofloco_query_part2
+		cofloco_query_part2(CRSE)
 	;
 		(get_param(help,[])->
 		   print_help
@@ -224,26 +224,27 @@ cofloco_query_part1(Params):-
 	init_database,
 	profiling_start_timer(analysis).
 
-cofloco_query_part2:-
+cofloco_query_part2(CRSE):-
 	get_param(incremental,[]),!,
 	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
-	preprocess_cost_equations,
+	preprocess_cost_equations(CRSE,SCCs,Ignored_crs,CRSE2),
 	conditional_call((get_param(v,[N]),N>0),print_header('Incremental solution of Cost Relations~n',[],1)),
-	incremental_refinement_upper_bounds,
+	incremental_refinement_bounds(CRSE2,SCCs,Ignored_crs),
 	profiling_stop_timer(analysis,_T_analysis),
 	print_stats,
 	print_log.
 
-cofloco_query_part2:-
+cofloco_query_part2(CRSE):-
 	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
-	preprocess_cost_equations,
+	preprocess_cost_equations(CRSE,SCCs,Ignored_crs,CRSE2),
 	conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
-	refinement,
+	trace,
+	refinement(CRSE2,SCCs,Ignored_crs,CRSE3),
 	(get_param(only_termination,[])->
 			true
 			;
 			conditional_call((get_param(v,[N]),N>0),print_header('Computing Bounds~n',[],1)),
-			upper_bounds,
+			bounds(CRSE3,SCCs,Ignored_crs),
 			profiling_stop_timer(analysis,_T_analysis),
 			print_stats
 	),
@@ -265,85 +266,74 @@ init_database:-
 %! preprocess_cost_equations is det
 % Computes the SCC (strongly connected components)
 % Performs partial evaluation to obtain direct recursion
-preprocess_cost_equations:-
+preprocess_cost_equations(CRSE,SCCs,Ignored_CRS,CRSE3):-
 	profiling_start_timer(comp_sccs),
-	compute_sccs_and_btcs,
-	print_sccs,
+	compute_sccs_and_btcs(CRSE,SCCs,CRSE2),
+	print_sccs(SCCs),
 	profiling_stop_timer(comp_sccs,_),
 	profiling_start_timer(pe),
-	partial_evaluation,
-	print_partially_evaluated_sccs,
+	partial_evaluation(CRSE2,SCCs,Ignored_CRS,CRSE3),
+	print_partially_evaluated_sccs(SCCs),
 	profiling_stop_timer(pe,_).
 
 %! refinement is det
 % perform the top_down analysis followed
 % by the bottom_up analysis
-refinement:-
-	findall(SCC_N,
-	  (
-	  entry_eq(Head,Cs),
-      add_scc_forward_invariant(Head,0,Cs),
-      functor(Head,F,A),
-      crs_node_scc(F,A,SCC_N)
-      ),SCC_Ns),
-    max_list(SCC_Ns,SCC_max),
-	top_down_refinement(SCC_max),
-	bottom_up_refinement(0,SCC_max),
+refinement(CRSE,SCCs,Ignored_crs,CRSE2):-
+	CRSE=crse(Entries,CRS),
+	foldl(\Entry^CRS_l^CRS2_l^
+	 		(
+	 		Entry=entry(Head,Cs),
+	 		crs_add_cr_forward_invariant(CRS_l,Head,Cs,CRS2_l)
+	 		),Entries,CRS,CRS2),
+	reverse(SCCs,SCCs_rev),
+	top_down_refinement(SCCs_rev,CRS2,Ignored_crs,CRS3),
+	bottom_up_refinement(SCCs,CRS3,Ignored_crs,CRS4),
+	CRSE2=crse(Entries,CRS4),
 	warn_if_no_chains(2).
 
 
 %! top_down_refinement(+SCC_N:int) is det
 % Start from the outmost SCC and goes down until the innermost
 % For each SCC, it calls top_down_refinement_scc/1
-top_down_refinement(SCC_N) :-
-	SCC_N >= 0,
-	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
-	functor(Head,F,A),
-	top_down_refinement_scc(Head),
-	Next_SCC_N is SCC_N-1,
-	top_down_refinement(Next_SCC_N).
-top_down_refinement(SCC_N):-
-	SCC_N >= 0,
-	(\+crs_residual_scc(SCC_N,_) 
-	;
-	(crs_residual_scc(SCC_N,F/A),ignored_scc(F/A))
-	),!,
-	Next_SCC_N is SCC_N-1,
-	top_down_refinement(Next_SCC_N).
-top_down_refinement(-1).
+
+top_down_refinement([],CRS,_Ignored_crs,CRS).
+top_down_refinement([SCC|SCCs],CRS,Ignored_crs,CRS_out):-
+	scc_get_cover_points(SCC,[F/A]),\+contains_sl(Ignored_crs,F/A),!,
+	crs_get_cr(CRS,F,CR),
+	top_down_refinement_scc(CR,CR2),
+	crs_update_cr(CRS,F,CR2,CRS2),
+	top_down_refinement(SCCs,CRS2,Ignored_crs,CRS_out).
+top_down_refinement([_SCC|SCCs],CRS,Ignored_crs,CRS_out):-
+	top_down_refinement(SCCs,CRS,Ignored_crs,CRS_out).
+
 
 %! bottom_up_refinement(+SCC_N:int,+Max_SCC_N:int) is det
 % Start from the innermost SCC and goes up until the outmost SCC
 % For each SCC, it calls bottom_up_refinement_scc/1
-bottom_up_refinement(SCC_N, Max_SCC_N) :-
-	SCC_N =< Max_SCC_N,
-	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
-	functor(Head,F,A),
-	bottom_up_refinement_scc(Head),
-	Next_SCC_N is SCC_N+1,
-	bottom_up_refinement(Next_SCC_N, Max_SCC_N).
-bottom_up_refinement(SCC_N, Max_SCC_N) :-
-	SCC_N =< Max_SCC_N,
-	(\+crs_residual_scc(SCC_N,_) 
-	;
-	(crs_residual_scc(SCC_N,F/A),ignored_scc(F/A))
-	),!,
-	Next_SCC_N is SCC_N+1,
-	bottom_up_refinement(Next_SCC_N, Max_SCC_N).
-bottom_up_refinement(SCC_N, SCC_N_max):-SCC_N > SCC_N_max.
+bottom_up_refinement([],CRS,_Ignored_crs,CRS).
+bottom_up_refinement([SCC|SCCs],CRS,Ignored_crs,CRS_out):-
+	scc_get_cover_points(SCC,[F/A]),\+contains_sl(Ignored_crs,F/A),!,
+	crs_get_cr(CRS,F,CR),
+	bottom_up_refinement_scc(CR,CRS,CR2),
+	crs_update_cr(CRS,F,CR2,CRS2),
+	bottom_up_refinement(SCCs,CRS2,Ignored_crs,CRS_out).
+bottom_up_refinement([_SCC|SCCs],CRS,Ignored_crs,CRS_out):-
+	bottom_up_refinement(SCCs,CRS,Ignored_crs,CRS_out).
+
 
 %! top_down_refinement_scc(+Head:term) is det
 % Computes chains for a SCC defined by Head
 % Computes forward invariants for the generated chains and add the invariants
 % to the cost equations
-top_down_refinement_scc(Head):-
+top_down_refinement_scc(CR,CR6):-
 	profiling_start_timer(unfold),
-	compute_loops(Head,0),
-	compute_chains(Head,0),!,
-	compute_phase_loops(Head,0),
+	compute_loops(CR,CR2),
+	compute_chains(CR2,CR3),!,
+	compute_phase_loops(CR3,CR4),
 	profiling_stop_timer_acum(unfold,_),
-	compute_forward_invariants(Head,0),
-	reinforce_equations_with_forward_invs(Head,0).
+	compute_forward_invariants(CR4,CR5),
+	reinforce_equations_with_forward_invs(CR5,CR6).
 
 %! bottom_up_refinement_scc(+Head:term) is det
 %  *  Unfold the SCC defined by Head according to its calls to other SCC 
@@ -352,24 +342,27 @@ top_down_refinement_scc(Head):-
 %  *  Find ranking functions and prove termination of the chains
 %  *  Remove impossible chains
 %  *  Compute forward and backwards invariants
-bottom_up_refinement_scc(Head) :-
+bottom_up_refinement_scc(CR,CRS,CR6) :-
 	copy_term(Head,Head_aux),
-	profiling_start_timer(unfold),
-	unfold_calls(Head,1),
-	print_equations_refinement(Head_aux,1), 
-	compute_loops(Head,2),
-	print_loops_refinement(Head_aux,2),
+	functor(Head,Name,_),
+	cr_IOvars(CR,Name,IOvars),
 	
-	compute_chains(Head,2),
-	compute_phase_loops(Head,2),
+	profiling_start_timer(unfold),
+	unfold_calls(CR,CRS,CR2,Ref_info),
+	print_equations_refinement(CR2,Ref_info), 
+	compute_loops(CR2,CR3),
+	print_loops_refinement(CR3),
+	
+	compute_chains(CR3,CR4),
+	compute_phase_loops(CR4,CR5),
 	profiling_stop_timer_acum(unfold,_),
 
 	profiling_start_timer(inv),
-	compute_forward_invariants(Head,2),	
+	compute_forward_invariants(CR5,CR6),	
 	profiling_stop_timer_acum(inv,_),
 	
 	profiling_start_timer(termination),
-	find_ranking_functions(Head,2),
+	find_ranking_functions(Head,IOvars,2),
 	print_ranking_functions(Head),
 	
 	prove_termination(Head,2),
@@ -392,45 +385,33 @@ bottom_up_refinement_scc(Head) :-
 	
 %! upper_bounds is det
 % compute upper bounds for all SCC and a closed upper bounds for the entry SCC
-upper_bounds:-
-	findall((SCC_N,Head),
-	  (
-	  entry_eq(Head,_),
-
-      functor(Head,F,A),
-      crs_node_scc(F,A,SCC_N)
-      ),SCC_Head_Ns),
-    maplist(tuple,SCC_Ns,SCC_Heads,SCC_Head_Ns),
-    max_list(SCC_Ns,SCC_max),
+bounds(CRSE,SCCs,Ignored_crs):-
     profiling_start_timer(ubs),
-    bottom_up_upper_bounds(0,SCC_max), 
-    maplist(compute_closed_bound_scc,SCC_Heads),
+    bottom_up_bounds(SCCs,CRSE,Ignored_crs), 
+    CRSE=crse(Entries,_CRS),
+    maplist(\Entry^(Entry=entry(Head,_Cs),compute_closed_bound_scc(Head)),Entries),
     profiling_stop_timer_acum(ubs,_).
-    
+   
 %! bottom_up_upper_bounds(+SCC_N:int,+Max_SCC_N:int) is det
 % Start from the innermost SCC and goes up until the outmost SCC
 % For each SCC, it computes the upper bound
-bottom_up_upper_bounds(SCC_N, Max_SCC_N) :-
-	SCC_N =< Max_SCC_N,
-	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
+bottom_up_bounds([],_CRSE,_Ignored_crs).
+
+bottom_up_bounds([SCC|SCCs],CRSE,Ignored_crs):-
+	scc_get_cover_points(SCC,[F/A]),\+contains_sl(Ignored_crs,F/A),!,
 	functor(Head,F,A),
-	Next_SCC_N is SCC_N+1,
-	(SCC_N = Max_SCC_N-> Last=true;Last=false),
-	compute_bound_for_scc(Head,2,Last),
+	(SCCs=[]-> Last=true;Last=false),
+	CRSE=crs(_Entries,CRS),
+	crs_IOvars(CRS,F,IOvars),
+	compute_bound_for_scc(Head,IOvars,2,Last),
 	copy_term(Head,Head_aux),
 	conditional_call((get_param(v,[N]),N>1),
 		  print_results(Head_aux,2)
 		 ),
-	bottom_up_upper_bounds(Next_SCC_N, Max_SCC_N).
-bottom_up_upper_bounds(SCC_N, Max_SCC_N) :-
-	SCC_N =< Max_SCC_N,
-	(\+crs_residual_scc(SCC_N,_) 
-	;
-	(crs_residual_scc(SCC_N,F/A),ignored_scc(F/A))
-	),
-	Next_SCC_N is SCC_N+1,
-	bottom_up_upper_bounds(Next_SCC_N, Max_SCC_N).
-bottom_up_upper_bounds(SCC_N, SCC_N_max):-SCC_N > SCC_N_max.   
+	bottom_up_bounds(SCCs,CRSE,Ignored_crs).
+
+bottom_up_bounds([_SCC|SCCs],CRSE,Ignored_crs):-
+	bottom_up_bounds(SCCs,CRSE,Ignored_crs).
 
 
 
@@ -455,46 +436,39 @@ compute_closed_bound_scc(Head) :-
 	).
 	
 % compute the refinement and upper bound one cost relation (SCC) at a time
-incremental_refinement_upper_bounds:-
-	findall(SCC_N,
-	  (
-	  entry_eq(Head,Cs),
-      add_scc_forward_invariant(Head,0,Cs),
-      functor(Head,F,A),
-      crs_node_scc(F,A,SCC_N)
-      ),SCC_Ns),
-    max_list(SCC_Ns,SCC_max),
-	top_down_refinement(SCC_max),
-	bottom_up_refinement_bounds(0,SCC_max).
+incremental_refinement_bounds(CRSE,SCCs,Ignored_crs):-
+	CRSE=crse(Entries,_CRS),
+	maplist(\Entry^(Entry=entry(Head,Cs),add_scc_forward_invariant(Head,0,Cs)),Entries),
+	reverse(SCCs,SCCs_rev),
+	top_down_refinement(SCCs_rev,CRSE,Ignored_crs,CRSE2),	
+	bottom_up_refinement_bounds(SCCs,CRSE2,Ignored_crs).
+	
+	
+bottom_up_refinement_bounds([],_CRSE,_Ignored_crs).
 
-bottom_up_refinement_bounds(SCC_N, Max_SCC_N) :-
-	SCC_N =< Max_SCC_N,
-	crs_residual_scc(SCC_N,F/A),\+ignored_scc(F/A),!,
+bottom_up_refinement_bounds([SCC|SCCs],CRSE,Ignored_crs):-
+	scc_get_cover_points(SCC,[F/A]),\+contains_sl(Ignored_crs,F/A),!,
 	functor(Head,F,A),
 	bottom_up_refinement_scc(Head),
-	(SCC_N = Max_SCC_N-> Last=true;Last=false),
-	compute_bound_for_scc(Head,2,Last),
+	(SCCs=[]-> Last=true;Last=false),
+	CRSE=crs(_Entries,CRS),
+	crs_IOvars(CRS,F,IOvars),
+	compute_bound_for_scc(Head,IOvars,2,Last),
 	copy_term(Head,Head_aux),
 	conditional_call((get_param(v,[N]),N>1),
 		  print_results(Head_aux,2)
 		 ),
-	(entry_eq(Head,_)->
+	CRSE=crse(Entries,_CRS),
+	(member(entry(Head,_),Entries) ->
 		compute_closed_bound_scc(Head)
 		;
 		true
 	),  
-	Next_SCC_N is SCC_N+1,
-	bottom_up_refinement_bounds(Next_SCC_N, Max_SCC_N).
-bottom_up_refinement_bounds(SCC_N, Max_SCC_N) :-
-	SCC_N =< Max_SCC_N,
-	(\+crs_residual_scc(SCC_N,_) 
-	;
-	(crs_residual_scc(SCC_N,F/A),ignored_scc(F/A))
-	),!,
-	Next_SCC_N is SCC_N+1,
-	bottom_up_refinement_bounds(Next_SCC_N, Max_SCC_N).
-bottom_up_refinement_bounds(SCC_N, SCC_N_max):-SCC_N > SCC_N_max.	
+	bottom_up_refinement_bounds(SCCs,CRSE,Ignored_crs).
 
+bottom_up_refinement_bounds([_SCC|SCCs],CRSE,Ignored_crs):-
+	bottom_up_refinement_bounds(SCCs,CRSE,Ignored_crs).
+	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %auxiliary predicates
