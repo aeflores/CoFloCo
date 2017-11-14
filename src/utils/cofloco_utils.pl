@@ -26,7 +26,9 @@ of CoFloCo.
 :- module(cofloco_utils,[
 			zip_with_op/3,
 		    zip_with_op2/4,
+		    zip_with_op3/5,
 		    tuple/3,
+		    triple/4,
 		    sorted_tuple/3,
 		    same_var_tuple/1,
 		    is_rational/1,
@@ -152,6 +154,8 @@ repeat_n_times(N,Elem,[Elem|Is]):-
 % It can be used in any direction.
 tuple(A,B,(A,B)).
 
+triple(A,B,C,(A,B,C)).
+
 sorted_tuple(X,Y,(X,Y)):-X @< Y,!.
 sorted_tuple(X,Y,(Y,X)):-!.
 
@@ -169,6 +173,9 @@ zip_with_op(Op,C,Term):-
 % It can be used in any direction.
 zip_with_op2(Op,C,L,Term):-
 	Term=..[Op,C,L].
+	
+zip_with_op3(Op,A,B,C,Term):-
+	Term=..[Op,A,B,C].
 
 %! assign_right_vars(+Xs:list((A,B)),+Right_vars:A,-Right_Xs:list(B)) is det
 % Unify the first component of all the elements of Xs with Right_vars
@@ -189,7 +196,7 @@ bagof_no_fail(_,_,[]).
 
 %! foldr(+Pred:predicate(A,B,A),+List:list(B), +Initial:A, -Result:A) is nondet
 % Implements foldr/4 (with one list)
-foldr(_Pred,[], Base, Base). 	
+foldr(_Pred,[], Base, Base):-!.	
 foldr(Pred,[X|Xs], Base, T):-
     call(Pred,Base,X,Base1),
 	foldr(Pred,Xs,Base1,T).

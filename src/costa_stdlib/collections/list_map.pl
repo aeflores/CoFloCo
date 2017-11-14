@@ -37,7 +37,9 @@
     zip_lm/3,
     open_cursor_lm/4,
     close_cursor_lm/3, 
-    product_lm/3
+    product_lm/3,
+    map_values_lm/3,
+    check_values_lm/2
 ]).
 
 /** <module> A Map (or table) of Keys to Values, which is a finite injective 
@@ -375,4 +377,22 @@ close_cursor_lm(
 close_cursor_lm( Cursor, MRec, LMap) :- close_cursor_x( MRec, Cursor, LMap ).
 close_cursor_x( [], (LMap, Succ , Succ), LMap ).
 close_cursor_x( [Rec], (LMap, [Rec|Succ], Succ), LMap ).
+
+
+:-meta_predicate check_values_lm(1,+).
+
+check_values_lm(Pred,Map):-
+	maplist(apply_to_second(Pred),Map).
+
+:-meta_predicate map_values_lm(1,+,-).
+map_values_lm(Pred,Map,Map2):-
+	maplist(apply_to_second(Pred),Map,Map2).
+
+check_second(Pred,(_Key,Elem)):-
+	call(Pred,Elem).
+	
+apply_to_second(Pred,(Key,Elem),(Key,Elem2)):-
+	call(Pred,Elem,Elem2).
+	
+	
 
