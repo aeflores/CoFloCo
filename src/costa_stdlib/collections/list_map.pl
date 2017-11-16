@@ -382,7 +382,7 @@ close_cursor_x( [Rec], (LMap, [Rec|Succ], Succ), LMap ).
 :-meta_predicate check_values_lm(1,+).
 
 check_values_lm(Pred,Map):-
-	maplist(apply_to_second(Pred),Map).
+	maplist(check_second(Pred),Map).
 
 :-meta_predicate map_values_lm(1,+,-).
 map_values_lm(Pred,Map,Map2):-
