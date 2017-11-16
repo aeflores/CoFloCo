@@ -42,7 +42,9 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 :- use_module('../utils/crs',[
 	crs_get_graph/2,
 	crs_get_ce_by_name/3,
-	entry_name/2
+	entry_name/2,
+	crse_merge_crs/4,
+	crs_IOvars_arities/3
 ]).	
 
 
@@ -52,11 +54,15 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
+:-use_module(library(lambda)).
+
+%sccs have the following format
+%scc(Rec_flag,Nodes,Sub_Graph,Entries,Info)
+% Rec_flag can be 'non_recursive' or 'recursive'
+% where Info is a list that can contain: cover_points(list(names)), 'multiple' and 'non_tail'
 
 %! compute_sccs_and_btcs
 % compute strongly connected components and BTCs (a cover point for each SCC)
-%
-% @throws error(irreducible_multual_recursion(SCC_graph))
 compute_sccs_and_btcs(CRSE,SCCs_list4,CRSE2):-
 	CRSE=crse(Entries,CRS),
 	compute_crs_sccs(Entries,CRS,SCCs_list),
@@ -76,12 +82,8 @@ scc_get_cover_points(scc(_,_,_,_,_),[]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! compute_crs_sccs is det
+%! compute_crs_sccs(Entries,CRS,SCCs) is det
 %compute strongly connected components.
-%
-
-
-
 %first create the call graph, then compute the sccs and store them
 compute_crs_sccs(Entries,CRS,SCCs1):-
 	maplist(entry_name,Entries,Entry_names),
@@ -90,7 +92,7 @@ compute_crs_sccs(Entries,CRS,SCCs1):-
 	append(Aux_edges,Edges,Edges1),
 	compute_sccs(Edges1,SCCs_basic),
 	maplist(compute_enriched_scc(call_graph(Edges1)),SCCs_basic,SCCs),
-	select(scc(non_recursive,['$cofloco_aux_entry$'],_,_,_),SCCs,SCCs1).
+	once(select(scc(non_recursive,['$cofloco_aux_entry$'],_,_,_),SCCs,SCCs1)).
 
 
 compute_enriched_scc(Graph,(Type,Nodes),scc(Type,Nodes,Sub_Graph,Entries,[])):-
@@ -263,27 +265,24 @@ merge_multiple_cover_points([SCC|SCCs],N,CRSE,[SCC1|SCCs1],CRSE_out):-
 scc_merge_multiple_cover_points(SCC,SCC_N,CRSE,SCC1,CRSE1):-
 	SCC=scc(_Type,_Nodes,_Sub_Graph,_,Info),
 	%update the scc
-	select(Info,cover_points(Cover_points),Info1),
-	CRSE=crse(_,CRS),
-	generate_merged_name_arity(Cover_points,CRS,New_name,Max_arity_input,Max_arity_output),
-	Max_arity is Max_arity_input+Max_arity_output,
+	once(select(cover_points(Cover_points),Info,Info1)),
+	generate_merged_name(Cover_points,New_name),
+	maplist(\NameA^Name^(NameA=Name/_),Cover_points,Cover_point_names),
+	crse_merge_crs(New_name,Cover_point_names,CRSE,CRSE1),
+	CRSE1=crse(_,CRS_new),
+	crs_IOvars_arities(CRS_new,New_name,New_name/AI/AO),
+	Max_arity is AI+AO,
+	
 	Info2=[cover_points([New_name/Max_arity])|Info1],
 	update_scc(SCC,Info2,New_name/Max_arity,Cover_points,SCC1),
 
-	%update the crse
-	crse_merge_crs(New_name/Max_arity_input/Max_arity_output,Cover_points,CRSE,CRSE1),
 	print_merging_cover_points(SCC_N,Cover_points,New_name/Max_arity).
 	
 	
 	
-generate_merged_name_arity([Last/_Arity],CRS,Last,Iarity,Oarity):-!,
-	crs_IOvars_arities(CRS,Last,Iarity,Oarity).
-
-generate_merged_name_arity([Name1/_|Cover_points],CRS,Merged_name,Iarity_max,Oarity_max):-
-	crs_IOvars_arities(CRS,Name1,Iarity1,Oarity1),
-	generate_merged_name_arity(Cover_points,CRS,Name2,Iarity2,Oarity2),
-	Iarity_max is max(Iarity1,Iarity2),
-	Oarity_max is max(Oarity1,Oarity2),
+generate_merged_name([Last/_Arity],Last):-!.
+generate_merged_name([Name1/_|Cover_points],Merged_name):-
+	generate_merged_name(Cover_points,Name2),
 	atom_concat(Name1,Name2,Merged_name).
 
 
