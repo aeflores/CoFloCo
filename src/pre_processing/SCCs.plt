@@ -6,10 +6,11 @@
 :-include('../search_paths.pl').
 :-use_module('SCCs').
 :-use_module('../utils/crs').
+:-use_module('../utils/crs.plt',[create_crse/2]).
 :-use_module(library(lambda)).
 
 
-crs1([
+crs_test:crse_example(scc1,[
 	eq(a(A),cost([],[],[],[],1),[],[ A=0 ]),
 	eq(a(A),cost([],[],[],[],1),[a2(A),b(A)],[A>=1 ]),
 	eq(a2(A),cost([],[],[],[],1),[a(A)],[A>=1 ]),
@@ -27,17 +28,32 @@ crs1([
 	eq(d(A),cost([],[],[],[],1),[e(A)],[]),
 
 	eq(e(A),cost([],[],[],[],1),[],[])
-	]).	
+	],[entry(a(_),[])]).	
+
+crs_test:crse_example(scc2,[
+	eq(a(A),cost([],[],[],[],1),[a(A)],[]),
+	eq(a(A),cost([],[],[],[],1),[b(A)],[]),
+	eq(b(A),cost([],[],[],[],1),[a(A)],[]),
+	eq(b(A),cost([],[],[],[],1),[b(A)],[])
+	],[entry(a(_),[])]).
+
+
+crs_test:crse_example(scc3,[
+	eq(e(A),cost([],[],[],[],1),[a(A)],[]),
+	eq(e(A),cost([],[],[],[],1),[b(A)],[]),
 	
-create_crse1(CRSE):-
-	crse_empty(1,CRSE_empty),
-	CRSE_empty=crse([],CRS_empty),
-	crs1(Eqs),
-	foldl(\Eq_l^CRS_l^CRS2_l^crs_add_eq(CRS_l,Eq_l,CRS2_l),Eqs,CRS_empty,CRS),
-	CRSE=crse([entry(a(_),[])],CRS).	
+	eq(a(A),cost([],[],[],[],1),[a(A)],[]),
+	eq(a(A),cost([],[],[],[],1),[b(A)],[]),
+	eq(b(A),cost([],[],[],[],1),[a(A)],[]),
+	eq(b(A),cost([],[],[],[],1),[b(A)],[])
+	],[entry(e(_),[])]).
+	
+
+	
+	
 	
 test(compute_sccs_properties):-
-	create_crse1(CRSE),
+	create_crse(scc1,CRSE),
 	compute_sccs_and_btcs(CRSE,SCCs,CRSE2),
 	assertion(CRSE2==CRSE),
 	assertion(SCCs=[
@@ -48,27 +64,19 @@ test(compute_sccs_properties):-
 	scc(recursive,[a/1,a2/1],[a/1-a2/1,a2/1-a/1],[a/1],[cover_points([a/1]),non_tail])
 	]).
 
-
-crs2([
-	eq(a(A),cost([],[],[],[],1),[a(A)],[]),
-	eq(a(A),cost([],[],[],[],1),[b(A)],[]),
-	eq(b(A),cost([],[],[],[],1),[a(A)],[]),
-	eq(b(A),cost([],[],[],[],1),[b(A)],[])
-	]).
-
-create_crse2(CRSE):-
-	crse_empty(1,CRSE_empty),
-	CRSE_empty=crse([],CRS_empty),
-	crs2(Eqs),
-	foldl(\Eq_l^CRS_l^CRS2_l^crs_add_eq(CRS_l,Eq_l,CRS2_l),Eqs,CRS_empty,CRS),
-	CRSE=crse([entry(a(_),[])],CRS).
-		
 test(compute_sccs_merge):-
-	create_crse2(CRSE),
+	create_crse(scc2,CRSE),
 	compute_sccs_and_btcs(CRSE,SCCs,CRSE2),
 	CRSE2=crse(_,CRS),
 	assertion(crs_get_names(CRS,[ba/1])),
 	assertion(SCCs=[scc(recursive,[ba/1],[ba/1-ba/1],[ba/1],[cover_points([ba/1])])]).
+	
+test(compute_sccs_merge_multiple_entries):-
+	create_crse(scc3,CRSE),
+	compute_sccs_and_btcs(CRSE,SCCs,CRSE2),
+	CRSE2=crse(_,CRS),
+	assertion(crs_get_names(CRS,[ab/1,e/1])),
+	assertion(SCCs=[scc(recursive,[ab/1],[ab/1-ab/1],[ab/1],[cover_points([ab/1])]),scc(non_recursive,[e/1],[],[e/1],[cover_points([e/1])])]).
 	
 % multiple entries and irreducible
 

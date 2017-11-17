@@ -33,7 +33,8 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 :- module('SCCs',[
     compute_sccs_and_btcs/3,
     scc_get_internal_callers/3,
-    scc_get_cover_points/2
+    scc_get_cover_points/2,
+    scc_update_unfold/4
 ]).
 
 :- use_module('../IO/output',[print_merging_cover_points/3]).		
@@ -63,6 +64,7 @@ E.Albert, P.Arenas, S.Genaim, G.Puebla, and D.Zanardini
 
 %! compute_sccs_and_btcs
 % compute strongly connected components and BTCs (a cover point for each SCC)
+%it requires that the CRSE has at least one entry
 compute_sccs_and_btcs(CRSE,SCCs_list4,CRSE2):-
 	CRSE=crse(Entries,CRS),
 	compute_crs_sccs(Entries,CRS,SCCs_list),
@@ -72,14 +74,21 @@ compute_sccs_and_btcs(CRSE,SCCs_list4,CRSE2):-
 	merge_multiple_cover_points(SCCs_list3,N,CRSE,SCCs_list4,CRSE2).
 
 
-scc_get_internal_callers(scc(_,_,Sub_Graph,_,_),F/A,Callers):-
+scc_get_internal_callers(scc(_,_,Sub_Graph,_,_),Called,Callers):-
 	setof(Caller,
-		A2^member(Caller/A2-F/A,Sub_Graph)
+		member(Caller-Called,Sub_Graph)
 		,Callers).
 scc_get_cover_points(scc(_,_,_,_,Info),Cover_points):-
 	member(cover_points(Cover_points),Info),!.
 scc_get_cover_points(scc(_,_,_,_,_),[]).
 
+scc_update_unfold(scc(Rec,Nodes,Sub_Graph,Entries,Info),Caller,Called,scc(Rec,Nodes1,Sub_Graph2,Entries,Info)):-
+	exclude(\Node^(Node=(Caller-Called)),Sub_Graph,Sub_Graph1),
+	maplist(replace_caller(Called,Caller),Sub_Graph1,Sub_Graph2),
+	exclude(\Node2^(Node2=Called),Nodes,Nodes1).
+
+replace_caller(A,B,A-C,B-C):-!.
+replace_caller(A,_,D-C,D-C):-D\=A.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! compute_crs_sccs(Entries,CRS,SCCs) is det
