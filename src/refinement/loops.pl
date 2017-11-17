@@ -29,7 +29,11 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
     You should have received a copy of the GNU General Public License
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
-:- module(loops,[compute_loops/2,compute_phase_loops/2,split_multiple_loops/2,get_extended_phase/2]).
+:- module(loops,[
+		compute_loops/3,
+		compute_phase_loops/2,
+		split_multiple_loops/2,
+		get_extended_phase/2]).
 
 :- use_module('../db',[add_phase_loop/5]).
 :- use_module(chains,[phase/3]).
@@ -42,18 +46,24 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 			merge_implied_summaries/3]).
 
 :- use_module('../utils/crs',[
-	cr_get_loops/3,
-	cr_set_loops/2
+	cr_get_loops/2,
+	cr_set_loops/3,
+	cr_get_ceList_with_id/2
 ]).
 						
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).		
+:- use_module(stdlib(list_map)).	
 :- use_module(stdlib(set_list),[is_subset_sl/2,union_sl/3]).	
 :- use_module(stdlib(numeric_abstract_domains),[nad_entails/3]).
 :- use_module(library(apply_macros)).
 :- use_module(library(lists)).
 :- use_module(library(lambda)).
 
-
+loop_is_multiple(loop(_,Calls,_,_)):-
+	Calls=[_,_|_].
+	
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
 
 loops_empty(loops(range(1,1),Map)):-
@@ -64,11 +74,14 @@ loops_add_loop(loops(range(I,F),Map),Loop,loops(range(I,F2),Map2)):-
 	insert_lm(Map,F,Loop,Map2),
 	F2 is F+1.
 
+loops_get_list(loops(_,Map),Ids,List):-
+	project_lm(Map,Ids,List).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! compute_loops(Head:term,RefCnt:int) is det
 % compute a loop for each cost equation
-compute_loops(CR,CR2):-
+compute_loops(CR,Compress,CR2):-
 	cr_get_ceList_with_id(CR,CE_list_id),
 	maplist(
 		\Eq_pair_l^Res_l^(
@@ -82,14 +95,14 @@ compute_loops(CR,CR2):-
 	maplist(normalize_loop,Loops,Normalized_loops),
 	from_pair_list_mm(Normalized_loops,Grouped_loops),
 	%merge loops that are equivalent or similar, depending on N
-	((get_param(compress_chains,[N]),N > 0)->
-	maplist(group_equal_loops(N),Grouped_loops,Simplified_loops)
+	(Compress > 0->
+	maplist(group_equal_loops(Compress),Grouped_loops,Simplified_loops)
 	;
 	maplist(put_in_list,Grouped_loops,Simplified_loops)
 	),	
 	loops_empty(Empty_loops),
-	foldl(save_loop,Simplified_loops,Empty_loops,Loops),
-	cr_set_loops(CR,Loops,CR2).
+	foldl(save_loop,Simplified_loops,Empty_loops,Loops_complete),
+	cr_set_loops(CR,Loops_complete,CR2).
 
 	 
 %unify the variables if the patterns match												
