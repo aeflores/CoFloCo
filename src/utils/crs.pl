@@ -163,7 +163,7 @@ head_get_io_vars(Head,Name/AI/AO,Ivars,Ovars):-
 	length(Ovars,AO),
 	append(Ivars,Ovars,Vars),
 	Head=..[Name|Vars].       
-        
+   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 cr_empty(Head,cr(Name/Arity,Empty_map,_Empty_loops,_Empty_chains,[])):-

@@ -40,24 +40,27 @@ However, for each SCC there is a special base case that will allow us to represe
 */
 
 
-:- module(chains,[compute_chains/2,chain/3,phase/3,init_chains/0,get_reversed_chains/3]).
+:- module(chains,[compute_chains/2,get_reversed_chains/3]).
 
 
-:- use_module('../db',[loop_ph/6]).
-
-:- use_module('../utils/cofloco_utils',[assign_right_vars/3]).
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2]).
-
-:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_consistent_constraints/1, nad_entails/3, nad_lub/6, nad_widen/5,nad_glb/3]).
-:- use_module(stdlib(utils),[ut_remove/3]).
-:- use_module(stdlib(multiset),[empty_ms/1,add_ms/3,add_list_ms/3]).
-:- use_module(stdlib(set_list)).
-:- use_module(stdlib(list_utils),[take_lu/3]).
+:- use_module('../utils/scc_tarjan_lazy',[scc_lazy_tarjan/2]).
+:- use_module(loops,[loop_is_multiple/1,
+					loop_is_base_case/1,
+					
+					loops_range/2,
+					loops_get_list/3,
+					loops_get_ids/2,
+					loops_get_loop_fresh/3,
+					loops_get_loop/3]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
+:-use_module(library(lambda)).
+
 %! chain(Head:term,RefCnt:int,Chain:chain)
 % each predicate chain represent a possible pattern of execution of the SCC
 % determined by Head. 
@@ -73,36 +76,7 @@ However, for each SCC there is a special base case that will allow us to represe
 % a phase can also be of the form multiple(Sub-chains) where Sub-chains are a set of chain fragments.
 % This phases follow other phases that contain multiple recursion 
 
-%
-% @arg RefCnt represents the refinement phase to which the chain belongs
-% @arg Chain is a list of loop phases in inverse order
-:- dynamic  chain/3.
 
-%! node(Id:equation_id,Type:atom)
-% a node of the graph that is being inferred
-% @Type can be final (if it's a base case) or loop (if it's a recursive equation)
-:- dynamic  node/2.
-
-%! edge(S:equation_id,D:equation_id)
-% there is an edge from S to D
-:- dynamic  edge/2.
-
-%! not_edge(S:equation_id,D:equation_id)
-% there is NOT an edge from S to D
-% this is necessary because of the lazy computation (abscence of edge does not mean not_edge)
-:- dynamic  not_edge/2.
-
-%! phases_edge(S:Phase,D:Phase)
-% there is an edge from phase S to phase D
-:- dynamic  phases_edge/2.
-
-%! not_phases_edge(S:Phase,D:Phase)
-% there is NOT an edge from phase S to phase D
-:- dynamic  not_phases_edge/2.
-
-%! phase(Phase:phase,Head:term,CntRef:int)
-% store a phase Phase in SCC Head in the refinement phase CntRef
-:- dynamic  phase/3.
 
 %! compute_chains(Head:term,CntRef:int) is det
 %  * erase the previous graph
@@ -115,190 +89,151 @@ However, for each SCC there is a special base case that will allow us to represe
 %
 %  * compute all possible chains: The set of execution patterns is all possible sequences of phases
 %
-compute_chains(Head,RefCnt):-
-	clean_graph,
-	retractall(chain(Head,RefCnt,_)),
-	retractall(phase(_,Head,RefCnt)),
-	add_nodes(Head,RefCnt),
-	compute_phases(Head,RefCnt),
-	compute_chains_1(Head,RefCnt).
+
+%chains(Phases,Chains)
+
+chains_empty(chains([],[])).
+
+
+is_multiple_phase(Phase,Loops):-
+	Phase=[_|_],!,
+	loops_get_list(Loops,Phase,Loops_phase),
+	member((_,Loop),Loops_phase),
+	loop_is_multiple(Loop).
+is_multiple_phase(Phase,Loops):-
+	number(Phase),!,
+	loops_get_loop(Loops,Phase,Loop),
+	loop_is_multiple(Loop).	
+	
+compute_chains(Loops,chains(Phases,Chains)):-
+	loops_range(Loops,range(I,N)),
+	create_unkown_graph(I,N,Graph),
+	compute_phases(Loops,Graph,Phases),
+	findall(Chain,
+		compute_chain(Phases,[],Loops,Graph,Chain),
+	Chains).
+	
+compute_chain(Phases,Loops,Graph,Chain):-
+	member(First,Phases),
+	discard_up_to(Phases,First,Rest),
+	compute_chain_1(Rest,[First],Loops,Graph,Chain).
+	
+compute_chain(_Phases,Chain,Loops,_Graph,Chain_rev):-
+	Chain=[Last|_],
+	(	Last=[_|_]
+	; 
+		loops_get_loop(Loops,Last,Loop),loop_is_base_case(Loop)
+	),
+	reverse(Chain,Chain_rev).
+compute_chain(Phases,Accum,Loops,Graph,Chain):-
+	member(Phase,Phases),
+	(Accum=[Prev|_]->
+			phase_edge(Loops,Graph,Prev,Phase)
+	;
+			true
+	),
+	discard_up_to(Phases,Phase,Rest),
+	(is_multiple_phase(Phase,Loops)->
+		findall(Tail,
+			(
+			compute_chain(Rest,[Phase],Loops,Graph,[Phase|Tail])
+			), Tails),
+			reverse([multiple(Phase,Tails)|Accum],Chain)
+	;
+		compute_chain(Rest,[Phase|Accum],Loops,Graph,Chain)
+	).
+		
+
+
+discard_up_to([Sel|Phases],Sel,Phases):-!.
+discard_up_to([_|Phases],Sel,Phases1):-
+	discard_up_to(Phases,Sel,Phases1).
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 get_reversed_chains(Prefix,[multiple(Phase,Tails)],Rev_chains):-!,
 	maplist(get_reversed_chains([Phase|Prefix]),Tails,Rev_chains_lists),
 	foldl(append,Rev_chains_lists,[],Rev_chains).
-get_reversed_chains(Prefix,[],[Prefix]).
+get_reversed_chains(Prefix,[],Prefix):-!.
 	
 get_reversed_chains(Prefix,[Phase|Chain],Rev_chains):-
 	get_reversed_chains([Phase|Prefix],Chain,Rev_chains).
 	
-%! init_chains is det
-%  erase all chains and phases
-init_chains:-
-	retractall(phase(_,_,_)),
-	retractall(chain(_,_,_)).
-
-clean_graph:-
-	 retractall(node(_,_)),
-	 retractall(edge(_,_)),
-	 retractall(not_edge(_,_)),
-	 retractall(phases_edge(_,_)),
-	 retractall(not_phases_edge(_,_)).
-
-
-add_nodes(Head,RefCnt):-	 
-	loop_ph(Head,(Id_Loop,RefCnt),Calls,_,_,_),
-	(Calls==[]->
-	  assertz(node(Id_Loop,final))
-	  ;
-	  (Calls=[_,_|_]->
-	  assertz(node(Id_Loop,multiple_loop))
-	  ;
-	  assertz(node(Id_Loop,loop))
-	  )
-	  ),
-	fail.
-add_nodes(_,_).	
-
-
-
-%! get_phases_edge(?C1:phase,?C2:phase) is semidet    
-%  succeeds if there is an edge from C1 to C2.
-% the edges are not necessarily computed, they are computed on demand (lazily)
-get_phases_edge(C1,C2):-
-	phases_edge(C1,C2).
-	
-
-get_phases_edge(C1,C2):-
-	\+not_phases_edge(C1,C2),
-	\+phases_edge(C1,C2),
-	phase(C1,_,_),
-	phase(C2,_,_),
-	get_phases_aux(C1,C2).
-
-get_phases_aux([C1|C1s],[C2|C2s]):-!,
-     (get_one_edge_form_list_to_list([C1|C1s],[C2|C2s],_,_)->
-        assertz(phases_edge([C1|C1s],[C2|C2s])),
-        assertz(not_phases_edge([C2|C2s],[C1|C1s]))
-        ;
-          assertz(not_phases_edge([C1|C1s],[C2|C2s])),
-        fail
-        ).
-get_phases_aux([C1|C1s],C2):-
-     number(C2),!,	
-     (get_one_edge_form_list([C1|C1s],C2,_)->
-        assertz(phases_edge([C1|C1s],C2)),
-        assertz(not_phases_edge(C2,[C1|C1s]))
-        ;
-          assertz(not_phases_edge([C1|C1s],C2)),
-        fail
-        ).       
-get_phases_aux(C1,[C2|C2s]):-
-     number(C1),!,	
-     (get_one_edge_to_list(C1,[C2|C2s],_)->
-        assertz(phases_edge(C1,[C2|C2s])),
-        assertz(not_phases_edge([C2|C2s],C1))
-        ;
-          assertz(not_phases_edge(C1,[C2|C2s])),
-        fail
-        ).       
-get_phases_aux(C1,C2):-
-     number(C1),number(C2),
-     (get_edge(C1,C2)->
-        assertz(phases_edge(C1,C2)),
-        assertz(not_phases_edge(C2,C1))
-        ;
-          assertz(not_phases_edge(C1,C2)),
-        fail
-        ).      
-
-
-compute_chains_1(Head,RefCnt):-
-	findall(Phase,phase(Phase,Head,RefCnt),Phases),
-	from_list_sl(Phases,Phases_set),
-	foldl(compute_rec_chains_from(Phases_set),Phases_set,[],Chains),
-	maplist(save_chain(Head,RefCnt),Chains).
-
-%we can add memoing here
-%compute the chains that can follow from Phase
-compute_rec_chains_from(_Available_phases,Phase,Chains_accum,[[Phase]|Chains_accum]):-
-	node(Phase,final),!.
-compute_rec_chains_from(Available_phases,Phase,Chains_accum,Chains):-
-	remove_sl(Available_phases,Phase,Available_phases1),
-	include(get_phases_edge(Phase),Available_phases1,Next_phases),
-	foldl(compute_rec_chains_from(Available_phases1),Next_phases,[],Chain_fragments),
-	%if the phase is iterative, we consider the case where it does not terminate
-	(Phase=[_|_]->
-	   Chain_fragments_non_term=[[]|Chain_fragments]
-	   ;
-	   Chain_fragments_non_term=Chain_fragments
-	),
-	% we consider sequences independently but cannot do the same with multiple recursive phases
-	(is_linear_phase(Phase)->
-		maplist(append([Phase]),Chain_fragments_non_term,New_chains)
-		;
-		(Chain_fragments_non_term\=[]->
-		New_chains=[[multiple(Phase,Chain_fragments_non_term)]]
-		;
-		New_chains=[]
-		)
-	),
-	append(New_chains,Chains_accum,Chains).
-	
-is_linear_phase(Loop):-
-	number(Loop),!,
-	node(Loop,loop).
-is_linear_phase(Phase):-
-	maplist(is_linear_phase,Phase).
-	
-save_chain(Head,RefCnt,Chain):-
-	chain(Head,RefCnt,Chain),!.
-save_chain(Head,RefCnt,Chain):-
-	assertz(chain(Head,RefCnt,Chain)).
 
 	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+compute_phases(Loops,Graph,Phases):-
+	initialize_phases(Loops,Rec_loops,Base_cases),
+	Lazy_graph=lazy_graph(Rec_loops,chains:get_edge,(Loops,Graph)),
+	scc_lazy_tarjan(Lazy_graph,Rec_phases),
+	maplist(strip_singular_class(Lazy_graph),Rec_phases,Rec_phases2),
+	append(Rec_phases2,Base_cases,Phases).
+
+initialize_phases(Loops,Rec_phases,Base_cases):-
+	loops_get_ids(Loops,Ids),
+	partition(loop_is_base_case,Ids,Base_cases,Rec_phases).
+
+
+strip_singular_class(lazy_graph(_,_,Info),[Loop],Loop):-
+	\+get_edge(Info,Loop,Loop),!.
+	
+strip_singular_class(_,Phase,Phase).
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % this predicates are used to check and infer edges in the graph lazily
 % the idea is to compute the minimun number of edges as the computation of edges can be expensive
 
+phase_edge(Loops,Graph,O_ph,D_ph):-
+	number(O_ph),
+	number(D_ph),!,
+	get_edge((Loops,Graph),O_ph,D_ph).
 
-get_one_edge_to_list(O,D_list,D):-
-   member(D,D_list),
-   get_edge(O,D),!.
-   
-get_one_edge_form_list(O_list,D,O):-
-   member(O,O_list),
-   get_edge(O,D),!. 
-   
-get_one_edge_form_list_to_list(O_list,D_list,O,D):-
-   member(O,O_list),
-   member(D,D_list),
-   get_edge(O,D),!.     
-    
-get_edges_not_to(O,D_list,D):-
-	findall(N,(node(N,Non_final),Non_final\=final),Nodes),
-	from_list_sl(Nodes,Nodes_set),
-	from_list_sl(D_list,D_set),
-	difference_sl(Nodes_set,D_set,D_Rest),
-	member(D,D_Rest),
-	get_edge(O,D).
-   
+phase_edge(_Loops,Graph,O_ph,D_ph):-
+	phase_edge_cheap(Graph,O_ph,D_ph),!.
+	
+phase_edge(Loops,Graph,O_ph,D_ph):-
+	phase_edge_expensive(Loops,Graph,O_ph,D_ph).
+	
+phase_edge_cheap(Graph,O_ph,D_ph):-
+	(number(O_ph),O=O_ph
+	;
+	member(O,O_ph)
+	),
+	(number(D_ph),D=D_ph
+	;
+	member(D,D_ph)
+	),
+	get_unkown_graph_elem(Graph,O,D,yes),!.
 
-get_edge(O,D):-
-   edge(O,D).
+phase_edge_expensive(Loops,Graph,O_ph,D_ph):-
+	(number(O_ph),O=O_ph
+	;
+	member(O,O_ph)
+	),
+	(number(D_ph),D=D_ph
+	;
+	member(D,D_ph)),
+	get_edge((Loops,Graph),O,D),!.
+	
 
-get_edge(O,D):-
-   node(O,Non_final),Non_final\=final,
-   node(D,_),
-    \+edge(O,D),
-   \+not_edge(O,D),
-   loop_ph(_Head,(O,RefCnt),Calls,Phi,_,_),
-   loop_ph(Head2,(D,RefCnt),_,Phi2,_,_),
-   append(Phi,Phi2,Composed_cons),
+get_edge((_Loops,Graph),O,D):-
+   get_unkown_graph_elem(Graph,O,D,yes),!.
+
+get_edge((Loops,Graph),O,D):-
+	get_unkown_graph_elem(Graph,O,D,unknown),
+	loops_get_loop_fresh(Loops,O,loop(_Head,Calls,Phi,_)),
+	loops_get_loop_fresh(Loops,D,loop(Head2,_,Phi2,_)),
+    append(Phi,Phi2,Composed_cons),
    (is_edge_possible(Head2,Calls,Composed_cons)->
-	    assertz(edge(O,D))
+	    set_unkown_graph_elem(Graph,O,D,yes)
 	    ;
-	    assertz(not_edge(O,D)),fail
+	    set_unkown_graph_elem(Graph,O,D,no),
+	    fail
 	    ).
 
 %% this can be uncommented to deactivate chain refinement (obtain a single iterative phase)
@@ -309,97 +244,26 @@ is_edge_possible(Head2,Calls,Cs):-
 	Head2=..[_|Relevant_vars],
 	nad_consistent_constraints_group(Relevant_vars,Cs).
 	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-:- dynamic phases_changed/0.
-
- 
-%! compute_rec_chains(+Head:term,+RefCnt:int) is det
-% computes the phases of a SCC.
-% starts by having a phase for each cost equations and looks for  cycles in a fixpoint computation
-compute_phases(Head,RefCnt):-
-	retractall(phase(_,Head,RefCnt)),
-	initialize_phases(Head,RefCnt),
-	phases_fixpoint(Head,RefCnt),
-	strip_singular_classes(Head,RefCnt).
-
-%! strip_singular_classes(+Head:term,+RefCnt:int) is det
-%the phases that are a single cost equation that does not have an edge to itself are non-iterative
-% so they are not represented as a list but rather a single cost equation id
-strip_singular_classes(Head,RefCnt):-
-	phase([Loop],Head,RefCnt),
-	\+get_edge(Loop,Loop),
-	retract(phase([Loop],Head,RefCnt)),
-	assertz(phase(Loop,Head,RefCnt)),
-	fail.
-strip_singular_classes(Head,RefCnt):-
-	node(Final,final),
-	save_phase(Final,Head,RefCnt),
-	fail.
-strip_singular_classes(_,_).
-
-
-initialize_phases(Head,RefCnt):-
-	node(Id_Loop,loop),
-	save_phase([Id_Loop],Head,RefCnt),
-	fail.
-initialize_phases(Head,RefCnt):-
-	node(Id_Loop,multiple_loop),
-	save_phase([Id_Loop],Head,RefCnt),
-	fail.	
-initialize_phases(_,_).
-
-save_phase(Phase,Head,RefCnt):-
-	phase(Phase,Head,RefCnt),!.
-save_phase(Phase,Head,RefCnt):-
-	assertz(phase(Phase,Head,RefCnt)).
-
-phases_fixpoint(Head,RefCnt):-
-	explore_phases(Head,RefCnt).
+create_unkown_graph(I,N,un_graph(I,N,Matrix)):-
+	Len is N-I+1,
+	make_lines(Len,Len,Lines),
+	Matrix=..[matrix|Lines].
 	
-phases_fixpoint(Head,RefCnt):-
-        retract(phases_changed),
-	phases_fixpoint(Head,RefCnt).
-phases_fixpoint(_Head,_RefCnt).
-
-explore_phases(Head,RefCnt):-
-	phase(Phase,Head,RefCnt),
-	explore_phases_cycles([Phase]),
-	phases_changed,!,
-	fail.
-
-%special case for short cycles
-explore_phases_cycles([Last,Prev1|_Prev]):-
-	get_one_edge_form_list_to_list(Last,Prev1,_,_),
-	fussion_classes([Last,Prev1]),!.
-
-explore_phases_cycles([Last|Prev]):-
-	member(Loop,Last),
-	get_edges_not_to(Loop,Last,Loop2),
-	%get_edge(Loop,Loop2),
-	get_phase(Loop2,Phase2),
-	%Phase2\=Last,
+make_lines(0,_,[]):-!.
+make_lines(N,Len,[Line|Lines]):-
+	length(List,Len),
+	maplist(\Elem^(Elem=unknown),List),
+	Line=..[line|List],
+	N1 is N-1,
+	make_lines(N1,Len,Lines).
 	
-	(nth1(I,[Last|Prev],Phase2)->
-	         take_lu(I,[Last|Prev],Cycle),
-	         fussion_classes(Cycle),!
-	;
-	   explore_phases_cycles([Phase2,Last|Prev])
-	).
-	
-
-get_phase(Loop,Loop):-
-	phase(Loop,_,_),!.
-get_phase(Loop,Phase):-
-	phase(Phase,_,_),
-	member(Loop,Phase),!.
-fussion_classes(List_classes):-
-	fussion_classes_1(List_classes,[],_,_).
-
-fussion_classes_1([],New_class,Head,RefCnt):-
-	save_phase(New_class,Head,RefCnt),
-	(\+phases_changed->assert(phases_changed);true).
-fussion_classes_1([Phase|More],Acum,Head,RefCnt):-
-	retract(phase(Phase,Head,RefCnt)),
-	union_sl(Phase,Acum,Acum2),
-	fussion_classes_1(More,Acum2,Head,RefCnt).
-
+get_unkown_graph_elem(un_graph(I,_N,Graph),NLine,NColumn,Elem):-
+	NLine1 is NLine-I+1,
+	NColumn1 is NColumn-I+1,
+	arg(NLine1, Graph, Line),
+	arg(NColumn1,Line,Elem).
+set_unkown_graph_elem(un_graph(I,_N,Graph),NLine,NColumn,Elem):-
+	NLine1 is NLine-I+1,
+	NColumn1 is NColumn-I+1,
+	arg(NLine1, Graph, Line),
+	nb_setarg(NColumn1,Line,Elem).	

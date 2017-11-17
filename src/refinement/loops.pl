@@ -30,6 +30,13 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 :- module(loops,[
+	    loops_range/2,
+	    loops_get_list/3,
+	    loops_get_ids/2,
+	    loop_is_multiple/1,
+	    loop_is_base_case/1,
+	    loops_get_loop/3,
+	    loops_get_loop_fresh/3,
 		compute_loops/3,
 		compute_phase_loops/2,
 		split_multiple_loops/2,
@@ -62,9 +69,20 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 loop_is_multiple(loop(_,Calls,_,_)):-
 	Calls=[_,_|_].
 	
-	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+loop_is_base_case(loop(_,[],_,_)).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+loops_range(loops(Range,_),Range).
+
+loops_get_loop(loops(_Range,Map),Id,Loop):-
+	lookup_lm(Map,Id,Loop).
+	
+loops_get_loop_fresh(loops(_Range,Map),Id,Loop):-
+	lookup_lm(Map,Id,Loop1),
+	copy_term(Loop1,Loop).
+
+loops_get_ids(loops(_Range,Map),Ids):-
+	keys_lm(Map,Ids).
 
 loops_empty(loops(range(1,1),Map)):-
 	empty_lm(Map).

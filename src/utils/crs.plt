@@ -1,10 +1,26 @@
-:- module(crs_test,[]).
+:- module(crs_test,[create_crse/2]).
+
+:-use_module(crs).	
+:-use_module(library(lambda)).
+:-multifile crse_example/3.
+
+% this predicate is used all the time to make tests, it calls crse_example which is defined all over the place
+create_crse(Name,CRSE):-
+	crse_empty(1,CRSE_empty),
+	CRSE_empty=crse([],CRS_empty),
+	crse_example(Name,Eqs,Entries),
+	foldl(\Eq_l^CRS_l^CRS2_l^crs_add_eq(CRS_l,Eq_l,CRS2_l),Eqs,CRS_empty,CRS),
+	CRSE=crse(Entries,CRS).
+
 	
 :-begin_tests(crs).
 
 :-use_module(crs).
 :-use_module(library(lambda)).
+:-discontiguous crse_example/3.
 
+
+	
 % CE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 test(ce_equal):-
@@ -92,25 +108,17 @@ test(cr_creation_subsumtion2):-
 	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-crs_eqs1([
+crs_test:crse_example(crse1,[
 	eq(wh(A,B,O),1,[crazy_call(A,B,_C)],[A < B,O=A]),
 	eq(wh(A,B,O),2,[wh(A+1,B)],[A >= B]),
 	
 	eq(wh2(A,B,O),3,[],[A < B,O=A]),
 	eq(wh2(A,B,O2),4,[wh(A,B,O),wh2(A+1,O,O2)],[A >= B])
-	]).
+	],[]).
 
-crs_create_example1(CRSE):-
-	crse_empty(1,CRSE_empty),
-	assertion(CRSE_empty=crse([],crs(range(1,1),[]))),
-	
-	CRSE_empty=crse(Entries,CRS_empty),
-	crs_eqs1(Eqs),
-	foldl(\Eq_l^CRS_l^CRS2_l^crs_add_eq(CRS_l,Eq_l,CRS2_l),Eqs,CRS_empty,CRS),
-	CRSE=crse(Entries,CRS).
-	
+
 test(crs_creation):-
-	crs_create_example1(CRSE),
+	create_crse(crse1,CRSE),
 	CRSE=crse(_,CRS),
 	assertion(CRS=crs(range(1,5),[(wh,CR),(wh2,CR2)])),
 	CRS=crs(range(1,5),[(wh,CR),(wh2,CR2)]),
@@ -126,7 +134,7 @@ test(crs_creation):-
 		],loops(_,_),chains(_,_,_),[])).
 
 test(remove_undefined_calls):-
-	crs_create_example1(CRSE),
+	create_crse(crse1,CRSE),
 	crs:crse_remove_undefined_calls(CRSE,crse(_Entries,CRS)),
 	assertion(CRS=crs(range(1,5),[(wh,CR),(wh2,CR2)])),
 	CRS=crs(range(1,5),[(wh,CR),(wh2,CR2)]),
@@ -151,7 +159,7 @@ test(save_io_vars):-
 
 	
 test(access_CEs):-
-		crs_create_example1(CRSE),
+		create_crse(crse1,CRSE),
 		CRSE=crse(_,CRS),
 		crs_get_ce_by_id(CRS,1,eq(wh(_,_,_),1,_,_)),
 		crs_get_ce_by_id(CRS,2,eq(wh(_,_,_),2,_,_)),
@@ -178,7 +186,7 @@ double_cost(eq(Head,N,Calls,Cs),eq(Head,N2,Calls,Cs)):-
 add_call(Call,eq(Head,N,Calls,Cs),eq(Head,N,[Call|Calls],Cs)).
 
 test(apply_and_check_all_ce):-
-	crs_create_example1(CRSE),
+	create_crse(crse1,CRSE),
 		CRSE=crse(_,CRS),
 	crs_apply_all_ce(plunit_crs:double_cost,CRS,CRS2),
 	
@@ -200,7 +208,7 @@ test(apply_and_check_all_ce):-
 	assertion(cr_is_cr_called_multiply(CR4,wh2/3)).
 	
 		
-crs_for_graph([
+crs_test:crse_example(crse_graph,[
 	eq(a(A),1,[a(A)],[]),
 	eq(a(A),2,[c(A),d(A)],[]),
 	
@@ -214,19 +222,11 @@ crs_for_graph([
 	eq(f(A),8,[],[]),
 	eq(g(A),9,[],[]),
 	eq(h(A),10,[],[])
-	]).	
+	],[entry(a(_),[]),entry(b(B),[B=1]),entry(d(_),[])]).	
 
-crs_create_example_for_graph(CRSE):-
-	crse_empty(1,CRSE_empty),
-	assertion(CRSE_empty=crse([],crs(range(1,1),[]))),
-	
-	CRSE_empty=crse([],CRS_empty),
-	crs_for_graph(Eqs),
-	foldl(\Eq_l^CRS_l^CRS2_l^crs_add_eq(CRS_l,Eq_l,CRS2_l),Eqs,CRS_empty,CRS),
-	CRSE=crse([entry(a(_),[]),entry(b(B),[B=1]),entry(d(_),[])],CRS).	
 
 test(create_graph):-
-	crs_create_example_for_graph(CRSE),
+	create_crse(crse_graph,CRSE),
 	CRSE=crse(_,CRS),
 	crs_get_graph(CRS,call_graph(Edges)),
 	sort(Edges,Edges_set),
@@ -237,7 +237,7 @@ test(create_graph):-
 	
 	
 test(merge_cr):-
-	crs_create_example_for_graph(CRSE),
+	create_crse(crse_graph,CRSE),
 	crse_merge_crs(ad,[a,d],CRSE,CRSE1),
 	CRSE1=crse(Entries,CRS),
 	assertion(Entries=[entry(ad(_),[]),entry(b(B),[B=1]),entry(ad(_),[])]),
@@ -260,7 +260,7 @@ test(merge_cr):-
 	
 
 test(merge_cr2):-
-	crs_create_example_for_graph(CRSE),
+	create_crse(crse_graph,CRSE),
 	CRSE=crse(Entries,CRS),
 	crs_save_IOvars(CRS,ioVars(a(A),[],[A]),CRS1),
 	crs_save_IOvars(CRS1,ioVars(d(A),[A],[]),CRS2),
@@ -280,7 +280,7 @@ test(merge_cr2):-
 	crs_IOvars(CRS_new,ad,ioVars(ad(_,_),[_],[_])).
   
 
-crs_for_unfold([
+crs_test:crse_example(crse_unfold,[
 	eq(a(A),cost([],[],[],[],1),[a(A)],[]),
 	eq(a(A),cost([],[],[],[],1),[c(A),d(A)],[ A>=1 ]),
 	
@@ -296,17 +296,11 @@ crs_for_unfold([
 	eq(f(A),cost([],[],[],[],1),[],[A=0]),
 	eq(g(A),cost([],[],[],[],1),[],[]),
 	eq(h(A),cost([],[],[],[],1),[],[])
-	]).	
+	],[]).	
 	
-crs_create_example_for_unfold(CRSE):-
-	crse_empty(1,CRSE_empty),
-	CRSE_empty=crse([],CRS_empty),
-	crs_for_unfold(Eqs),
-	foldl(\Eq_l^CRS_l^CRS2_l^crs_add_eq(CRS_l,Eq_l,CRS2_l),Eqs,CRS_empty,CRS),
-	CRSE=crse([],CRS).	
 	
 test(unfold):-
-	crs_create_example_for_unfold(CRSE),
+	create_crse(crse_unfold,CRSE),
 	CRSE=crse(_,CRS),
 	crs_unfold_and_remove(CRS,a,d,CRS2),
 	%should generate a total of 4 eqs in a
