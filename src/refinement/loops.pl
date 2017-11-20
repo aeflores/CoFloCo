@@ -30,15 +30,18 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 :- module(loops,[
+		loop_get_CEs/2,
 	    loops_range/2,
+	    loops_get_list/2,
 	    loops_get_list/3,
+	    loops_get_head/2,
 	    loops_get_ids/2,
 	    loop_is_multiple/1,
 	    loop_is_base_case/1,
 	    loops_get_loop/3,
 	    loops_get_loop_fresh/3,
 		compute_loops/3,
-		compute_phase_loops/2,
+		compute_phase_loops/3,
 		split_multiple_loops/2,
 		get_extended_phase/2]).
 
@@ -71,6 +74,11 @@ loop_is_multiple(loop(_,Calls,_,_)):-
 	
 loop_is_base_case(loop(_,[],_,_)).
 
+loop_head(loop(Head,_,_,_),Head).
+
+loop_get_CEs(loop(_,_,_,Info),Eqs):-
+	once(member(eqs(Eqs),Info)).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 loops_range(loops(Range,_),Range).
 
@@ -87,14 +95,27 @@ loops_get_ids(loops(_Range,Map),Ids):-
 loops_empty(loops(range(1,1),Map)):-
 	empty_lm(Map).
 
+loops_get_head(loops(_,Map),Head):-
+	Map=[(_,Loop)|_],
+	loop_head(Loop,Head).
+
 loops_add_loop(loops(range(I,F),Map),Loop,loops(range(I,F2),Map2)):-
 	assertion(Loop=loop(_Head,_Calls,_Inv,_Info)),
 	insert_lm(Map,F,Loop,Map2),
 	F2 is F+1.
 
-loops_get_list(loops(_,Map),Ids,List):-
-	project_lm(Map,Ids,List).
-
+loops_get_list(loops(_,Map),Loops):-
+	values_lm(Map,Loops).
+	
+loops_get_list(loops(_,Map),Ids,Selected_loops):-
+	project_lm(Map,Ids,List),
+	values_lm(List,Selected_loops).
+	
+loops_get_list_fresh(loops(_,Map),Ids,Selected_loops_fresh):-
+	project_lm(Map,Ids,List),
+	values_lm(List,Selected_loops),
+	maplist(copy_term,Selected_loops,Selected_loops_fresh).
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! compute_loops(Head:term,RefCnt:int) is det
@@ -158,39 +179,49 @@ put_in_list_1((Inv,E),(Inv,[E])).
 
 %! compute_phase_loops(Head:term,RefCnt:int) is det
 % compute a loop for each iterative phase 
-compute_phase_loops(Head,RefCnt) :-
-	phase(Class,Head,RefCnt),
-	findall((Head,Calls,Cs),
-		(member(Id,Class),
-		 loop_ph(Head,(Id,RefCnt),Calls,Cs,_,_)
-		),Loops),
-	split_multiple_loops(Loops,Loops_splitted),
-	join_loops(Loops_splitted,Head_out,Call_out,Cs_out,_Vars),
-	add_phase_loop(Class,RefCnt,Head_out,Call_out,Cs_out),
-	fail.
-compute_phase_loops(_Head,_RefCnt).
+compute_phase_loops(Loops,chains(Phases,Chains),chains(Phases_annotated,Chains)):-
+	maplist(compute_phase_loop(Loops),Phases,Phases_annotated).
 
+compute_phase_loop(Loops,Phase,phase(Phase,[phase_loop(Head,Call,Cs)])):-
+	number(Phase),!,
+	loops_get_loop_fresh(Loops,Phase,Loop),
+	split_multiple_loops([Loop],Loops_splitted),
+	(Loops_splitted=[]->
+	  Loop=loop(Head,[],Cs,_),
+	  Call=none
+	;
+	(Loops_splitted=[One]->
+	   One=linear_loop(Head,Call,Cs)
+	 ;
+	 	join_loops(Loops_splitted,Head,Call,Cs,_Vars)
+	)).
 
-join_loops([(Head,Calls,Cs)],Head,Calls,Cs,Vars):-!,
+	
+compute_phase_loop(Loops,Phase,phase(Phase,[phase_loop(Head,Call,Cs)])):-
+	loops_get_list_fresh(Loops,Phase,Phase_loops),
+	split_multiple_loops(Phase_loops,Loops_splitted),
+	join_loops(Loops_splitted,Head,Call,Cs,_Vars).
+
+join_loops([linear_loop(Head,Calls,Cs)],Head,Calls,Cs,Vars):-!,
 	Head=..[_|V1],
 	term_variables(Calls,V2),
 	append(V1,V2,Vars).
 
-join_loops([(Head,Calls,Cs)|Loops],Head,Calls,Cs_out,Vars):-
+join_loops([linear_loop(Head,Calls,Cs)|Loops],Head,Calls,Cs_out,Vars):-
 	join_loops(Loops,Head,Calls,Cs_aux,Vars),
 	nad_lub(Vars,Cs,Vars,Cs_aux,Vars,Cs_out).
 	
 	
- split_multiple_loops(Loops,Loops_splitted):-
- 	     split_multiple_loops_aux(Loops,[],Loops_splitted).
+split_multiple_loops(Loops,Loops_splitted):-
+	split_multiple_loops_aux(Loops,[],Loops_splitted).
  
- split_multiple_loops_aux([],Loops_splitted,Loops_splitted).	
- split_multiple_loops_aux([(_Head,[],_Inv)|Loops],Loops_accum,Loops_splitted):-
-  	   split_multiple_loops_aux(Loops,Loops_accum,Loops_splitted).
-  split_multiple_loops_aux([(Head,[Call|Calls],Inv)|Loops],Loops_accum,Loops_splitted):-
-	  term_variables((Head,Call),Vars),
-	  nad_project_group(Vars,Inv,Inv_loop),
-  	  split_multiple_loops_aux([(Head,Calls,Inv)|Loops],[(Head,Call,Inv_loop)|Loops_accum],Loops_splitted). 
+split_multiple_loops_aux([],Loops_splitted,Loops_splitted).	
+split_multiple_loops_aux([loop(_Head,[],_Inv,_)|Loops],Loops_accum,Loops_splitted):-
+	split_multiple_loops_aux(Loops,Loops_accum,Loops_splitted),!.
+split_multiple_loops_aux([loop(Head,[Call|Calls],Inv,Info)|Loops],Loops_accum,Loops_splitted):-
+	term_variables((Head,Call),Vars),
+	nad_project_group(Vars,Inv,Inv_loop),
+  	split_multiple_loops_aux([loop(Head,Calls,Inv,Info)|Loops],[linear_loop(Head,Call,Inv_loop)|Loops_accum],Loops_splitted). 
   	  
   	  
 get_extended_phase([],[]).
