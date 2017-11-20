@@ -41,25 +41,26 @@ test(chains_sequence):-
 	compute_chains(Loops,chains(Phases,Chains)),
 	assertion(Phases=[[5],3,[4],2,1]),
 	assertion(Chains=[
-	[[5]],
-	[[5],3,[4]],
-	[[5],3,[4],2],
-	[[5],3,[4],1],
-	[[5],3,1],
-	[[5],1],
-	
-	[3,[4]],
-	[3,[4],2],
-	[3,[4],1],
-	[3,1],
-	
-	[[4]],
-	[[4],2],
-	[[4],1],
-	
+	[1],
 	[2],
 	
-	[1]
+	[3,1],
+	[3,[4]],
+	[3,[4],1],
+	[3,[4],2],
+	
+		
+	[[4]],
+	[[4],1],
+	[[4],2],
+	
+	
+	[[5]],
+	[[5],1],
+	[[5],3,1],
+	[[5],3,[4]],
+	[[5],3,[4],1],
+	[[5],3,[4],2]	
 	]).
 
 	
@@ -68,11 +69,12 @@ test(chains_alternative):-
 	compute_chains(Loops,chains(Phases,Chains)),
 	assertion(Phases=[[3],[2],1]),
 	assertion(Chains=[
-    [[3]],
-    [[3],1],
-    [[2]],
+	[1],
+	[[2]],
     [[2],1],
-    [1]
+  
+    [[3]],
+    [[3],1]
 	]).	
 	
 	
@@ -82,19 +84,18 @@ test(chains_all_possible):-
 	compute_chains(Loops,chains(Phases,Chains)),
 	assertion(Phases=[[2,3,4],1]),
 	assertion(Chains=[
+	[1],
 	[[2,3,4]],
-    [[2,3,4],1],
-    [1]
+    [[2,3,4],1]
 	]).	
 test(chains_multiple):-
 	loops_example(multiple,Loops),
-	trace,
 	compute_chains(Loops,chains(Phases,Chains)),
 	assertion(Phases=[[3,4],2,1]),
 	assertion(Chains=[
-	[multiple([3,4],[[],[multiple(2,[[1]])],[1]])],
+	[1],
 	[multiple(2,[[1]])],
-	[1]
+	[multiple([3,4],[[],[1],[multiple(2,[[1]])]])]
 	]).		
 
 :-end_tests(chains).

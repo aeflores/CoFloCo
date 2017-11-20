@@ -40,7 +40,12 @@ However, for each SCC there is a special base case that will allow us to represe
 */
 
 
-:- module(chains,[compute_chains/2,get_reversed_chains/3]).
+:- module(chains,[compute_chains/2,
+				chains_reversed_chains/2,
+				chains_discard_infeasible_prefixes/3,
+				chains_discard_infeasible/3,
+				chains_discard_infeasible_combinations/4
+				]).
 
 
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2]).
@@ -56,6 +61,7 @@ However, for each SCC there is a special base case that will allow us to represe
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
+:-use_module(stdlib(set_list),[from_list_sl/2]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -94,29 +100,74 @@ However, for each SCC there is a special base case that will allow us to represe
 
 chains_empty(chains([],[])).
 
+chains_discard_infeasible_prefixes(chains(Phases,Chains),Infeasible_prefixes,chains(Phases,Chains2)):-
+	chains_transform_and_discard(Chains,[],check_infeasible_prefixes(Infeasible_prefixes),Chains2).
 
+
+check_infeasible_chains(Infeasible_prefixes,_Chain,Prefix):-
+	\+contains_sl(Infeasible_prefixes,Prefix).
+			
+
+chains_discard_infeasible(chains(Phases,Chains),Infeasible_chains,chains(Phases,Chains2)):-
+	chains_transform_and_discard(Chains,[],check_infeasible_chains(Infeasible_chains),Chains2).
+	
+	
+check_infeasible_chains(Infeasible_chains,Chain,_Prefix):-
+	\+contains_sl(Infeasible_chains,Chain).
+
+	
+chains_discard_infeasible_combinations(chains(Phases,Chains),Backward_invs,Fwd_invs,chains(Phases,Chains2)):-
+	chains_transform_and_discard(Chains,[],check_fwd_back_combination(Backward_invs,Fwd_invs),Chains2).
+	
+	
+check_fwd_back_combination(Back_invs,Fwd_invs,Chain,Prefix):-
+	back_invs_get(Back_invs,Chain,inv(Head,_,InvB)),
+	back_invs_get(Fwd_invs,Prefix,inv(Head,_,InvF)),
+	nad_consistent_constraints(InvB,InvF).
+	
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% high level predicate to discard or simplify chains according to different conditions
+chains_tranform_and_discard(Chains,Prefix,Check,Chains3):-	
+	foldl(\Chain^chain_transform_and_discars(Chain,Prefix,Check),Chains,[],Chains2),
+	reverse(Chains2,Chains3).
+
+chain_tranform_and_discard(Chain,Prefix,Check,Accum,[Chain2|Accum]):-
+	chain_tranform(Chain,Prefix,Check,Chain2),!.
+	
+chain_discard_infeasible_combinations(_Chain,_,_Check,Accum,Accum).
+
+
+chain_transform([],_Prefix,_Check,[]).
+
+chain_transform([multiple(Ph,Tails)],Prefix,Check,[multiple(Ph,Tails2)]):-!,
+	call(Check,[multiple(Ph,Tails)],Prefix),
+	chains_tranform_and_discard(Tails,[Ph|Prefix],Check,Tails2),
+	Tails2\=[].
+
+chain_transform([Ph|Chain],Prefix,Check,[Ph|Chain2]):-
+	call(Check,[Ph|Chain],Prefix),
+	chain_transform(Chain,[Ph|Prefix],Check,Chain2).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 is_multiple_phase(Phase,Loops):-
 	Phase=[_|_],!,
 	loops_get_list(Loops,Phase,Loops_phase),
-	member((_,Loop),Loops_phase),
+	member(Loop,Loops_phase),
 	loop_is_multiple(Loop).
 is_multiple_phase(Phase,Loops):-
 	number(Phase),!,
 	loops_get_loop(Loops,Phase,Loop),
 	loop_is_multiple(Loop).	
 	
-compute_chains(Loops,chains(Phases,Chains)):-
+compute_chains(Loops,chains(Phases,Chains_set)):-
 	loops_range(Loops,range(I,N)),
 	create_unkown_graph(I,N,Graph),
 	compute_phases(Loops,Graph,Phases),
 	findall(Chain,
 		compute_chain(Phases,[],Loops,Graph,Chain),
-	Chains).
-	
-compute_chain(Phases,Loops,Graph,Chain):-
-	member(First,Phases),
-	discard_up_to(Phases,First,Rest),
-	compute_chain_1(Rest,[First],Loops,Graph,Chain).
+	Chains),
+	from_list_sl(Chains,Chains_set).
 	
 compute_chain(_Phases,Chain,Loops,_Graph,Chain_rev):-
 	Chain=[Last|_],
@@ -138,7 +189,8 @@ compute_chain(Phases,Accum,Loops,Graph,Chain):-
 			(
 			compute_chain(Rest,[Phase],Loops,Graph,[Phase|Tail])
 			), Tails),
-			reverse([multiple(Phase,Tails)|Accum],Chain)
+			from_list_sl(Tails,Tails_set),
+			reverse([multiple(Phase,Tails_set)|Accum],Chain)
 	;
 		compute_chain(Rest,[Phase|Accum],Loops,Graph,Chain)
 	).
@@ -151,14 +203,18 @@ discard_up_to([_|Phases],Sel,Phases1):-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+chains_reversed_chains(chains(_,Chains),Reversed_chains):-
+	foldl(get_reversed_chains([]),Chains,[],Reversed_chains).
 
-get_reversed_chains(Prefix,[multiple(Phase,Tails)],Rev_chains):-!,
-	maplist(get_reversed_chains([Phase|Prefix]),Tails,Rev_chains_lists),
-	foldl(append,Rev_chains_lists,[],Rev_chains).
-get_reversed_chains(Prefix,[],Prefix):-!.
+get_reversed_chains(Prefix,[multiple(Phase,Tails)],Accum,Rev_chains):-!,
+	foldl(get_reversed_chains([Phase|Prefix]),Tails,Accum,Rev_chains).
 	
-get_reversed_chains(Prefix,[Phase|Chain],Rev_chains):-
-	get_reversed_chains([Phase|Prefix],Chain,Rev_chains).
+get_reversed_chains(Prefix,[],Accum,Rev_chains):-!,
+	insert_sl(Prefix,Accum,Rev_chains).
+	
+get_reversed_chains(Prefix,[Phase|Chain],Accum,Rev_chains):-
+	get_reversed_chains([Phase|Prefix],Chain,Accum,Rev_chains).
+	
 	
 
 	
