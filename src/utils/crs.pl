@@ -17,6 +17,7 @@
 		cr_set_chains/3,
 		cr_get_chains/2,
 		cr_is_cr_called_multiply/2,
+		cr_get_forward_invariant/2,
 		
 		crs_empty/2,
 		crs_range/2,
@@ -34,7 +35,8 @@
 		crs_unfold_in_cr/4,
 		crs_unfold_and_remove/4,
 		crs_remove_cr/3,
-	
+		crs_update_cr_forward_invariant/4,
+		crs_update_forward_invariants/3,
 
 		
 		crse_empty/2,
@@ -47,7 +49,7 @@
 :-use_module('../IO/output',[print_warning/2]).
 :-use_module(cofloco_utils,[zip_with_op3/5]).
 :-use_module(cost_structures,[cstr_join/3]).
-:-use_module(stdlib(numeric_abstract_domains),[nad_entails/3,nad_glb/3]).
+:-use_module(stdlib(numeric_abstract_domains),[nad_entails/3,nad_glb/3,nad_lub/6,nad_project/3]).
 :-use_module(polyhedra_optimizations,[nad_consistent_constraints_group/2,nad_project_group/3]).
 :-use_module(stdlib(list_map)).
 :-use_module(stdlib(set_list)).
@@ -109,7 +111,21 @@ ce_is_cr_called_multiply(F/A,Eq):-
 	functor(Head,F,A),
 	select(Head,Calls,Calls1),
 	select(Head,Calls1,_),!.	
+
+
+ce_accum_forward_invariants(eq_ref(_Head,_Cost_str,NR_calls,_R_calls,_Calls,Cs,_Info),Map,Map1):-
+	copy_term((NR_calls,Cs),(NR_calls1,Cs2)),
+	foldl(accum_forward_invariants(Cs2),NR_calls1,Map,Map1).
 	
+accum_forward_invariants(Cs,Call,Map,Map1):-
+	Call=..[Name|Vars],
+	nad_project(Cs,Vars,Fwd_inv),
+	(lookup(Map,Name,(Vars,Fwd_inv1))->
+		nad_lub(Vars,Fwd_inv,Vars,Fwd_inv1,Vars,Fwd_inv2),
+		insert_lm(Map,Name,(Vars,Fwd_inv2),Map1)
+		;
+		insert_lm(Map,Name,(Vars,Fwd_inv),Map1)
+	).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %these predicates are only defined for the initial equations
 
@@ -328,7 +344,19 @@ cr_get_loops(cr(_NameArity,_EqMap,Loops,_Chains,_Properties),Loops).
 cr_set_chains(cr(NameArity,EqMap,Loops,_Chains,Properties),Chains_new,cr(NameArity,EqMap,Loops,Chains_new,Properties)).
 cr_get_chains(cr(_NameArity,_EqMap,_Loops,Chains,_Properties),Chains).
 
-
+cr_update_cr_forward_invariant(cr(Name,EqMap,Loops,Chains,Properties),Head,Cs,cr(Name,EqMap,Loops,Chains,Properties2)):-
+	(select(fwd_inv(Head,Cs2),Properties,Properties1)->
+		nad_lub(Cs,Cs2,Cs_lub),
+		Properties2=[fwd_inv(Head,Cs_lub)|Properties1]
+		;
+		Properties2=[fwd_inv(Head,Cs)|Properties]
+	).
+cr_get_forward_invariant(cr(_Name,_EqMap,_Loops,_Chains,Properties),fwd_inv(Head,Cs)):-
+	once(member(fwd_inv(Head,Cs),Properties)).
+	
+cr_get_called_forward_invariants(CR,Map,Map1):-
+	cr_get_ceList(CR,CEs),
+	foldl(ce_accum_forward_invariants,CEs,Map,Map1).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 crs_empty(Initial,crs(range(Initial,Initial),Empty_map)):-
 	empty_lm(Empty_map).
@@ -455,6 +483,21 @@ crs_unfold_and_remove(CRS,Name,Name_called,CRS3):-
 	crs_get_cr(CRS,Name_called,CR_called),
 	crs_remove_cr(CRS,Name_called,CRS1),
 	crs_unfold_in_cr(CRS1,Name,CR_called,CRS3).
+
+crs_update_cr_forward_invariant(CRS,Head,Cs,CRS2):-
+	functor(Head,Name,_),
+	crs_get_cr(CRS,Name,CR),
+	cr_update_cr_forward_invariant(CR,Head,Cs,CR2),
+	crs_update_cr(CRS,Name,CR2,CRS2).
+	
+
+crs_update_forward_invariants(CRS,CR,CRS2):-
+	cr_get_called_forward_invariants(CR,Map),
+	foldl(\Pair^CRS_l^CRS_l2^(
+				Pair=(Name,(Vars,Cs)),
+				Head=..[Name|Vars],
+				crs_update_cr_forward_invariant(CRS_l,Head,Cs,CRS_l2)
+				),Map,CRS,CRS2).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Entries is a list of entry(Head,Polyhedron)
