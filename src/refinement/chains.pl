@@ -50,6 +50,9 @@ However, for each SCC there is a special base case that will allow us to represe
 
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2]).
 :- use_module('../utils/scc_tarjan_lazy',[scc_lazy_tarjan/2]).
+:- use_module(invariants,[back_invs_get/3,
+						  fwd_invs_get/3]).
+
 :- use_module(loops,[loop_is_multiple/1,
 					loop_is_base_case/1,
 					
@@ -58,10 +61,10 @@ However, for each SCC there is a special base case that will allow us to represe
 					loops_get_ids/2,
 					loops_get_loop_fresh/3,
 					loops_get_loop/3]).
-:- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_glb/3]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
-:-use_module(stdlib(set_list),[from_list_sl/2]).
+:-use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -98,13 +101,12 @@ However, for each SCC there is a special base case that will allow us to represe
 
 %chains(Phases,Chains)
 
-chains_empty(chains([],[])).
 
 chains_discard_infeasible_prefixes(chains(Phases,Chains),Infeasible_prefixes,chains(Phases,Chains2)):-
 	chains_transform_and_discard(Chains,[],check_infeasible_prefixes(Infeasible_prefixes),Chains2).
 
 
-check_infeasible_chains(Infeasible_prefixes,_Chain,Prefix):-
+check_infeasible_prefixes(Infeasible_prefixes,_Chain,Prefix):-
 	\+contains_sl(Infeasible_prefixes,Prefix).
 			
 
@@ -122,27 +124,29 @@ chains_discard_infeasible_combinations(chains(Phases,Chains),Backward_invs,Fwd_i
 	
 check_fwd_back_combination(Back_invs,Fwd_invs,Chain,Prefix):-
 	back_invs_get(Back_invs,Chain,inv(Head,_,InvB)),
-	back_invs_get(Fwd_invs,Prefix,inv(Head,_,InvF)),
-	nad_consistent_constraints(InvB,InvF).
+	fwd_invs_get(Fwd_invs,Prefix,inv(Head,_,InvF)),
+	nad_glb(InvB,InvF,Inv),
+	nad_consistent_constraints(Inv).
 	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % high level predicate to discard or simplify chains according to different conditions
-chains_tranform_and_discard(Chains,Prefix,Check,Chains3):-	
-	foldl(\Chain^chain_transform_and_discars(Chain,Prefix,Check),Chains,[],Chains2),
+chains_transform_and_discard(Chains,Prefix,Check,Chains3):-	
+	foldl(\Chain^chain_transform_and_discard(Chain,Prefix,Check),Chains,[],Chains2),
 	reverse(Chains2,Chains3).
 
-chain_tranform_and_discard(Chain,Prefix,Check,Accum,[Chain2|Accum]):-
-	chain_tranform(Chain,Prefix,Check,Chain2),!.
+chain_transform_and_discard(Chain,Prefix,Check,Accum,[Chain2|Accum]):-
+	chain_transform(Chain,Prefix,Check,Chain2),!.
 	
-chain_discard_infeasible_combinations(_Chain,_,_Check,Accum,Accum).
+chain_transform_and_discard(_Chain,_,_Check,Accum,Accum).
 
 
-chain_transform([],_Prefix,_Check,[]).
-
+chain_transform([],Prefix,Check,[]):-
+	call(Check,[],Prefix).
+	
 chain_transform([multiple(Ph,Tails)],Prefix,Check,[multiple(Ph,Tails2)]):-!,
 	call(Check,[multiple(Ph,Tails)],Prefix),
-	chains_tranform_and_discard(Tails,[Ph|Prefix],Check,Tails2),
+	chains_transform_and_discard(Tails,[Ph|Prefix],Check,Tails2),
 	Tails2\=[].
 
 chain_transform([Ph|Chain],Prefix,Check,[Ph|Chain2]):-

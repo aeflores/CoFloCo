@@ -42,7 +42,7 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 	    loops_get_loop_fresh/3,
 		compute_loops/3,
 		compute_phase_loops/3,
-		split_multiple_loops/2,
+		loops_split_multiple_loops/2,
 		get_extended_phase/2]).
 
 :- use_module('../db',[add_phase_loop/5]).
@@ -185,7 +185,7 @@ compute_phase_loops(Loops,chains(Phases,Chains),chains(Phases_annotated,Chains))
 compute_phase_loop(Loops,Phase,phase(Phase,[phase_loop(Head,Call,Cs)])):-
 	number(Phase),!,
 	loops_get_loop_fresh(Loops,Phase,Loop),
-	split_multiple_loops([Loop],Loops_splitted),
+	loops_split_multiple_loops([Loop],Loops_splitted),
 	(Loops_splitted=[]->
 	  Loop=loop(Head,[],Cs,_),
 	  Call=none
@@ -199,7 +199,7 @@ compute_phase_loop(Loops,Phase,phase(Phase,[phase_loop(Head,Call,Cs)])):-
 	
 compute_phase_loop(Loops,Phase,phase(Phase,[phase_loop(Head,Call,Cs)])):-
 	loops_get_list_fresh(Loops,Phase,Phase_loops),
-	split_multiple_loops(Phase_loops,Loops_splitted),
+	loops_split_multiple_loops(Phase_loops,Loops_splitted),
 	join_loops(Loops_splitted,Head,Call,Cs,_Vars).
 
 join_loops([linear_loop(Head,Calls,Cs)],Head,Calls,Cs,Vars):-!,
@@ -212,7 +212,7 @@ join_loops([linear_loop(Head,Calls,Cs)|Loops],Head,Calls,Cs_out,Vars):-
 	nad_lub(Vars,Cs,Vars,Cs_aux,Vars,Cs_out).
 	
 	
-split_multiple_loops(Loops,Loops_splitted):-
+loops_split_multiple_loops(Loops,Loops_splitted):-
 	split_multiple_loops_aux(Loops,[],Loops_splitted).
  
 split_multiple_loops_aux([],Loops_splitted,Loops_splitted).	

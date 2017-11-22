@@ -41,6 +41,8 @@ This module computes different kinds of invariants for the chains:
 		      
 		      back_invs_get/3,
 		      fwd_invs_get/3,
+		      loop_invs_get/3,
+		      ce_invs_get/3,
 		      
 		      fwd_invs_get_infeasible_prefixes/2,
 		      back_invs_get_infeasible/2,
@@ -53,6 +55,7 @@ This module computes different kinds of invariants for the chains:
 
 :- use_module(chains,[chain/3,get_reversed_chains/3]).
 :- use_module(loops,[
+	loop_get_CEs/2,
 	loops_get_head/2,
 	loops_get_list/3,
 	loops_get_list_fresh/3,
@@ -121,7 +124,7 @@ back_invs_get_infeasible(back_invs(_Head,Map),Chains):-
 					),Map,Unfeasible),
 	keys_lm(Unfeasible,Chains).
 
-back_invs_empty(Head,back_invs(Head,[])).
+back_invs_empty(Head,back_invs(Head,[([],([],[]))])).
 
 back_invs_get_head(back_invs(Head,_),Head).
 
@@ -137,6 +140,11 @@ inv_is_bottom(inv(_Head,_Cs_star,Cs_plus)):-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 loop_invs_empty(Head,loop_invs(Head,[])).
+
+loop_invs_get(loop_invs(Head,Map),Loop,Inv_fresh):-
+	lookup_lm(Map,Loop,Cs),
+	copy_term(inv(Head,Cs),Inv_fresh).
+
 
 fwd_invs_get_loop_invariants(fwd_invs(Head,Map),Loop_fwd_invs):-
 	loop_invs_empty(Head,Empty_loop_invs),
@@ -164,8 +172,13 @@ loop_fwd_invs_accum_1(Head,Cs,Loop,loop_invs(Head,Map),loop_invs(Head,Map2)):-
 	).
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ce_invs_empty(Head,ce_invs(Head,[])).
+
+ce_invs_get(ce_invs(Head,Map),CE,Inv_fresh):-
+	lookup_lm(Map,CE,Cs),
+	copy_term(inv(Head,Cs),Inv_fresh).
 	
 loop_invs_to_CE_invs(loop_invs(Head,Loop_invs_map),Loops,CE_invs):-
 	ce_invs_empty(Head,CE_invs_empty),
@@ -208,9 +221,6 @@ compute_backward_invariants(Loops,chains(_,Chains),Backward_invs):-
 % the case where the invariant is already computed
 compute_backward_invariant(Chain,_Loops,Inv,Back_invs,Back_invs):-
 	back_invs_get(Back_invs,Chain,Inv),!.
-	
-compute_backward_invariant([],_Loops,inv(Head,[],[]),Back_invs,Back_invs):-
-	back_invs_get_head(Back_invs,Head).
 
 compute_backward_invariant([multiple(Ph,Tails)],Loops,Inv,Back_invs_accum,Back_invs):-!,
 	foldl(\Chain_l^Inv_l^compute_backward_invariant(Chain_l,Loops,Inv_l),Tails,Invs,Back_invs_accum,Back_invs1),
@@ -294,7 +304,8 @@ compute_backward_invariant_phase(Phase,non_divergent,_Simple_multiple,Loops,inv(
 	
 compute_forward_invariants(Initial_inv,Loops,chains(_,Chains),Forward_invs):-
 	fwd_invs_empty(Initial_inv,Empty_forward_inv),
-	foldl(\Chain_l^compute_forward_invariant(Chain_l,Loops,[],Initial_inv),Chains,Empty_forward_inv,Forward_invs).
+	fwd_invs_get(Empty_forward_inv,[],Initial_inv_internal),
+	foldl(\Chain_l^compute_forward_invariant(Chain_l,Loops,[],Initial_inv_internal),Chains,Empty_forward_inv,Forward_invs).
 
 %! compute_forward_invariant(+Chain:chain,+RefCnt:int,?Entry_Call:term,-Inv:inv(term,term,polyhedron)) is det
 % given a chain fragment [P1,P2...PN], computes a invariant about the variables at any point during P1.
@@ -302,22 +313,32 @@ compute_forward_invariants(Initial_inv,Loops,chains(_,Chains),Forward_invs):-
 % The returned invariant is valid at any point after at least ONE iteration of P1 has been performed.
 compute_forward_invariant([],_Loops,_Prefix,_Inv,Fwd_invs,Fwd_invs).
 
+
+compute_forward_invariant([multiple(Phase,Tails)],Loops,Prefix,Inv,Fwd_invs_accum,Fwd_invs):-!,
+	compute_forward_invariant_phase(Phase,Loops,Inv,Inv_new),
+	fwd_invs_add(Fwd_invs_accum,[Phase|Prefix],Inv_new,Fwd_invs_accum2),
+	(inv_is_bottom(Inv_new)->
+		 Fwd_invs=Fwd_invs_accum
+		 ;
+		foldl(\Chain_l^compute_forward_invariant(Chain_l,Loops,[Phase|Prefix],Inv_new),Tails,Fwd_invs_accum2,Fwd_invs)
+	).
+	
 compute_forward_invariant([Phase|Chain],Loops,Prefix,_Inv,Fwd_invs_accum,Fwd_invs):-
 	% This is the case when the forward invariant has already been computed
-	fwd_inv_get(Fwd_invs,[Phase|Prefix],Inv2),!,
+	fwd_invs_get(Fwd_invs_accum,[Phase|Prefix],Inv2),!,
 	(inv_is_bottom(Inv2)->
 		 Fwd_invs=Fwd_invs_accum
 		 ;
-		compute_forward_invariant([Chain],Loops,[Phase|Prefix],Inv2,Fwd_invs_accum,Fwd_invs)
+		compute_forward_invariant(Chain,Loops,[Phase|Prefix],Inv2,Fwd_invs_accum,Fwd_invs)
 	).
 
 compute_forward_invariant([Phase|Chain],Loops,Prefix,Inv,Fwd_invs_accum,Fwd_invs):-
 	compute_forward_invariant_phase(Phase,Loops,Inv,Inv_new),
-	fwd_inv_add(Fwd_invs_accum,[Phase|Prefix],Inv_new,Fwd_invs_accum2),
+	fwd_invs_add(Fwd_invs_accum,[Phase|Prefix],Inv_new,Fwd_invs_accum2),
 	(inv_is_bottom(Inv_new)->
 		 Fwd_invs=Fwd_invs_accum2
 		 ;
-		compute_forward_invariant([Chain],Loops,[Phase|Prefix],Inv_new,Fwd_invs_accum2,Fwd_invs)
+		compute_forward_invariant(Chain,Loops,[Phase|Prefix],Inv_new,Fwd_invs_accum2,Fwd_invs)
 	).
 
 
@@ -329,8 +350,16 @@ compute_forward_invariant_phase(Phase,Loops,inv(Head,_,Inv_initial),inv(Head,Inv
 	number(Phase),!,
 	loops_get_loop(Loops,Phase,Loop),
 	loops_split_multiple_loops([Loop],Loops_splitted), 
+	
 	(Loops_splitted=[]->
-		Inv=[]
+		%base case
+		Loop=loop(Head,[],Cs,_),
+		nad_glb(Cs,Inv_initial,Cs2),
+		(nad_consistent_constraints(Cs2)->
+			Inv=[]
+			;
+			Inv=[1=0]
+		)
 	; 
 		forward_invariant_once(inv(Head,Inv_initial),Loops_splitted,inv(Head2,Inv)),
 		Head2=Head
@@ -401,7 +430,7 @@ compute_phase_transitive_closure(Phase,RefCnt):-
 	    member(Loop,Phase),
 	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_)
 	 ),Loops),
-	 split_multiple_loops(Loops,Loops_splitted),    
+	 loops_split_multiple_loops(Loops,Loops_splitted),    
      transitive_closure_invariant_fixpoint(inv(Head,Call,Inv_0),Loops_splitted,inv(Entry_out,Call_out, Trans_closure)),
      add_phase_transitive_closure(Phase,RefCnt,Entry_out,Call_out,Trans_closure).
 
@@ -600,15 +629,7 @@ get_back_loop_handle(loop(Head,Calls,Inv,_),(Extra_dim,Pre_maps,Post_map,Handle)
 	identity_function(Head_vars,Post_map),
 	Dim is N+Extra_dim,
 	to_ppl_dim(c, Dim, Inv_gr, Handle).	
-	
-get_back_loop_handle(loop(Head,[Call],Inv,_),(Extra_dim,Pre_map,Post_map,Handle)):-
-	ground_copy((Head,Call,Inv),(Head_gr,Call_gr,Inv_gr)),
-	Head_gr=..[_|Head_vars],
-	length(Head_vars,Extra_dim),
-	make_complete_map_to_call(Head_gr,[Call_gr],Call_gr,[],Pre_map),
-	identity_function(Head_vars,Post_map),
-	Dim is Extra_dim*2,
-	to_ppl_dim(c, Dim, Inv_gr, Handle).		
+
 	
 get_forward_loop_handle(linear_loop(Head,Call,Inv),(Extra_dim,[Pre_map],Post_map,Handle)):-
 	ground_copy((Head,Call,Inv),(Head_gr,Call_gr,Inv_gr)),
