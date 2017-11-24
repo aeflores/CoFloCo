@@ -1,8 +1,9 @@
 :- module(crs_test,[create_crse/2]).
-
+:-include('../search_paths.pl').
 :-use_module(crs).	
 :-use_module(library(lambda)).
 :-multifile crse_example/3.
+:-multifile cr_example/3.
 
 % this predicate is used all the time to make tests, it calls crse_example which is defined all over the place
 create_crse(Name,CRSE):-
@@ -12,13 +13,22 @@ create_crse(Name,CRSE):-
 	foldl(\Eq_l^CRS_l^CRS2_l^crs_add_eq(CRS_l,Eq_l,CRS2_l),Eqs,CRS_empty,CRS),
 	CRSE=crse(Entries,CRS).
 
+create_cr(Name,CR):-
+	cr_example(Name,Head,Eqs),
+	cr_empty(Head,CR_empty),
+	foldl(\Eq_l^Pair1^Pair2^(
+				Pair1=(CRS_l,Id_l),
+				Pair2=(CRS2_l,Id2_l),
+				cr_add_eq(CRS_l,Id_l,Eq_l,CRS2_l,Id2_l)
+		),Eqs,(CR_empty,1),(CR,_N)).
 	
 :-begin_tests(crs).
 
 :-use_module(crs).
 :-use_module(library(lambda)).
+:-use_module(stdlib(numeric_abstract_domains),[nad_equals/2]).
 :-discontiguous crse_example/3.
-
+:-discontiguous cr_example/3.
 
 	
 % CE
@@ -66,7 +76,7 @@ test(ce_more_general_than):-
 %	catch(cr_add_eq(CR,1,eq(wh(_,_),0,[],[]),_CR2,_),_Exception,true).
 
 
-cr_eqs1([
+crs_test:cr_example(ex1,wh(_,_,_),[
 	eq(wh(A,B,O),0,[wh(A2,B)],[A+1 =< B,A2=A+1]),
 	eq(wh(A,B,O),0,[wh(A2,B)],[A >= B,A2=A+1]),
 	eq(wh(A,B,O),0,[wh(A2,B)],[A2 >= A+1]),
@@ -74,7 +84,7 @@ cr_eqs1([
 	]).
 
 
-cr_eqs2([
+crs_test:cr_example(ex2,wh(_,_),[
 	eq_ref(wh(A,B),0,[],[wh(A2,B)],[wh(A2,B)],[A+1 =< B,A2=A+1],[]),
 	eq_ref(wh(A,B),0,[],[wh(A2,B)],[wh(A2,B)],[A >= B,A2=A+1],[]),
 	eq_ref(wh(A,B),0,[],[wh(A2,B)],[wh(A2,B)],[A2 >= A+1],[]),
@@ -82,28 +92,14 @@ cr_eqs2([
 	]).
 
 test(cr_creation_subsumtion):-
-	cr_empty(wh(_,_,_),CR_empty),
-	CR_empty=cr(wh/3,[],_,_,[]),
-	cr_eqs1(Eqs),
-	foldl(\Eq_l^Pair1^Pair2^(
-				Pair1=(CRS_l,Id_l),
-				Pair2=(CRS2_l,Id2_l),
-				cr_add_eq(CRS_l,Id_l,Eq_l,CRS2_l,Id2_l)
-		),Eqs,(CR_empty,1),(CR,_N)),
-	CR=cr(wh/3,[(3,eq(wh(A,B,_),0,[wh(A2,B)],Cs))],_Loops,_Chains,[]),
+	create_cr(ex1,CR),
+	CR=cr(wh/3,[(3,eq(wh(A,B,_),0,[wh(A2,B)],Cs))],[]),
 	Cs==[A2 >= A+1].
 
 
 test(cr_creation_subsumtion2):-
-	cr_empty(wh(_,_),CR_empty),
-	CR_empty=cr(wh/2,[],_,_,[]),
-	cr_eqs2(Eqs),
-		foldl(\Eq_l^Pair1^Pair2^(
-				Pair1=(CRS_l,Id_l),
-				Pair2=(CRS2_l,Id2_l),
-				cr_add_eq(CRS_l,Id_l,Eq_l,CRS2_l,Id2_l)
-		),Eqs,(CR_empty,1),(CR,_N)),
-	CR=cr(wh/2,[(3,eq_ref(wh(A,B),0,[],[wh(A2,B)],[wh(A2,B)],Cs,[]))],_Loops,_Chains,[]),
+	create_cr(ex2,CR),
+	CR=cr(wh/2,[(3,eq_ref(wh(A,B),0,[],[wh(A2,B)],[wh(A2,B)],Cs,[]))],[]),
 	Cs==[A2 >= A+1].
 	
 
@@ -126,12 +122,12 @@ test(crs_creation):-
 	assertion(CR=cr(wh/3,[
 				(1,eq(wh(A,B,O),1,[crazy_call(A,B,_C)],_)),
 				(2,eq(wh(A,B,O),2,[wh(_,_)],_))
-		],loops(_,_),chains(_,_,_),[])),
+		],[])),
 
 	assertion(CR2=cr(wh2/3,[
 				(3,eq(wh2(A,B,O),3,[],_)),
 				(4,eq(wh2(A,B,O),4,[wh(_,_,_),wh2(_,_,_)],_))
-		],loops(_,_),chains(_,_,_),[])).
+		],[])).
 
 test(remove_undefined_calls):-
 	create_crse(crse1,CRSE),
@@ -141,12 +137,12 @@ test(remove_undefined_calls):-
 	assertion(CR=cr(wh/3,[
 				(1,eq(wh(A,B,O),1,[],_)),
 				(2,eq(wh(A,B,O),2,[],_))
-		],loops(_,_),chains(_,_,_),[])),
+		],[])),
 		
 	assertion(CR2=cr(wh2/3,[
 				(3,eq(wh2(A,B,O),3,[],_)),
 				(4,eq(wh2(A,B,O),4,[wh(_,_,_),wh2(_,_,_)],_))
-		],loops(_,_),chains(_,_,_),[])).
+		],[])).
 		
 test(save_io_vars):-
 	crse_empty(1,CRSE_empty),
@@ -360,6 +356,54 @@ test(unfold):-
 				]),
 	assertion(crs_get_names(CRS7,[a/1])).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+crs_test:cr_example(ex_strengthen,wh(_,_),[
+	eq_ref(wh(A,B),0,[],[wh(A2,B2)],[wh(A2,B2)],[A+1 =< B,A2=A+1,B2=B+1],[]),
+	eq_ref(wh(A,B),0,[],[wh(A2,B2),wh(A3,B3)],[wh(A2,B2),wh(A3,B3)],[A >= B+1,A2=A-1,A3+A2=0,B=B2+B3],[]),
+	eq_ref(wh(A,B),0,[],[],[],[A = B],[])
+	]).
+	
+test(cr_strengthen):-
+	create_cr(ex_strengthen,CR),
+	invariants:ce_invs_empty(wh(_,_),CE_invs),
+	Invs=[
+		(1,inv(wh(A,B),[B>=1])),
+		(2,inv(wh(A,B),[B>=1])),
+		(3,inv(wh(A,B),[B>=1]))
+		],
+	foldl(\InvPair^CE_invs_l^CE_invs_l2^
+		    ( 
+		    InvPair=(Eq_id,Inv),
+			invariants:ce_invs_add(CE_invs_l,Eq_id,Inv,CE_invs_l2)
+			),Invs,CE_invs,CE_invs2),	
+	cr_strengthen_with_CE_invs(CR,head,CE_invs2,CR2),
+	cr_get_ce_by_id(CR2,1,Eq1),
+	ce_head(Eq1,wh(Ap,Bp)),
+	ce_calls(Eq1,[wh(A2p,B2p)]),
+	ce_constraints(Eq1,Cs1),
+	assertion(nad_equals(Cs1,[Ap+1 =< Bp,A2p=A+1,B2p=Bp+1, Bp>=1])),
+	
+	cr_get_ce_by_id(CR2,2,Eq2),
+	ce_head(Eq2,wh(Ap,Bp)),
+	ce_calls(Eq2,[wh(A2p,B2p),wh(A3p,B3p)]),
+	ce_constraints(Eq2,Cs2),
+	assertion(nad_equals(Cs2,[Ap >= Bp+1,A2p=Ap-1,A3p+A2p=0,Bp=B2p+B3p,  Bp>=1])),
+	
+	
+	cr_strengthen_with_CE_invs(CR,call,CE_invs2,CR3),
+	
+	cr_get_ce_by_id(CR3,1,Eq1p),
+	ce_head(Eq1p,wh(Ap,Bp)),
+	ce_calls(Eq1p,[wh(A2p,B2p)]),
+	ce_constraints(Eq1p,Cs1p),
+	assertion(nad_equals(Cs1p,[Ap+1 =< Bp,A2p=A+1,B2p=Bp+1, B2p>=1])),
+	
+	cr_get_ce_by_id(CR3,2,Eq2p),
+	ce_head(Eq2p,wh(Ap,Bp)),
+	ce_calls(Eq2p,[wh(A2p,B2p),wh(A3p,B3p)]),
+	ce_constraints(Eq2p,Cs2p),
+	assertion(nad_equals(Cs2p,[Ap >= Bp+1,A2p=Ap-1,A3p+A2p=0,Bp=B2p+B3p,  B2p>=1,B3p>=1])).
 	
 	
 	

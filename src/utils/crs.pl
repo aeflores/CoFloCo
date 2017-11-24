@@ -1,4 +1,7 @@
 :- module(crs,[
+		ce_head/2,
+		ce_constraints/2,
+		ce_calls/2,
 		ce_equal/2,
 		ce_more_general_than/2,
 		ce_calls_accum/3,
@@ -6,11 +9,13 @@
 		cr_empty/2,
 		cr_get_ce_by_id/3,
 		cr_head/2,
+		cr_nameArity/2,
 		cr_get_ids/2,
 		cr_add_eq/5,
 		cr_get_ce/2,
 		cr_IOvars/2,
 		cr_get_ceList/2,
+		cr_get_ceList_with_id/2,
 		cr_apply_all_ce/3,
 		cr_set_loops/3,
 		cr_get_loops/2,
@@ -18,6 +23,7 @@
 		cr_get_chains/2,
 		cr_is_cr_called_multiply/2,
 		cr_get_forward_invariant/2,
+		cr_strengthen_with_CE_invs/4,
 		
 		crs_empty/2,
 		crs_range/2,
@@ -28,6 +34,7 @@
 		crs_get_cr/3,
 		crs_save_IOvars/3,
 		crs_IOvars/3,
+		crs_IOvars_arities/3,
 		crs_get_graph/2,
 		crs_apply_all_ce/3,
 		crs_get_names/2,
@@ -36,8 +43,8 @@
 		crs_unfold_and_remove/4,
 		crs_remove_cr/3,
 		crs_update_cr_forward_invariant/4,
-		crs_update_forward_invariants/3,
-
+		crs_update_forward_invariants_with_calls_from_cr/3,
+		crs_get_cr_external_patterns/3,
 		
 		crse_empty/2,
 		crse_remove_undefined_calls/2,
@@ -45,10 +52,15 @@
 		
 		entry_name/2
 	]).
-	
-:-use_module('../IO/output',[print_warning/2]).
+ 
+ :-use_module('../refinement/invariants',[
+  			  ce_invs_head/2,
+		      ce_invs_map/2
+		      ]).
+		      
 :-use_module(cofloco_utils,[zip_with_op3/5]).
 :-use_module(cost_structures,[cstr_join/3]).
+:-use_module('../IO/output',[print_warning/2]).
 :-use_module(stdlib(numeric_abstract_domains),[nad_entails/3,nad_glb/3,nad_lub/6,nad_project/3]).
 :-use_module(polyhedra_optimizations,[nad_consistent_constraints_group/2,nad_project_group/3]).
 :-use_module(stdlib(list_map)).
@@ -62,6 +74,9 @@
 
 ce_head(eq(Head,_,_,_),Head).
 ce_head(eq_ref(Head,_,_,_,_,_,_),Head).
+
+ce_constraints(eq(_Head,_,_,Cs),Cs).
+ce_constraints(eq_ref(_Head,_,_,_,_,Cs,_),Cs).
 	
 ce_equal(eq(Head,Cost_str,Calls,Cs),eq(Head,Cost_str2,Calls,Cs2)):-
          Cs==Cs2,
@@ -119,13 +134,29 @@ ce_accum_forward_invariants(eq_ref(_Head,_Cost_str,NR_calls,_R_calls,_Calls,Cs,_
 	
 accum_forward_invariants(Cs,Call,Map,Map1):-
 	Call=..[Name|Vars],
-	nad_project(Cs,Vars,Fwd_inv),
-	(lookup(Map,Name,(Vars,Fwd_inv1))->
+	nad_project(Vars,Cs,Fwd_inv),
+	(lookup_lm(Map,Name,(Vars,Fwd_inv1))->
 		nad_lub(Vars,Fwd_inv,Vars,Fwd_inv1,Vars,Fwd_inv2),
 		insert_lm(Map,Name,(Vars,Fwd_inv2),Map1)
 		;
 		insert_lm(Map,Name,(Vars,Fwd_inv),Map1)
 	).
+	
+ce_strengthen(eq_ref(Head,Cost_str,NR_calls,R_calls,Calls,Cs,Info),head,inv(Head,Inv),
+			  eq_ref(Head,Cost_str,NR_calls,R_calls,Calls,Cs2,Info)):-!,
+	nad_glb(Cs,Inv,Cs2).
+	
+ce_strengthen(eq_ref(Head,Cost_str,NR_calls,R_calls,Calls,Cs,Info),call,inv(Call,Inv),
+			  eq_ref(Head,Cost_str,NR_calls,R_calls,Calls,Cs2,Info)):-
+		foldl(strengthen_call,R_calls,(inv(Call,Inv),Cs),(_,Cs2)).
+       
+
+strengthen_call(Call,(inv(Head,Inv),Cs),(inv(Head,Inv),Cs2)):-
+	copy_term(inv(Head,Inv),inv(Call,Inv2)),
+	nad_glb(Cs,Inv2,Cs2).
+
+ce_get_refined(eq_ref(_Head,_Cost_str,_NR_calls,_R_calls,_Calls,_Cs,Info),Id):-
+	once(member(refined(Id),Info)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %these predicates are only defined for the initial equations
 
@@ -181,20 +212,21 @@ head_get_io_vars(Head,Name/AI/AO,Ivars,Ovars):-
 	Head=..[Name|Vars].       
    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-cr_empty(Head,cr(Name/Arity,Empty_map,_Empty_loops,_Empty_chains,[])):-
+% cr(Name/Arity,map(Id,Eq),Properties)
+% Properties can contain ioVars, loops, chains, external_patterns and fwd_inv
+cr_empty(Head,cr(Name/Arity,Empty_map,[])):-
 	functor(Head,Name,Arity),
 	empty_lm(Empty_map).
 
+cr_get_eq_map(cr(_,Map,_),Map).
 
-
-cr_add_eq_pair((Id,Eq),cr(Name/Arity,Map,Loops,Chains,Properties),cr(Name/Arity,Map2,Loops,Chains,Properties)):-
+cr_add_eq_pair((Id,Eq),cr(Name/Arity,Map,Properties),cr(Name/Arity,Map2,Properties)):-
 	insert_lm(Map,Id,Eq,Map2).
 	
-cr_add_eq(cr(Name/Arity,Map,Loops,Chains,Properties),Id,Eq,cr(Name/Arity,Map2,Loops,Chains,Properties),Id_next):-
+cr_add_eq(cr(Name/Arity,Map,Properties),Id,Eq,cr(Name/Arity,Map2,Properties),Id_next):-
 	ce_head(Eq,Head),
 	assertion(functor(Head,Name,Arity)),
-	(cr_ce_is_subsumed(cr(Name/Arity,Map,Loops,Chains,Properties),Eq)->
+	(cr_ce_is_subsumed(cr(Name/Arity,Map,Properties),Eq)->
 		Map2=Map,
 		Id_next=Id
 	;
@@ -207,86 +239,54 @@ cr_add_eq(cr(Name/Arity,Map,Loops,Chains,Properties),Id,Eq,cr(Name/Arity,Map2,Lo
 	).
 
 	
-cr_ce_is_subsumed(cr(_,Map,_Loops,_Chains,_Properties),Eq):-
+cr_ce_is_subsumed(cr(_,Map,_Properties),Eq):-
 	values_lm(Map,Eqs),
 	member(Eq1,Eqs),
 	ce_equal(Eq,Eq1),!.
 
-cr_ce_is_subsumed(cr(_,Map,_Loops,_Chains,_Properties),Eq):-
+cr_ce_is_subsumed(cr(_,Map,_Properties),Eq):-
 	values_lm(Map,Eqs),
 	member(Eq1,Eqs),
 	ce_more_general_than(Eq1,Eq),!.	
 	
-cr_get_ce_by_id(cr(_,Map,_Loops,_Chains,_),Id,Eq):-
+cr_get_ce_by_id(cr(_,Map,_),Id,Eq):-
 	lookup_lm(Map,Id,Eq).
 		
-		
-cr_save_IOvars(cr(Name/Arity,Map,Loops,Chains,Properties),ioVars(Head,Ivars,Ovars),cr(Name/Arity,Map,Loops,Chains,Properties3)):-
-	assertion(functor(Head,Name,Arity)),
-	(select(ioVars(Head,Ivars2,Ovars2),Properties,Properties2)->
-		((Ivars2==Ivars,Ovars==Ovars2)->
-			true
-			;
-			copy_term((input_output_vars(Head,Ivars,Ovars),input_output_vars(Head,Ivars2,Ovars2)),
-				      (input_output_vars(Head_gr,Ivars_gr,Ovars_gr),input_output_vars(Head_gr,Ivars2_gr,Ovars2_gr))),
-			numbervars(Head_gr,0,_),
-  			print_warning('Warning: Incoherent annotation ~p and ~p ~n',
-  				[input_output_vars(Head_gr,Ivars_gr,Ovars_gr),input_output_vars(Head_gr,Ivars2_gr,Ovars2_gr)])
-  		)
-  		;
-  		Properties2=Properties
-  	),
-  	Properties3=[ioVars(Head,Ivars,Ovars)|Properties2].
-
-cr_IOvars(cr(Name/Arity,_Map,_Loops,_Chains,Properties),IOvars_fresh):-
-	(member(ioVars(Head,Ivars,Ovars),Properties)->
-		true
-		;
-		%default value is that all variables are input variables
-		functor(Head,Name,Arity),
-		Head=..[Name|Ivars],
-		Ovars=[]
-	),
-	copy_term(ioVars(Head,Ivars,Ovars),IOvars_fresh).
 	
-cr_IOvars_arities(cr(_/Arity,_Map,_Loops,_Chains,Properties),Iarity,Oarity):-
-	(member(ioVars(_,Ivars,Ovars),Properties)->
-		length(Ivars,Iarity),
-		length(Ovars,Oarity)
-		;
-		%default value is that all variables are input variables
-		Iarity=Arity,
-		Oarity=0
-	).
-	
-cr_head(cr(Name/Arity,_,_Loops,_Chains,_),Head):-
+cr_head(cr(Name/Arity,_,_),Head):-
 	functor(Head,Name,Arity).
-cr_nameArity(cr(Name/Arity,_,_Loops,_Chains,_),Name/Arity).	
+cr_nameArity(cr(Name/Arity,_,_),Name/Arity).	
 	
 
-cr_get_edges_accum(cr(F1/A1,CEs_map,_Loops,_Chains,_),Accum,Edges):-
+cr_get_edges_accum(cr(F1/A1,CEs_map,_),Accum,Edges):-
 	values_lm(CEs_map,CEs),
 	foldl(ce_get_edges_accum(F1/A1),CEs,Accum,Edges).
 	
-cr_get_ids(cr(_,Map,_Loops,_Chains,_),Ids):-
+cr_get_ids(cr(_,Map,_),Ids):-
 	keys_lm(Map,Ids).
 	
-cr_get_ceList(cr(_,Map,_Loops,_Chains,_),CE_list):-
+cr_get_ceList(cr(_,Map,_),CE_list):-
 	values_lm(Map,CE_list).
 	
-cr_get_ceList_with_id(cr(_,Map,_Loops,_Chains,_),Map).
+cr_get_ceList_with_id(cr(_,Map,_),Map).
 
-cr_get_ce(cr(_,Map,_Loops,_Chains,_),CE):-
+cr_get_ce(cr(_,Map,_),CE):-
 	values_lm(Map,CE_list),
 	member(CE,CE_list).
 	
-cr_apply_all_ce(Pred,cr(NameArity,EqMap,Loops,Chains,Properties),cr(NameArity,EqMap2,Loops,Chains,Properties)):-
+cr_apply_all_ce(Pred,cr(NameArity,EqMap,Properties),cr(NameArity,EqMap2,Properties)):-
 	map_values_lm(Pred,EqMap,EqMap2).
+
+%cr_exclude_CEs(Pred,cr(NameArity,EqMap,Loops,Chains,Properties),cr(NameArity,EqMap2,Loops,Chains,Properties),Excluded):-
+%	partition(second_is(Pred),EqMap,Excluded,EqMap2).
+
+second_is(Pred,(_,Elem)):-
+	call(Pred,Elem).
 
 %cr_check_all_ce(Pred,cr(_NameArity,EqMap,_Loops,_Chains,_Properties)):-%
 %	check_values_lm(Pred,EqMap).
 
-cr_check_some_ce(Pred,cr(_NameArity,EqMap,_Loops,_Chains,_Properties)):-
+cr_check_some_ce(Pred,cr(_NameArity,EqMap,_Properties)):-
 	member((_,Eq),EqMap),
 	call(Pred,Eq),!.
 
@@ -337,26 +337,94 @@ substitute_call_2([Other|Calls1],Head_callee,Calls0,[Other|Calls1_sub]):-
 	substitute_call_2(Calls1,Head_callee,Calls0,Calls1_sub).
 	
 	
-	
-cr_set_loops(cr(NameArity,EqMap,_Loops,Chains,Properties),Loops_new,cr(NameArity,EqMap,Loops_new,Chains,Properties)).
-cr_get_loops(cr(_NameArity,_EqMap,Loops,_Chains,_Properties),Loops).
+cr_strengthen_with_CE_invs(cr(NameArity,EqMap,Properties),HeadCall,CE_invs,
+							cr(NameArity,EqMap2,Properties)):-
+	ce_invs_head(CE_invs,HeadInv),
+	ce_invs_map(CE_invs,InvMap),
+	zip_lm(EqMap,InvMap,Composed_map),
+	map_values_lm(strengthen_pair(HeadCall,HeadInv),Composed_map,EqMap2).
 
-cr_set_chains(cr(NameArity,EqMap,Loops,_Chains,Properties),Chains_new,cr(NameArity,EqMap,Loops,Chains_new,Properties)).
-cr_get_chains(cr(_NameArity,_EqMap,_Loops,Chains,_Properties),Chains).
+strengthen_pair(HeadCall,HeadInv,both(Eq,Inv),Eq2):-	
+	ce_strengthen(Eq,HeadCall,inv(HeadInv,Inv),Eq2).
 
-cr_update_cr_forward_invariant(cr(Name,EqMap,Loops,Chains,Properties),Head,Cs,cr(Name,EqMap,Loops,Chains,Properties2)):-
-	(select(fwd_inv(Head,Cs2),Properties,Properties1)->
-		nad_lub(Cs,Cs2,Cs_lub),
-		Properties2=[fwd_inv(Head,Cs_lub)|Properties1]
-		;
-		Properties2=[fwd_inv(Head,Cs)|Properties]
-	).
-cr_get_forward_invariant(cr(_Name,_EqMap,_Loops,_Chains,Properties),fwd_inv(Head,Cs)):-
-	once(member(fwd_inv(Head,Cs),Properties)).
-	
 cr_get_called_forward_invariants(CR,Map,Map1):-
 	cr_get_ceList(CR,CEs),
 	foldl(ce_accum_forward_invariants,CEs,Map,Map1).
+
+cr_get_max_id(CR,Max_cr):-
+	cr_get_eq_map(CR,Eq_map),
+	once(append(_,[(Max_cr,_)],Eq_map)).	
+	
+cr_get_property(cr(_NameArity,_EqMap,Properties),Name,Property):-
+	lookup_lm(Properties,Name,Property).
+cr_set_property(cr(NameArity,EqMap,Properties),Name,Property,cr(NameArity,EqMap,Properties2)):-
+	insert_lm(Properties,Name,Property,Properties2).
+
+	
+cr_save_IOvars(CR,ioVars(Head,Ivars,Ovars),CR2):-
+	cr_nameArity(CR,Name/Arity),
+	assertion(functor(Head,Name,Arity)),
+	(cr_get_property(CR,ioVars,ioVars(Head,Ivars2,Ovars2))->
+		CR2=CR,
+		((Ivars2==Ivars,Ovars==Ovars2)->
+			true
+			;
+			copy_term((input_output_vars(Head,Ivars,Ovars),input_output_vars(Head,Ivars2,Ovars2)),
+				      (input_output_vars(Head_gr,Ivars_gr,Ovars_gr),input_output_vars(Head_gr,Ivars2_gr,Ovars2_gr))),
+			numbervars(Head_gr,0,_),
+  			print_warning('Warning: Incoherent annotation ~p and ~p ~n',
+  				[input_output_vars(Head_gr,Ivars_gr,Ovars_gr),input_output_vars(Head_gr,Ivars2_gr,Ovars2_gr)])
+  		)
+  		;
+  		cr_set_property(CR,ioVars,ioVars(Head,Ivars,Ovars),CR2)
+  	).
+
+cr_IOvars(CR,IOvars_fresh):-
+	(cr_get_property(CR,ioVars,ioVars(Head,Ivars,Ovars))->
+		true
+		;	
+		%default value is that all variables are input variables
+		cr_nameArity(CR,Name/Arity),
+		functor(Head,Name,Arity),
+		Head=..[Name|Ivars],
+		Ovars=[]
+	),
+	copy_term(ioVars(Head,Ivars,Ovars),IOvars_fresh).
+	
+cr_IOvars_arities(CR,Iarity,Oarity):-
+	cr_IOvars(CR,ioVars(_,Ivars,Ovars)),
+	length(Ivars,Iarity),
+	length(Ovars,Oarity).
+	
+	
+		
+cr_set_loops(CR,Loops,CR2):-
+	cr_set_property(CR,loops,Loops,CR2).
+cr_get_loops(CR,Loops):-
+	cr_get_property(CR,loops,Loops).
+
+cr_set_chains(CR,Chains,CR2):-
+	cr_set_property(CR,chains,Chains,CR2).
+cr_get_chains(CR,Chains):-
+	cr_get_property(CR,chains,Chains).
+
+cr_set_external_patterns(CR,Ext_patt,CR2):-
+	cr_set_property(CR,external_patterns,Ext_patt,CR2).
+cr_get_external_patterns(CR,Ext_patt):-
+	cr_get_property(CR,external_patterns,Ext_patt).
+
+cr_update_cr_forward_invariant(CR,Head,Cs,CR2):-
+	(cr_get_property(CR,fwd_inv,fwd_inv(Head,Cs2))->
+		nad_lub(Cs,Cs2,Cs_lub),
+		cr_set_property(CR,fwd_inv,fwd_inv(Head,Cs_lub),CR2)
+		;
+		cr_set_property(CR,fwd_inv,fwd_inv(Head,Cs),CR2)
+	).	
+cr_get_forward_invariant(CR,fwd_inv(Head,Cs)):-
+	cr_get_property(CR,fwd_inv,fwd_inv(Head,Cs)).
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 crs_empty(Initial,crs(range(Initial,Initial),Empty_map)):-
 	empty_lm(Empty_map).
@@ -408,7 +476,9 @@ crs_get_cr(crs(_,CRs_map),Name,CR):-
 crs_remove_cr(crs(Range,CRs_map),Name,crs(Range,CRs_map2)):-
 	delete_lm(CRs_map,Name,CRs_map2).
 
-crs_update_cr(crs(Range,CRs_map),Name,New_CR,crs(Range,CRs_map2)):-
+crs_update_cr(crs(range(Min,Max),CRs_map),Name,New_CR,crs(range(Min,Max_new),CRs_map2)):-
+	cr_get_max_id(New_CR,Max_cr),
+	Max_new is max(Max_cr+1,Max),
 	update_lm(CRs_map,Name,_,New_CR,CRs_map2).
 	
 	
@@ -490,14 +560,19 @@ crs_update_cr_forward_invariant(CRS,Head,Cs,CRS2):-
 	cr_update_cr_forward_invariant(CR,Head,Cs,CR2),
 	crs_update_cr(CRS,Name,CR2,CRS2).
 	
-
-crs_update_forward_invariants(CRS,CR,CRS2):-
-	cr_get_called_forward_invariants(CR,Map),
+crs_update_forward_invariants_with_calls_from_cr(CRS,CR,CRS2):-
+	empty_lm(Empty_map),
+	cr_get_called_forward_invariants(CR,Empty_map,Map),
 	foldl(\Pair^CRS_l^CRS_l2^(
 				Pair=(Name,(Vars,Cs)),
 				Head=..[Name|Vars],
 				crs_update_cr_forward_invariant(CRS_l,Head,Cs,CRS_l2)
 				),Map,CRS,CRS2).
+
+crs_get_cr_external_patterns(CRS,Head,External_patt):-
+	functor(Head,Name,_),
+	crs_get_cr(CRS,Name,CR),
+	cr_get_external_patterns(CR,External_patt).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Entries is a list of entry(Head,Polyhedron)
