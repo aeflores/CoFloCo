@@ -1,3 +1,4 @@
+:- module(scc_tarjan_lazy_test,[]).
 
 :-begin_tests(scc_tarjan_lazy).
 :-ensure_loaded(scc_tarjan_lazy).
