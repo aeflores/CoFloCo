@@ -33,12 +33,12 @@ This module prints the results of the analysis
           interesting_example_warning/2,
           print_chain_simple/1,
 		  print_chains_entry/2,
-		  print_sccs/0,
+		  print_sccs/1,
 		  print_merging_cover_points/3,
-		  print_new_scc/2,
-		  print_partially_evaluated_sccs/0,
-		  print_equations_refinement/2,
-		  print_loops_refinement/2,
+		%  print_new_scc/2,
+		  print_partially_evaluated_sccs/1,
+		  print_equations_refinement/1,
+		  print_loops/1,
 		  print_external_pattern_refinement/2,
 		  print_ranking_functions/1,
 		  print_phase_termination_argument/4,
@@ -69,23 +69,31 @@ This module prints the results of the analysis
 		  print_stats/0]).
 
 :- use_module('../db',[ground_equation_header/1,
-						eq_refined/2,
-						eq_ph/8,
-						loop_ph/6,
-						external_call_pattern/5,
 						upper_bound/4,
 						closed_upper_bound_print/3,
 						closed_lower_bound_print/3,
 						conditional_upper_bound/3,
 						conditional_lower_bound/3,
 						non_terminating_chain/3]).
-:- use_module('../pre_processing/SCCs',[crs_scc/6,crs_residual_scc/2]).
-:- use_module('../refinement/invariants',[backward_invariant/4]).
-:- use_module('../refinement/chains',[chain/3]).
+:- use_module('../pre_processing/SCCs',[scc_get_cover_points/2]).
+:- use_module('../refinement/invariants',[]).
+:- use_module('../refinement/loops',[
+	loop_get_CEs/2,
+	loops_get_head/2,
+	loops_get_list_with_id/2
+]).
+
+:- use_module('../refinement/chains',[]).
 :- use_module('../ranking_functions',[
 	ranking_function/4,
 	partial_ranking_function/7]).
 :- use_module('../bound_computation/phase_solver/phase_solver',[type_of_loop/2]).
+
+:- use_module('../utils/crs',[
+	ce_get_refined/2,
+	cr_nameArity/2,
+	cr_get_ceList_with_id/2]).
+			
 :- use_module('../utils/cost_expressions',[get_asymptotic_class_name/2]).
 :- use_module('../utils/cofloco_utils',[
 			constraint_to_coeffs_rep/2,
@@ -100,18 +108,22 @@ This module prints the results of the analysis
 	astrexp_to_cexpr/2]).
 
 
-:- use_module('../IO/params',[parameter_dictionary/3,get_param/2,
-		      param_description/2]).
+:- use_module('../IO/params',[
+	parameter_dictionary/3,
+	get_param/2,
+	param_description/2]).
 
 :- use_module(stdlib(linear_expression),[write_le/2]).
 :- use_module(stdlib(profiling),[profiling_get_info/3]).
 :- use_module(stdlib(counters),[counter_get_value/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list),[contains_sl/2]).
+:- use_module(stdlib(list_map),[map_values_lm/3]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
+:-use_module(library(lambda)).
 :-use_module(library(varnumbers)).
 
 :-dynamic log_entry/3.
@@ -212,88 +224,81 @@ print_warning_in_error_stream(Text,Args):-
 	format(user_error,Text,Args).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 	
-print_sccs:-
+print_sccs(SCC_list):-
 	get_param(v,[X]),X > 1,!,
 	print_header('Computed strongly connected components ~n',[],4),
-	findall(scc(SCC_N,Type,Nodes,Entries,Info),
-		(crs_scc(SCC_N,Type,Nodes,_SCC_Graph,Entries,Info),
-		Nodes\=['$cofloco_aux_entry$'/0])
-		,Sccs),
-	maplist(print_scc,Sccs).
+	reverse(SCC_list,SCC_list_rev),
+	foldl(print_scc,SCC_list_rev,1,_).
 print_sccs.
 
-print_scc(scc(SCC_N,Type,Nodes,_Entries,Info)):-
+print_scc(scc(Type,Nodes,_Subgraph,_Entries,Info),SCC_N,SCC_N1):-
+	SCC_N1 is SCC_N+1,
 	(Info\=[] ->Info_print=Info;Info_print=''),
 	print_or_log('~p. ~p ~p : ~p~n',[SCC_N,Type,Info_print,Nodes]).
 
 
-print_new_scc(Entry,SCC_N):-
-	get_param(v,[X]),X > 1,!,
-	print_or_log('* The entry ~p is not a cutpoint so it becomes a new SCC ~p~n',[Entry,SCC_N]).
-
-print_new_scc(_,_).
+%print_new_scc(Entry,SCC_N):-
+%	get_param(v,[X]),X > 1,!,
+%	print_or_log('* The entry ~p is not a cutpoint so it becomes a new SCC ~p~n',[Entry,SCC_N]).
+%print_new_scc(_,_).
 	
 print_merging_cover_points(SCC_N,Cover_points,Merged):-
 	get_param(v,[X]),X > 1,!,
 	print_or_log('~p. SCC does not have a single cut point : ~p  ~n Merged into ~p~n',[SCC_N,Cover_points,Merged]).
 print_merging_cover_points(_,_,_).	
 	
-print_partially_evaluated_sccs:-
+print_partially_evaluated_sccs(SCC_list):-
 	get_param(v,[X]),X > 1,!,
 	print_header('Obtained direct recursion through partial evaluation ~n',[],4),
-	findall(SCC_N,
-		(crs_scc(SCC_N,_,Nodes,_,_,_),
-		Nodes\=['$cofloco_aux_entry$'/0]
-		)
-		,Sccs),
-	maplist(print_partially_evaluated,Sccs).
+	reverse(SCC_list,SCC_list_rev),
+	foldl(print_partially_evaluated,SCC_list_rev,1,_).
 print_partially_evaluated_sccs.
 
-print_partially_evaluated(SCC_N):-
-	crs_residual_scc(SCC_N,Cover_point),!,
+print_partially_evaluated(SCC,SCC_N,SCC_N1):-
+	scc_get_cover_points(SCC,[Cover_point]),!,
+	SCC_N1 is SCC_N+1,
 	print_or_log('~p. SCC is partially evaluated into ~p~n',[SCC_N,Cover_point]).	
-print_partially_evaluated(SCC_N):-
+print_partially_evaluated(_SCC,SCC_N,SCC_N1):-
+	SCC_N1 is SCC_N+1,
 	print_or_log('~p. SCC is completely evaluated into other SCCs~n',[SCC_N]).		
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 %! print_equations_refinement(+Head:term,+RefCnt:int) is det
 % print the calls from the SCC Head in the refinement phase RefCnt
 % if the verbosity is high enough
-print_equations_refinement(Head,RefCnt):-
+print_equations_refinement(CR):-
 	get_param(v,[X]),X > 1,!,
-	functor(Head,Name,Arity),
+	cr_nameArity(CR,Name/Arity),
 	print_header('Specialization of cost equations ~p ~n',[Name/Arity],3),
-	print_equations_refinement_1(Head,RefCnt),
+	print_equations_refinement_1(CR),
 	(X>2-> 
-		RefCnt2 is RefCnt+1,
 		print_header('Refined cost equations ~p ~n',[Name/Arity],4),
-		print_refined_equations(Head,RefCnt2)
+		print_CR(CR)
 	;
 		true
 	).
-print_equations_refinement(_,_).
+print_equations_refinement(_).
 	
-print_equations_refinement_1(Head,RefCnt):-
-	eq_ph(Head,(Eq_id,RefCnt),_,_,_,_,_,_),
-	findall(Refined,
-	        eq_refined(Eq_id,Refined),
-	        Refined_list),
-	(Refined_list\=[]-> 
-		print_or_log('* CE ~p is refined into CE ~p ~n',[Eq_id,Refined_list])
-		;
-		print_or_log('* CE ~p is discarded (unfeasible) ~n',[Eq_id])
-	),
-	fail.
-print_equations_refinement_1(_,_):-print_or_log_nl.
+print_equations_refinement_1(CR):-
+	cr_get_ceList_with_id(CR,Eqs),
+	map_values_lm(ce_get_refined,Eqs,Pairs_refined),
+	maplist(\Pair^Pair2^(Pair=(A,B),Pair2=B-A),Pairs_refined,Inverse_pairs),
+	group_pairs_by_key(Inverse_pairs,Grouped_pairs),
+	maplist(print_refined_pair,Grouped_pairs),
+	print_or_log_nl.
+	
+print_refined_pair(Eq_id-Refined_list):-
+	print_or_log('* CE ~p is refined into CE ~p ~n',[Eq_id,Refined_list]).
 
-print_refined_equations(Head,RefCnt):-
-	findall(Id,
-	 eq_ph(Head,(Id,RefCnt),_,_,_,_,_,_),
-	 Eqs),
-	 maplist(pretty_print_CE,Eqs).
+%print_or_log('* CE ~p is discarded (unfeasible) ~n',[Eq_id])
 
-pretty_print_CE(Id):-
-	eq_ph(Head,(Id,_),Cost,_NR_Calls,_Rec_Calls,Calls,Cs,_Non_Term),
+
+print_CR(CR):-
+	cr_get_ceList_with_id(CR,Eqs),
+	copy_term(Eqs,Eqs_copy),
+	maplist(pretty_print_CE,Eqs_copy).
+
+pretty_print_CE((Id,eq_ref(Head,Cost,_,_,Calls,Cs,_))):-
 	foldl(unify_equalities,Cs,[],Cs2),
 	maplist(pretty_print_constr,Cs2,Cs3),
 	ground_header(Head),
@@ -302,16 +307,14 @@ pretty_print_CE(Id):-
 	numbervars((Cost,Calls,Cs3),InitN,_),
 	print_or_log('* CE ~p: ~p =~| ',[Id,Head]),
 	print_cost_structure(Cost),
-	pretty_print_refinedCalls(Calls,'+'),print_or_log_nl,
+	pretty_print_refinedCalls(Calls,'+'),
+	print_or_log_nl,
 	print_or_log('     ~p ~n',[Cs3]).
 
 
 pretty_print_refinedCalls([],_).
-pretty_print_refinedCalls([(Call,external_pattern(Pattern))|Calls],Sep):-!,
+pretty_print_refinedCalls([Pattern:Call|Calls],Sep):-!,
 	print_or_log('~a ~p',[Sep,Call:Pattern]),
-	pretty_print_refinedCalls(Calls,Sep).
-pretty_print_refinedCalls([(Call,chain(Chain))|Calls],Sep):-!,
-	print_or_log('~a ~p',[Sep,Call:Chain]),
 	pretty_print_refinedCalls(Calls,Sep).
 pretty_print_refinedCalls([RecCall|Calls],Sep):-
 	print_or_log('~a ~p',[Sep,RecCall]),
@@ -326,27 +329,28 @@ equality(Constr):-
 %! print_loops_refinement(+Head:term,+RefCnt:int) is det
 % print the correspondence between loops and cost equations from the SCC Head in the refinement phase RefCnt
 % if the verbosity is high enough
-print_loops_refinement(Head,RefCnt):-
+print_loops(Loops):-
 	get_param(v,[X]),X > 1,!,
+	loops_get_head(Loops,Head),
 	functor(Head,Name,Arity),
 	print_header('Cost equations --> "Loop" of ~p ~n',[Name/Arity],3),
-	print_loops_refinement_1(Head,RefCnt),
+	loops_get_list_with_id(Loops,Pairs),
+	maplist(print_loop_refinement,Pairs),
 	(X>2-> 
 		print_header('Loops of ~p ~n',[Name/Arity],4),
-		print_refined_loops(Head,RefCnt)
+		maplist(print_loop,Pairs)
 	;
 		true
 	).
-print_loops_refinement(_,_).
+print_loops_refinement(_).
 	
-print_loops_refinement_1(Head,RefCnt):-
-	loop_ph(Head,(Id,RefCnt),_,_,Eqs,_),
-	print_or_log('* CEs ~p --> Loop ~p ~n',[Eqs,Id]),
-	fail.
-print_loops_refinement_1(_,_).	
+print_loop_refinement((Id,Loop)):-
+	loop_get_CEs(Loop,Eqs),
+	print_or_log('* CEs ~p --> Loop ~p ~n',[Eqs,Id]).
 
-print_refined_loops(Head,RefCnt):-
-	loop_ph(Head,(Id,RefCnt),Calls,Cs,_Eqs,_),
+
+print_loop((Id,Loop)):-
+	copy_term(Loop,loop(Head,Calls,Cs,_)),
 	print_or_log('* Loop ~p: ',[Id]),
 	foldl(unify_equalities,Cs,[],Cs2),
 	maplist(pretty_print_constr,Cs2,Cs3),
@@ -360,9 +364,8 @@ print_refined_loops(Head,RefCnt):-
 		print_or_log('                  ~p ~n',[Cs3])
 		;
 		print_or_log(' ~p ~n',[Cs3])
-	),	
-	fail.	
-print_refined_loops(_,_).
+	).
+
 
 %! print_external_pattern_refinement(+Head:term,+RefCnt:int) is det
 % print the correspondence between external patterns and chains from the SCC Head in the refinement phase RefCnt

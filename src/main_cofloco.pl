@@ -1,3 +1,27 @@
+/* 
+Part of CoFloCo
+
+@author Antonio Flores Montoya
+
+@copyright Copyright (C) 2014-2017 Antonio Flores Montoya
+
+@license This file is part of CoFloCo. 
+    CoFloCo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    any later version.
+
+    CoFloCo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+:- module(main_cofloco,[cofloco_shell_main/0,cofloco_bin_main/0,cofloco_query/2,cofloco_query/1]).
+
 /** <module> main_cofloco
 
 The analysis has three main phases:
@@ -67,25 +91,8 @@ The main "data types" used in CoFloCo are the following:
 
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014,2015 Antonio Flores Montoya
-
-@license This file is part of CoFloCo. 
-    CoFloCo is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    any later version.
-
-    CoFloCo is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-:- module(main_cofloco,[cofloco_shell_main/0,cofloco_bin_main/0,cofloco_query/2,cofloco_query/1]).
 :-include('search_paths.pl').
 
 
@@ -93,18 +100,15 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('pre_processing/SCCs',[compute_sccs_and_btcs/3,scc_get_cover_points/2]).
 :- use_module('pre_processing/partial_evaluation',[partial_evaluation/4]).
 
-:- use_module('refinement/invariants',[compute_invariants_for_scc/2,
-			  compute_forward_invariants/2,
-			  clean_invariants/0,
-			  add_scc_forward_invariant/3,
-			  backward_invariant/4
+:- use_module('refinement/invariants',[compute_backward_invariants/3,
+			  compute_forward_invariants/4,
+			  fwd_invs_get_loop_invariants/2,
+			  loop_invs_to_CE_invs/3
 			  ]).
-:- use_module('refinement/unfolding',[unfold_calls/2,
-			 reinforce_equations_with_forward_invs/2,
-			 remove_terminating_non_terminating_chains/2,
+:- use_module('refinement/unfolding',[cr_specialize/3,
 			 compress_chains_execution_patterns/2]). 
 :- use_module('refinement/chains',[compute_chains/2,chain/3,init_chains/0]).
-:- use_module('refinement/loops',[compute_loops/2,compute_phase_loops/2]).
+:- use_module('refinement/loops',[compute_loops/3,compute_phase_loops/3]).
 
 
 :- use_module(ranking_functions,[init_ranking_functions/0,find_ranking_functions/3]).
@@ -126,8 +130,8 @@ The main "data types" used in CoFloCo are the following:
 			  print_results/2,
 			  print_sccs/1,
 			  print_partially_evaluated_sccs/1,
-	          print_equations_refinement/2,
-	          print_loops_refinement/2,
+	          print_equations_refinement/1,
+	          print_loops/1,
 	          print_external_pattern_refinement/2,
 	          print_ranking_functions/1,
 		      print_help/0,
@@ -140,11 +144,21 @@ The main "data types" used in CoFloCo are the following:
 		      print_stats/0,
 		      print_log/0,
 		      print_help/0]).
-:- use_module('IO/input',[read_cost_equations/2,store_cost_equations/2]).
+:-use_module('IO/input',[read_cost_equations/2,store_cost_equations/2]).
 :-use_module('IO/params',[set_default_params/0,set_competition_params/0,parse_params/1,get_param/2]).
 :-use_module('utils/cost_structures',[init_cost_structures/0]).
 
-:-use_module('utils/crs',[crs_IOvars/3]).
+:-use_module('utils/crs',[
+	cr_get_loops/2,
+	cr_get_forward_invariant/2,
+	cr_strengthen_with_CE_invs/4,
+	cr_IOvars/2,
+	
+	crs_get_cr/3,
+	crs_IOvars/3,		
+	crs_update_cr_forward_invariant/4,
+	crs_update_forward_invariants_with_calls_from_cr/3,
+	crs_update_cr/4]).
 
 :-use_module('utils/cofloco_utils',[tuple/3]).
 
@@ -221,7 +235,6 @@ cofloco_query_part1(Params):-
 	parse_params(Params),
 	conditional_call(get_param(competition,[]),set_competition_params),
 	init_timers,
-	init_database,
 	profiling_start_timer(analysis).
 
 cofloco_query_part2(CRSE):-
@@ -238,7 +251,6 @@ cofloco_query_part2(CRSE):-
 	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
 	preprocess_cost_equations(CRSE,SCCs,Ignored_crs,CRSE2),
 	conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
-	trace,
 	refinement(CRSE2,SCCs,Ignored_crs,CRSE3),
 	(get_param(only_termination,[])->
 			true
@@ -256,7 +268,6 @@ init_database:-
 	init_db,
 	init_ranking_functions,
 	init_termination,
-	init_chains,
 	clean_invariants,
 	init_phase_solver,
 	init_cost_equation_solver,
@@ -281,10 +292,10 @@ preprocess_cost_equations(CRSE,SCCs,Ignored_CRS,CRSE3):-
 % by the bottom_up analysis
 refinement(CRSE,SCCs,Ignored_crs,CRSE2):-
 	CRSE=crse(Entries,CRS),
-	foldl(\Entry^CRS_l^CRS2_l^
+	foldl(\Entry^CRS1_l^CRS2_l^
 	 		(
 	 		Entry=entry(Head,Cs),
-	 		crs_add_cr_forward_invariant(CRS_l,Head,Cs,CRS2_l)
+	 		crs_update_cr_forward_invariant(CRS1_l,Head,Cs,CRS2_l)
 	 		),Entries,CRS,CRS2),
 	reverse(SCCs,SCCs_rev),
 	top_down_refinement(SCCs_rev,CRS2,Ignored_crs,CRS3),
@@ -302,8 +313,9 @@ top_down_refinement([SCC|SCCs],CRS,Ignored_crs,CRS_out):-
 	scc_get_cover_points(SCC,[F/A]),\+contains_sl(Ignored_crs,F/A),!,
 	crs_get_cr(CRS,F,CR),
 	top_down_refinement_scc(CR,CR2),
-	crs_update_cr(CRS,F,CR2,CRS2),
-	top_down_refinement(SCCs,CRS2,Ignored_crs,CRS_out).
+	crs_update_forward_invariants_with_calls_from_cr(CRS,CR2,CRS2),
+	crs_update_cr(CRS2,F,CR2,CRS3),
+	top_down_refinement(SCCs,CRS3,Ignored_crs,CRS_out).
 top_down_refinement([_SCC|SCCs],CRS,Ignored_crs,CRS_out):-
 	top_down_refinement(SCCs,CRS,Ignored_crs,CRS_out).
 
@@ -326,14 +338,21 @@ bottom_up_refinement([_SCC|SCCs],CRS,Ignored_crs,CRS_out):-
 % Computes chains for a SCC defined by Head
 % Computes forward invariants for the generated chains and add the invariants
 % to the cost equations
-top_down_refinement_scc(CR,CR6):-
+top_down_refinement_scc(CR,CR3):-
 	profiling_start_timer(unfold),
-	compute_loops(CR,CR2),
-	compute_chains(CR2,CR3),!,
-	compute_phase_loops(CR3,CR4),
+	(get_param(compress_chains,[N_compress])->true;N_compress=0),
+	compute_loops(CR,N_compress,Loops),
+	compute_chains(Loops,Chains),
+	compute_phase_loops(Loops,Chains,Chains_annotated),
 	profiling_stop_timer_acum(unfold,_),
-	compute_forward_invariants(CR4,CR5),
-	reinforce_equations_with_forward_invs(CR5,CR6).
+	cr_get_forward_invariant(CR,Initial_fwd_inv),
+	compute_forward_invariants(Initial_fwd_inv,Loops,Chains_annotated,Fwd_invs),
+	fwd_invs_get_loop_invariants(Fwd_invs,Loop_invs),
+	loop_invs_to_CE_invs(Loop_invs,Loops,CE_invs),
+
+	%fwd_invs_get_unfeasible_prefixes(Fwd_invs,Infeasible_prefixes),
+	%chains_discard_unfeasible_prefixes(Chains_annotated,Infeasible_prefixes,Chains2),
+	cr_strengthen_with_CE_invs(CR,head,CE_invs,CR3).
 
 %! bottom_up_refinement_scc(+Head:term) is det
 %  *  Unfold the SCC defined by Head according to its calls to other SCC 
@@ -342,46 +361,89 @@ top_down_refinement_scc(CR,CR6):-
 %  *  Find ranking functions and prove termination of the chains
 %  *  Remove impossible chains
 %  *  Compute forward and backwards invariants
-bottom_up_refinement_scc(CR,CRS,CR6) :-
-	copy_term(Head,Head_aux),
-	functor(Head,Name,_),
-	cr_IOvars(CR,Name,IOvars),
+bottom_up_refinement_scc(CR,CRS,CR7) :-
+	cr_IOvars(CR,IOvars),
 	
 	profiling_start_timer(unfold),
-	unfold_calls(CR,CRS,CR2,Ref_info),
-	print_equations_refinement(CR2,Ref_info), 
-	compute_loops(CR2,CR3),
-	print_loops_refinement(CR3),
+	cr_specialize(CR,CRS,CR2),
+	print_equations_refinement(CR2), 
+	(get_param(compress_chains,[N_compress])->true;N_compress=0),
+	compute_loops(CR2,N_compress,Loops),
+	print_loops(Loops),
+	compute_chains(Loops,Chains),
+	compute_phase_loops(Loops,Chains,Chains_annotated),
 	
-	compute_chains(CR3,CR4),
-	compute_phase_loops(CR4,CR5),
 	profiling_stop_timer_acum(unfold,_),
-
+	
 	profiling_start_timer(inv),
-	compute_forward_invariants(CR5,CR6),	
+	cr_get_forward_invariant(CR,Initial_fwd_inv),
+	compute_forward_invariants(Initial_fwd_inv,Loops,Chains_annotated,Fwd_invs),
+	
+	fwd_invs_get_unfeasible_prefixes(Fwd_invs,Infeasible_prefixes),
+	chains_discard_unfeasible_prefixes(Chains_annotated,Infeasible_prefixes,Chains2),
+	
+	fwd_invs_get_loop_invariants(Fwd_invs,Loop_invs),
+	loop_invs_to_CE_invs(Loop_invs,Loops,CE_invs),
+	
+	%To Fix
+	loops_strengthen_with_loop_invs(Loops,head,Loop_invs,Loops2,Discarded_loops),
+
+	%TODO
+	chains_update_with_discarded_loops(Chains,Discarded_loops,Chains2,_),
+	fwd_invs_update_with_discarded_loops(Fwd_invs,Discarded_loops,Fwd_invs2),
+	cr_strengthen_with_CE_invs(CR2,head,CE_invs,CR3),
+	
 	profiling_stop_timer_acum(inv,_),
 	
 	profiling_start_timer(termination),
-	find_ranking_functions(Head,IOvars,2),
-	print_ranking_functions(Head),
+	find_ranking_functions(Chains3,IOvars,Loops2,Loops3),
+	print_ranking_functions(Loops3),
 	
-	prove_termination(Head,2),
+	prove_termination(Chains3,Loops3,Chains4),
+	chains_discard_terminating_non_terminating(Chains4,Chains5),
 	profiling_stop_timer_acum(termination,_),
 	
-	remove_terminating_non_terminating_chains(Head,2),
-	
+
 	profiling_start_timer(inv),
 	%compute_forward_invariants(Head,2),	
-	compute_invariants_for_scc(Head,2),
-	profiling_stop_timer_acum(inv,_),
-	print_chains_entry(Head_aux,2),
-%TODO: experiment with chain compression	
-	conditional_call((get_param(compress_chains,[N]),N > 0),
-	    (
-		  compress_chains_execution_patterns(Head,2),
-		  print_external_pattern_refinement(Head,2)
-		  )
-		 ).
+	
+	profiling_start_timer(inv_back),
+	compute_backward_invariants(Loops3,Chains5,Backward_invs),
+	back_invs_get_infeasible(Backward_invs,Infeasible_chains),
+	
+	chains_discard_infeasible(Chains5,Infeasible_chains,Chains6,Changes_map),
+	back_invs_update_with_changed_chains(Backward_invs,Changes_map,Backward_invs2),
+	
+	chains_discard_infeasible_combinations(Chains6,Backward_invs2,Fwd_invs2,Chains7,Changes_map2),
+	back_invs_update_with_changed_chains(Backward_invs2,Changes_map2,Backward_invs3),
+	profiling_stop_timer_acum(inv_back,_),
+	
+	
+	
+	back_invs_get_loop_invariants(Backward_invs3,Loop_call_invs),
+	loop_invs_to_CE_invs(Loop_call_invs,Loops3,CE_call_invs),
+	
+	loops_strengthen_with_loop_invs(Loops3,call,Loop_call_invs,Loops4,Discarded_loops2),
+	
+	chains_update_with_discarded_loops(Chains7,Discarded_loops2,Chains8,Changes_map4),
+	back_invs_update_with_changed_chains(Backward_invs3,Changes_map4,Backward_invs4),
+	ce_strengthen_with_ce_invs(CR3,call,CE_call_invs,CR4),
+	
+	cr_set_loops(CR4,Loops4,CR5),
+	cr_set_chains(CR5,Chains8,CR6),
+	(get_param(compress_chains,[Compress_param])->
+		true
+		;
+		Compress_param=0
+	),
+	cr_compute_external_execution_patterns(Chains8,Backward_invs4,Compress_param,External_patterns),
+	cr_set_external_patterns(CR6,External_patterns,CR7),
+	print_external_pattern_refinement(External_patterns).
+	
+	%profiling_start_timer(inv_transitive),
+	%compute_loops_transitive_closures(Head,RefCnt),
+	%profiling_stop_timer_acum(inv_transitive,_),
+
 	
 %! upper_bounds is det
 % compute upper bounds for all SCC and a closed upper bounds for the entry SCC
