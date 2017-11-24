@@ -125,7 +125,7 @@ test(chains_discard_infeasible):-
 			])]
 	]),
 	Infeasible=[[1],[[4],1]],
-	chains_discard_infeasible(Chains,Infeasible,chains(_,ChainsRest)),
+	chains_discard_infeasible(Chains,Infeasible,chains(_,ChainsRest),Changes),
 	assertion(ChainsRest=
 	[
 	[2],	
@@ -137,6 +137,22 @@ test(chains_discard_infeasible):-
 			[[4],2]
 			])]
 	]),
+	assertion(Changes=[(
+				[multiple([3],[
+				[1],
+				[2],
+				[[4]],
+				[[4],1],
+				[[4],2]
+				])]
+			,
+				[multiple([3],[
+				[2],
+				[[4]],
+				[[4],2]
+				])]
+			)
+			]),
 	Infeasible2=[[1],[[4],1],[multiple([3],[
 			[1],
 			[2],
@@ -144,12 +160,13 @@ test(chains_discard_infeasible):-
 			[[4],1],
 			[[4],2]
 			])]],
-		chains_discard_infeasible(Chains,Infeasible2,chains(_,ChainsRest2)),
+		chains_discard_infeasible(Chains,Infeasible2,chains(_,ChainsRest2),Changes2),
 	assertion(ChainsRest2=[
 		[2],	
 		[[4]],
 		[[4],2]
-	]).
+	]),
+	Changes2=[].
 
 
 
@@ -174,7 +191,7 @@ test(chains_discard_infeasible_prefixes):-
 	[[4],[3]]
 	],
 	sort(Infeasible,Infeasible_set),
-	chains_discard_infeasible_prefixes(Chains,Infeasible_set,chains(_,ChainsRest)),
+	chains_discard_infeasible_prefixes(Chains,Infeasible_set,chains(_,ChainsRest),Changes),
 	assertion(ChainsRest=
 	[
 	[1],
@@ -183,7 +200,24 @@ test(chains_discard_infeasible_prefixes):-
 			[1],
 			[2]
 			])]
-	]).	
+	]),
+	
+	assertion(Changes=[
+	(
+		[multiple([3],[
+			[1],
+			[2],
+			[[4]],
+			[[4],1],
+			[[4],2]
+			])]
+		,
+		[multiple([3],[
+			[1],
+			[2]
+			])]
+	)	
+	]).
 	
 test(chains_discard_infeasible_combinations):-
 	loops_example(sequence_incompatible,Loops),
@@ -213,7 +247,7 @@ test(chains_discard_infeasible_combinations):-
 	]),
 	compute_forward_invariants(fwd_inv(a(_,_),[]),Loops,Chains,Fwd_invs),
 	compute_backward_invariants(Loops,Chains,Back_invs),
-	chains_discard_infeasible_combinations(Chains,Back_invs,Fwd_invs,chains(_,Chains2)),
+	chains_discard_infeasible_combinations(Chains,Back_invs,Fwd_invs,chains(_,Chains2),Changes),
 	assertion(Chains2=[
 	[1],
 	[2],
@@ -231,7 +265,84 @@ test(chains_discard_infeasible_combinations):-
 	[[5]],
 	[[5],1],
 	[[5],3,1]
-	]).
+	]),
+	assertion(Changes=[]).
+
+test(chains_update_with_discarded_loops):-
+	Chains=chains([[1], [2,7], [4,5,6],[3]],
+	[
+	[[3]],
+	[[4,5,6]],
+%	[multiple([2,7],[[3],[[4,5,6]] ])]
+	[multiple([1],[ [multiple([2,7],[[3],[[4,5,6]],[] ])] ])]
+	]),
 	
-	
+	chains_update_with_discarded_loops(Chains,[2,3,5],Chains2,Changes_map),
+	Chains2=chains(Phases2,Chain_list2),
+	assertion(Phases2=[[1], [7], [4,6]]),
+	assertion(Chain_list2=
+		[
+		[[4,6]],
+%		[multiple([7],[[[4,6]] ])]
+		[multiple([1],[ [multiple([7],[[[4,6]],[] ])] ])]
+		]
+	),
+	assertion(Changes_map=[
+		( [[4,5,6]], [[4,6]] ),
+		( [multiple([1],[ [multiple([2,7],[[3],[[4,5,6]],[] ])] ])],  [multiple([1],[ [multiple([7],[[[4,6]],[] ])] ])]),
+		(  [multiple([2,7],[[3],[[4,5,6]],[] ])], [multiple([7],[[[4,6]],[] ])] )		
+		]
+	).
+
+test(chains_update_with_discarded_loops2):-
+	Chains=chains([[4],[3],[2,5],1],[
+				[[4],multiple([3],[ [[2,5],1],[1]])]
+				]),
+	chains_update_with_discarded_loops(Chains,[5],_,Changes_map),
+	%the map has to record all the subchains
+	assertion(Changes_map=
+		[	
+		([[2,5],1],[[2],1]),
+		([[4],multiple([3],[ [[2,5],1],[1]])],[[4],multiple([3],[ [[2],1],[1]])]),
+		([multiple([3],[ [[2,5],1],[1]])],[multiple([3],[ [[2],1],[1]])])
+		]).
+		
+test(chains_discard_terminating_non_terminating):-	
+	Chains=chains([[1], [2,7], [4,5,6],[3]],
+		[
+			[[3],1],
+			[[3]],
+			[[4,5,6]],
+			[multiple(8,[[multiple([1],[ [multiple([2,7],[[[3]],[[4,5,6]],[] ])], [] ])]])]
+		]),
+	chains_discard_terminating_non_terminating(Chains,[[3],[4,5,6]],chains(_,Chain_list2),Changes),
+	assertion(Chain_list2=[
+		[[3],1],
+		[multiple(8,[[multiple([1],[ [multiple([2,7],[ []])], [] ])]])]
+		]),
+	assertion(Changes=
+	[
+		(
+		[multiple(8,[[multiple([1],[ [multiple([2,7],[[[3]],[[4,5,6]],[] ])], [] ])]])],
+		[multiple(8,[[multiple([1],[ [multiple([2,7],[ []])], [] ])]])]
+		),
+		(
+		[multiple([1],[ [multiple([2,7],[[[3]],[[4,5,6]],[] ])], [] ])],
+		[multiple([1],[ [multiple([2,7],[ []])], [] ])]
+		),
+		(
+		[multiple([2,7],[[[3]],[[4,5,6]],[] ])],
+		[multiple([2,7],[ []])]
+		)
+	]),	
+	chains_discard_terminating_non_terminating(Chains,[[2,7],[3],[4,5,6]],chains(_,Chain_list3),_Changes2),
+	assertion(Chain_list3=[
+		[[3],1],
+		[multiple(8,[[multiple([1],[[] ])]])]
+		]),
+	chains_discard_terminating_non_terminating(Chains,[[1],[2,7],[3],[4,5,6]],chains(_,Chain_list4),_Changes3),	
+	assertion(Chain_list4=[
+		[[3],1]
+		]).
+			
 :-end_tests(chains).

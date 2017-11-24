@@ -42,9 +42,11 @@ However, for each SCC there is a special base case that will allow us to represe
 
 :- module(chains,[compute_chains/2,
 				chains_reversed_chains/2,
-				chains_discard_infeasible_prefixes/3,
-				chains_discard_infeasible/3,
-				chains_discard_infeasible_combinations/4
+				chains_discard_infeasible_prefixes/4,
+				chains_discard_infeasible/4,
+				chains_discard_infeasible_combinations/5,
+				chains_update_with_discarded_loops/4,
+				chains_discard_terminating_non_terminating/4
 				]).
 
 
@@ -64,7 +66,8 @@ However, for each SCC there is a special base case that will allow us to represe
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_glb/3]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
-:-use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2]).
+:-use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2,difference_sl/3]).
+:-use_module(stdlib(list_map),[insert_lm/4]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -102,27 +105,75 @@ However, for each SCC there is a special base case that will allow us to represe
 %chains(Phases,Chains)
 
 
-chains_discard_infeasible_prefixes(chains(Phases,Chains),Infeasible_prefixes,chains(Phases,Chains2)):-
-	chains_transform_and_discard(Chains,[],check_infeasible_prefixes(Infeasible_prefixes),Chains2).
+phase_discard(Ph,Discarded,Ph2):-
+	Ph=[_|_],!,
+	difference_sl(Ph,Discarded,Ph2),
+	Ph2\=[].
+
+phase_discard(Ph,Discarded,Ph):-
+	number(Ph),!,
+	\+contains_sl(Discarded,Ph).
+	
+chains_update_with_discarded_loops(chains(Phases,Chains),Discarded_loops,chains(Phases2,Chains2),Changes):-
+	exclude_loops_from_phase(Phases,Discarded_loops,Phases2),
+	chains_transform_and_discard(Chains,[],check_discarded_loops(Discarded_loops),Chains2,[],Changes).
 
 
-check_infeasible_prefixes(Infeasible_prefixes,_Chain,Prefix):-
+
+exclude_loops_from_phase([],_Discarded,[]).
+exclude_loops_from_phase([Ph|Phases],Discarded,[Ph2|Phases1]):-
+	phase_discard(Ph,Discarded,Ph2),!,
+	exclude_loops_from_phase(Phases,Discarded,Phases1).
+exclude_loops_from_phase([_Ph|Phases],Discarded,Phases1):-
+	exclude_loops_from_phase(Phases,Discarded,Phases1).	
+
+
+check_discarded_loops(_Discarded_loops,[],_,[]):-!.
+
+check_discarded_loops(Discarded_loops,[multiple(Ph,Tails)],_,[multiple(Ph2,Tails)]):-
+	phase_discard(Ph,Discarded_loops,Ph2).
+	
+check_discarded_loops(Discarded_loops,[Ph|Chain],_,[Ph2|Chain]):-
+	phase_discard(Ph,Discarded_loops,Ph2).
+
+
+
+		
+	
+chains_discard_infeasible_prefixes(chains(Phases,Chains),Infeasible_prefixes,chains(Phases,Chains2),Changes):-
+	chains_transform_and_discard(Chains,[],check_infeasible_prefixes(Infeasible_prefixes),Chains2,[],Changes).
+	
+
+check_infeasible_prefixes(Infeasible_prefixes,Chain,Prefix,Chain):-
 	\+contains_sl(Infeasible_prefixes,Prefix).
 			
+chains_discard_terminating_non_terminating(chains(Phases,Chains),TerminatingPhases,chains(Phases,Chains2),Changes):-
+	chains_transform_and_discard(Chains,[],check_terminating_non_terminating(TerminatingPhases),Chains2,[],Changes).
+	
+		
+check_terminating_non_terminating(_TerminatingPhases,[],[Phase|_],[]):-
+	number(Phase),!.
+	
+check_terminating_non_terminating(TerminatingPhases,[],[Phase|_],[]):-
+	Phase=[_|_],!,
+	\+contains_sl(TerminatingPhases,Phase).
+	
+check_terminating_non_terminating(_TerminatingPhases,Chain,_,Chain).
 
-chains_discard_infeasible(chains(Phases,Chains),Infeasible_chains,chains(Phases,Chains2)):-
-	chains_transform_and_discard(Chains,[],check_infeasible_chains(Infeasible_chains),Chains2).
+
+chains_discard_infeasible(chains(Phases,Chains),Infeasible_chains,chains(Phases,Chains2),Changes):-
+	chains_transform_and_discard(Chains,[],check_infeasible_chains(Infeasible_chains),Chains2,[],Changes).
 	
 	
-check_infeasible_chains(Infeasible_chains,Chain,_Prefix):-
+check_infeasible_chains(Infeasible_chains,Chain,_Prefix,Chain):-
 	\+contains_sl(Infeasible_chains,Chain).
 
 	
-chains_discard_infeasible_combinations(chains(Phases,Chains),Backward_invs,Fwd_invs,chains(Phases,Chains2)):-
-	chains_transform_and_discard(Chains,[],check_fwd_back_combination(Backward_invs,Fwd_invs),Chains2).
+chains_discard_infeasible_combinations(chains(Phases,Chains),Backward_invs,Fwd_invs,chains(Phases,Chains2),Changes):-
+	chains_transform_and_discard(Chains,[],check_fwd_back_combination(Backward_invs,Fwd_invs),Chains2,[],Changes).
 	
 	
-check_fwd_back_combination(Back_invs,Fwd_invs,Chain,Prefix):-
+check_fwd_back_combination(Back_invs,Fwd_invs,Chain,Prefix,Chain):-
 	back_invs_get(Back_invs,Chain,inv(Head,_,InvB)),
 	fwd_invs_get(Fwd_invs,Prefix,inv(Head,_,InvF)),
 	nad_glb(InvB,InvF,Inv),
@@ -131,27 +182,38 @@ check_fwd_back_combination(Back_invs,Fwd_invs,Chain,Prefix):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % high level predicate to discard or simplify chains according to different conditions
-chains_transform_and_discard(Chains,Prefix,Check,Chains3):-	
-	foldl(\Chain^chain_transform_and_discard(Chain,Prefix,Check),Chains,[],Chains2),
+chains_transform_and_discard(Chains,Prefix,Check,Chains3,Changes_accum,Changes_map):-	
+	foldl(\Chain^chain_transform_and_discard(Chain,Prefix,Check),Chains,([],Changes_accum),(Chains2,Changes_map)),
 	reverse(Chains2,Chains3).
 
-chain_transform_and_discard(Chain,Prefix,Check,Accum,[Chain2|Accum]):-
-	chain_transform(Chain,Prefix,Check,Chain2),!.
+chain_transform_and_discard(Chain,Prefix,Check,(Accum_ch,Accum_map),([Chain2|Accum_ch],Changes_map)):-
+	chain_transform(Chain,Prefix,Check,Chain2,Accum_map,Changes_map),!.
+
 	
 chain_transform_and_discard(_Chain,_,_Check,Accum,Accum).
 
 
-chain_transform([],Prefix,Check,[]):-
-	call(Check,[],Prefix).
+chain_transform([],Prefix,Check,[],Changes,Changes):-
+	call(Check,[],Prefix,[]).
 	
-chain_transform([multiple(Ph,Tails)],Prefix,Check,[multiple(Ph,Tails2)]):-!,
-	call(Check,[multiple(Ph,Tails)],Prefix),
-	chains_transform_and_discard(Tails,[Ph|Prefix],Check,Tails2),
-	Tails2\=[].
+chain_transform([multiple(Ph,Tails)],Prefix,Check,[multiple(Ph2,Tails2)],Changes_accum,Changes_map):-!,
+	call(Check,[multiple(Ph,Tails)],Prefix,[multiple(Ph2,Tails)]),
+	chains_transform_and_discard(Tails,[Ph|Prefix],Check,Tails2,Changes_accum,Changes_accum2),
+	Tails2\=[],
+	([multiple(Ph,Tails)]\=[multiple(Ph2,Tails2)]->
+		insert_lm(Changes_accum2,[multiple(Ph,Tails)],[multiple(Ph2,Tails2)],Changes_map)
+		;
+		Changes_map=Changes_accum2
+	).
 
-chain_transform([Ph|Chain],Prefix,Check,[Ph|Chain2]):-
-	call(Check,[Ph|Chain],Prefix),
-	chain_transform(Chain,[Ph|Prefix],Check,Chain2).
+chain_transform([Ph|Chain],Prefix,Check,[Ph2|Chain2],Changes_accum,Changes_map):-
+	call(Check,[Ph|Chain],Prefix,[Ph2|Chain]),
+	chain_transform(Chain,[Ph|Prefix],Check,Chain2,Changes_accum,Changes_accum2),
+	([Ph|Chain]\=[Ph2|Chain2]->
+		insert_lm(Changes_accum2,[Ph|Chain],[Ph2|Chain2],Changes_map)
+		;
+		Changes_map=Changes_accum2
+	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 is_multiple_phase(Phase,Loops):-

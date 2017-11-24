@@ -41,11 +41,21 @@ This module computes different kinds of invariants for the chains:
 		      
 		      back_invs_get/3,
 		      fwd_invs_get/3,
+		      
 		      loop_invs_get/3,
+		      loop_invs_head/2,
+		      loop_invs_map/2,
+		      
 		      ce_invs_get/3,
+		      ce_invs_head/2,
+		      ce_invs_map/2,
 		      
 		      fwd_invs_get_infeasible_prefixes/2,
+		      fwd_invs_update_with_discarded_loops/3,
+		      
 		      back_invs_get_infeasible/2,
+		      back_invs_update_with_changed_chains/3,
+		      
 		      
 		      fwd_invs_get_loop_invariants/2,
 		      back_invs_get_loop_invariants/2,
@@ -138,8 +148,41 @@ back_invs_add(back_invs(Head,Map),Chain,inv(Head,Cs_star,Cs_plus),back_invs(Head
 inv_is_bottom(inv(_Head,_Cs_star,Cs_plus)):-
 	nad_is_bottom(Cs_plus).
 	
+	
+
+back_invs_update_with_changed_chains(back_invs(Head,Map),Changes_map,back_invs(Head,Map2)):-
+	zip_lm(Map,Changes_map,Zipped_map),
+	maplist(process_zipped_pairs,Zipped_map,Map2_aux),
+	sort(1,@<,Map2_aux,Map2).
+	
+process_zipped_pairs((_Chain,both(Inv,Chain1)),(Chain1,Inv)):-!.
+process_zipped_pairs((Chain,left(Inv)),(Chain,Inv)).
+	
+fwd_invs_update_with_discarded_loops(fwd_invs(Head,Map),Discarded_loops,fwd_invs(Head,Map2)):-
+	maplist(\Pair^Pair2^
+		(Pair=(Prefix,Inv),
+		 remove_loops_from_prefix(Prefix,Discarded_loops,Prefix2),
+		 Pair2=(Prefix2,Inv)
+		),Map,Map2_aux),
+	sort(1,@<,Map2_aux,Map2).	 
+
+remove_loops_from_prefix(Prefix,Discarded_loops,Prefix2):-
+	maplist(remove_loops_from_phase(Discarded_loops),Prefix,Prefix2).
+remove_loops_from_phase(Discarded,Phase,Phase2):-
+	number(Phase),!,
+	(contains_sl(Discarded,Phase)->
+		Phase2=none
+		;
+		Phase2=Phase
+	).
+remove_loops_from_phase(Discarded,Phase,Phase2):-
+	difference_sl(Phase,Discarded,Phase2).
+		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 loop_invs_empty(Head,loop_invs(Head,[])).
+
+loop_invs_head(loop_invs(Head,_Map),Head).
+loop_invs_map(loop_invs(_Head,Map),Map).
 
 loop_invs_get(loop_invs(Head,Map),Loop,Inv_fresh):-
 	lookup_lm(Map,Loop,Cs),
@@ -176,9 +219,16 @@ loop_fwd_invs_accum_1(Head,Cs,Loop,loop_invs(Head,Map),loop_invs(Head,Map2)):-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ce_invs_empty(Head,ce_invs(Head,[])).
 
+
+ce_invs_head(ce_invs(Head,_Map),Head).
+ce_invs_map(ce_invs(_Head,Map),Map).
+
 ce_invs_get(ce_invs(Head,Map),CE,Inv_fresh):-
 	lookup_lm(Map,CE,Cs),
 	copy_term(inv(Head,Cs),Inv_fresh).
+
+ce_invs_add(ce_invs(Head,Map),Eq_id,inv(Head,Cs),ce_invs(Head,Map2)):-
+	insert_lm(Map,Eq_id,Cs,Map2).
 	
 loop_invs_to_CE_invs(loop_invs(Head,Loop_invs_map),Loops,CE_invs):-
 	ce_invs_empty(Head,CE_invs_empty),
@@ -187,10 +237,10 @@ loop_invs_to_CE_invs(loop_invs(Head,Loop_invs_map),Loops,CE_invs):-
 add_CE_invs(Head,Loops,(Loop_id,Cs),CE_invs,CE_invs2):-
 	loops_get_loop(Loops,Loop_id,Loop),
 	loop_get_CEs(Loop,Eqs),
-	foldl(add_CE_invs_1(Head,Cs),Eqs,CE_invs,CE_invs2).
+	foldl(\Eq_l^CE_invs_l^CE_invs_l2^
+			ce_invs_add(CE_invs_l,Eq_l,inv(Head,Cs),CE_invs_l2),Eqs,CE_invs,CE_invs2).
 	
-add_CE_invs_1(Head,Cs,Eq_id,ce_invs(Head,Map),ce_invs(Head,Map2)):-
-	insert_lm(Map,Eq_id,Cs,Map2).
+
 	
 %! widening_frequency(-N:int) is det
 % how often widening is performed

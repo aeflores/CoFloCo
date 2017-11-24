@@ -34,26 +34,30 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 	    loops_range/2,
 	    loops_get_list/2,
 	    loops_get_list/3,
+	    loops_get_list_with_id/2,
 	    loops_get_head/2,
 	    loops_get_ids/2,
 	    loop_is_multiple/1,
 	    loop_is_base_case/1,
 	    loops_get_loop/3,
 	    loops_get_loop_fresh/3,
+	    loops_strengthen_with_loop_invs/5,
 		compute_loops/3,
 		compute_phase_loops/3,
 		loops_split_multiple_loops/2,
 		get_extended_phase/2]).
 
 :- use_module('../db',[add_phase_loop/5]).
-:- use_module(chains,[phase/3]).
 
-:-use_module('../IO/params',[get_param/2]).
-:- use_module(stdlib(numeric_abstract_domains),[nad_lub/6]).
+:- use_module(invariants,[
+		      loop_invs_head/2,
+		      loop_invs_map/2
+			]).
+
+
+:- use_module(stdlib(numeric_abstract_domains),[nad_lub/6,nad_consistent_constraints/1]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,nad_normalize_polyhedron/2]).
-:- use_module('../utils/cofloco_utils',[
-			assign_right_vars/3,
-			merge_implied_summaries/3]).
+:- use_module('../utils/cofloco_utils',[merge_implied_summaries/3]).
 
 :- use_module('../utils/crs',[
 	cr_get_loops/2,
@@ -76,9 +80,24 @@ loop_is_base_case(loop(_,[],_,_)).
 
 loop_head(loop(Head,_,_,_),Head).
 
+loop_constraints(loop(_,_,Cs,_),Cs).
+
 loop_get_CEs(loop(_,_,_,Info),Eqs):-
 	once(member(eqs(Eqs),Info)).
 
+loop_pair_is_feasible((_,Loop)):-
+	loop_constraints(Loop,Cs),
+	nad_consistent_constraints(Cs).
+
+loop_strengthen(loop(Head,Calls,Cs,Info),head,inv(Head,Inv),loop(Head,Calls,Cs2,Info)):-!,
+	nad_glb(Cs,Inv,Cs2).
+	
+loop_strengthen(loop(Head,Calls,Cs,Info),call,inv(Call,Inv),loop(Head,Calls,Cs2,Info)):-
+		foldl(strengthen_call,Calls,(inv(Call,Inv),Cs),(_,Cs2)).
+       
+strengthen_call(Call,(inv(Head,Inv),Cs),(inv(Head,Inv),Cs2)):-
+	copy_term(inv(Head,Inv),inv(Call,Inv2)),
+	nad_glb(Cs,Inv2,Cs2).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 loops_range(loops(Range,_),Range).
 
@@ -106,7 +125,9 @@ loops_add_loop(loops(range(I,F),Map),Loop,loops(range(I,F2),Map2)):-
 
 loops_get_list(loops(_,Map),Loops):-
 	values_lm(Map,Loops).
-	
+
+loops_get_list_with_id(loops(_,Map),Map).
+
 loops_get_list(loops(_,Map),Ids,Selected_loops):-
 	project_lm(Map,Ids,List),
 	values_lm(List,Selected_loops).
@@ -115,12 +136,23 @@ loops_get_list_fresh(loops(_,Map),Ids,Selected_loops_fresh):-
 	project_lm(Map,Ids,List),
 	values_lm(List,Selected_loops),
 	maplist(copy_term,Selected_loops,Selected_loops_fresh).
-	
+
+
+loops_strengthen_with_loo_invs(loops(Range,LoopMap),HeadCall,Loop_invs,loops(Range,LoopMap3),Discarded):-
+	loop_invs_head(Loop_invs,HeadInv),
+	loop_invs_map(Loop_invs,InvMap),
+	zip_lm(LoopMap,InvMap,Composed_map),
+	map_values_lm(strengthen_pair(HeadCall,HeadInv),Composed_map,LoopMap2),
+	partition(loop_pair_is_feasible,LoopMap2,LoopMap3,Discarded_pairs),
+	keys_lm(Discarded_pairs,Discarded).
+
+strengthen_pair(HeadCall,HeadInv,both(Loop,Inv),Loop2):-	
+	loop_strengthen(Loop,HeadCall,inv(HeadInv,Inv),Loop2).	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! compute_loops(Head:term,RefCnt:int) is det
 % compute a loop for each cost equation
-compute_loops(CR,Compress,CR2):-
+compute_loops(CR,Compress,Loops_complete):-
 	cr_get_ceList_with_id(CR,CE_list_id),
 	maplist(
 		\Eq_pair_l^Res_l^(
@@ -140,8 +172,7 @@ compute_loops(CR,Compress,CR2):-
 	maplist(put_in_list,Grouped_loops,Simplified_loops)
 	),	
 	loops_empty(Empty_loops),
-	foldl(save_loop,Simplified_loops,Empty_loops,Loops_complete),
-	cr_set_loops(CR,Loops_complete,CR2).
+	foldl(save_loop,Simplified_loops,Empty_loops,Loops_complete).
 
 	 
 %unify the variables if the patterns match												

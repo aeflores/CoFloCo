@@ -3,6 +3,7 @@
 :-begin_tests(invariants).
 
 :-use_module(invariants).
+:-use_module(chains,[chains_update_with_discarded_loops/4]).
 :-use_module(stdlib(numeric_abstract_domains),[nad_equals/2,nad_consistent_constraints/1]).
 
 test(backward_invariants):-
@@ -275,8 +276,57 @@ test(back_loop_invariants):-
 	
 	loop_invs_get(Loop_invs,2,inv(a(A,B,C),Inv2)),
 	assertion(nad_equals(Inv2,[A>=1])).	
-	
 
+test(back_invs_update_with_changed_chains):-
+	Chains=chains([[4],[3],[2,5],1],[
+				[[4],multiple([3],[ [[2,5],1],[1]])]
+				]),
+	Loops=loops(range(1,6),[
+	(1,loop(a(A,B,C),[],[C>=1,A=0,B=0],[eqs([1]),terminating])),
+	(2,loop(a(A,B,C),[a(A2,B2,C2)],[C>=1,C2=C,A=<9,A2=A-1,B2=B-2],[eqs([2,3]),terminating])),
+	(3,loop(a(A,B,C),[a(A2,B2,C2),a(A3,B3,C3)],[C>=1,C2=C,C3=C,
+												A>=10,A2=A-C,B2=B-2*C,
+												A3=A-1,B3=B-2],[eqs([4]),terminating])),
+	(4,loop(a(A,B,C),[a(A2,B2,C2)],[C>=1,C2=C,A>=11,A2=A-1,B2=B-2],[eqs([4]),terminating])),
+	%for this example 5 is equal to 2 so the invariants are the same
+	(5,loop(a(A,B,C),[a(A2,B2,C2)],[C>=1,C2=C,A=<9,A2=A-1,B2=B-2],[eqs([6]),terminating]))
+	
+	]),
+	compute_backward_invariants(Loops,Chains,Back_invs),
+	chains_update_with_discarded_loops(Chains,[5],_,Changes_map),
+	back_invs_update_with_changed_chains(Back_invs,Changes_map,Back_invs2),
+	
+	
+	back_invs_get(Back_invs,[multiple([3],[ [[2,5],1],[1]])],inv(a(C,D,E),Inv1_star,Inv1_plus)),
+	back_invs_get(Back_invs2,[multiple([3],[ [[2],1],[1]])],inv(a(C,D,E),Inv2_star,Inv2_plus)),
+	assertion(Inv1_star==Inv2_star),
+	assertion(Inv1_plus==Inv2_plus),
+	assertion(\+back_invs_get(Back_invs2,[multiple(3,[ [[2,5],1],[1]])],_)).
+	
+	
+test(fwd_invs_update_with_discarded_loops):-
+	Chains=chains([[4],[3],[2,5],1],[
+				[[4],multiple([3],[ [[2,5],1],[1]])]
+				]),
+	Loops=loops(range(1,6),[
+	(1,loop(a(A,B,C),[],[C>=1,A=0,B=0],[eqs([1]),terminating])),
+	(2,loop(a(A,B,C),[a(A2,B2,C2)],[C>=1,C2=C,A=<9,A2=A-1,B2=B-2],[eqs([2,3]),terminating])),
+	(3,loop(a(A,B,C),[a(A2,B2,C2),a(A3,B3,C3)],[C>=1,C2=C,C3=C,
+												A>=10,A2=A-C,B2=B-2*C,
+												A3=A-1,B3=B-2],[eqs([4]),terminating])),
+	(4,loop(a(A,B,C),[a(A2,B2,C2)],[C>=1,C2=C,A>=11,A2=A-1,B2=B-2],[eqs([4]),terminating])),
+	%for this example 5 is equal to 2 so the invariants are the same
+	(5,loop(a(A,B,C),[a(A2,B2,C2)],[C>=1,C2=C,A=<9,A2=A-1,B2=B-2],[eqs([6]),terminating]))
+	
+	]),
+	compute_forward_invariants(fwd_inv(a(_,_,_),[]),Loops,Chains,Fwd_invs),
+	fwd_invs_update_with_discarded_loops(Fwd_invs,[5],Fwd_invs2),
+	
+	fwd_invs_get(Fwd_invs,[[2,5],[3],[4]],inv(a(C,D,E),Inv1_star,Inv1_plus)),
+	fwd_invs_get(Fwd_invs2,[[2],[3],[4]],inv(a(C,D,E),Inv2_star,Inv2_plus)),
+	assertion(Inv1_star==Inv2_star),
+	assertion(Inv1_plus==Inv2_plus),
+	assertion(\+fwd_invs_get(Fwd_invs2,[[2,5],[3],[4]],_)).
 %fwd_invs_get_loop_invariants/2
 %back_invs_get_loop_invariants/2,
 %loop_invs_to_CE_invs/3

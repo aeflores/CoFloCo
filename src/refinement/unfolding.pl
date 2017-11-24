@@ -38,10 +38,9 @@ This module allows to propagate the refinement from the outmost SCC to the inner
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(unfolding,[reinforce_equations_with_forward_invs/2,
-			   unfold_calls/2,
-			   remove_terminating_non_terminating_chains/2,
-			   compress_chains_execution_patterns/2]).
+:- module(unfolding,[
+			   cr_specialize/3,
+			   cr_compute_external_execution_patterns/3]).
 
 :- use_module(chains,[chain/3]).
 :- use_module(invariants,[backward_invariant/4,
@@ -66,6 +65,14 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 		print_or_log/2,
 		print_or_log_nl/0]).
 :- use_module('../IO/params',[get_param/2]).	
+
+:- use_module('../utils/crs',[
+	cr_empty/2,
+	cr_get_ceList_with_id/2,
+	cr_head/2,
+	cr_add_eq/5,
+	crs_range/2]).
+	
 :- use_module('../utils/cofloco_utils',[
 	bagof_no_fail/3,
 	assign_right_vars/3,
@@ -75,13 +82,16 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 	nad_consistent_constraints_group_aux/1,
 	slice_relevant_constraints_and_vars/5,
 	group_relevant_vars/4,
+	nad_is_bottom/1,
 	nad_normalize_polyhedron/2]).
 
 :- use_module(stdlib(utils),[ut_split_at_pos/4]).
 :- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_lub/6,
 			            nad_normalize/2,
 			            nad_entails/3,
-						nad_list_lub/2,nad_glb/3,nad_project/3]).
+						nad_list_lub/2,
+						nad_glb/3,
+						nad_project/3]).
 :- use_module(stdlib(set_list),[from_list_sl/2,unions_sl/2,union_sl/3,is_subset_sl/2]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 
@@ -89,70 +99,36 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 :-use_module(library(terms)).
-%! reinforce_equations_with_forward_invs(Head:term,RefCnt:int) is det
-%  adds the information inferred from the forward invariants to the cost equations' definition
-%  of a SCC. At the same time, it computes the scc_forward_invariant of the  SCCs that are called from the target SCC.
-%  This operation advances the refinement counter RefCnt.
-reinforce_equations_with_forward_invs(Head,RefCnt):-
-	loop_ph(Head,(Id_loop,RefCnt),_,_,Eqs,_),
-	bagof_no_fail(Inv,E1^E2^Lg^Id_loop^(
-			   forward_invariant(Head,([Id_loop|E1],RefCnt),E2,Inv);
-			   (forward_invariant(Head,([Lg|E1],RefCnt),E2,Inv),member(Id_loop,Lg))
-	       ),Invs),
-	nad_list_lub(Invs,Eq_inv),	
-	maplist(reinforce_equation(Head,RefCnt,Eq_inv),Eqs),
-	fail.
-reinforce_equations_with_forward_invs(_Head,_RefCnt).
+:-use_module(library(lambda)).
 
-reinforce_equation(Head,RefCnt,Eq_inv,Eq_id):-
-	RefCnt_1 is RefCnt+1,
-	eq_ph(Head,(Eq_id,RefCnt),E_Exp,NR_Calls,R_Calls,Calls,P_Size,Term_flag),
-	nad_glb(Eq_inv,P_Size,P_Size_new),
-	assertz(db:eq_ph(Head,(Eq_id,RefCnt_1),E_Exp,NR_Calls,R_Calls,Calls,P_Size_new,Term_flag)),
-	reinforce_calls(NR_Calls,RefCnt,P_Size_new).
-
-%! reinforce_calls(Calls:list(term),RefCnt:int,Cs:polyhedron) is det
-% for each call term in the list, add the projected Cs to the corresponding SCC forward invariant
-reinforce_calls([],_,_Cs).
-reinforce_calls([Head|More],RefCnt,Cs):-
-	Head=..[_|Vars],
-	nad_project(Vars,Cs,Inv),
-	reinforce_scc_forward_inv(Head,RefCnt,Inv),
-	reinforce_calls(More,RefCnt,Cs).
-
-%! reinforce_scc_forward_inv(Head:term,RefCnt:int,Cs:polyhedron) is det
-% if the is already a SCC forward invariant, we relax it with the new conditions Cs.
-% if there is none, we initialize it with the given conditions Cs.
-%/*
-reinforce_scc_forward_inv(Head,RefCnt,Inv):-
-	retract(invariants:scc_forward_invariant(Head,RefCnt,Inv_2)),!,
-		Head=..[_|Vars],
-	nad_lub(Vars,Inv,Vars,Inv_2,Vars,New_Inv),
-	assertz(invariants:scc_forward_invariant(Head,RefCnt,New_Inv)).
-reinforce_scc_forward_inv(Head,RefCnt,Inv):-
-	assertz(invariants:scc_forward_invariant(Head,RefCnt,Inv)).
-%*/
-/*	
-reinforce_scc_forward_inv(Head,RefCnt,Inv):-
-	retract(scc_forward_invariant(Head,RefCnt,Inv_2)),!,
-	Head=..[_|Vars],
-	nad_lub(Vars,Inv,Vars,Inv_2,Vars,New_Inv),
-	assertz(scc_forward_invariant(Head,RefCnt,[])).
-reinforce_scc_forward_inv(Head,RefCnt,Inv):-
-	assertz(scc_forward_invariant(Head,RefCnt,[])).
-*/
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! unfold_calls(Head:term,RefCnt:int) is det
 % unfold each cost equation. 
-unfold_calls(Head,RefCnt):-
-	New_RefCnt is RefCnt+1,
-	eq_ph(Head,(Id,RefCnt),Cost,Base_Calls,Rec_Calls,Total_Calls,Cs,Term_flag),
-	unfold_calls_aux(Total_Calls,Base_Calls,Head,New_RefCnt,Cost,Rec_Calls,[],[],Cs,Term_flag,Id),
-	fail.
-unfold_calls(_,_).
+cr_specialize(CR,CRS,CR2):-
+	cr_head(CR,Head),
+	cr_empty(Head,CR_empty),
+	cr_get_ceList_with_id(CR,CEs_with_ids),
+	crs_range(CRS,range(_,Next)),
+	foldl(specialize_ce(CRS),CEs_with_ids,(CR_empty,Next),(CR2,_)).
 
-
+specialize_ce(CRS,(Id,eq_ref(Head,Cost,Base_calls,_Rec_calls,Total_calls,Cs,Info)),(CR_accum,Count),(CR,Count2)):-
+	maplist(crs_get_cr_external_patterns_instance(CRS),Base_calls,External_patterns),
+	findall(Eq,
+		specialize_ce_aux(Total_calls,External_patterns,terminating,
+		eq(Head,Cost,[],Cs,[refined(Id)|Info]),Eq),
+		Eqs),
+	foldl(\Eq_l^Pair1^Pair2^
+		(
+		Pair1=(CR_l,C1),
+		Pair2=(CR2_l,C2),
+		cr_add_eq(CR_l,C1,Eq_l,CR2_l,C2)	
+		),Eqs,(CR_accum,Count),(CR,Count2)).
+		
+crs_get_external_patterns_instance(CRS,Head,external_patterns(Head,Patts)):-
+	crs_get_external_patterns(CRS,Head,Ext_patt),
+	copy_term(Ext_patt,external_patterns(Head,Patts)).
+	
 %! unfold_calls_aux(+Total_calls:list(term),+Base_calls:list(term),+Head:term,+RefCnt:int,+Cost:cost_expression,+R_Calls:list(term),+New_B_Calls:list(term),+New_T_Calls:list(term),+Cs:polyhedron,+Term_flag:flag,+Id:int) is failure
 % Unfold calls before the recursive call (if there is one).
 % Each call is substituted in a non-deterministic manner by a call to a specific chain.
@@ -167,131 +143,44 @@ unfold_calls(_,_).
 % * R_Calls are the recursive calls of the cost equation that is being unfolded.
 % * New_T_Calls and New_B_Calls are the unfolded calls.
 % * Flag can be 'terminating' or 'non_terminating'
-unfold_calls_aux([],[],Head,New_RefCnt,Cost,R_Calls,New_B_Calls,New_T_Calls,Cs,Term_flag,Id):-
+specialize_ce_aux([],[],Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Eq_new):-
 	%get the calls in the right order
-	reverse(New_B_Calls,New_B_Calls2),
-	reverse(New_T_Calls,New_T_Calls2),
 	nad_normalize_polyhedron(Cs,Cs_normalized),
-	Cs_normalized\==[0=1],
-	add_eq_ph(eq_ph(Head,New_RefCnt,Cost,New_B_Calls2,R_Calls,New_T_Calls2,Cs_normalized,Term_flag),Id),
-	fail.
-
-
-unfold_calls_aux([R_Call|More],B_Calls,Head,RefCnt,Cost,Rec_Calls,New_B_Calls,New_T_Calls,Cs,Term_flag,Id):-
-	unifiable(R_Call,Head,_),
-	unfold_calls_aux(More,B_Calls,Head,RefCnt,Cost,Rec_Calls,New_B_Calls,[R_Call|New_T_Calls],Cs,Term_flag,Id).
-
-unfold_calls_aux([Base_Call|More],[Base_Call|MoreB],Head,RefCnt,Cost,R_Calls,New_B_Calls,New_T_Calls,Cs,Term_flag,Id):-
-	\+unifiable(Base_Call,Head,_),
-	%if the chains have been compressed there is a external_call_pattern and we check those instead of 
-	% the backward invariants
-	(external_call_pattern(Base_Call,_,_,_,_)->
-	   external_call_pattern(Base_Call,(External_pattern_id,RefCnt),Terminating,_,Head_Pattern),
-	   Id_call=external_pattern(External_pattern_id)
-	   ;  
-	   backward_invariant(Base_Call,(Chain,RefCnt),_Hash_inv,Head_Pattern),
-	   Id_call=chain(Chain),
-	   (non_terminating_chain(Base_Call,RefCnt,Chain)->
-	      Terminating=non_terminating
-	      ;
-	      Terminating=terminating
-	      )
-	),
-	(Head_Pattern=[]->
-	    Total_Cons=Cs
-	    ;
-	append(Head_Pattern,Cs,Total_Cons),
-	term_variables(Head_Pattern,Relevant_vars_ini),
-	slice_relevant_constraints_and_vars(Relevant_vars_ini,[],Total_Cons,_,Relevant_Cons),
-	nad_consistent_constraints_group_aux(Relevant_Cons)
-	),
-	or_terminating_flag(Term_flag,Terminating,Term_flag2),
-	%if the calls are sequential and one does not terminate, we can eliminate further calls
-	((get_param(assume_sequential,[]),Terminating=non_terminating)->
-	     unfold_calls_aux([],[],Head,RefCnt,Cost,[],[(Base_Call,Id_call)|New_B_Calls],
-			    [(Base_Call,Id_call)|New_T_Calls],Total_Cons,Term_flag2,Id)
-	   ;
-	     unfold_calls_aux(More,MoreB,Head,RefCnt,Cost,R_Calls,[(Base_Call,Id_call)|New_B_Calls],
-			    [(Base_Call,Id_call)|New_T_Calls],Total_Cons,Term_flag2,Id)
-	).
-
+	\+nad_is_bottom(Cs_normalized),
 	
+	reverse(Total_calls_rev,Total_calls),
+	partition(is_refined_call,Total_calls,NR_calls,R_calls),
+	Eq_new=eq_ref(Head,Cost,NR_calls,R_calls,Total_calls,Cs_normalized,[Term_flag|Info]).
+	
+specialize_ce_aux([R_call|More],External_patterns,Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Eq_new):-
+	unifiable(R_call,Head,_),
+	specialize_ce_aux(More,External_patterns,Term_flag,eq(Head,Cost,[R_call|Total_calls_rev],Cs,Info),Eq_new).
+
+specialize_ce_aux([Base_call|More],[external_patterns(Base_call,Pattern_map)|MoreB],Term_flag,
+	eq(Head,Cost,Calls_accum,Cs,Info),Eq_new):-
+	%here is the choice	
+	member((Id,external_pattern(Term_flag_patt,Cs_patt)),Pattern_map),
+
+	nad_glb(Cs_patt,Cs,Cs1),
+	Base_call=..[_|Relevant_vars],
+	slice_relevant_constraints_and_vars(Relevant_vars,[],Cs,_,Relevant_Cs),
+	nad_consistent_constraints_group_aux(Relevant_Cs),
+
+	or_terminating_flag(Term_flag,Term_flag_patt,Term_flag2),
+	%if the calls are sequential and one does not terminate, we can eliminate further calls
+	(Term_flag2=non_terminating->
+		specialize_ce_aux([],[],Term_flag2,	
+		eq(Head,Cost,[Id:Base_call|Calls_accum],Cs1,Info),Eq_new)
+	;
+		specialize_ce_aux(More,MoreB,Term_flag2,	
+		eq(Head,Cost,[Id:Base_call|Calls_accum],Cs1,Info),Eq_new)
+	).
+	
+is_refined_call(_Pattern:_Call).	
+
 or_terminating_flag(terminating,terminating,terminating):-!.
 or_terminating_flag(_,_,non_terminating):-!.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%! remove_terminating_non_terminating_chains(Head:term,RefCnt:int) is det
-% we try to discard the non-terminating chains
-% if there are not terminating chains we print a warning
-remove_terminating_non_terminating_chains(Head,RefCnt):-
-	chain(Head,RefCnt,Chain),
-	\+non_terminating_chain(Head,RefCnt,Chain),!,%Check if there are terminating chains
-	remove_terminating_non_terminating_chains_1(Head,RefCnt).
-remove_terminating_non_terminating_chains(Head,RefCnt):-
-	print_warning('Warning: no base case found for predicate~n',Head),
-	remove_terminating_non_terminating_chains_1(Head,RefCnt).
-	
-
-remove_terminating_non_terminating_chains_1(Head,RefCnt):-
-	chain(Head,RefCnt,Chain),
-	remove_terminating_non_terminating_2([],Head,Chain,New_chain),
-	New_chain\=Chain,
-	retract(chains:chain(Head,RefCnt,Chain)),
-	(New_chain\=none->
-	   assertz(chains:chain(Head,RefCnt,New_chain))
-	   ;
-	   true
-	 ),
-	numbervars(Head,0,_),
-	(get_param(debug,[])->
-	 print_or_log('Discarded unfeasible chain ',[]),
-	 print_chain_simple(Chain),
-	 print_or_log('(Non-terminating chain proved terminating)~n',[]),
-	 (New_chain\=none->
-	   print_or_log('Remaining chain: ',[]),
-	   print_chain_simple(New_chain),print_or_log_nl
-	   ;
-	   true
-	   )
-	 ;
-	 true),
-	fail.
-remove_terminating_non_terminating_chains_1(_,_).
-
-remove_terminating_non_terminating_2(_Prev_chain,_Head,[],[]).
-remove_terminating_non_terminating_2(_Prev_chain,_Head,Chain,Chain):-
-	reverse(Chain,[Last_phase|_Chain_rev]),
-	number(Last_phase),!.
-
-remove_terminating_non_terminating_2(Prev_chain,Head,Chain,New_chain):-
-	reverse(Chain,[Last_phase|Chain_rev]),
-	Last_phase=[_|_],!,
-	append([Last_phase|Chain_rev],Prev_chain,Complete_prev_chain),
-	(termination_argument(Head,Complete_prev_chain,yes,_Term_arg)->
-	     New_chain=none
-	;
-	     New_chain=Chain
-	).
-remove_terminating_non_terminating_2(Prev_chain,Head,Chain,New_chain):-
-	  reverse(Chain,[Last_phase|Chain_rev]),
-	  Last_phase=multiple(Mult_phase,Tails),!,
-	  append([Mult_phase|Chain_rev],Prev_chain,Complete_prev_chain),
-	  (termination_argument(Head,Complete_prev_chain,yes,_Term_arg)->
-	     delete(Tails,[],Tails2)
-	   ; 
-	     Tails2=Tails
-	  ),
-	  maplist(remove_terminating_non_terminating_2(Complete_prev_chain,Head),Tails2,New_tails),
-	  exclude(is_none,New_tails,New_tails_excluded),
-	  (New_tails_excluded=[]->
-	      New_chain=none
-	      ;
-	      reverse([multiple(Mult_phase,New_tails_excluded)|Chain_rev],New_chain)
-	  ).
-	      
-	     
-is_none(none).	    
+   
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -303,7 +192,8 @@ is_none(none).
 % of the callers.
 %
 % Compress terminating and non-terminating chains separately
-compress_chains_execution_patterns(Head,RefCnt):-	
+
+cr_compute_external_execution_patterns(CR,Compress_param,External_patterns):-
 	findall((Head,(Condition,Chain)),
 		(
 		backward_invariant(Head,(Chain,RefCnt),_,Condition),

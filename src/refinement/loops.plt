@@ -20,8 +20,7 @@ test(no_compress):-
 	create_crse(crse_loops1,CRSE),
 	CRSE=crse(_,CRS),
 	crs_get_cr(CRS,a,CR),
-	compute_loops(CR,0,CR2),
-	cr_get_loops(CR2,Loops),
+	compute_loops(CR,0,Loops),
 	
 	Loops=loops(range(1,5),[
 	(1,loop(a(A),[],Inv1,[eqs([1]),terminating])),
@@ -48,8 +47,7 @@ test(compress_yes):-
 	create_crse(crse_loops1,CRSE),
 	CRSE=crse(_,CRS),
 	crs_get_cr(CRS,a,CR),
-	compute_loops(CR,1,CR2),
-	cr_get_loops(CR2,Loops),
+	compute_loops(CR,1,Loops),
 	
 	Loops=loops(range(1,4),[
 	(1,loop(a(A),[],Inv1,[eqs([1]),terminating])),
@@ -63,8 +61,7 @@ test(compress2):-
 	create_crse(crse_loops1,CRSE),
 	CRSE=crse(_,CRS),
 	crs_get_cr(CRS,a,CR),
-	compute_loops(CR,2,CR2),
-	cr_get_loops(CR2,Loops),
+	compute_loops(CR,2,Loops),
 	
 	Loops=loops(range(1,3),[
 	(1,loop(a(A),[],Inv1,[eqs([1]),terminating])),
@@ -84,8 +81,7 @@ test(compress_info):-
 	create_crse(crse_loops2,CRSE),
 	CRSE=crse(_,CRS),
 	crs_get_cr(CRS,a,CR),
-	compute_loops(CR,2,CR2),
-	cr_get_loops(CR2,Loops),
+	compute_loops(CR,2,Loops),
 	Loops=loops(range(1,4),[
 	(1,loop(a(A),[],Inv1,[eqs([1]),terminating])),
 	(2,loop(a(A),[a(A2)],Inv3,[eqs([4]),non_terminating])),
