@@ -21,7 +21,7 @@ test(process_initial_crse):-
 	assertion(CRSE1=crse([],crs(range(1,2),[(wh,CR)]))),
 	CRSE1=crse([],crs(range(1,2),[(wh,CR)])),
 	
-	assertion(CR=cr(wh/3,[(1,eq(wh(A,B,O),cost([],[],[],[],0),[],_))],_Loops,_Chains,[])),
+	assertion(CR=cr(wh/3,[(1,eq(wh(A,B,O),cost([],[],[],[],0),[],_))],[])),
 	input:process_initial_crse(Eq2,CRSE1,CRSE2),
 	
 	assertion(CRSE2=crse([],crs(range(1,3),[(wh,CR2)]))),
@@ -29,7 +29,7 @@ test(process_initial_crse):-
 	assertion(CR2=cr(wh/3,[
 				(1,eq(wh(A,B,O),cost([],[],[],[],0),[],_)),
 				(2,eq(wh(A,B,O),cost([],[],[],[],1),[wh(_,_,_)],_))
-		],_,_,[])),
+		],[])),
 		
 	input:process_initial_crse(IO,CRSE2,CRSE3),
 	
@@ -38,7 +38,7 @@ test(process_initial_crse):-
 	assertion(CR3=cr(wh/3,[
 				(1,eq(wh(A,B,O),cost([],[],[],[],0),[],_)),
 				(2,eq(wh(A,B,O),cost([],[],[],[],1),[wh(_,_,_)],_))
-		],_,_,[ioVars(wh(A,B,O),[A,B],[O])])).
+		],[(ioVars,ioVars(wh(A,B,O),[A,B],[O]))])).
 
 test(process_initial_crse_redundant):-
 	crse_empty(1,CRSE_empty),
@@ -73,12 +73,12 @@ test(process_initial_crse_2cr):-
 	assertion(CR=cr(wh/3,[
 				(1,eq(wh(A,B,O),cost([],[],[],[],0),[],_)),
 				(2,eq(wh(A,B,O),cost([],[],[],[],1),[wh(_,_)],_))
-		],_,_,[])),
+		],[])),
 		
 	assertion(CR2=cr(wh2/3,[
 				(3,eq(wh2(A,B,O),cost([],[],[],[],0),[],_)),
 				(4,eq(wh2(A,B,O),cost([],[],[],[],1),[wh(_,_,_),wh2(_,_,_)],_))
-		],_,_,[])).
+		],[])).
 	
 test(process_initial_crse_entries):-
 	crse_empty(1,CRSE_empty),
