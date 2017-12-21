@@ -31,17 +31,18 @@ This module prints the results of the analysis
           print_warning/2,
           print_warning_in_error_stream/2,
           interesting_example_warning/2,
-          print_chain_simple/1,
-		  print_chains_entry/2,
+		  print_chains/1,
 		  print_sccs/1,
 		  print_merging_cover_points/3,
 		%  print_new_scc/2,
 		  print_partially_evaluated_sccs/1,
 		  print_equations_refinement/1,
 		  print_loops/1,
-		  print_external_pattern_refinement/2,
+		  print_external_patterns/1,
 		  print_ranking_functions/1,
-		  print_phase_termination_argument/4,
+		  print_termination_arguments/1,
+		  print_changes_map/2,
+		  
 		  print_pending_set/2,
 		  print_selected_pending_constraint/3,
 		  print_new_phase_constraints/3,
@@ -78,15 +79,24 @@ This module prints the results of the analysis
 :- use_module('../pre_processing/SCCs',[scc_get_cover_points/2]).
 :- use_module('../refinement/invariants',[]).
 :- use_module('../refinement/loops',[
+	loop_head/2,
 	loop_get_CEs/2,
+	loop_get_rfs/2,
+	
 	loops_get_head/2,
+	loops_get_ids/2,
+	loops_get_list/2,
 	loops_get_list_with_id/2
 ]).
 
-:- use_module('../refinement/chains',[]).
-:- use_module('../ranking_functions',[
-	ranking_function/4,
-	partial_ranking_function/7]).
+:- use_module('../refinement/chains',[
+	phase_get_pattern/2,
+	phase_is_iterative/1,
+	phase_get_rfs/2,
+	phase_get_termination/2,
+	chain_get_pattern/2,
+	chain_get_property/3
+	]).
 :- use_module('../bound_computation/phase_solver/phase_solver',[type_of_loop/2]).
 
 :- use_module('../utils/crs',[
@@ -370,135 +380,127 @@ print_loop((Id,Loop)):-
 %! print_external_pattern_refinement(+Head:term,+RefCnt:int) is det
 % print the correspondence between external patterns and chains from the SCC Head in the refinement phase RefCnt
 % if the verbosity is high enough
-print_external_pattern_refinement(Head,RefCnt):-
+print_external_patterns(External_patterns):-
 	get_param(v,[X]),X > 2,!,
+	copy_term(External_patterns,external_patterns(Head,Ex_patt_map)),
+	ground_header(Head),
 	functor(Head,Name,Arity),
 	print_header('Merging Chains  ~p into  External patterns of execution ~n',[Name/Arity],3),
-	print_external_pattern_refinement_1(Head,RefCnt).
-print_external_pattern_refinement(_,_).
+	maplist(print_external_pattern,Ex_patt_map),
+	print_or_log_nl.
+
+print_external_pattern_refinement(_).
 	
-print_external_pattern_refinement_1(Head,RefCnt):-
-	external_call_pattern(Head,(Id,RefCnt),_,Components,_),
-	maplist(reverse,Components,Components_rev),
-	print_or_log('* ~p --> ~p ~n',[Components_rev,Id]),
-	fail.
-print_external_pattern_refinement_1(_,_):-print_or_log_nl.
+print_external_pattern((Pattern,external_pattern(Properties))):-
+	print_or_log('* ~p : ~p ~n',[Pattern,Properties]).
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-print_ranking_functions(Head):-
-	copy_term(Head,Head_print),
+print_ranking_functions(Loops,Chains):-
 	get_param(v,[X]),X > 1,!,
+	loops_get_head(Loops,Head),
+	copy_term(Head,Head_print),
 	ground_header(Head_print),
 	print_header('Ranking functions of CR ~p ~n',[Head_print],3),
-	print_complete_ranking_functions(Head_print),
+	print_complete_ranking_functions(Chains),
 	print_header('Partial ranking functions of CR ~p ~n',[Head_print],4),
-	print_partial_ranking_functions(Head_print),print_or_log_nl.
+	print_partial_ranking_functions(Loops),print_or_log_nl.
 print_ranking_functions(_Head).
 
-print_complete_ranking_functions(Head):-
-	findall((Phase,Rf),
-		(ranking_function(Head,Var,Phase,Rf),var(Var)),Unconditional_rfs),
-	findall(((Phase,Prefix),Rf),
-		(ranking_function(Head,Prefix,Phase,Rf),nonvar(Prefix)),Conditional_rfs),	
-	from_pair_list_mm(Unconditional_rfs,Unconditional_rfs_mm),
-	from_pair_list_mm(Conditional_rfs,Conditional_rfs_mm),
+print_complete_ranking_functions(chains(Phases,_)):-
+	include(phase_is_iterative,Phases,Iterative_phases),
+	maplist(phase_get_rfs,Iterative_phases,Rfs),
+	maplist(phase_get_pattern,Iterative_phases,Patterns),
+	maplist(print_ranking_function(phase),Patterns,Rfs).
 
-	maplist(print_rf,Unconditional_rfs_mm),
-	maplist(print_conditional_rf,Conditional_rfs_mm).
-
-print_rf((Phase,Rfs)):-
-	maplist(write_le,Rfs,Rfs_print),
-	print_or_log('* RF of phase ~p: ~p~n',[Phase,Rfs_print]).
-print_conditional_rf(((Phase,Prefix),Rfs)):-
-	maplist(write_le,Rfs,Rfs_print),
-	print_or_log('* RF of phase ~p preceeded by ~p : ~p~n',[Phase,Prefix,Rfs_print]).	
-
-print_partial_ranking_functions(Head):-
-	findall((Phase,(Loop,(Rf,Deps))),
-		(
-		partial_ranking_function(Head,Var,Phase,Loop,Rf,Deps,_),
-		var(Var)
-		),Unconditional_rfs),
-	findall(((Phase,Prefix),(Loop,(Rf,Deps))),
-		(
-		partial_ranking_function(Head,Prefix,Phase,Loop,Rf,Deps,_),
-		nonvar(Prefix)
-		),Conditional_rfs),	
-	from_pair_list_mm(Unconditional_rfs,Unconditional_rfs_mm),
-	from_pair_list_mm(Conditional_rfs,Conditional_rfs_mm),
+print_partial_ranking_functions(Loops):-
+	loops_get_list(Loops,Loops_list),
+	maplist(loop_get_rfs,Loops_list,Rfs),
+	maplist(loop_head,Loops_list,Heads),
+	copy_term((Heads,Rfs),(Heads_print,Rfs_print)),
+	maplist(ground_header,Heads_print),
+	loops_get_ids(Loops,Loops_ids),
+	maplist(print_ranking_function(loop),Loops_ids,Rfs_print).
+	
+print_ranking_function(phase,Pattern,Rf_term):-
+	copy_term(Rf_term,ranking_functions(Head,Rf)),
 	ground_header(Head),
-	maplist(print_partial_rfs_for_phase,Unconditional_rfs_mm),
-	maplist(print_conditional_partial_rfs_for_phase,Conditional_rfs_mm).	
-
-print_partial_rfs_for_phase((Phase,Loop_rf_pairs)):-
-	print_or_log('* Partial RF of phase ~p:~n',[Phase]),
-	from_pair_list_mm(Loop_rf_pairs,Loop_rf_mm),
-	maplist(print_partial_rfs_for_loop,Loop_rf_mm).
+	print_or_log('* RF of phase ~p: ~p~n',[Pattern,Rf]).
 	
-
-print_conditional_partial_rfs_for_phase(((Phase,Prefix),Loop_rf_pairs)):-
-	print_or_log('  - RF of phase ~p preceeded by ~p :~n',[Phase,Prefix]),
-	from_pair_list_mm(Loop_rf_pairs,Loop_rf_mm),
-	maplist(print_partial_rfs_for_loop,Loop_rf_mm).
-		
-print_partial_rfs_for_loop((Loop,Rfs)):-
-	print_or_log('  - RF of loop ~p:~n',[Loop]),
-	maplist(print_partial_rf,Rfs).
+print_ranking_function(loop,Loop,ranking_functions([])):-!,		
+	print_or_log('* RF of loop ~p: ~p~n',[Loop,[1]]).	
 	
-print_partial_rf((Rf,[])):-!,
-	write_le(Rf,Rf_print),
-	print_or_log('    ~p~n',[Rf_print]).
-print_partial_rf((Rf,Deps)):-
-	Deps\=[],
-	write_le(Rf,Rf_print),
-	print_or_log('    ~p depends on loops ~p ~n',[Rf_print,Deps]).
+print_ranking_function(loop,Loop,ranking_functions([(_,Rf)])):-!,
+	print_or_log('* RF of loop ~p: ~p~n',[Loop,Rf]).	
+	
+print_ranking_function(loop,Loop,ranking_functions(Rfs)):-	
+	maplist(print_ranking_function(sub_loop,Loop),Rfs).
+	
+print_ranking_function(sub_loop,Loop,(Sub_loop,Rf)):-
+	print_or_log('* RF of loop ~p.~p: ~p~n',[Loop,Sub_loop,Rf]).		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! print_phase_termination_argument(+Head:term,+Phase:phase,+Term_argument:termination_argument,+YesNo:flag) is det
-% print the termination argument of Phase if Phase is an iterative phase and the verbosity
-% is high enough
-print_phase_termination_argument(Head,Phase,Term_argument,no):-
-	get_param(v,[X]),X > 2,
-	Phase=[_|_],
-	copy_term((Head,Term_argument),(Head2,Term_argument2)),
-	ground_header(Head2),
-    print_or_log('~p: Phase ~p might not terminate:: ~p~n',[Head2,Phase,Term_argument2]).
-print_phase_termination_argument(Head,Phase,Term_argument,yes):-
-	get_param(v,[X]),X > 2,
-	Phase=[_|_],
-	copy_term((Head,Term_argument),(Head2,Term_argument2)),
-	ground_header(Head2),
-    print_or_log('~p: Phase ~p termination argument: ~p~n',[Head2,Phase,Term_argument2]).
 
-print_phase_termination_argument(_Head,_Phase,_Term_argument,_).
+print_termination_arguments(chains(Phases,_)):-
+	print_header('Termination arguments ~n',[],3),
+	maplist(phase_get_termination,Phases,Termination),
+	maplist(phase_get_pattern,Phases,Patterns),
+	maplist(print_termination,Patterns,Termination).
 
+
+print_termination(Pattern,terminating(trivial)):-!,
+%	copy_term(Rf_term,ranking_functions(Head,Rf)),
+	%ground_header(Head),
+	print_or_log('* Phase ~p is trivially terminating~n',[Pattern]).
+print_termination(Pattern,Term_arg):-
+	copy_term(Term_arg,Term_arg2),
+	(Term_arg2=terminating(Head,Rf)->
+		ground_header(Head),
+		print_or_log('* Phase ~p terminates with ranking function ~p~n',[Pattern,Rf])
+		;
+		Term_arg2=non_terminating(Head,Cycle),
+		ground_header(Head),
+		print_or_log('* Phase ~p might not terminate. Found the following cycle ~p~n',[Pattern,Cycle])
+	).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %! print_chains_entry(+Entry:term,+RefCnt:int) is det
 % print the inferred chains in SCC Entry in the refinement phase RefCnt
-print_chains_entry(Entry,RefCnt):-
+print_chains(chains(Phases,Chains)):-
 	get_param(v,[X]),X > 2,!,
-	ground_header(Entry),
-	print_header('Resulting Chains:~p ~n',[Entry],3),
-	print_chains_entry_1(RefCnt,Entry).
-print_chains_entry(_,_).
+	print_header('Phases: ~n',[],3),
+	maplist(print_phase,Phases),
+	print_header('Chains: ~n',[],3),
+	maplist(print_chain,Chains).
+print_chains(_).
 
-print_chains_entry_1(RefCnt,Entry):-
-	chain(Entry,RefCnt,Pattern),
-	print_or_log('* ',[]),
-	print_chain_simple(Pattern),print_or_log_nl,
-	fail.
-print_chains_entry_1(_,_):-print_or_log_nl.
+print_phase(Phase):-
+	phase_get_pattern(Phase,Phase_pattern),
+	print_or_log(' ~p~n',[Phase_pattern]).
+	
 
-
-print_chain_simple(Pattern):-
-	(non_terminating_chain(_,_,Pattern)->
-	   ansi_print_or_log([fg(red)],'~p...',[Pattern])
+print_chain(Chain):-
+	chain_get_pattern(Chain,Chain_pattern),
+	(chain_get_property(Chain,termination,non_terminating)->
+	   ansi_print_or_log([fg(red)],'~p...~n',[Chain_pattern])
 	 ;
-	   ansi_print_or_log([],'~p',[Pattern])
+	   ansi_print_or_log([],'~p~n',[Chain_pattern])
 	).
 
 
+print_changes_map(Reason,Map):-
+	get_param(v,[X]),X > 2,
+	Map\=[],!,
+	print_header('Chains discarded or modified because of ~p ~n',[Reason],3),
+	maplist(print_change,Map).
+
+print_changes_map(_,_).
+
+print_change((Original,New)):-
+	(New=none->
+		print_or_log('Discarded chain ~p~n',[Original])
+	;
+		print_or_log('Chain ~p transformed into ~p~n',[Original,New])
+	).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
