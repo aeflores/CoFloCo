@@ -39,7 +39,8 @@
     close_cursor_lm/3, 
     product_lm/3,
     map_values_lm/3,
-    check_values_lm/2
+    check_values_lm/2,
+    from_pairs_lm/2
 ]).
 
 /** <module> A Map (or table) of Keys to Values, which is a finite injective 
@@ -394,5 +395,6 @@ check_second(Pred,(_Key,Elem)):-
 apply_to_second(Pred,(Key,Elem),(Key,Elem2)):-
 	call(Pred,Elem,Elem2).
 	
-	
+from_pairs_lm(Pairs,Map):-
+	sort(1, @=<, Pairs, Map).
 
