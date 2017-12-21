@@ -30,39 +30,54 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 :- module(loops,[
+		loop_head/2,	
+		loop_calls/2,
 		loop_get_CEs/2,
+		loop_add_property/4,
+		loop_get_property/3,
+		loop_get_cost/2,
+		loop_get_rfs/2,
+		loop_set_cost/3,
+	    loop_is_multiple/1,
+	    loop_is_base_case/1,		
+		
 	    loops_range/2,
 	    loops_get_list/2,
 	    loops_get_list/3,
 	    loops_get_list_with_id/2,
 	    loops_get_head/2,
 	    loops_get_ids/2,
-	    loop_is_multiple/1,
-	    loop_is_base_case/1,
 	    loops_get_loop/3,
 	    loops_get_loop_fresh/3,
+	    loops_get_list_fresh/3,
+	    loops_get_list_fresh_with_id/3,
 	    loops_strengthen_with_loop_invs/5,
+	    loops_apply_to_each_loop/3,
+		loops_split_multiple_loops/2,
+		loops_split_multiple_loops_with_id/2,
+		
 		compute_loops/3,
 		compute_phase_loops/3,
-		loops_split_multiple_loops/2,
-		get_extended_phase/2]).
 
-:- use_module('../db',[add_phase_loop/5]).
+		get_extended_phase/2]).
 
 :- use_module(invariants,[
 		      loop_invs_head/2,
 		      loop_invs_map/2
 			]).
 
-
-:- use_module(stdlib(numeric_abstract_domains),[nad_lub/6,nad_consistent_constraints/1]).
+:- use_module(chains,[
+		      phase_add_property/4
+			]).
+:- use_module(stdlib(numeric_abstract_domains),[nad_glb/3,nad_lub/6,nad_consistent_constraints/1]).
 :- use_module('../utils/polyhedra_optimizations',[nad_project_group/3,nad_normalize_polyhedron/2]).
 :- use_module('../utils/cofloco_utils',[merge_implied_summaries/3]).
 
 :- use_module('../utils/crs',[
 	cr_get_loops/2,
 	cr_set_loops/3,
-	cr_get_ceList_with_id/2
+	cr_get_ceList_with_id/2,
+	cr_IOvars/2
 ]).
 						
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).		
@@ -82,12 +97,28 @@ loop_head(loop(Head,_,_,_),Head).
 
 loop_constraints(loop(_,_,Cs,_),Cs).
 
-loop_get_CEs(loop(_,_,_,Info),Eqs):-
-	once(member(eqs(Eqs),Info)).
+loop_calls(loop(_,Calls,_,_),Calls).
+
+loop_add_property(loop(Head,Calls,Cs,Info),Name,Val,loop(Head,Calls,Cs,Info2)):-
+	insert_lm(Info,Name,Val,Info2).
+loop_get_property(loop(_Head,_Calls,_Cs,Info),Name,Val):-	
+	lookup_lm(Info,Name,Val).
+	
+loop_get_CEs(Loop,Eqs):-
+	loop_get_property(Loop,eqs,eqs(Eqs)).
+
+loop_set_cost(Loop,Cost,Loop2):-
+	loop_add_property(Loop,cost,Cost,Loop2).
+loop_get_cost(Loop,Cost):-
+	loop_get_property(Loop,cost,Cost).	
+
+loop_get_rfs(Loop,Rfs):-
+	loop_get_property(Loop,ranking_functions,Rfs).		
 
 loop_pair_is_feasible((_,Loop)):-
 	loop_constraints(Loop,Cs),
 	nad_consistent_constraints(Cs).
+
 
 loop_strengthen(loop(Head,Calls,Cs,Info),head,inv(Head,Inv),loop(Head,Calls,Cs2,Info)):-!,
 	nad_glb(Cs,Inv,Cs2).
@@ -138,7 +169,14 @@ loops_get_list_fresh(loops(_,Map),Ids,Selected_loops_fresh):-
 	maplist(copy_term,Selected_loops,Selected_loops_fresh).
 
 
-loops_strengthen_with_loo_invs(loops(Range,LoopMap),HeadCall,Loop_invs,loops(Range,LoopMap3),Discarded):-
+loops_get_list_fresh_with_id(loops(_,Map),Ids,Selected_loops_fresh):-
+	project_lm(Map,Ids,List),
+	maplist(copy_term,List,Selected_loops_fresh).
+
+loops_apply_to_each_loop(Pred,loops(Range,LoopMap),loops(Range,LoopMap2)):-
+	map_values_lm(Pred,LoopMap,LoopMap2).
+
+loops_strengthen_with_loop_invs(loops(Range,LoopMap),HeadCall,Loop_invs,loops(Range,LoopMap3),Discarded):-
 	loop_invs_head(Loop_invs,HeadInv),
 	loop_invs_map(Loop_invs,InvMap),
 	zip_lm(LoopMap,InvMap,Composed_map),
@@ -154,6 +192,7 @@ strengthen_pair(HeadCall,HeadInv,both(Loop,Inv),Loop2):-
 % compute a loop for each cost equation
 compute_loops(CR,Compress,Loops_complete):-
 	cr_get_ceList_with_id(CR,CE_list_id),
+	cr_IOvars(CR,IOvars),
 	maplist(
 		\Eq_pair_l^Res_l^(
 					Eq_pair_l=(Eq_Id,eq_ref(Head,_,_NR_calls,R_calls,_Calls,Cs,Info)),
@@ -172,7 +211,7 @@ compute_loops(CR,Compress,Loops_complete):-
 	maplist(put_in_list,Grouped_loops,Simplified_loops)
 	),	
 	loops_empty(Empty_loops),
-	foldl(save_loop,Simplified_loops,Empty_loops,Loops_complete).
+	foldl(save_loop(IOvars),Simplified_loops,Empty_loops,Loops_complete).
 
 	 
 %unify the variables if the patterns match												
@@ -196,12 +235,14 @@ group_equal_loops(2,(Header,Info),(Header,Info_compressed2)):-
 normalize_loop(((Head,Rec_Calls,Info),(Inv,Eq_id)),((Head,Rec_Calls,Info),(Inv_normalized,Eq_id))):-
 	nad_normalize_polyhedron(Inv,Inv_normalized).
 	
-save_loop(((Head,Calls,Info),List_Inv_Eqs),CR,CR2):-
+save_loop(IOvars,((Head,Calls,Info),List_Inv_Eqs),CR,CR2):-
 	reverse(List_Inv_Eqs,List_Inv_Eqs1),
-	foldl(save_loop_1(Head,Calls,Info),List_Inv_Eqs1,CR,CR2).
+	foldl(save_loop_1(Head,Calls,Info,IOvars),List_Inv_Eqs1,CR,CR2).
 
-save_loop_1(Head,Calls,Info,(Inv,Equations),CR,CR2):-
-	loops_add_loop(CR,loop(Head,Calls,Inv,[eqs(Equations)|Info]),CR2).
+save_loop_1(Head,Calls,Info,IOvars,(Inv,Equations),CR,CR2):-
+	loop_add_property(loop(Head,Calls,Inv,Info),eqs,eqs(Equations),Loop2),
+	loop_add_property(Loop2,ioVars,IOvars,Loop3),
+	loops_add_loop(CR,Loop3,CR2).
 	
 put_in_list((Header,List_Inv_Eqs),(Header,List_Inv_Eqs1)):-
 	maplist(put_in_list_1,List_Inv_Eqs,List_Inv_Eqs1).
@@ -213,7 +254,7 @@ put_in_list_1((Inv,E),(Inv,[E])).
 compute_phase_loops(Loops,chains(Phases,Chains),chains(Phases_annotated,Chains)):-
 	maplist(compute_phase_loop(Loops),Phases,Phases_annotated).
 
-compute_phase_loop(Loops,Phase,phase(Phase,[phase_loop(Head,Call,Cs)])):-
+compute_phase_loop(Loops,phase(Phase,Properties),Phase2):-
 	number(Phase),!,
 	loops_get_loop_fresh(Loops,Phase,Loop),
 	loops_split_multiple_loops([Loop],Loops_splitted),
@@ -225,13 +266,15 @@ compute_phase_loop(Loops,Phase,phase(Phase,[phase_loop(Head,Call,Cs)])):-
 	   One=linear_loop(Head,Call,Cs)
 	 ;
 	 	join_loops(Loops_splitted,Head,Call,Cs,_Vars)
-	)).
+	)),
+	phase_add_property(phase(Phase,Properties),phase_loop,phase_loop(Head,Call,Cs),Phase2).
 
 	
-compute_phase_loop(Loops,Phase,phase(Phase,[phase_loop(Head,Call,Cs)])):-
+compute_phase_loop(Loops,phase(Phase,Properties),Phase2):-
 	loops_get_list_fresh(Loops,Phase,Phase_loops),
 	loops_split_multiple_loops(Phase_loops,Loops_splitted),
-	join_loops(Loops_splitted,Head,Call,Cs,_Vars).
+	join_loops(Loops_splitted,Head,Call,Cs,_Vars),
+	phase_add_property(phase(Phase,Properties),phase_loop,phase_loop(Head,Call,Cs),Phase2).
 
 join_loops([linear_loop(Head,Calls,Cs)],Head,Calls,Cs,Vars):-!,
 	Head=..[_|V1],
@@ -254,7 +297,19 @@ split_multiple_loops_aux([loop(Head,[Call|Calls],Inv,Info)|Loops],Loops_accum,Lo
 	nad_project_group(Vars,Inv,Inv_loop),
   	split_multiple_loops_aux([loop(Head,Calls,Inv,Info)|Loops],[linear_loop(Head,Call,Inv_loop)|Loops_accum],Loops_splitted). 
   	  
+loops_split_multiple_loops_with_id(Loops,Loops_splitted):-
+	split_multiple_loops_with_id_aux(Loops,1,[],Loops_splitted).
+ 
+split_multiple_loops_with_id_aux([],_,Loops_splitted, Loops_splitted).	
+split_multiple_loops_with_id_aux([(_,loop(_Head,[],_Inv,_))|Loops],_,Loops_accum,Loops_splitted):-
+	split_multiple_loops_with_id_aux(Loops,1,Loops_accum,Loops_splitted),!.
+split_multiple_loops_with_id_aux([(Id,loop(Head,[Call|Calls],Inv,Info))|Loops],Sub_id,Loops_accum,Loops_splitted):-
+	term_variables((Head,Call),Vars),
+	nad_project_group(Vars,Inv,Inv_loop),
+	Sub_id2 is Sub_id+1,
+  	split_multiple_loops_with_id_aux([(Id,loop(Head,Calls,Inv,Info))|Loops],Sub_id2,[(Id:Sub_id,linear_loop(Head,Call,Inv_loop))|Loops_accum],Loops_splitted). 
   	  
+  	    	  
 get_extended_phase([],[]).
 get_extended_phase([Loop|Phase],Extended_phase1):-
 	loop_ph(_,(Loop,_),Calls,_,_,_),

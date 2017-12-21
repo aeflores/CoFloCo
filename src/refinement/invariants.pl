@@ -63,7 +63,6 @@ This module computes different kinds of invariants for the chains:
 		     ]).
 
 
-:- use_module(chains,[chain/3,get_reversed_chains/3]).
 :- use_module(loops,[
 	loop_get_CEs/2,
 	loops_get_head/2,
@@ -191,21 +190,28 @@ loop_invs_get(loop_invs(Head,Map),Loop,Inv_fresh):-
 
 fwd_invs_get_loop_invariants(fwd_invs(Head,Map),Loop_fwd_invs):-
 	loop_invs_empty(Head,Empty_loop_invs),
-	foldl(loop_fwd_invs_accum(Head),Map,Empty_loop_invs,Loop_fwd_invs).
+	foldl(loop_invs_accum(Head),Map,Empty_loop_invs,Loop_fwd_invs).
 	
 back_invs_get_loop_invariants(back_invs(Head,Map),Loop_back_invs):-
 	loop_invs_empty(Head,Empty_loop_invs),
-	foldl(loop_fwd_invs_accum(Head),Map,Empty_loop_invs,Loop_back_invs).
+	foldl(loop_invs_accum(Head),Map,Empty_loop_invs,Loop_back_invs).
 		
-loop_fwd_invs_accum(_Head,([],_),Loop_fwd_invs,Loop_fwd_invs):-!.
+loop_invs_accum(_Head,([],_),Loop_fwd_invs,Loop_fwd_invs):-!.
 
-loop_fwd_invs_accum(Head,([Phase|_],(Cs_star,_)),Loop_invs,Loop_invs2):-
-	(number(Phase)->
-		loop_fwd_invs_accum_1(Head,Cs_star,Phase,Loop_invs,Loop_invs2)
+loop_invs_accum(Head,([Phase|_],(Cs_star,_)),Loop_invs,Loop_invs2):-
+	(Phase=multiple(Phase_pattern,_)->
+		true
 		;
-		foldl(loop_fwd_invs_accum_1(Head,Cs_star),Phase,Loop_invs,Loop_invs2)
+		Phase_pattern=Phase
+	),
+	(number(Phase_pattern)->
+		loop_invs_accum_1(Head,Cs_star,Phase_pattern,Loop_invs,Loop_invs2)
+		;
+		foldl(loop_invs_accum_1(Head,Cs_star),Phase_pattern,Loop_invs,Loop_invs2)
 	).
-loop_fwd_invs_accum_1(Head,Cs,Loop,loop_invs(Head,Map),loop_invs(Head,Map2)):-
+
+	
+loop_invs_accum_1(Head,Cs,Loop,loop_invs(Head,Map),loop_invs(Head,Map2)):-
 	Head=..[_Name|Vars],
 	(lookup_lm(Map,Loop,Cs2)->
 		nad_lub(Vars,Cs,Vars,Cs2,Vars,Cs3),

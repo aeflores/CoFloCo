@@ -2,12 +2,19 @@
 		ce_head/2,
 		ce_constraints/2,
 		ce_calls/2,
+		ce_rec_calls/2,
 		ce_equal/2,
 		ce_more_general_than/2,
 		ce_calls_accum/3,
+		ce_get_refined/2,
+		ce_get_cost/2,
+		ce_set_cost/3,
+		ce_add_property/4,
+	
 			
 		cr_empty/2,
 		cr_get_ce_by_id/3,
+		cr_get_ce_by_id_fresh/3,
 		cr_head/2,
 		cr_nameArity/2,
 		cr_get_ids/2,
@@ -17,13 +24,16 @@
 		cr_get_ceList/2,
 		cr_get_ceList_with_id/2,
 		cr_apply_all_ce/3,
+		cr_apply_all_ce_with_id/3,
 		cr_set_loops/3,
 		cr_get_loops/2,
 		cr_set_chains/3,
 		cr_get_chains/2,
 		cr_is_cr_called_multiply/2,
 		cr_get_forward_invariant/2,
-		cr_strengthen_with_CE_invs/4,
+		cr_strengthen_with_ce_invs/4,
+		cr_set_external_patterns/3,
+		cr_get_external_patterns/2,
 		
 		crs_empty/2,
 		crs_range/2,
@@ -42,6 +52,7 @@
 		crs_unfold_in_cr/4,
 		crs_unfold_and_remove/4,
 		crs_remove_cr/3,
+		crs_update_cr/4,
 		crs_update_cr_forward_invariant/4,
 		crs_update_forward_invariants_with_calls_from_cr/3,
 		crs_get_cr_external_patterns/3,
@@ -100,6 +111,8 @@ ce_more_general_than(eq_ref(Head,Cost_str,NR_calls,R_calls,Calls,Cs,Info),eq_ref
 ce_calls(eq(_,_,Calls,_),Calls).
 ce_calls(eq_ref(_,_,_,_,Calls,_,_),Calls).
 
+ce_rec_calls(eq_ref(_,_,_,Rec_calls,_,_,_),Rec_calls).
+
 ce_calls_cr(Eq,Head):-
 	ce_calls(Eq,Calls),
 	member(Head,Calls),!.
@@ -155,8 +168,21 @@ strengthen_call(Call,(inv(Head,Inv),Cs),(inv(Head,Inv),Cs2)):-
 	copy_term(inv(Head,Inv),inv(Call,Inv2)),
 	nad_glb(Cs,Inv2,Cs2).
 
-ce_get_refined(eq_ref(_Head,_Cost_str,_NR_calls,_R_calls,_Calls,_Cs,Info),Id):-
-	once(member(refined(Id),Info)).
+ce_add_property(eq_ref(Head,Cost_str,NR_calls,R_calls,Calls,Cs,Info),Name,Value,eq_ref(Head,Cost_str,NR_calls,R_calls,Calls,Cs,Info2)):-
+	insert_lm(Info,Name,Value,Info2).
+
+ce_get_property(eq_ref(_Head,_Cost_str,_NR_calls,_R_calls,_Calls,_Cs,Info),Name,Value):-
+	lookup_lm(Info,Name,Value).
+	
+ce_get_refined(Eq,Id):-
+	ce_get_property(Eq,refined,refined(Id)).
+	
+ce_get_cost(Eq,Cost):-
+	ce_get_property(Eq,cost,Cost).
+	
+ce_set_cost(Eq,Cost,Eq2):-
+	ce_add_property(Eq,cost,Cost,Eq2).	
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %these predicates are only defined for the initial equations
 
@@ -251,7 +277,10 @@ cr_ce_is_subsumed(cr(_,Map,_Properties),Eq):-
 	
 cr_get_ce_by_id(cr(_,Map,_),Id,Eq):-
 	lookup_lm(Map,Id,Eq).
-		
+	
+cr_get_ce_by_id_fresh(cr(_,Map,_),Id,Eq_fresh):-
+	lookup_lm(Map,Id,Eq),
+	copy_term(Eq,Eq_fresh).	
 	
 cr_head(cr(Name/Arity,_,_),Head):-
 	functor(Head,Name,Arity).
@@ -276,7 +305,9 @@ cr_get_ce(cr(_,Map,_),CE):-
 	
 cr_apply_all_ce(Pred,cr(NameArity,EqMap,Properties),cr(NameArity,EqMap2,Properties)):-
 	map_values_lm(Pred,EqMap,EqMap2).
-
+	
+cr_apply_all_ce_with_id(Pred,cr(NameArity,EqMap,Properties),cr(NameArity,EqMap2,Properties)):-
+	maplist(Pred,EqMap,EqMap2).
 %cr_exclude_CEs(Pred,cr(NameArity,EqMap,Loops,Chains,Properties),cr(NameArity,EqMap2,Loops,Chains,Properties),Excluded):-
 %	partition(second_is(Pred),EqMap,Excluded,EqMap2).
 
@@ -337,7 +368,7 @@ substitute_call_2([Other|Calls1],Head_callee,Calls0,[Other|Calls1_sub]):-
 	substitute_call_2(Calls1,Head_callee,Calls0,Calls1_sub).
 	
 	
-cr_strengthen_with_CE_invs(cr(NameArity,EqMap,Properties),HeadCall,CE_invs,
+cr_strengthen_with_ce_invs(cr(NameArity,EqMap,Properties),HeadCall,CE_invs,
 							cr(NameArity,EqMap2,Properties)):-
 	ce_invs_head(CE_invs,HeadInv),
 	ce_invs_map(CE_invs,InvMap),

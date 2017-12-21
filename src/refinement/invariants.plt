@@ -235,9 +235,9 @@ test(forward_multiple):-
 
 test(fwd_loop_invariants_and_CE_invariants):-
 	Loops=loops(range(2,5),[
-	(2,loop(a(A,B,C),[a(A2,B2,C2)],[],[eqs([2,3]),terminating])),
-	(3,loop(a(A,B,C),[a(A2,B2,C2),a(_,_,_)],[],[eqs([4]),terminating])),
-	(4,loop(a(A,B,C),[a(A2,B2,C2)],[],[eqs([5]),terminating]))
+	(2,loop(a(A,B,C),[a(A2,B2,C2)],[],[(eqs,eqs([2,3])),(termination,terminating)])),
+	(3,loop(a(A,B,C),[a(A2,B2,C2),a(_,_,_)],[],[(eqs,eqs([4])),(termination,terminating)])),
+	(4,loop(a(A,B,C),[a(A2,B2,C2)],[],[(eqs,eqs([5])),(termination,terminating)]))
 	]),
 	
 	invariants:fwd_invs_empty(fwd_inv(a(A,B,C),[A>=1]),Fwd_invs),
@@ -277,6 +277,20 @@ test(back_loop_invariants):-
 	loop_invs_get(Loop_invs,2,inv(a(A,B,C),Inv2)),
 	assertion(nad_equals(Inv2,[A>=1])).	
 
+test(back_loop_invariants_multiple_chains):-
+	invariants:back_invs_empty(a(A,B,C),Back_invs),
+	invariants:back_invs_add(Back_invs,[multiple(2,[[],[3]])],inv(a(Ap,Bp,Cp),[Ap>=2,Bp=2],[Ap>=1]),Back_invs2),
+	invariants:back_invs_add(Back_invs2,[multiple([4,5],[[],[3]])],inv(a(Ap,Bp,Cp),[Ap=<2,Bp=1],[Ap>=2]),Back_invs3),
+	back_invs_get_loop_invariants(Back_invs3,Loop_invs),
+	
+	loop_invs_get(Loop_invs,2,inv(a(A,B,C),Inv1)),
+	assertion(nad_equals(Inv1,[A>=2,B=2])),
+	loop_invs_get(Loop_invs,4,inv(a(A,B,C),Inv2)),
+	assertion(nad_equals(Inv2,[A=<2,B=1])),	
+	loop_invs_get(Loop_invs,5,inv(a(A,B,C),Inv3)),
+	assertion(nad_equals(Inv3,[A=<2,B=1])).
+	
+	
 test(back_invs_update_with_changed_chains):-
 	Chains=chains([[4],[3],[2,5],1],[
 				[[4],multiple([3],[ [[2,5],1],[1]])]

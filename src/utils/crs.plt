@@ -377,7 +377,7 @@ test(cr_strengthen):-
 		    InvPair=(Eq_id,Inv),
 			invariants:ce_invs_add(CE_invs_l,Eq_id,Inv,CE_invs_l2)
 			),Invs,CE_invs,CE_invs2),	
-	cr_strengthen_with_CE_invs(CR,head,CE_invs2,CR2),
+	cr_strengthen_with_ce_invs(CR,head,CE_invs2,CR2),
 	cr_get_ce_by_id(CR2,1,Eq1),
 	ce_head(Eq1,wh(Ap,Bp)),
 	ce_calls(Eq1,[wh(A2p,B2p)]),
@@ -391,7 +391,7 @@ test(cr_strengthen):-
 	assertion(nad_equals(Cs2,[Ap >= Bp+1,A2p=Ap-1,A3p+A2p=0,Bp=B2p+B3p,  Bp>=1])),
 	
 	
-	cr_strengthen_with_CE_invs(CR,call,CE_invs2,CR3),
+	cr_strengthen_with_ce_invs(CR,call,CE_invs2,CR3),
 	
 	cr_get_ce_by_id(CR3,1,Eq1p),
 	ce_head(Eq1p,wh(Ap,Bp)),

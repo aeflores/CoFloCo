@@ -9,10 +9,10 @@
 :-use_module(stdlib(numeric_abstract_domains),[nad_equals/2]).
 
 crs_test:crse_example(crse_loops1,[
-	eq_ref(a(A),cost([],[],[],[],1),[],[],[],[A=A2],[terminating]),
-	eq_ref(a(A),cost([],[],[],[],1),[d(B)],[a(A2)],[a(A2),d(B)],[ 1*A>=1,A2=A+1,B=A+1 ],[terminating]),
-	eq_ref(a(A),cost([],[],[],[],1),[c(B)],[a(A2)],[a(A2),c(B)],[ 1*A>=1,A2=A+1,B=A+10 ],[terminating]),
-	eq_ref(a(A),cost([],[],[],[],1),[c(B)],[a(A2)],[a(A2),c(B)],[ 1*A>=0,A2=A+1,B=A+11 ],[terminating])
+	eq_ref(a(A),cost([],[],[],[],1),[],[],[],[A=A2],[(termination,terminating)]),
+	eq_ref(a(A),cost([],[],[],[],1),[d(B)],[a(A2)],[a(A2),d(B)],[ 1*A>=1,A2=A+1,B=A+1 ],[(termination,terminating)]),
+	eq_ref(a(A),cost([],[],[],[],1),[c(B)],[a(A2)],[a(A2),c(B)],[ 1*A>=1,A2=A+1,B=A+10 ],[(termination,terminating)]),
+	eq_ref(a(A),cost([],[],[],[],1),[c(B)],[a(A2)],[a(A2),c(B)],[ 1*A>=0,A2=A+1,B=A+11 ],[(termination,terminating)])
 	],[entry(a(A),[])]).	
 
 	
@@ -23,10 +23,11 @@ test(no_compress):-
 	compute_loops(CR,0,Loops),
 	
 	Loops=loops(range(1,5),[
-	(1,loop(a(A),[],Inv1,[eqs([1]),terminating])),
-	(2,loop(a(A),[a(A2)],Inv3,[eqs([3]),terminating])),
-	(3,loop(a(A),[a(A2)],Inv2,[eqs([2]),terminating])),
-	(4,loop(a(A),[a(A2)],Inv4,[eqs([4]),terminating]))]),
+	(1,loop(a(A),[],Inv1,[(eqs,eqs([1])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)])),
+	(2,loop(a(A),[a(A2)],Inv3,[(eqs,eqs([3])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)])),
+	(3,loop(a(A),[a(A2)],Inv2,[(eqs,eqs([2])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)])),
+	(4,loop(a(A),[a(A2)],Inv4,[(eqs,eqs([4])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)]))
+	]),
 	assertion(nad_equals(Inv1,[])),
 	assertion(nad_equals(Inv2,[1*A>=1,A2=A+1])),
 	assertion(nad_equals(Inv3,[1*A>=1,A2=A+1])),
@@ -36,12 +37,12 @@ test(no_compress):-
 	assertion(Head=a(A)),
 	loops_get_list(Loops,List_loops),
 	assertion(List_loops=[
-	loop(a(A),[],Inv1,[eqs([1]),terminating]),
-	loop(a(A),[a(A2)],Inv3,[eqs([3]),terminating]),
-	loop(a(A),[a(A2)],Inv2,[eqs([2]),terminating]),
-	loop(a(A),[a(A2)],Inv4,[eqs([4]),terminating])]),
+	loop(a(A),[],Inv1,[(eqs,eqs([1])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)]),
+	loop(a(A),[a(A2)],Inv3,[(eqs,eqs([3])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)]),
+	loop(a(A),[a(A2)],Inv2,[(eqs,eqs([2])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)]),
+	loop(a(A),[a(A2)],Inv4,[(eqs,eqs([4])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)])]),
 	
-	assertion(loop_get_CEs(loop(a(A),[a(A2)],Inv3,[eqs([3]),terminating]),[3])).
+	assertion(loop_get_CEs(loop(a(A),[a(A2)],Inv3,[(eqs,eqs([3])),(termination,terminating)]),[3])).
 
 test(compress_yes):-
 	create_crse(crse_loops1,CRSE),
@@ -50,9 +51,9 @@ test(compress_yes):-
 	compute_loops(CR,1,Loops),
 	
 	Loops=loops(range(1,4),[
-	(1,loop(a(A),[],Inv1,[eqs([1]),terminating])),
-	(2,loop(a(A),[a(A2)],Inv2,[eqs([2,3]),terminating])),
-	(3,loop(a(A),[a(A2)],Inv3,[eqs([4]),terminating]))]),
+	(1,loop(a(A),[],Inv1,[(eqs,eqs([1])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)])),
+	(2,loop(a(A),[a(A2)],Inv2,[(eqs,eqs([2,3])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)])),
+	(3,loop(a(A),[a(A2)],Inv3,[(eqs,eqs([4])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)]))]),
 	assertion(nad_equals(Inv1,[])),
 	assertion(nad_equals(Inv2,[1*A>=1,A2=A+1])),
 	assertion(nad_equals(Inv3,[1*A>=0,A2=A+1])).	
@@ -64,17 +65,17 @@ test(compress2):-
 	compute_loops(CR,2,Loops),
 	
 	Loops=loops(range(1,3),[
-	(1,loop(a(A),[],Inv1,[eqs([1]),terminating])),
-	(2,loop(a(A),[a(A2)],Inv2,[eqs([2,3,4]),terminating]))]),
+	(1,loop(a(A),[],Inv1,[(eqs,eqs([1])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)])),
+	(2,loop(a(A),[a(A2)],Inv2,[(eqs,eqs([2,3,4])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)]))]),
 	assertion(nad_equals(Inv1,[])),
 	assertion(nad_equals(Inv2,[1*A>=0,A2=A+1])).		
 
 	
 crs_test:crse_example(crse_loops2,[
-	eq_ref(a(A),cost([],[],[],[],1),[],[],[],[A=A2],[terminating]),
-	eq_ref(a(A),cost([],[],[],[],1),[d(B)],[a(A2)],[a(A2),d(B)],[ 1*A>=1,A2=A+1,B=A+1 ],[terminating]),
-	eq_ref(a(A),cost([],[],[],[],1),[c(B)],[a(A2)],[a(A2),c(B)],[ 1*A>=1,A2=A+1,B=A+10 ],[terminating]),
-	eq_ref(a(A),cost([],[],[],[],1),[c(B)],[a(A2)],[a(A2),c(B)],[ 1*A>=0,A2=A+1,B=A+11 ],[non_terminating])
+	eq_ref(a(A),cost([],[],[],[],1),[],[],[],[A=A2],[(termination,terminating)]),
+	eq_ref(a(A),cost([],[],[],[],1),[d(B)],[a(A2)],[a(A2),d(B)],[ 1*A>=1,A2=A+1,B=A+1 ],[(termination,terminating)]),
+	eq_ref(a(A),cost([],[],[],[],1),[c(B)],[a(A2)],[a(A2),c(B)],[ 1*A>=1,A2=A+1,B=A+10 ],[(termination,terminating)]),
+	eq_ref(a(A),cost([],[],[],[],1),[c(B)],[a(A2)],[a(A2),c(B)],[ 1*A>=0,A2=A+1,B=A+11 ],[(termination,non_terminating)])
 	],[entry(a(A),[])]).	
 		
 test(compress_info):-
@@ -83,9 +84,9 @@ test(compress_info):-
 	crs_get_cr(CRS,a,CR),
 	compute_loops(CR,2,Loops),
 	Loops=loops(range(1,4),[
-	(1,loop(a(A),[],Inv1,[eqs([1]),terminating])),
-	(2,loop(a(A),[a(A2)],Inv3,[eqs([4]),non_terminating])),
-	(3,loop(a(A),[a(A2)],Inv2,[eqs([2,3]),terminating]))
+	(1,loop(a(A),[],Inv1,[(eqs,eqs([1])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)])),
+	(2,loop(a(A),[a(A2)],Inv3,[(eqs,eqs([4])),(ioVars,ioVars(a(A),[A],[])),(termination,non_terminating)])),
+	(3,loop(a(A),[a(A2)],Inv2,[(eqs,eqs([2,3])),(ioVars,ioVars(a(A),[A],[])),(termination,terminating)]))
 	]),
 	assertion(nad_equals(Inv1,[])),
 	assertion(nad_equals(Inv2,[1*A>=1,A2=A+1])),
@@ -98,24 +99,24 @@ test(phase_loops):-
 	       (3,loop(a(A),[a(A2)],[A>=1,A2=A-1],[])),
 	       (4,loop(a(A),[a(A2)],[A>=1,A2=A-2],[])),
 	       (5,loop(a(A),[a(A2),a(A3)],[A>=1,A2=A-1,A3=A-2],[]))]),
-	compute_phase_loops(Loops,chains([5,[3,4],[2],1],_),chains(Annotated_phases1,_)),
-	compute_phase_loops(Loops,chains([[2,3,4]],_),chains(Annotated_phases2,_)),
-	compute_phase_loops(Loops,chains([[2,5]],_),chains(Annotated_phases3,_)),
+	compute_phase_loops(Loops,chains([phase(5,[]),phase([3,4],[]),phase([2],[]),phase(1,[])],_),chains(Annotated_phases1,_)),
+	compute_phase_loops(Loops,chains([phase([2,3,4],[])],_),chains(Annotated_phases2,_)),
+	compute_phase_loops(Loops,chains([phase([2,5],[])],_),chains(Annotated_phases3,_)),
 	Annotated_phases1=[
-	phase(5,[phase_loop(Head,Call,Cs1)]),
-	phase([3,4],[phase_loop(Head,Call,Cs2)]),
-	phase([2],[phase_loop(Head,Call,Cs3)]),
-	phase(1,[phase_loop(Head,none,Cs4)])],
+	phase(5,[(phase_loop,phase_loop(Head,Call,Cs1))]),
+	phase([3,4],[(phase_loop,phase_loop(Head,Call,Cs2))]),
+	phase([2],[(phase_loop,phase_loop(Head,Call,Cs3))]),
+	phase(1,[(phase_loop,phase_loop(Head,none,Cs4))])],
 	Head=a(X),Call=a(X2),
 	assertion(nad_equals(Cs1,[X>=1,X2=<X-1,X2>=X-2])),
 	assertion(nad_equals(Cs2,[X>=1,X2=<X-1,X2>=X-2])),
 	assertion(nad_equals(Cs3,[X>=0,X2=X-1])),
 	assertion(nad_equals(Cs4,[X=0])),
 	
-	Annotated_phases2=[phase([2,3,4],[phase_loop(Head,Call,Cs5)])],
+	Annotated_phases2=[phase([2,3,4],[(phase_loop,phase_loop(Head,Call,Cs5))])],
 	%this is stronger than I expected
 	assertion(nad_equals(Cs5,[X2+1>=0,X2=<X-1,X2>=X-2])),
-	Annotated_phases3=[phase([2,5],[phase_loop(Head,Call,Cs6)])],
+	Annotated_phases3=[phase([2,5],[(phase_loop,phase_loop(Head,Call,Cs6))])],
 	assertion(nad_equals(Cs6,[X2+1>=0,X2=<X-1,X2>=X-2])).    
 	       
 

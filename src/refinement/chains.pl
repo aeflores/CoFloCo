@@ -40,13 +40,30 @@ However, for each SCC there is a special base case that will allow us to represe
 */
 
 
-:- module(chains,[compute_chains/2,
+:- module(chains,[
+				phase_add_property/4,
+				phase_get_property/3,
+				phase_set_cost/3,
+				phase_get_cost/2,	
+				phase_get_pattern/2,
+				phase_get_rfs/2,
+				phase_get_termination/2,
+				phase_is_iterative/1,
+					
+				chain_get_pattern/2,
+				chain_get_property/3,
+				chains_get_chain/3,
+				chain_set_cost/3,
+				chain_get_cost/2,
+				
+				compute_chains/2,
 				chains_reversed_chains/2,
 				chains_discard_infeasible_prefixes/4,
 				chains_discard_infeasible/4,
 				chains_discard_infeasible_combinations/5,
 				chains_update_with_discarded_loops/4,
-				chains_discard_terminating_non_terminating/4
+				chains_discard_terminating_non_terminating/4,
+				chains_annotate_termination/3
 				]).
 
 
@@ -57,7 +74,7 @@ However, for each SCC there is a special base case that will allow us to represe
 
 :- use_module(loops,[loop_is_multiple/1,
 					loop_is_base_case/1,
-					
+					loop_get_property/3,
 					loops_range/2,
 					loops_get_list/3,
 					loops_get_ids/2,
@@ -67,7 +84,7 @@ However, for each SCC there is a special base case that will allow us to represe
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
 				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
 :-use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2,difference_sl/3]).
-:-use_module(stdlib(list_map),[insert_lm/4]).
+:-use_module(stdlib(list_map),[empty_lm/1,lookup_lm/3,insert_lm/4]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -103,7 +120,33 @@ However, for each SCC there is a special base case that will allow us to represe
 %
 
 %chains(Phases,Chains)
+phase_add_property(phase(Ph,Properties),Name,Val,phase(Ph,Properties2)):-
+	insert_lm(Properties,Name,Val,Properties2).
+	
+phase_get_property(phase(_Ph,Properties),Name,Val):-
+	lookup_lm(Properties,Name,Val).
 
+phase_set_cost(Phase,Cost,Phase2):-
+	phase_add_property(Phase,cost,Cost,Phase2).
+	
+phase_get_cost(Phase,Cost):-
+	phase_get_property(Phase,cost,Cost).
+	
+phase_get_rfs(Phase,Rfs):-
+	phase_get_property(Phase,ranking_functions,Rfs),!.
+phase_get_rfs(_,ranking_functions(_,[])).		
+
+phase_get_termination(Phase,Term_arg):-
+	phase_get_property(Phase,termination,Term_arg).		
+		
+phase_is_terminating(Ph):-
+	phase_get_property(Ph,termination,Val),
+	functor(Val,terminating,_).
+	
+phase_is_iterative(phase([_|_],_)).
+
+	
+phase_get_pattern(phase(Ph,_),Ph).
 
 phase_discard(Ph,Discarded,Ph2):-
 	Ph=[_|_],!,
@@ -121,7 +164,7 @@ chains_update_with_discarded_loops(chains(Phases,Chains),Discarded_loops,chains(
 
 
 exclude_loops_from_phase([],_Discarded,[]).
-exclude_loops_from_phase([Ph|Phases],Discarded,[Ph2|Phases1]):-
+exclude_loops_from_phase([phase(Ph,Properties)|Phases],Discarded,[phase(Ph2,Properties)|Phases1]):-
 	phase_discard(Ph,Discarded,Ph2),!,
 	exclude_loops_from_phase(Phases,Discarded,Phases1).
 exclude_loops_from_phase([_Ph|Phases],Discarded,Phases1):-
@@ -137,7 +180,9 @@ check_discarded_loops(Discarded_loops,[Ph|Chain],_,[Ph2|Chain]):-
 	phase_discard(Ph,Discarded_loops,Ph2).
 
 
-
+chains_get_chain(chains(_,Chains),Chain_pattern,Chain):-
+	once(member(chain(Chain_pattern,Properties),Chains)),
+	Chain=chain(Chain_pattern,Properties).
 		
 	
 chains_discard_infeasible_prefixes(chains(Phases,Chains),Infeasible_prefixes,chains(Phases,Chains2),Changes):-
@@ -146,6 +191,12 @@ chains_discard_infeasible_prefixes(chains(Phases,Chains),Infeasible_prefixes,cha
 
 check_infeasible_prefixes(Infeasible_prefixes,Chain,Prefix,Chain):-
 	\+contains_sl(Infeasible_prefixes,Prefix).
+	
+chains_discard_terminating_non_terminating(chains(Phases,Chains),Chains2,Changes):-
+	include(phase_is_terminating,Phases,Terminating_phases),
+	maplist(phase_get_pattern,Terminating_phases,Terminating_phases_pattern),
+	sort(Terminating_phases_pattern,Terminating_phases_set),
+	chains_discard_terminating_non_terminating(chains(Phases,Chains),Terminating_phases_set,Chains2,Changes).
 			
 chains_discard_terminating_non_terminating(chains(Phases,Chains),TerminatingPhases,chains(Phases,Chains2),Changes):-
 	chains_transform_and_discard(Chains,[],check_terminating_non_terminating(TerminatingPhases),Chains2,[],Changes).
@@ -190,7 +241,9 @@ chain_transform_and_discard(Chain,Prefix,Check,(Accum_ch,Accum_map),([Chain2|Acc
 	chain_transform(Chain,Prefix,Check,Chain2,Accum_map,Changes_map),!.
 
 	
-chain_transform_and_discard(_Chain,_,_Check,Accum,Accum).
+chain_transform_and_discard(Chain,_,_Check,(Accum_ch,Accum_map),(Accum_ch,Accum_map2)):-
+	insert_lm(Accum_map,Chain,none,Accum_map2).
+	
 
 
 chain_transform([],Prefix,Check,[],Changes,Changes):-
@@ -216,6 +269,70 @@ chain_transform([Ph|Chain],Prefix,Check,[Ph2|Chain2],Changes_accum,Changes_map):
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+chain_add_property(chain(Chain,Properties),Name,Val,chain(Chain,Properties2)):-
+	insert_lm(Properties,Name,Val,Properties2).
+	
+chain_get_property(chain(_Chain,Properties),Name,Val):-
+	lookup_lm(Properties,Name,Val).
+
+chain_get_pattern(chain(Chain,_),Chain).
+
+chain_set_cost(Chain,Cost,Chain2):-
+	chain_add_property(Chain,cost,Cost,Chain2).
+	
+chain_get_cost(Chain,Cost):-
+	chain_get_property(Chain,cost,Cost).
+	
+	
+chains_annotate_termination(Chains,Loops,Chains_annotated):-
+	Chains=chains(Phases,Chain_list),
+	maplist(\Chain^Chain_annot^(Chain_annot=chain(Chain,[])),Chain_list,Chain_annot_list),
+	maplist(\Chain_1^Chain_2^chain_annotate_termination(Chain_1,Loops,Chain_2),Chain_annot_list,Chain_annot_list2),
+	Chains_annotated=chains(Phases,Chain_annot_list2).
+	
+chain_annotate_termination(chain(Chain,Properties),Loops,Chain2):-
+	(chain_is_non_terminating(Chain,Loops)->
+		chain_add_property(chain(Chain,Properties),termination,non_terminating,Chain2)
+		;
+		chain_add_property(chain(Chain,Properties),termination,terminating,Chain2)
+	).
+
+
+chain_is_non_terminating([Phase],Loops):-
+	(
+	Phase=[_|_]
+	;
+	phase_has_divergent_loop(Phase,Loops)
+	).
+	
+chain_is_non_terminating([multiple(Phase,Tails)],Loops):-!,
+	(
+	phase_has_divergent_loop(Phase,Loops)
+	;
+	member([],Tails)
+	;
+	member(Tail,Tails),
+	chain_is_non_terminating(Tail,Loops)
+	).
+
+chain_is_non_terminating([Phase,Phase2|Chain],Loops):-
+	(
+	phase_has_divergent_loop(Phase,Loops)
+	;
+	chain_is_non_terminating([Phase2|Chain],Loops)
+	).
+	
+phase_has_divergent_loop(Loop_id,Loops):-
+	number(Loop_id),!,
+	loops_get_loop(Loops,Loop_id,Loop),
+	loop_get_property(Loop,termination,non_terminating).
+	
+phase_has_divergent_loop(Phase,Loops):-
+	loops_get_list(Loops,Phase,Loops_list),
+	member(Loop,Loops_list),
+	loop_get_property(Loop,termination,non_terminating).		
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 is_multiple_phase(Phase,Loops):-
 	Phase=[_|_],!,
 	loops_get_list(Loops,Phase,Loops_phase),
@@ -226,14 +343,19 @@ is_multiple_phase(Phase,Loops):-
 	loops_get_loop(Loops,Phase,Loop),
 	loop_is_multiple(Loop).	
 	
-compute_chains(Loops,chains(Phases,Chains_set)):-
+compute_chains(Loops,chains(Phases_annotated,Chains_set)):-
 	loops_range(Loops,range(I,N)),
 	create_unkown_graph(I,N,Graph),
 	compute_phases(Loops,Graph,Phases),
 	findall(Chain,
 		compute_chain(Phases,[],Loops,Graph,Chain),
 	Chains),
+	maplist(wrap_phase(Loops),Phases,Phases_annotated),
 	from_list_sl(Chains,Chains_set).
+
+%TODO add more info about the phases
+wrap_phase(_,Phase,phase(Phase,Empty_prop)):-
+	empty_lm(Empty_prop).
 	
 compute_chain(_Phases,Chain,Loops,_Graph,Chain_rev):-
 	Chain=[Last|_],

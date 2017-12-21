@@ -39,45 +39,41 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 */
 
 :- module(unfolding,[
-			   cr_specialize/3,
-			   cr_compute_external_execution_patterns/3]).
+	cr_specialize/3,
+	cr_compute_external_execution_patterns/4,
+	
+	external_pattern_set_cost/3,
+	external_pattern_cost/2,
+	
+	external_patterns_head/2,
+	external_patterns_get_external_pattern/3,
+	external_patterns_apply_to_each/3]).
 
-:- use_module(chains,[chain/3]).
-:- use_module(invariants,[backward_invariant/4,
-			 scc_forward_invariant/3,
-			 forward_invariant/4
-			 ]).
-		 		
-:- use_module('../db',[eq_ph/8,
-		  loop_ph/6,
-		  add_eq_ph/2,
-		  add_external_call_pattern/5,
-		  external_call_pattern/5,
-		  reset_scc/3,
-		  upper_bound/4,
-		  non_terminating_chain/3]).
-:-use_module('../termination_checker',[termination_argument/4]).
-		 
-			 
+:- use_module(chains,[
+	chain_get_pattern/2,
+	chain_get_property/3]).
+	
+:- use_module(invariants,[back_invs_get/3]).
+		 					 
 :- use_module('../IO/output',[
 		print_chain_simple/1,
 		print_warning/2,
 		print_or_log/2,
 		print_or_log_nl/0]).
+		
 :- use_module('../IO/params',[get_param/2]).	
 
 :- use_module('../utils/crs',[
+	ce_add_property/4,
 	cr_empty/2,
 	cr_get_ceList_with_id/2,
 	cr_head/2,
 	cr_add_eq/5,
-	crs_range/2]).
+	crs_range/2,
+	crs_get_cr_external_patterns/3]).
 	
-:- use_module('../utils/cofloco_utils',[
-	bagof_no_fail/3,
-	assign_right_vars/3,
-	tuple/3,
-	merge_implied_summaries/3]).
+:- use_module('../utils/cofloco_utils',[merge_implied_summaries/3]).
+
 :- use_module('../utils/polyhedra_optimizations',[
 	nad_consistent_constraints_group_aux/1,
 	slice_relevant_constraints_and_vars/5,
@@ -86,13 +82,22 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 	nad_normalize_polyhedron/2]).
 
 :- use_module(stdlib(utils),[ut_split_at_pos/4]).
-:- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_lub/6,
-			            nad_normalize/2,
-			            nad_entails/3,
-						nad_list_lub/2,
-						nad_glb/3,
-						nad_project/3]).
-:- use_module(stdlib(set_list),[from_list_sl/2,unions_sl/2,union_sl/3,is_subset_sl/2]).
+:- use_module(stdlib(numeric_abstract_domains),[
+	nad_consistent_constraints/1,
+	nad_lub/6,
+	nad_normalize/2,
+	nad_entails/3,
+	nad_list_lub/2,
+	nad_glb/3,
+	nad_project/3]).
+	
+:- use_module(stdlib(set_list),[
+	from_list_sl/2,
+	unions_sl/2,
+	union_sl/3,
+	is_subset_sl/2]).
+	
+:- use_module(stdlib(list_map),[from_pairs_lm/2]).	
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 
 
@@ -103,6 +108,9 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%external_patterns(list(external_pattern))
+% external_pattern:= external_pattern(Term_flag,Polyhedron)
+
 %! unfold_calls(Head:term,RefCnt:int) is det
 % unfold each cost equation. 
 cr_specialize(CR,CRS,CR2):-
@@ -112,11 +120,12 @@ cr_specialize(CR,CRS,CR2):-
 	crs_range(CRS,range(_,Next)),
 	foldl(specialize_ce(CRS),CEs_with_ids,(CR_empty,Next),(CR2,_)).
 
-specialize_ce(CRS,(Id,eq_ref(Head,Cost,Base_calls,_Rec_calls,Total_calls,Cs,Info)),(CR_accum,Count),(CR,Count2)):-
+specialize_ce(CRS,(Id,CE),(CR_accum,Count),(CR,Count2)):-
+	ce_add_property(CE,refined,refined(Id),eq_ref(Head,Cost,Base_calls,_Rec_calls,Total_calls,Cs,Info)),
 	maplist(crs_get_cr_external_patterns_instance(CRS),Base_calls,External_patterns),
 	findall(Eq,
 		specialize_ce_aux(Total_calls,External_patterns,terminating,
-		eq(Head,Cost,[],Cs,[refined(Id)|Info]),Eq),
+		eq(Head,Cost,[],Cs,Info),Eq),
 		Eqs),
 	foldl(\Eq_l^Pair1^Pair2^
 		(
@@ -125,8 +134,8 @@ specialize_ce(CRS,(Id,eq_ref(Head,Cost,Base_calls,_Rec_calls,Total_calls,Cs,Info
 		cr_add_eq(CR_l,C1,Eq_l,CR2_l,C2)	
 		),Eqs,(CR_accum,Count),(CR,Count2)).
 		
-crs_get_external_patterns_instance(CRS,Head,external_patterns(Head,Patts)):-
-	crs_get_external_patterns(CRS,Head,Ext_patt),
+crs_get_cr_external_patterns_instance(CRS,Head,external_patterns(Head,Patts)):-
+	crs_get_cr_external_patterns(CRS,Head,Ext_patt),
 	copy_term(Ext_patt,external_patterns(Head,Patts)).
 	
 %! unfold_calls_aux(+Total_calls:list(term),+Base_calls:list(term),+Head:term,+RefCnt:int,+Cost:cost_expression,+R_Calls:list(term),+New_B_Calls:list(term),+New_T_Calls:list(term),+Cs:polyhedron,+Term_flag:flag,+Id:int) is failure
@@ -143,14 +152,15 @@ crs_get_external_patterns_instance(CRS,Head,external_patterns(Head,Patts)):-
 % * R_Calls are the recursive calls of the cost equation that is being unfolded.
 % * New_T_Calls and New_B_Calls are the unfolded calls.
 % * Flag can be 'terminating' or 'non_terminating'
-specialize_ce_aux([],[],Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Eq_new):-
+specialize_ce_aux([],[],Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Eq_new_annotated):-
 	%get the calls in the right order
 	nad_normalize_polyhedron(Cs,Cs_normalized),
 	\+nad_is_bottom(Cs_normalized),
 	
 	reverse(Total_calls_rev,Total_calls),
 	partition(is_refined_call,Total_calls,NR_calls,R_calls),
-	Eq_new=eq_ref(Head,Cost,NR_calls,R_calls,Total_calls,Cs_normalized,[Term_flag|Info]).
+	Eq_new=eq_ref(Head,Cost,NR_calls,R_calls,Total_calls,Cs_normalized,Info),
+	ce_add_property(Eq_new,termination,Term_flag,Eq_new_annotated).
 	
 specialize_ce_aux([R_call|More],External_patterns,Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Eq_new):-
 	unifiable(R_call,Head,_),
@@ -159,8 +169,9 @@ specialize_ce_aux([R_call|More],External_patterns,Term_flag,eq(Head,Cost,Total_c
 specialize_ce_aux([Base_call|More],[external_patterns(Base_call,Pattern_map)|MoreB],Term_flag,
 	eq(Head,Cost,Calls_accum,Cs,Info),Eq_new):-
 	%here is the choice	
-	member((Id,external_pattern(Term_flag_patt,Cs_patt)),Pattern_map),
-
+	member((Id,Ex_patt),Pattern_map),
+	external_pattern_summary(Ex_patt,Cs_patt),
+	external_pattern_termflag(Ex_patt,Term_flag_patt),
 	nad_glb(Cs_patt,Cs,Cs1),
 	Base_call=..[_|Relevant_vars],
 	slice_relevant_constraints_and_vars(Relevant_vars,[],Cs,_,Relevant_Cs),
@@ -193,33 +204,85 @@ or_terminating_flag(_,_,non_terminating):-!.
 %
 % Compress terminating and non-terminating chains separately
 
-cr_compute_external_execution_patterns(CR,Compress_param,External_patterns):-
-	findall((Head,(Condition,Chain)),
-		(
-		backward_invariant(Head,(Chain,RefCnt),_,Condition),
-		\+non_terminating_chain(Head,RefCnt,Chain)
-		)
-		,Ex_pats),
+external_pattern_summary(external_pattern(Properties),Summary):-
+	once(member(summary(Summary),Properties)).
+external_pattern_termflag(external_pattern(Properties),Term_flag):-
+	once(member(termination(Term_flag),Properties)).
+
+external_pattern_cost(external_pattern(Properties),Cost):-
+	once(member(cost(Cost),Properties)).	
+
+external_pattern_set_cost(external_pattern(Properties),Cost,external_pattern([cost(Cost)|Properties])).
+
 	
-	assign_right_vars(Ex_pats,Head,Ex_pats1),
+external_patterns_head(external_patterns(Head,_),Head).
+external_patterns_get_external_pattern(external_patterns(_,Map),Id,External_pattern):-
+	lookup_lm(Map,Id,External_pattern).
+
+external_patterns_apply_to_each(Pred,external_patterns(Head,List),external_patterns(Head,List2)):-
+	maplist(Pred,List,List2).
+	
+cr_compute_external_execution_patterns(Chains,Backward_invs,Compress_param,External_patterns):-	
+	Chains=chains(_,Chain_list_annotated),
+	maplist(chain_get_pattern,Chain_list_annotated,Chain_list),
+	maplist(\Chain^Term_flag^chain_get_property(Chain,termination,Term_flag),Chain_list_annotated,Termination_flags),
+	maplist(Head+\Chain_l^Inv_l^back_invs_get(Backward_invs,Chain_l,inv(Head,_,Inv_l)),Chain_list,Chain_summaries),
+	cr_compute_external_execution_patterns_1(Compress_param,Head,Chain_list,Chain_summaries,Termination_flags,External_patterns_list),
+	from_pairs_lm(External_patterns_list,External_patterns_map),
+	External_patterns=external_patterns(Head,External_patterns_map).
+
+cr_compute_external_execution_patterns_1(0,_Head,Chain_list,Chain_summaries,Termination_flags,External_patterns_list):-
+		maplist(
+		\Summary_l^Term_flag_l^Chain_l^External_pattern_l^(
+		External_pattern_l=([Chain_l],external_pattern([termination(Term_flag_l),summary(Summary_l)]))
+		
+		),Chain_summaries,Termination_flags,Chain_list,External_patterns_list).
+		
+cr_compute_external_execution_patterns_1(1,_Head,Chain_list,Chain_summaries,Termination_flags,External_patterns_list):-
+	maplist(
+	\Summary_l^Term_flag_l^Chain_l^External_pattern_l^(
+		External_pattern_l=(external_pattern([termination(Term_flag_l),summary(Summary_l)]),Chain_l)
+		
+		),Chain_summaries,Termination_flags,Chain_list,External_patterns_rev_list),
+	% syntactic merging
+	from_pair_list_mm(External_patterns_rev_list,Grouped_external_patterns_rev),
+	maplist(\Pattern_rev_l^Pattern_l^(
+		Pattern_rev_l=(A,B),
+		Pattern_l=(B,A)
+		),Grouped_external_patterns_rev,External_patterns_list).
+	
+cr_compute_external_execution_patterns_1(2,Head,Chain_list,Chain_summaries,Termination_flags,External_patterns_list):-
+	maplist(
+	\Summary_l^Term_flag_l^Chain_l^External_pattern_l^(
+		External_pattern_l=((Term_flag_l,Summary_l),Chain_l)
+		
+		),Chain_summaries,Termination_flags,Chain_list,External_patterns_rev_list),
 	% group the partitions according to the chains
-	from_pair_list_mm(Ex_pats1,Multimap_simplified_aux),
-	%join chains more agressively
-	((get_param(compress_chains,[N]),N > 1)->
-	term_variables(Head,Vars),
-	merge_implied_summaries(Vars,Multimap_simplified_aux,Multimap_simplified)
-	;
-	Multimap_simplified_aux=Multimap_simplified
-	),
-%TODO: experiments of how to compress chains
-%	length(Multimap_simplified,N),
-%	Head=..[_|Vars],
-%	append(_,[Last],Vars),
-%	(N>3-> 
-%	   merge_patterns(Head,[],weak,Multimap_simplified,Multimap_simplified_2)
-%	   ;
-%	  merge_patterns(Head,[Last],strong,Multimap_simplified,Multimap_simplified_2)
-%	  ),
+	from_pair_list_mm(External_patterns_rev_list,Grouped_external_patterns_rev),
+	%split terminating and non-terminating
+	partition(\Elem^(Elem=((terminating,_),_)),Grouped_external_patterns_rev,Term_ext_pat,Non_term_ext_pat),
+	%merge using implied summaries
+	merge_external_pattern_group(Head,Term_ext_pat,Term_ext_pat_merged),
+	merge_external_pattern_group(Head,Non_term_ext_pat,Non_term_ext_pat_merged),
+	append(Non_term_ext_pat_merged,Term_ext_pat_merged,External_patterns_list).
+
+merge_external_pattern_group(Head,Ext_pat,Ext_pat_merged):-
+	maplist(
+	Term_flag_l+\External_pattern_l^External_pattern_simple^(
+		External_pattern_l=((Term_flag_l,Summary_l),Chains_l),
+		External_pattern_simple=(Summary_l,Chains_l)
+		
+		),Ext_pat,Ext_pat_simple),
+	Head=..[_|Vars],
+	merge_implied_summaries(Vars,Ext_pat_simple,Ext_pat_simple_merged),
+	maplist(
+	Term_flag_l+\External_pattern_simple^External_pattern_l^(
+		External_pattern_simple=(Summary_l,Chains_l),
+		External_pattern_l=(Chains_l,external_pattern([termination(Term_flag_l),summary(Summary_l)]))
+		),Ext_pat_simple_merged,Ext_pat_merged).
+			
+
+/*
 	(reset_scc(Head,Important_vars,Flag)-> 
 	   merge_patterns(Head,Important_vars,Flag,Multimap_simplified,Multimap_simplified_2)
 	   ;
@@ -284,4 +347,4 @@ reduce_precondition_to_vars(Vars,Inv,Inv_simplified):-
 	nad_project(Vars,Inv,Inv_projected),
 	nad_normalize_polyhedron(Inv_projected,Inv_simplified).
 	
-	
+*/	

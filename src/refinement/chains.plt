@@ -49,7 +49,7 @@ loops_example(multiple,
 test(chains_sequence):-
 	loops_example(sequence,Loops),
 	compute_chains(Loops,chains(Phases,Chains)),
-	assertion(Phases=[[5],3,[4],2,1]),
+	assertion(Phases=[phase([5],[]),phase(3,[]),phase([4],[]),phase(2,[]),phase(1,[])]),
 	assertion(Chains=[
 	[1],
 	[2],
@@ -77,7 +77,7 @@ test(chains_sequence):-
 test(chains_alternative):-
 	loops_example(alternative,Loops),
 	compute_chains(Loops,chains(Phases,Chains)),
-	assertion(Phases=[[3],[2],1]),
+	assertion(Phases=[phase([3],[]),phase([2],[]),phase(1,[])]),
 	assertion(Chains=[
 	[1],
 	[[2]],
@@ -92,7 +92,7 @@ test(chains_alternative):-
 test(chains_all_possible):-
 	loops_example(all_possible,Loops),
 	compute_chains(Loops,chains(Phases,Chains)),
-	assertion(Phases=[[2,3,4],1]),
+	assertion(Phases=[phase([2,3,4],[]),phase(1,[])]),
 	assertion(Chains=[
 	[1],
 	[[2,3,4]],
@@ -101,7 +101,7 @@ test(chains_all_possible):-
 test(chains_multiple):-
 	loops_example(multiple,Loops),
 	compute_chains(Loops,chains(Phases,Chains)),
-	assertion(Phases=[[3,4],2,1]),
+	assertion(Phases=[phase([3,4],[]),phase(2,[]),phase(1,[])]),
 	assertion(Chains=[
 	[1],
 	[multiple(2,[[1]])],
@@ -137,7 +137,10 @@ test(chains_discard_infeasible):-
 			[[4],2]
 			])]
 	]),
-	assertion(Changes=[(
+	assertion(Changes=[
+	([1],none),
+	([[4],1],none),
+	(
 				[multiple([3],[
 				[1],
 				[2],
@@ -166,7 +169,17 @@ test(chains_discard_infeasible):-
 		[[4]],
 		[[4],2]
 	]),
-	Changes2=[].
+	Changes2=[
+		([1],none),
+		([[4],1],none),
+		([multiple([3],[
+			[1],
+			[2],
+			[[4]],
+			[[4],1],
+			[[4],2]
+			])],none)
+	].
 
 
 
@@ -203,6 +216,9 @@ test(chains_discard_infeasible_prefixes):-
 	]),
 	
 	assertion(Changes=[
+	([[4]],none),
+	([[4],1],none),
+	([[4],2],none),
 	(
 		[multiple([3],[
 			[1],
@@ -266,20 +282,23 @@ test(chains_discard_infeasible_combinations):-
 	[[5],1],
 	[[5],3,1]
 	]),
-	assertion(Changes=[]).
+	assertion(Changes=[
+		([[5],3,[4]],none),
+		([[5],3,[4],1],none),
+		([[5],3,[4],2],none)	
+	]).
 
 test(chains_update_with_discarded_loops):-
-	Chains=chains([[1], [2,7], [4,5,6],[3]],
+	Chains=chains([phase([1],[]), phase([2,7],[]), phase([4,5,6],[]),phase([3],[])],
 	[
 	[[3]],
 	[[4,5,6]],
 %	[multiple([2,7],[[3],[[4,5,6]] ])]
-	[multiple([1],[ [multiple([2,7],[[3],[[4,5,6]],[] ])] ])]
+	[multiple([1],[ [multiple([2,7],[[[3]],[[4,5,6]],[] ])] ])]
 	]),
-	
 	chains_update_with_discarded_loops(Chains,[2,3,5],Chains2,Changes_map),
 	Chains2=chains(Phases2,Chain_list2),
-	assertion(Phases2=[[1], [7], [4,6]]),
+	assertion(Phases2=[phase([1],[]), phase([7],[]), phase([4,6],[])]),
 	assertion(Chain_list2=
 		[
 		[[4,6]],
@@ -288,14 +307,15 @@ test(chains_update_with_discarded_loops):-
 		]
 	),
 	assertion(Changes_map=[
+		([[3]],none),
 		( [[4,5,6]], [[4,6]] ),
-		( [multiple([1],[ [multiple([2,7],[[3],[[4,5,6]],[] ])] ])],  [multiple([1],[ [multiple([7],[[[4,6]],[] ])] ])]),
-		(  [multiple([2,7],[[3],[[4,5,6]],[] ])], [multiple([7],[[[4,6]],[] ])] )		
+		( [multiple([1],[ [multiple([2,7],[[[3]],[[4,5,6]],[] ])] ])],  [multiple([1],[ [multiple([7],[[[4,6]],[] ])] ])]),
+		(  [multiple([2,7],[[[3]],[[4,5,6]],[] ])], [multiple([7],[[[4,6]],[] ])] )		
 		]
 	).
 
 test(chains_update_with_discarded_loops2):-
-	Chains=chains([[4],[3],[2,5],1],[
+	Chains=chains([phase([4],[]),phase([3],[]),phase([2,5],[]),phase(1,[])],[
 				[[4],multiple([3],[ [[2,5],1],[1]])]
 				]),
 	chains_update_with_discarded_loops(Chains,[5],_,Changes_map),
@@ -308,7 +328,7 @@ test(chains_update_with_discarded_loops2):-
 		]).
 		
 test(chains_discard_terminating_non_terminating):-	
-	Chains=chains([[1], [2,7], [4,5,6],[3]],
+	Chains=chains([phase([1],[]), phase([2,7],[]), phase([4,5,6],[]),phase([3],[])],
 		[
 			[[3],1],
 			[[3]],
@@ -322,6 +342,8 @@ test(chains_discard_terminating_non_terminating):-
 		]),
 	assertion(Changes=
 	[
+		([[3]],none),
+		([[4,5,6]],none),
 		(
 		[multiple(8,[[multiple([1],[ [multiple([2,7],[[[3]],[[4,5,6]],[] ])], [] ])]])],
 		[multiple(8,[[multiple([1],[ [multiple([2,7],[ []])], [] ])]])]
