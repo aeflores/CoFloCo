@@ -36,7 +36,7 @@ This module computes different kinds of invariants for the chains:
 
 :- module(invariants,[
 			  compute_backward_invariants/3,
-			%  compute_phase_transitive_invariants/2,
+			  compute_phases_transitive_closures/3,
 		      compute_forward_invariants/4,
 		      
 		      back_invs_get/3,
@@ -70,7 +70,12 @@ This module computes different kinds of invariants for the chains:
 	loops_get_list_fresh/3,
 	loops_get_loop/3,
 	loops_get_loop_fresh/3,
-	loops_split_multiple_loops/2]).
+	loops_split_multiple_loops/2
+	]).
+:- use_module(chains,[
+	phase_set_transitive_closure/3,
+	phase_get_phase_loop/2,
+	phase_get_pattern/2]).	
 
 :- use_module('../IO/params',[get_param/2]).
 :- use_module('../utils/cofloco_utils',[assign_right_vars/3,zip_with_op2/4,zip_with_op2/4,ground_copy/2]).
@@ -93,7 +98,8 @@ This module computes different kinds of invariants for the chains:
 	nad_list_lub/2, 
 	nad_widen/5,
 	nad_normalize/2,
-	nad_false/1,nad_consistent_constraints/1]).
+	nad_false/1,
+	nad_consistent_constraints/1]).
 :- use_module(stdlib(utils),[ut_append/3,ut_flat_list/2, ut_member/2, ut_list_to_dlist/2,ut_split_at_pos/4]).
 :- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_stop_timer_acum/2]).
 
@@ -476,34 +482,31 @@ get_call_inv(Call,(Head,Inv_0,Inv),(Head,Inv_0,Total_inv)):-
 
 %! compute_loops_transitive_closures(Entry:term,RefCnt:int) is det
 % Complete transitive closure of each phase.
-compute_loops_transitive_closures(Entry,RefCnt):-
-	phase_loop(Phase,RefCnt,Entry,_,_),
-	compute_phase_transitive_closure(Phase,RefCnt),
-	compute_phase_transitive_star_closure(Phase,RefCnt),
-	fail.
-compute_loops_transitive_closures(_,_).
+compute_phases_transitive_closures(chains(Phases,Chains),Loops,chains(Phases2,Chains)):-
+	maplist(compute_phase_transitive_closure(Loops),Phases,Phases2).
 
-compute_phase_transitive_closure(Phase,RefCnt):-
-	phase_loop(Phase,RefCnt,Head,Call,Inv_0),
-    findall((Head_loop,Calls_loop,Cs_loop),
-	    (
-	    member(Loop,Phase),
-	    loop_ph(Head_loop,(Loop,RefCnt),Calls_loop,Cs_loop,_,_)
-	 ),Loops),
-	 loops_split_multiple_loops(Loops,Loops_splitted),    
-     transitive_closure_invariant_fixpoint(inv(Head,Call,Inv_0),Loops_splitted,inv(Entry_out,Call_out, Trans_closure)),
-     add_phase_transitive_closure(Phase,RefCnt,Entry_out,Call_out,Trans_closure).
+compute_phase_transitive_closure(_Loops,Phase,Phase):-
+	phase_get_pattern(Phase,Phase_pattern),
+	number(Phase_pattern),!.
 
-compute_phase_transitive_star_closure(Phase,RefCnt):-
-	phase_transitive_closure(Phase,RefCnt,Head,Call,Inv),
+compute_phase_transitive_closure(Loops,Phase,Phase2):-
+	phase_get_pattern(Phase,Phase_pattern),
+	loops_get_list_fresh(Loops,Phase_pattern,Loops_phase),
+	loops_split_multiple_loops(Loops_phase,Loops_splitted),  
+	phase_get_phase_loop(Phase,phase_loop(Head,Call,Inv_0)),   
+    transitive_closure_invariant_fixpoint(inv(Head,Call,Inv_0),Loops_splitted,inv(Entry_out,Call_out, Trans_closure_plus)),
+    get_star_transitive_closure(phase_loop(Head,Call,Inv_0),inv(Entry_out,Call_out, Trans_closure_plus),Trans_closure_star),
+    phase_set_transitive_closure(Phase,inv(Entry_out,Call_out,Trans_closure_star,Trans_closure_plus),Phase2).
+    
+
+get_star_transitive_closure(Phase_loop,inv(Head,Call, Tc_plus),Tc_star):-
 	Head=..[_|Vars_head],
 	Call=..[_|Vars_Call],
-	phase_loop(Phase,RefCnt,Head,Call,Inv_0),
+	copy_term(Phase_loop,phase_loop(Head,Call,Inv_0)),
 	nad_project(Vars_head,Inv_0,Inv_0_head),
 	maplist(zip_with_op2('='),Vars_head,Vars_Call,Equalities),
 	append(Equalities,Inv_0_head,No_iterations_inv),
-	nad_list_lub([No_iterations_inv,Inv],Inv_star),
-	add_phase_transitive_star_closure(Phase,RefCnt,Head,Call,Inv_star).
+	nad_list_lub([No_iterations_inv,Tc_plus],Tc_star).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Low level fixpoint computations
@@ -594,7 +597,7 @@ low_level_forward_invariant_fixpoint(inv(Head_inv,Inv),Loops,Inv_out):-
 		
 low_level_transitive_closure_invariant_fixpoint(inv(Entry_inv,Head_inv,Inv),Loops,Inv_out):-
 	Loops=[Loop1|_More_loops],
-	copy_term(Loop1,(Head_inv,Call,_)),
+	copy_term(Loop1,linear_loop(Head_inv,Call,_)),
 	%Here we do it a little bit differently, the loops' polyhedron have 3 times the variables of the head 
 	%Entry,Head and Call so we don't have to transform them every time
 	%the first variables (Entry) have no information 
@@ -714,7 +717,7 @@ get_forward_loop_handle(linear_loop(Head,Call,Inv),(Extra_dim,[Pre_map],Post_map
 	Dim is Extra_dim*2,
 	to_ppl_dim(c, Dim, Inv_gr, Handle).		
 	
-get_transitive_loop_handle(Entry_gr,Head_gr,Call_gr,(Head,Call,Inv),(Extra_dim,[Pre_map],Post_map,Handle)):-
+get_transitive_loop_handle(Entry_gr,Head_gr,Call_gr,linear_loop(Head,Call,Inv),(Extra_dim,[Pre_map],Post_map,Handle)):-
 	ground_copy((Head,Call,Inv),(Head_gr,Call_gr,Inv_gr)),
 	Head_gr=..[_|Head_vars],
 	length(Head_vars,Extra_dim),

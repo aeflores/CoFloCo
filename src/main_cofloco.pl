@@ -105,6 +105,7 @@ The main "data types" used in CoFloCo are the following:
 :- use_module('refinement/invariants',[
 	compute_backward_invariants/3,
 	compute_forward_invariants/4,
+	compute_phases_transitive_closures/3,
 	fwd_invs_get_loop_invariants/2,
 	fwd_invs_get_infeasible_prefixes/2,
 	fwd_invs_update_with_discarded_loops/3,
@@ -196,7 +197,7 @@ The main "data types" used in CoFloCo are the following:
 	crs_update_cr_forward_invariant/4,
 	crs_update_forward_invariants_with_calls_from_cr/3,
 	crs_update_cr/4,
-	cr_strengthen_with_ce_invs/4]).
+	cr_strengthen_with_ce_invs/5]).
 
 :-use_module('utils/cofloco_utils',[tuple/3]).
 
@@ -389,7 +390,7 @@ top_down_refinement_scc(CR,CR3):-
 
 	%fwd_invs_get_infeasible_prefixes(Fwd_invs,Infeasible_prefixes),
 	%chains_discard_infeasible_prefixes(Chains_annotated,Infeasible_prefixes,Chains2),
-	cr_strengthen_with_ce_invs(CR,head,CE_invs,CR3).
+	cr_strengthen_with_ce_invs(CR,head,CE_invs,CR3,_Discarded).
 
 %! bottom_up_refinement_scc(+Head:term) is det
 %  *  Unfold the SCC defined by Head according to its calls to other SCC 
@@ -424,12 +425,17 @@ bottom_up_refinement_scc(CR,CRS,CR7) :-
 	print_changes_map('calling contexts',Changes_fwd_invs),
 	
 	fwd_invs_get_loop_invariants(Fwd_invs,Loop_invs),
-	loop_invs_to_CE_invs(Loop_invs,Loops,CE_invs),
 	loops_strengthen_with_loop_invs(Loops,head,Loop_invs,Loops2,Discarded_loops),
+	%the discarded loops won't generate CE invs and therefore we discard the corresponding CEs
+	loop_invs_to_CE_invs(Loop_invs,Loops2,CE_invs),
+	%FIXME: we assume no additional CEs are discarded
+	% I am not 100% sure of this assumption
+	cr_strengthen_with_ce_invs(CR2,head,CE_invs,CR3,_Discarded_CEs),
+
 	chains_update_with_discarded_loops(Chains2,Discarded_loops,Chains3,Changes_fwd_invs_loops),
 	print_changes_map('discarded loop because of calling context strengthening',Changes_fwd_invs_loops),
 	fwd_invs_update_with_discarded_loops(Fwd_invs,Discarded_loops,Fwd_invs2),
-	cr_strengthen_with_ce_invs(CR2,head,CE_invs,CR3),
+	
 	
 	profiling_stop_timer_acum(inv,_),
 	profiling_start_timer(termination),
@@ -445,16 +451,14 @@ bottom_up_refinement_scc(CR,CRS,CR7) :-
 	
 	profiling_stop_timer_acum(termination,_),
 	profiling_start_timer(inv),	
-	
+
 	profiling_start_timer(inv_back),
 	compute_backward_invariants(Loops3,Chains5,Backward_invs),
 	back_invs_get_infeasible(Backward_invs,Infeasible_chains),
 	chains_discard_infeasible(Chains5,Infeasible_chains,Chains6,Changes_map),
 	print_changes_map('infeasible summaries',Changes_map),
-	
 	back_invs_update_with_changed_chains(Backward_invs,Changes_map,Backward_invs2),
 	chains_discard_infeasible_combinations(Chains6,Backward_invs2,Fwd_invs2,Chains7,Changes_map2),
-	
 	print_changes_map('infeasible calling context-summary combination',Changes_map2),
 	back_invs_update_with_changed_chains(Backward_invs2,Changes_map2,Backward_invs3),
 	
@@ -463,23 +467,26 @@ bottom_up_refinement_scc(CR,CRS,CR7) :-
 	
 	
 	back_invs_get_loop_invariants(Backward_invs3,Loop_call_invs),
-	loop_invs_to_CE_invs(Loop_call_invs,Loops3,CE_call_invs),
 	loops_strengthen_with_loop_invs(Loops3,call,Loop_call_invs,Loops4,Discarded_loops2),
+	loop_invs_to_CE_invs(Loop_call_invs,Loops4,CE_call_invs),
+	cr_strengthen_with_ce_invs(CR3,call,CE_call_invs,CR4,_Discarded_CEs2),
+	
 	chains_update_with_discarded_loops(Chains7,Discarded_loops2,Chains8,Changes_map4),
 	print_changes_map('infeasible loops because of summary strengthening',Changes_map4),
 	back_invs_update_with_changed_chains(Backward_invs3,Changes_map4,Backward_invs4),
-	cr_strengthen_with_ce_invs(CR3,call,CE_call_invs,CR4),
+	
 	
 	cr_set_loops(CR4,Loops4,CR5),
 	chains_annotate_termination(Chains8,Loops4,Chains9),
-	print_chains(Chains9),
-	cr_set_chains(CR5,Chains9,CR6),
+	compute_phases_transitive_closures(Chains9,Loops4,Chains10),
+	print_chains(Chains10),
+	cr_set_chains(CR5,Chains10,CR6),
 	(get_param(compress_chains,[Compress_param])->
 		true
 		;
 		Compress_param=0
 	),
-	cr_compute_external_execution_patterns(Chains9,Backward_invs4,Compress_param,External_patterns),
+	cr_compute_external_execution_patterns(Chains10,Backward_invs4,Compress_param,External_patterns),
 	cr_set_external_patterns(CR6,External_patterns,CR7),
 	print_external_patterns(External_patterns).
 	

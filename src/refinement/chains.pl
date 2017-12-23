@@ -48,6 +48,9 @@ However, for each SCC there is a special base case that will allow us to represe
 				phase_get_pattern/2,
 				phase_get_rfs/2,
 				phase_get_termination/2,
+				phase_get_phase_loop/2,
+				phase_set_transitive_closure/3,
+				phase_get_transitive_closure/2,
 				phase_is_iterative/1,
 					
 				chain_get_pattern/2,
@@ -57,7 +60,6 @@ However, for each SCC there is a special base case that will allow us to represe
 				chain_get_cost/2,
 				
 				compute_chains/2,
-				chains_reversed_chains/2,
 				chains_discard_infeasible_prefixes/4,
 				chains_discard_infeasible/4,
 				chains_discard_infeasible_combinations/5,
@@ -139,6 +141,15 @@ phase_get_rfs(_,ranking_functions(_,[])).
 phase_get_termination(Phase,Term_arg):-
 	phase_get_property(Phase,termination,Term_arg).		
 		
+phase_get_phase_loop(Phase,Phase_loop):-
+	phase_get_property(Phase,phase_loop,Phase_loop).
+	
+phase_set_transitive_closure(Phase,Transitive_closure,Phase2):-
+	phase_add_property(Phase,transitive_closure,Transitive_closure,Phase2).
+		
+phase_get_transitive_closure(Phase,Trans_closure):-
+	phase_get_property(Phase,transitive_closure,Trans_closure).	
+				
 phase_is_terminating(Ph):-
 	phase_get_property(Ph,termination,Val),
 	functor(Val,terminating,_).
@@ -391,6 +402,7 @@ discard_up_to([_|Phases],Sel,Phases1):-
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+/*
 chains_reversed_chains(chains(_,Chains),Reversed_chains):-
 	foldl(get_reversed_chains([]),Chains,[],Reversed_chains).
 
@@ -403,7 +415,7 @@ get_reversed_chains(Prefix,[],Accum,Rev_chains):-!,
 get_reversed_chains(Prefix,[Phase|Chain],Accum,Rev_chains):-
 	get_reversed_chains([Phase|Prefix],Chain,Accum,Rev_chains).
 	
-	
+*/	
 
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

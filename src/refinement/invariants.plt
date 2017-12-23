@@ -3,8 +3,14 @@
 :-begin_tests(invariants).
 
 :-use_module(invariants).
-:-use_module(chains,[chains_update_with_discarded_loops/4]).
-:-use_module(stdlib(numeric_abstract_domains),[nad_equals/2,nad_consistent_constraints/1]).
+:-use_module(chains,[
+	chains_update_with_discarded_loops/4,
+	phase_get_transitive_closure/2]).
+:-use_module(loops,[compute_phase_loops/3]).
+:-use_module(stdlib(numeric_abstract_domains),[
+	nad_equals/2,
+	nad_consistent_constraints/1,
+	nad_entails/3]).
 
 test(backward_invariants):-
 	Chains=chains(_,[
@@ -355,8 +361,28 @@ test(fwd_invs_update_with_discarded_loops):-
 	assertion(Inv1_star==Inv2_star),
 	assertion(Inv1_plus==Inv2_plus),
 	assertion(\+fwd_invs_get(Fwd_invs2,[[2,5],[3],[4]],_)).
-%fwd_invs_get_loop_invariants/2
-%back_invs_get_loop_invariants/2,
-%loop_invs_to_CE_invs/3
 
+
+test(transitive_closures):-
+	Loops=loops(range(1,3),[
+	(1,loop(a(A,B,C),[],[C>=1,A=0,B=0],[])),
+	(2,loop(a(A,B,C),[a(A2,B2,C2)],[C>=1,C2=C,A=<9,A2=A-1,B2=B-2],[])),
+	(3,loop(a(A,B,C),[a(A2,B2,C2),a(A3,B3,C3)],[A2=A-1,B2=B+1,A3=A+1,B3=B-1,C2=C3,C3=C],[]))
+	]),
+	Chains=chains([phase(1,[_]),phase([2],[]),phase([3],[])],[]),
+	compute_phase_loops(Loops,Chains,Chains2),
+	compute_phases_transitive_closures(Chains2,Loops,Chains3),
+	Chains3=chains(Phases,_),
+	Phases=[_Phase1,Phase2,Phase3],
+	phase_get_transitive_closure(Phase2,inv(a(Ap,Bp,Cp),a(A2p,B2p,C2p),Cs_star,Cs_plus)),
+	assertion(nad_entails([Ap,Bp,Cp,A2p,B2p,C2p],[Cp>=1,C2p=Cp,Ap=<9,A2p=Ap-1,B2p=Bp-2],Cs_star)),
+	append([Ap=A2p,Bp=B2p,Cp=C2p],Cs_star,Cs_star2),
+	assertion(nad_consistent_constraints(Cs_star2)),
+	assertion(nad_entails([Ap,Bp,Cp,A2p,B2p,C2p],[Cp>=1,C2p=Cp,Ap=<9,A2p=Ap-1,B2p=Bp-2],Cs_plus)),
+	
+	
+	phase_get_transitive_closure(Phase3,inv(a(Ap,Bp,Cp),a(A2p,B2p,C2p),Cs_star3,Cs_plus3)),
+	assertion(nad_equals([Ap+Bp=A2p+B2p,Cp=C2p],Cs_star3)),
+	assertion(nad_equals([Ap+Bp=A2p+B2p,Cp=C2p],Cs_plus3)).
+	
 :-end_tests(invariants).
