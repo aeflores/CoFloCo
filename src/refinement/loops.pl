@@ -32,6 +32,7 @@ A loop of a phase [C1,C2,...,CN] is the convex hull of the loops of each cost eq
 :- module(loops,[
 		loop_head/2,	
 		loop_calls/2,
+		loop_constraints/2,
 		loop_get_CEs/2,
 		loop_add_property/4,
 		loop_get_property/3,
@@ -184,8 +185,12 @@ loops_strengthen_with_loop_invs(loops(Range,LoopMap),HeadCall,Loop_invs,loops(Ra
 	partition(loop_pair_is_feasible,LoopMap2,LoopMap3,Discarded_pairs),
 	keys_lm(Discarded_pairs,Discarded).
 
-strengthen_pair(HeadCall,HeadInv,both(Loop,Inv),Loop2):-	
+strengthen_pair(HeadCall,HeadInv,both(Loop,Inv),Loop2):-!,	
 	loop_strengthen(Loop,HeadCall,inv(HeadInv,Inv),Loop2).	
+	
+strengthen_pair(HeadCall,HeadInv,left(Loop),Loop2):-
+	%no loop inv is because it does not appear in the chains and we can discard it
+	loop_strengthen(Loop,HeadCall,inv(HeadInv,[1=0]),Loop2).		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! compute_loops(Head:term,RefCnt:int) is det

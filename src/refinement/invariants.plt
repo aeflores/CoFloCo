@@ -23,7 +23,7 @@ test(backward_invariants):-
 	assertion(nad_equals(Inv1_plus,[C=0,D=0])),
 	
 	back_invs_get(Back_invs,[[2],1],inv(a(C,D),Inv21_star,Inv21_plus)),
-	assertion(nad_equals(Inv21_star,[D=2*C,C>=0])),
+	assertion(nad_equals(Inv21_star,[D=2*C,C>=0,C=<9])),
 	assertion(nad_equals(Inv21_plus,[D=2*C,C>=1,C=<9])),
 	
 	back_invs_get(Back_invs,[3,[2],1],inv(a(C,D),Inv321_star,Inv321_plus)),
@@ -55,7 +55,7 @@ test(backward_invariants_unfeasible_and_divergent):-
 	assertion(nad_equals(Inv1_plus,[C=0,D=0,E=0])),
 	
 	back_invs_get(Back_invs,[[2],1],inv(a(C,D,E),Inv21_star,Inv21_plus)),
-	assertion(nad_equals(Inv21_star,[D=2*C,C>=0,E=0])),
+	assertion(nad_equals(Inv21_star,[D=2*C,C>=0,C=<9,E=0])),
 	assertion(nad_equals(Inv21_plus,[D=2*C,C>=1,C=<9,E=0])),
 	
 	back_invs_get(Back_invs,[3,[2],1],inv(a(C,D,E),Inv321_star,Inv321_plus)),
@@ -104,7 +104,7 @@ test(multiple):-
 
 								
 	back_invs_get(Back_invs,[[2],1],inv(a(C,D,E),Inv21_star,Inv21_plus)),
-	assertion(nad_equals(Inv21_star,[D=2*C,C>=0,E>=1])),
+	assertion(nad_equals(Inv21_star,[D=2*C,C>=0,C=<9,E>=1])),
 	assertion(nad_equals(Inv21_plus,[D=2*C,C>=1,C=<9,E>=1])),
 	
 	back_invs_get(Back_invs,[multiple(3,[ [[2],1],[1]])],inv(a(C,D,E),Inv321_star,Inv321_plus)),
@@ -259,9 +259,23 @@ test(fwd_loop_invariants_and_CE_invariants):-
 	assertion(nad_equals(InvCE5,[A >=1+B,B>=1,B=<2])),
 	
 	ce_invs_get(CE_invs,2,inv(a(A,B,C),InvCE2)),
-	ce_invs_get(CE_invs,2,inv(a(A,B,C),InvCE3)),
+	ce_invs_get(CE_invs,3,inv(a(A,B,C),InvCE3)),
 	assertion(nad_equals(InvCE2,InvCE3)).
 	
+test(loop_invariants_to_CE_invariants):-
+	Loops=loops(range(2,5),[
+	(2,loop(a(A,B,C),[a(A2,B2,C2)],[],[(eqs,eqs([2,3]))])),
+	(3,loop(a(A,B,C),[a(A2,B2,C2),a(_,_,_)],[],[(eqs,eqs([4]))])),
+	(4,loop(a(A,B,C),[a(A2,B2,C2)],[],[(eqs,eqs([5]))]))
+	]),
+	Loop_invs=loop_invs(a(Ap,_,_),[
+		(1,[]),
+		(3,[Ap=0]),
+		(4,[Ap=<10])
+		]),
+	loop_invs_to_CE_invs(Loop_invs,Loops,CE_invs),
+	assertion(\+ce_invs_get(CE_invs,2,_)),
+	assertion(ce_invs_get(CE_invs,4,_)).
 	
 test(back_loop_invariants):-
 	invariants:back_invs_empty(a(A,B,C),Back_invs),

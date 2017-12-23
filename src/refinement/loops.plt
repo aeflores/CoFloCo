@@ -92,13 +92,17 @@ test(compress_info):-
 	assertion(nad_equals(Inv2,[1*A>=1,A2=A+1])),
 	assertion(nad_equals(Inv3,[1*A>=0,A2=A+1])).
 	
-test(phase_loops):-
+	
+loops_example(ex1,Loops):-
 	Loops=loops(_,[
 	       (1,loop(a(A),[],[A=0],[])),
 	       (2,loop(a(A),[a(A2)],[A>=0,A2=A-1],[])),
 	       (3,loop(a(A),[a(A2)],[A>=1,A2=A-1],[])),
 	       (4,loop(a(A),[a(A2)],[A>=1,A2=A-2],[])),
-	       (5,loop(a(A),[a(A2),a(A3)],[A>=1,A2=A-1,A3=A-2],[]))]),
+	       (5,loop(a(A),[a(A2),a(A3)],[A>=1,A2=A-1,A3=A-2],[]))]).
+	       
+test(phase_loops):-
+	loops_example(ex1,Loops),
 	compute_phase_loops(Loops,chains([phase(5,[]),phase([3,4],[]),phase([2],[]),phase(1,[])],_),chains(Annotated_phases1,_)),
 	compute_phase_loops(Loops,chains([phase([2,3,4],[])],_),chains(Annotated_phases2,_)),
 	compute_phase_loops(Loops,chains([phase([2,5],[])],_),chains(Annotated_phases3,_)),
@@ -114,10 +118,58 @@ test(phase_loops):-
 	assertion(nad_equals(Cs4,[X=0])),
 	
 	Annotated_phases2=[phase([2,3,4],[(phase_loop,phase_loop(Head,Call,Cs5))])],
-	%this is stronger than I expected
 	assertion(nad_equals(Cs5,[X2+1>=0,X2=<X-1,X2>=X-2])),
 	Annotated_phases3=[phase([2,5],[(phase_loop,phase_loop(Head,Call,Cs6))])],
 	assertion(nad_equals(Cs6,[X2+1>=0,X2=<X-1,X2>=X-2])).    
 	       
 
+test(strengthen_loops):-
+	loops_example(ex1,Loops),
+	Loop_invs=loop_invs(a(Ap),[
+		(1,[]),
+		(3,[Ap=0]),
+		(4,[Ap=<10]),
+		(5,[Ap=<10])
+		]),
+	loops_strengthen_with_loop_invs(Loops,head,Loop_invs,Loops2,Discarded),
+	assertion(Discarded=[2,3]),
+	
+	loops_get_loop(Loops2,4,Loop4),
+	loop_head(Loop4,a(A)),
+	loop_calls(Loop4,[a(A2)]),
+	loop_constraints(Loop4,Cs4),
+	assertion(nad_equals(Cs4,[A>=1,A2=A-2,A=<10])),
+	
+	
+	loops_get_loop(Loops2,5,Loop5),
+	loop_head(Loop5,a(A)),
+	loop_calls(Loop5,[a(A2),a(A3)]),
+	loop_constraints(Loop5,Cs5),
+	assertion(nad_equals(Cs5,[A>=1,A2=A-1,A3=A-2,A=<10])).
+	
+
+test(strengthen_loops_call):-
+	loops_example(ex1,Loops),
+	Loop_invs=loop_invs(a(Ap),[
+		(1,[]),
+		(3,[Ap+1=<0]),
+		(4,[Ap=<10]),
+		(5,[Ap=<10])
+		]),
+	loops_strengthen_with_loop_invs(Loops,call,Loop_invs,Loops2,Discarded),
+	assertion(Discarded=[2,3]),
+	
+	loops_get_loop(Loops2,4,Loop4),
+	loop_head(Loop4,a(A)),
+	loop_calls(Loop4,[a(A2)]),
+	loop_constraints(Loop4,Cs4),
+	assertion(nad_equals(Cs4,[A>=1,A2=A-2,A2=<10])),
+	
+	
+	loops_get_loop(Loops2,5,Loop5),
+	loop_head(Loop5,a(A)),
+	loop_calls(Loop5,[a(A2),a(A3)]),
+	loop_constraints(Loop5,Cs5),
+	assertion(nad_equals(Cs5,[A>=1,A2=A-1,A3=A-2,A2=<10,A3=<10])).	
+	
 :-end_tests(loops).

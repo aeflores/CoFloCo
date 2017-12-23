@@ -364,6 +364,7 @@ crs_test:cr_example(ex_strengthen,wh(_,_),[
 	eq_ref(wh(A,B),0,[],[],[],[A = B],[])
 	]).
 	
+	
 test(cr_strengthen):-
 	create_cr(ex_strengthen,CR),
 	invariants:ce_invs_empty(wh(_,_),CE_invs),
@@ -377,7 +378,8 @@ test(cr_strengthen):-
 		    InvPair=(Eq_id,Inv),
 			invariants:ce_invs_add(CE_invs_l,Eq_id,Inv,CE_invs_l2)
 			),Invs,CE_invs,CE_invs2),	
-	cr_strengthen_with_ce_invs(CR,head,CE_invs2,CR2),
+	cr_strengthen_with_ce_invs(CR,head,CE_invs2,CR2,Discarded),
+	assertion(Discarded=[]),
 	cr_get_ce_by_id(CR2,1,Eq1),
 	ce_head(Eq1,wh(Ap,Bp)),
 	ce_calls(Eq1,[wh(A2p,B2p)]),
@@ -391,8 +393,8 @@ test(cr_strengthen):-
 	assertion(nad_equals(Cs2,[Ap >= Bp+1,A2p=Ap-1,A3p+A2p=0,Bp=B2p+B3p,  Bp>=1])),
 	
 	
-	cr_strengthen_with_ce_invs(CR,call,CE_invs2,CR3),
-	
+	cr_strengthen_with_ce_invs(CR,call,CE_invs2,CR3,Discarded2),
+	assertion(Discarded2=[]),
 	cr_get_ce_by_id(CR3,1,Eq1p),
 	ce_head(Eq1p,wh(Ap,Bp)),
 	ce_calls(Eq1p,[wh(A2p,B2p)]),
@@ -406,5 +408,20 @@ test(cr_strengthen):-
 	assertion(nad_equals(Cs2p,[Ap >= Bp+1,A2p=Ap-1,A3p+A2p=0,Bp=B2p+B3p,  B2p>=1,B3p>=1])).
 	
 	
-	
+test(cr_strengthen_discard):-
+	create_cr(ex_strengthen,CR),
+	invariants:ce_invs_empty(wh(_,_),CE_invs),
+	Invs=[
+		(2,inv(wh(A,B),[B>=1])),
+		(3,inv(wh(A,B),[B>=A+1]))
+		],
+	foldl(\InvPair^CE_invs_l^CE_invs_l2^
+		    ( 
+		    InvPair=(Eq_id,Inv),
+			invariants:ce_invs_add(CE_invs_l,Eq_id,Inv,CE_invs_l2)
+			),Invs,CE_invs,CE_invs2),	
+	cr_strengthen_with_ce_invs(CR,head,CE_invs2,CR2,Discarded),	
+	assertion(Discarded=[1,3]),
+	assertion(cr_get_ids(CR2,[2])).
+		
 :-end_tests(crs).

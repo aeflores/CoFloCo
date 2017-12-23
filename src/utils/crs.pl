@@ -31,7 +31,7 @@
 		cr_get_chains/2,
 		cr_is_cr_called_multiply/2,
 		cr_get_forward_invariant/2,
-		cr_strengthen_with_ce_invs/4,
+		cr_strengthen_with_ce_invs/5,
 		cr_set_external_patterns/3,
 		cr_get_external_patterns/2,
 		
@@ -72,7 +72,7 @@
 :-use_module(cofloco_utils,[zip_with_op3/5]).
 :-use_module(cost_structures,[cstr_join/3]).
 :-use_module('../IO/output',[print_warning/2]).
-:-use_module(stdlib(numeric_abstract_domains),[nad_entails/3,nad_glb/3,nad_lub/6,nad_project/3]).
+:-use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_entails/3,nad_glb/3,nad_lub/6,nad_project/3]).
 :-use_module(polyhedra_optimizations,[nad_consistent_constraints_group/2,nad_project_group/3]).
 :-use_module(stdlib(list_map)).
 :-use_module(stdlib(set_list)).
@@ -88,6 +88,10 @@ ce_head(eq_ref(Head,_,_,_,_,_,_),Head).
 
 ce_constraints(eq(_Head,_,_,Cs),Cs).
 ce_constraints(eq_ref(_Head,_,_,_,_,Cs,_),Cs).
+
+ce_pair_is_feasible((_,CE)):-
+	ce_constraints(CE,Cs),
+	nad_consistent_constraints(Cs).
 	
 ce_equal(eq(Head,Cost_str,Calls,Cs),eq(Head,Cost_str2,Calls,Cs2)):-
          Cs==Cs2,
@@ -369,14 +373,19 @@ substitute_call_2([Other|Calls1],Head_callee,Calls0,[Other|Calls1_sub]):-
 	
 	
 cr_strengthen_with_ce_invs(cr(NameArity,EqMap,Properties),HeadCall,CE_invs,
-							cr(NameArity,EqMap2,Properties)):-
+							cr(NameArity,EqMap3,Properties),Discarded):-
 	ce_invs_head(CE_invs,HeadInv),
 	ce_invs_map(CE_invs,InvMap),
 	zip_lm(EqMap,InvMap,Composed_map),
-	map_values_lm(strengthen_pair(HeadCall,HeadInv),Composed_map,EqMap2).
+	map_values_lm(strengthen_pair(HeadCall,HeadInv),Composed_map,EqMap2),
+	partition(ce_pair_is_feasible,EqMap2,EqMap3,Discarded_pairs),
+	keys_lm(Discarded_pairs,Discarded).
 
-strengthen_pair(HeadCall,HeadInv,both(Eq,Inv),Eq2):-	
+strengthen_pair(HeadCall,HeadInv,both(Eq,Inv),Eq2):-!,	
 	ce_strengthen(Eq,HeadCall,inv(HeadInv,Inv),Eq2).
+%if there is no ce invariant the ce is not reachable
+strengthen_pair(HeadCall,HeadInv,left(Eq),Eq2):-	
+	ce_strengthen(Eq,HeadCall,inv(HeadInv,[1=0]),Eq2).	
 
 cr_get_called_forward_invariants(CR,Map,Map1):-
 	cr_get_ceList(CR,CEs),

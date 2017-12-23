@@ -241,10 +241,14 @@ loop_invs_to_CE_invs(loop_invs(Head,Loop_invs_map),Loops,CE_invs):-
 	foldl(add_CE_invs(Head,Loops),Loop_invs_map,CE_invs_empty,CE_invs).
 
 add_CE_invs(Head,Loops,(Loop_id,Cs),CE_invs,CE_invs2):-
-	loops_get_loop(Loops,Loop_id,Loop),
+	loops_get_loop(Loops,Loop_id,Loop),!,
 	loop_get_CEs(Loop,Eqs),
 	foldl(\Eq_l^CE_invs_l^CE_invs_l2^
 			ce_invs_add(CE_invs_l,Eq_l,inv(Head,Cs),CE_invs_l2),Eqs,CE_invs,CE_invs2).
+%if the loop has been discarded, its CEs don't get an invariant			
+add_CE_invs(_Head,Loops,(Loop_id,_Cs),CE_invs,CE_invs):-
+	\+loops_get_loop(Loops,Loop_id,_Loop).
+	
 	
 
 	
@@ -335,13 +339,13 @@ compute_backward_invariant_phase(Phase,non_divergent,_,Loops,inv(Head,_,Initial_
 	Head_out=Head.
 	
 
-compute_backward_invariant_phase(Phase,non_divergent,_Simple_multiple,Loops,inv(Head,_,Initial_inv),inv(Head,Inv_star,Inv_plus)):-
+compute_backward_invariant_phase(Phase,non_divergent,Simple_multiple,Loops,inv(Head,_,Initial_inv),inv(Head,Inv_star,Inv_plus)):-
 	loops_get_list_fresh(Loops,Phase,Loops_phase),
-	%(Simple_multiple=simple->
-		backward_invariant_fixpoint(after,inv(Head,Initial_inv),Loops_phase,inv(Head_out1,Inv_plus),inv(Head_out2,Inv_star))
-	%;
-	%		backward_invariant_fixpoint(after,inv(Head,Initial_inv),Loops_phase,inv(Head_out1,Inv_plus),inv(Head_out2,Inv_star))
-	%)
+	(Simple_multiple=simple->
+		backward_invariant_fixpoint(before,inv(Head,Initial_inv),Loops_phase,inv(Head_out1,Inv_plus),inv(Head_out2,Inv_star))
+	;
+			backward_invariant_fixpoint(after,inv(Head,Initial_inv),Loops_phase,inv(Head_out1,Inv_plus),inv(Head_out2,Inv_star))
+	)
 	,
 	Head_out1=Head,
 	Head_out2=Head.
@@ -539,10 +543,11 @@ transitive_closure_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head
  low_level_backward_invariant_fixpoint(before,inv(Head_inv,Inv),Loops,Inv_plus_out,Inv_star_out):-!,
 	to_numbervars_nu( (Head_inv,Inv) , _Vars, (_Head_ground,Inv_0_ground), Dim),
 	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
+	get_limiting_inv(inv(Head_inv,Inv),Loops,Limiting_inv),
 	maplist(get_back_loop_handle,Loops,Loop_handles),
 	low_level_apply_loops(Loop_handles,Inv_0_handle,Inv_1_handle),
 	%compute the backward invariant
-	low_level_invariant_fixpoint(0,Inv_1_handle,Loop_handles,Inv_plus),
+	low_level_invariant_fixpoint(0,Inv_1_handle,Loop_handles,Inv_plus,Limiting_inv),
 	%compute the upper bound of the invariant and the initial invariant
 	ppl_Polyhedron_upper_bound_assign(Inv_0_handle,Inv_plus),
 	maplist(delete_loop_handle,Loop_handles),
@@ -553,14 +558,15 @@ transitive_closure_invariant_fixpoint(inv(Entry,Head,Inv_0),Loops,inv(Entry,Head
 	from_ppl(c , Inv_plus, Dim, Vars, Inv_plus_out), 
 	ppl_delete_Polyhedron(Inv_0_handle),
 	ppl_delete_Polyhedron(Inv_plus).
-	
+
 	
  low_level_backward_invariant_fixpoint(after,inv(Head_inv,Inv),Loops,Inv_plus_out,Inv_star_out):-!,
 	to_numbervars_nu( (Head_inv,Inv) , _Vars, (_Head_ground,Inv_0_ground), Dim),
 	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
+	get_limiting_inv(inv(Head_inv,Inv),Loops,Limiting_inv),
 	maplist(get_back_loop_handle,Loops,Loop_handles),
 	%compute the backward invariant
-	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_star),
+	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_star,Limiting_inv),
 	% apply the minimum iteration afterwards
 	low_level_apply_loops(Loop_handles,Inv_star,Inv_plus),
 	%compute the upper bound of the invariant and the initial invariant
@@ -579,7 +585,7 @@ low_level_forward_invariant_fixpoint(inv(Head_inv,Inv),Loops,Inv_out):-
 	to_ppl_dim(c, Dim, Inv_0_ground, Inv_0_handle), 
 	maplist(get_forward_loop_handle,Loops,Loop_handles),
 	% call the fixpoint predicate
-	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_final_handle),
+	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_final_handle,[]),
 	maplist(delete_loop_handle,Loop_handles),
 	% obtain the constrants of the resulting polyhedron
 	Head_inv=..[_F|Vars],
@@ -600,7 +606,7 @@ low_level_transitive_closure_invariant_fixpoint(inv(Entry_inv,Head_inv,Inv),Loop
 	to_ppl_dim(c, Dim_inv, Inv_0_ground, Inv_0_handle), 
 	maplist(get_transitive_loop_handle(Entry_ground,Head_ground,Call_ground),Loops,Loop_handles),
 	% call the fixpoint predicate
-	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_final_handle),
+	low_level_invariant_fixpoint(0,Inv_0_handle,Loop_handles,Inv_final_handle,[]),
 	maplist(delete_loop_handle,Loop_handles),
 	% obtain the constrants of the resulting polyhedron
 
@@ -608,10 +614,18 @@ low_level_transitive_closure_invariant_fixpoint(inv(Entry_inv,Head_inv,Inv),Loop
 	ppl_delete_Polyhedron(Inv_final_handle).   
 
 
-
+get_limiting_inv(inv(Head_inv,Initial_Inv),Loops,Inv_gr):-	
+	maplist(get_head_inv(Head_inv),Loops,Invs),
+	nad_list_lub([Initial_Inv|Invs],Inv),
+	ground_copy(Inv,Inv_gr).
+get_head_inv(Head,loop(Head2,_Calls,Inv,_),Inv_projected):-
+	copy_term((Head2,Inv),(Head,Inv2)),
+	Head=..[_|Vars],
+	nad_project(Vars,Inv2,Inv_projected).
+	
 %! low_level_invariant_fixpoint(+Count:int,+Inv:ppl_polyhedron,+Loops:list(loop_handle),-Inv_out:ppl_polyhedron) is det
 % This predicate implements a fixpoint computation that apply the loops Loops to Inv iteratively until a fixpoint is reached.
-low_level_invariant_fixpoint(Count,Inv,Loops,Inv_out):-
+low_level_invariant_fixpoint(Count,Inv,Loops,Inv_out,Limiting_inv):-
 	widening_frequency(Widening_freq),
 	low_level_apply_loops(Loops,Inv,NewInv),
 	ppl_new_C_Polyhedron_from_C_Polyhedron(Inv,Inv_lub),
@@ -624,7 +638,9 @@ low_level_invariant_fixpoint(Count,Inv,Loops,Inv_out):-
 	  Inv_out=Inv
 	;
 	 (Count>=Widening_freq ->
-	   ppl_Polyhedron_H79_widening_assign(Inv_lub,Inv),
+	   ppl_Polyhedron_limited_BHRZ03_extrapolation_assign(Inv_lub,Inv,Limiting_inv),
+%	   ppl_Polyhedron_BHRZ03_widening_assign(Inv_lub, Inv),
+%	   ppl_Polyhedron_H79_widening_assign(Inv_lub,Inv),
 	   ppl_delete_Polyhedron(Inv),
 	   ppl_delete_Polyhedron(NewInv),
 	   Next_inv=Inv_lub,
@@ -635,7 +651,7 @@ low_level_invariant_fixpoint(Count,Inv,Loops,Inv_out):-
 	  ppl_delete_Polyhedron(Inv),
 	  Count1 is Count+1
 	 ),
-	 low_level_invariant_fixpoint(Count1,Next_inv,Loops,Inv_out)
+	 low_level_invariant_fixpoint(Count1,Next_inv,Loops,Inv_out,Limiting_inv)
 	).
 	
 
