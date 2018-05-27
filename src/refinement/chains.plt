@@ -48,7 +48,7 @@ loops_example(multiple,
 		
 test(chains_sequence):-
 	loops_example(sequence,Loops),
-	compute_chains(Loops,chains(Phases,Chains)),
+	compute_chains(Loops,chains(Phases,Chains),_),
 	assertion(Phases=[phase([5],[]),phase(3,[]),phase([4],[]),phase(2,[]),phase(1,[])]),
 	assertion(Chains=[
 	[1],
@@ -76,7 +76,7 @@ test(chains_sequence):-
 	
 test(chains_alternative):-
 	loops_example(alternative,Loops),
-	compute_chains(Loops,chains(Phases,Chains)),
+	compute_chains(Loops,chains(Phases,Chains),_),
 	assertion(Phases=[phase([3],[]),phase([2],[]),phase(1,[])]),
 	assertion(Chains=[
 	[1],
@@ -91,7 +91,7 @@ test(chains_alternative):-
 	
 test(chains_all_possible):-
 	loops_example(all_possible,Loops),
-	compute_chains(Loops,chains(Phases,Chains)),
+	compute_chains(Loops,chains(Phases,Chains),_),
 	assertion(Phases=[phase([2,3,4],[]),phase(1,[])]),
 	assertion(Chains=[
 	[1],
@@ -100,7 +100,7 @@ test(chains_all_possible):-
 	]).	
 test(chains_multiple):-
 	loops_example(multiple,Loops),
-	compute_chains(Loops,chains(Phases,Chains)),
+	compute_chains(Loops,chains(Phases,Chains),_),
 	assertion(Phases=[phase([3,4],[]),phase(2,[]),phase(1,[])]),
 	assertion(Chains=[
 	[1],
@@ -237,7 +237,7 @@ test(chains_discard_infeasible_prefixes):-
 	
 test(chains_discard_infeasible_combinations):-
 	loops_example(sequence_incompatible,Loops),
-	compute_chains(Loops,Chains),
+	compute_chains(Loops,Chains,_),
 	Chains=chains(_,Chain_list),
 	assertion(Chain_list=[
 	[1],

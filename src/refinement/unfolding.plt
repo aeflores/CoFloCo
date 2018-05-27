@@ -9,7 +9,7 @@
 :-use_module(unfolding).
 :-use_module(loops,[compute_loops/3]).
 :-use_module(invariants,[compute_backward_invariants/3]).
-:-use_module(chains,[compute_chains/2,chains_annotate_termination/3]).
+:-use_module(chains,[compute_chains/3,chains_annotate_termination/3]).
 
 :-use_module('../utils/crs').
 :-use_module('../utils/crs.plt',[create_crse/2]).
@@ -88,7 +88,7 @@ test(external_patterns_basic):-
 	CRSE=crse(_,CRS),
 	crs_get_cr(CRS,dec_pos,CRdec),
 	compute_loops(CRdec,0,Loops),
-	compute_chains(Loops,Chains),
+	compute_chains(Loops,Chains,_),
 	compute_backward_invariants(Loops,Chains,Backward_invs),
 	chains_annotate_termination(Chains,Loops,Chains2),
 	cr_compute_external_execution_patterns(Chains2,Backward_invs,0,External_patterns),
@@ -112,7 +112,7 @@ test(external_patterns_compress):-
 	CRSE=crse(_,CRS),
 	crs_get_cr(CRS,a,CRa),
 	compute_loops(CRa,0,Loops),
-	compute_chains(Loops,Chains),
+	compute_chains(Loops,Chains,_),
 	compute_backward_invariants(Loops,Chains,Backward_invs),
 	chains_annotate_termination(Chains,Loops,Chains2),
 	cr_compute_external_execution_patterns(Chains2,Backward_invs,0,External_patterns0),

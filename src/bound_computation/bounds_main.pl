@@ -27,64 +27,135 @@ that can be passed on to the callers.
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(bounds_main,[compute_bound_for_scc/3,
-			compute_closed_bound/1,
-			compute_single_closed_bound/3]).
+:- module(bounds_main,[
+	cr_compute_bounds/4,
+	compute_closed_bounds/2]).
 
-:- use_module(chain_solver,[compute_chain_cost/3]).
-%:- use_module(ub_solver,[solve_system/5]).
-:- use_module(cost_structure_solver,[cstr_maxminimization/5]).
-:- use_module('../db',[
-		  external_call_pattern/5,
-		  add_upper_bound/3,
-		  upper_bound/4,
-		  add_external_upper_bound/3,
-		  add_closed_upper_bound/3,
-		  add_closed_lower_bound/3,
-		  add_single_closed_upper_bound/2,
-		  closed_upper_bound/3]).
+:- use_module(cost_equation_solver,[
+	compute_ce_bounds/3,
+	compute_loop_bounds/3
+	]).
+:- use_module('phase_solver/phase_solver',[compute_phase_bounds/3]).
+:- use_module(chain_solver,[compute_chain_bounds/5]).
+:- use_module(cost_structure_solver,[cstr_maxminimization/6]).
+:- use_module(conditional_bounds,[compute_conditional_bounds/3]).
 
-:- use_module('../refinement/invariants',[backward_invariant/4]).
-:- use_module('../refinement/chains',[chain/3]).
-:- use_module('../utils/cofloco_utils',[bagof_no_fail/3,zip_with_op/3]).
+:- use_module('../utils/crs',[
+	crs_get_cr/3,
+	cr_head/2,
+	cr_get_loops/2,
+	cr_get_chains/2,
+	cr_get_external_patterns/2,
+	cr_get_back_invs/2,
+	cr_set_loops/3,
+	cr_set_chains/3,
+	cr_set_external_patterns/3,
+	cr_IOvars/2,
+	cr_set_piecewise_bounds/3,
+	cr_get_piecewise_bounds/2,
+	crs_update_cr/4
+	]).
+
+:-use_module('../refinement/chains',[
+	chain_get_pattern/2,
+	chains_get_chain/3,
+	chain_get_cost/2,
+	chain_set_closed_upper_bound/3,
+	chain_set_closed_lower_bound/3
+	]).
+:-use_module('../refinement/invariants',[
+	back_invs_get/3
+	]).	
+	
+:-use_module('../refinement/unfolding',[
+	external_pattern_set_cost/3,
+	external_pattern_cost/2,
+	external_patterns_head/2,
+	external_patterns_get_external_pattern/3,
+	external_patterns_apply_to_each/3
+	]).
+
+:- use_module('../utils/cofloco_utils',[
+	bagof_no_fail/3,
+	zip_with_op/3
+	]).
+	
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
-:- use_module('../utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
-:- use_module('../utils/cost_structures',[cstr_or_compress/2,
-										  cstr_extend_variables_names/3]).
+
+:- use_module('../utils/structured_cost_expression',[
+	strexp_simplify_max_min/2,
+	strexp_to_cost_expression/2
+	]).
+	
+:- use_module('../utils/cost_structures',[
+	cstr_or_compress/2,
+	cstr_extend_variables_names/3
+	]).
 
 :- use_module('../IO/params',[get_param/2]).
 
-:- use_module(stdlib(numeric_abstract_domains),[nad_list_lub/2]).
+:- use_module('../IO/output',[
+	print_ce_bounds/1,
+	print_loop_bounds/1,
+	print_phase_bounds/1,
+	print_chain_bounds/1,
+	print_external_patterns_bounds/1,
+	print_chains_closed_bounds/2,
+	print_single_closed_result/1,
+	print_piecewise_bounds/2,
+	print_competition_result/1
+	]).
+
+
+:- use_module(stdlib(numeric_abstract_domains),[
+	nad_list_lub/2,
+	nad_glb/3
+	]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list),[from_list_sl/2]).
-
+:- use_module(stdlib(profiling),[
+	profiling_start_timer/1,
+	profiling_stop_timer_acum/2
+	]).
+	
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
+:-use_module(library(lambda)).
 
 %! compute_bound_for_scc(+Head:term,+RefCnt:int,Last:bool) is det
 % compute a bound for each chain
 % then, compress the bounds for the chains that have been grouped into
 % external call patterns only if we are not at the last scc
-compute_bound_for_scc(Head,RefCnt,_Last):-
-	chain(Head,RefCnt,Chain),
-	compute_chain_bound(Head,Chain),
-	fail.
+cr_compute_bounds(F,CRS,Last,CRS2):-
+	crs_get_cr(CRS,F,CR),
+	cr_get_loops(CR,Loops),
+	cr_get_chains(CR,Chains),
+	cr_get_external_patterns(CR,External_patterns),
+	cr_get_back_invs(CR,Back_invs),
+	profiling_start_timer(equation_cost),
+	compute_ce_bounds(CR,CRS,CR2),
+	print_ce_bounds(CR2),
+	compute_loop_bounds(Loops,CR2,Loops2),
+	print_loop_bounds(Loops2),
+	profiling_stop_timer_acum(equation_cost,_),
+	compute_phase_bounds(Chains,Loops2,Chains2),
+	print_phase_bounds(Chains2),
 	
-compute_bound_for_scc(Head,RefCnt,false):-	
-	compress_bounds_for_external_calls(Head,RefCnt).
-compute_bound_for_scc(_Head,_RefCnt,true).
-
-
-%! compute_chain_bound(+Head:term,+Chain:chain) is det
-% compute a bound for a chain,
-% simplify it according to the information of the backward invariant
-% and store it,
-compute_chain_bound(Head,Chain):-
-	compute_chain_cost(Head,Chain,UB),!,  
-	add_upper_bound(Head,Chain,UB).
-compute_chain_bound(Head,Chain):-
-	throw(fatal_error('failed to compute chain bound',Head,Chain)).
+	cr_IOvars(CR,IOvars),
+	compute_chain_bounds(Chains2,Back_invs,Loops2,IOvars,Chains3),
+	print_chain_bounds(Chains3),
+	(Last=false->
+		compute_external_patterns_bounds(External_patterns,Chains3,External_patterns2),
+		print_external_patterns_bounds(External_patterns2)
+	;
+		true
+	),	
+	cr_set_loops(CR2,Loops2,CR3),
+	cr_set_chains(CR3,Chains3,CR4),
+	cr_set_external_patterns(CR4,External_patterns2,CR5),
+	crs_update_cr(CRS,F,CR5,CRS2).
 	
+
 %! compress_upper_bounds_for_external_calls(+Head:term,+RefCnt:int) is det
 % For each external call pattern, it computes an upper bound and store it
 % as a external_upper_bound/3.
@@ -92,63 +163,114 @@ compute_chain_bound(Head,Chain):-
 %
 % Each call pattern contains a set of chains. The upper bound (cost structure)
 % is obtained by compressing the upper bound of these chains into one.
-compress_bounds_for_external_calls(Head,RefCnt):-
-	external_call_pattern(Head,(Precondition_id,RefCnt),_Terminating,Components,_Inv),
-	bagof_no_fail(Cost_structure,Chain^E1^Cost_structure_1^(
-		    member(Chain,Components),
-	        upper_bound(Head,Chain,E1,Cost_structure_1),
-	        %only extend if there are several
-	        (Components\=[_]->
-	        	cstr_extend_variables_names(Cost_structure_1,ch(Chain),Cost_structure)
-	        	;
-	        	Cost_structure_1=Cost_structure
-	        )
-	        ),Cost_structures),    
-	cstr_or_compress(Cost_structures,Final_cost_structure),
-	add_external_upper_bound(Head,Precondition_id,Final_cost_structure),
-	fail.
-compress_bounds_for_external_calls(_,_).		
+compute_external_patterns_bounds(External_patterns,Chains3,External_patterns2):-
+	external_patterns_head(External_patterns,Head),
+	external_patterns_apply_to_each(bounds_main:compute_external_pattern_cost(Head,Chains3),External_patterns,External_patterns2).
+
+compute_external_pattern_cost(Head,Chains,(Chains_pattern,External_pattern),(Chains_pattern,External_pattern2)):-
+	maplist(get_chain_cost(Head,Chains),Chains_pattern,Costs),
+	cstr_or_compress(Costs,Final_cost_structure),
+	external_pattern_set_cost(External_pattern,Final_cost_structure,External_pattern2).
+
 	
+get_chain_cost(Head,Chains,Chain_pattern,Cost3):-
+	chains_get_chain(Chains,Chain_pattern,Chain),
+	chain_get_cost(Chain,cost(Head1,Cost1)),
+	copy_term(cost(Head1,Cost1),cost(Head,Cost2)),
+	cstr_extend_variables_names(Cost2,ch(Chain_pattern),Cost3).
 	
+compute_closed_bounds(CRSE,CRSE2):-
+	CRSE=crse(Entries,CRS),
+	foldl(compute_cr_closed_bound,Entries,CRS,CRS2),
+	CRSE2=crse(Entries,CRS2).
+
+    
+compute_cr_closed_bound(entry(Head,_Cs) ,CRS,CRS2):-
+	functor(Head,F,_),
+	crs_get_cr(CRS,F,CR),
+	cr_IOvars(CR,IOvars),
+	cr_get_chains(CR,Chains),
+	cr_head(CR,Head),
+	cr_get_back_invs(CR,Back_invs),
+	profiling_start_timer(solver),
+	compute_chains_closed_bounds(Chains,Chains2,Back_invs,IOvars,Closed_bounds),
+	profiling_stop_timer_acum(solver,_),
+	cr_set_chains(CR,Chains2,CR2),
 	
-%! compute_closed_bound(+Head:term) is det
-% compute a closed bound for each cost structure that has been previously inferred
-% and store it
-compute_closed_bound(Head):-
-	upper_bound(Head,Chain,_Vars,Cost),
-	backward_invariant(Head,(Chain,_),_,Head_Pattern),
+	((get_param(conditional_ubs,[]); get_param(conditional_lbs,[]))->
+	   compute_conditional_bounds(Head,Closed_bounds,Piecewise_bounds),
+	   cr_set_piecewise_bounds(CR2,Piecewise_bounds,CR3)
+	   ;
+	   (get_param(compute_ubs,[])->
+	     	compute_single_closed_bound(Head,Closed_bounds,Exp),
+	     	Piecewise_bounds=Exp,
+	     	cr_set_piecewise_bounds(CR2,Piecewise_bounds,CR3)
+	     ; 
+	     	CR3=CR2
+	     )
+	),
+	print_closed_results(CR3),
+	crs_update_cr(CRS,F,CR3,CRS2).
+	
+
+compute_chains_closed_bounds(chains(Phases,Chains),chains(Phases,Chains2),Back_invs,IOvars,Closed_bounds):-
+	maplist(compute_chain_closed_bound(Back_invs,IOvars),Chains,Chains2,Closed_bounds).
+	
+		
+compute_chain_closed_bound(Back_invs,IOvars,Chain,Chain3,Closed_bound):-
+	chain_get_cost(Chain,cost(Head,Cost)),
+	chain_get_pattern(Chain,Chain_patt),
+	back_invs_get(Back_invs,Chain_patt,inv(Head,_,Inv)),
 	(get_param(compute_ubs,[])->
-	  cstr_maxminimization(Cost,max,Head,Head_Pattern,UB),  
-	  add_closed_upper_bound(Head,Chain,UB)
+	  cstr_maxminimization(Cost,max,Head,Inv,IOvars,UB),  
+	  chain_set_closed_upper_bound(Chain,closed_bound(Head,UB),Chain2)
 	; 
-	  true
+	  Chain2=Chain,
+	  UB=max([inf])
 	),
     (get_param(compute_lbs,[])->
-	  cstr_maxminimization(Cost,min,Head,Head_Pattern,LB),
-	  add_closed_lower_bound(Head,Chain,LB)
+	  cstr_maxminimization(Cost,min,Head,Inv,IOvars,LB),
+	  chain_set_closed_lower_bound(Chain2,closed_bound(Head,LB),Chain3)
 	  ;
-	  true
+	  Chain3=Chain2,
+	  LB=min([add([])])
 	 ),
-	fail.
-compute_closed_bound(_Head).
+	Closed_bound=execution_pattern(Head,(UB,LB),Inv).
+
 
 	
-
-
+print_closed_results(CR):-
+	cr_get_chains(CR,Chains),
+	cr_get_back_invs(CR,Back_invs),
+	print_chains_closed_bounds(Chains,Back_invs),
+	cr_get_piecewise_bounds(CR,Piecewise_bounds),
+    ((get_param(compute_ubs,[]),get_param(conditional_ubs,[]))->
+    	print_piecewise_bounds(upper,Piecewise_bounds),
+    	print_competition_result(Piecewise_bounds)
+    	;
+    	Exp=Piecewise_bounds,
+		print_single_closed_result(Exp),
+		print_competition_result(Exp)
+    	),
+	((get_param(compute_lbs,[]),get_param(conditional_lbs,[]))->
+		print_piecewise_bounds(lower,Piecewise_bounds)
+		;
+		true
+		).
+	
+	
 %! compute_single_closed_bound(+Head:term,+RefCnt:int,-SimpleExp:cost_expression) is det
 % compute a closed bound that is the maximum of all the closed bounds of all the chains in a SCC Head
-compute_single_closed_bound(Head,RefCnt,UB1):-
-	bagof_no_fail(CExp,
-		Chain^closed_upper_bound(Head,Chain,CExp),CExps),
+compute_single_closed_bound(Head,External_patterns,single_bound(Head,UB1)):-
+	maplist(Head+\Ex_pat^UB^Inv^(
+		Ex_pat=execution_pattern(Head,(UB,_),Inv)
+		),External_patterns,CExps,Invs),
 	maplist(zip_with_op(_),Lists,CExps),
-		bagof_no_fail(Head_Pattern,
-		Chain^X^backward_invariant(Head,(Chain,RefCnt),X,Head_Pattern),Head_Patterns),
-	nad_list_lub(Head_Patterns,General_invariant),
+	nad_list_lub(Invs,General_invariant),
 	ut_flat_list(Lists,List),
 	from_list_sl(List,Set_costs),
 	strexp_simplify_max_min(max(Set_costs),Cost_max_min_simple),
 	strexp_to_cost_expression(Cost_max_min_simple,UB),
-	cexpr_simplify(UB,General_invariant,UB1),
-	add_single_closed_upper_bound(Head,UB1).
+	cexpr_simplify(UB,General_invariant,UB1).
 	
 

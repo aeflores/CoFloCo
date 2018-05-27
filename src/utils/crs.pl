@@ -34,6 +34,12 @@
 		cr_strengthen_with_ce_invs/5,
 		cr_set_external_patterns/3,
 		cr_get_external_patterns/2,
+		cr_set_back_invs/3,
+		cr_get_back_invs/2,
+		
+		cr_set_piecewise_bounds/3,
+		cr_get_piecewise_bounds/2,
+		
 		
 		crs_empty/2,
 		crs_range/2,
@@ -453,9 +459,21 @@ cr_set_external_patterns(CR,Ext_patt,CR2):-
 cr_get_external_patterns(CR,Ext_patt):-
 	cr_get_property(CR,external_patterns,Ext_patt).
 
+
+cr_set_back_invs(CR,Back_invs,CR2):-
+	cr_set_property(CR,back_invs,Back_invs,CR2).
+cr_get_back_invs(CR,Back_invs):-
+	cr_get_property(CR,back_invs,Back_invs).
+
+cr_set_piecewise_bounds(CR,Back_invs,CR2):-
+	cr_set_property(CR,piecewise_bounds,Back_invs,CR2).
+cr_get_piecewise_bounds(CR,Back_invs):-
+	cr_get_property(CR,piecewise_bounds,Back_invs).
+
 cr_update_cr_forward_invariant(CR,Head,Cs,CR2):-
 	(cr_get_property(CR,fwd_inv,fwd_inv(Head,Cs2))->
-		nad_lub(Cs,Cs2,Cs_lub),
+		Head=..[_|Vars],
+		nad_lub(Vars,Cs,Vars,Cs2,Vars,Cs_lub),
 		cr_set_property(CR,fwd_inv,fwd_inv(Head,Cs_lub),CR2)
 		;
 		cr_set_property(CR,fwd_inv,fwd_inv(Head,Cs),CR2)

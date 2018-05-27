@@ -33,9 +33,7 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 				  
 :- use_module('../IO/params',[get_param/2]).
 :- use_module('../IO/output',[print_warning_in_error_stream/2]).
-:- use_module('../db',[
-			phase_loop/5,
-			get_input_output_vars/3]).
+
 :- use_module('../utils/cofloco_utils',[
 			tuple/3,
 			sort_with/3,
@@ -69,15 +67,15 @@ It is used in  cost_equation_solver.pl and chain_solver.pl.
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).		
-	
+:-use_module(library(lambda)).	
 
 %! max_min_fconstrs_in_cost_equation(+Fconstrs_list:list(list(final_constr)),+Base_calls:list(term),+Phi:polyhedron,+Head_calls:(term),list(term)),-Fconstrs_out:list(final_cons),-ICons_out:list(inter_cons)) is det
 % transform a list of lists of final constraints from a cost equation
 % into a simple list of final constraints expressed in terms of the input variables of Head_calls using max_min_fconstrs
 % It is prepared to originate intermediate constraints as well but not used yet
-max_min_fconstrs_in_cost_equation(Fconstrs_list,_Base_calls,Phi,(Head,Calls),Final_fconstrs,[]):-
+max_min_fconstrs_in_cost_equation(Fconstrs_list,_Base_calls,Phi,(Head,Calls,IOvars),Final_fconstrs,[]):-
 	ut_flat_list(Fconstrs_list,Fconstrs),
-	maplist(get_input_output_vars,[Head|Calls],Input_vars,_),
+	maplist(IOvars+\Head^Ivars^copy_term(IOvars,ioVars(Head,Ivars,_)),[Head|Calls],Input_vars),
 	Input_vars=[Input_vars_head|_],
 	ut_flat_list(Input_vars,Input_vars_flat),
 	max_min_fconstrs(Fconstrs,Phi,Input_vars_head,Input_vars_flat,Final_fconstrs).
@@ -89,9 +87,9 @@ max_min_fconstrs_in_cost_equation(Fconstrs_list,_Base_calls,Phi,(Head,Calls),Fin
 % transform a list of final constraints from two phases
 % into a simple list of final constraints expressed in terms of the variables of Head using max_min_fconstrs
 % It is prepared to originate intermediate constraints as well but not used yet
-max_min_fconstrs_in_chain(Fconstrs,_Chain,Phi,Head,Final_fconstrs,[]):-
+max_min_fconstrs_in_chain(Fconstrs,Head,IoVars,Phi,Final_fconstrs,[]):-
 	term_variables(Head,TVars),
-	get_input_output_vars(Head,InputVars,_),
+	copy_term(IoVars,ioVars(Head,InputVars,_)),
 	max_min_fconstrs(Fconstrs,Phi,InputVars,TVars,Final_fconstrs).
 	
 %! max_min_constrs(+Fconstrs_list:list(final_constr),+Phi:polyhedron,+InputVars:list(Var),+TVars:list(Var),-Fconstrs_out:list(final_cons)) is det

@@ -3,7 +3,7 @@ Part of CoFloCo
 
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014-2017 Antonio Flores Montoya
+@copyright Copyright (C) 2014-2018 Antonio Flores Montoya
 
 @license This file is part of CoFloCo. 
     CoFloCo is free software: you can redistribute it and/or modify
@@ -20,7 +20,12 @@ Part of CoFloCo
     along with CoFloCo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-:- module(main_cofloco,[cofloco_shell_main/0,cofloco_bin_main/0,cofloco_query/2,cofloco_query/1]).
+:- module(main_cofloco,[
+	cofloco_shell_main/0,
+	cofloco_bin_main/0,
+	cofloco_query/3,
+	cofloco_query/2
+	]).
 
 /** <module> main_cofloco
 
@@ -95,11 +100,15 @@ The main "data types" used in CoFloCo are the following:
 
 :-include('search_paths.pl').
 
+:- use_module(db,[
+	init_db/0,
+	init_timers/0
+	]).
 
-:- use_module(db,[init_db/0,init_timers/0]).
 :- use_module('pre_processing/SCCs',[
 	compute_sccs_and_btcs/3,
 	scc_get_cover_points/2]).
+	
 :- use_module('pre_processing/partial_evaluation',[partial_evaluation/4]).
 
 :- use_module('refinement/invariants',[
@@ -114,11 +123,13 @@ The main "data types" used in CoFloCo are the following:
 	back_invs_update_with_changed_chains/3,
 	back_invs_get_loop_invariants/2
 	]).
+	
 :- use_module('refinement/unfolding',[
 	cr_specialize/3,
 	cr_compute_external_execution_patterns/4]). 
+	
 :- use_module('refinement/chains',[
-	compute_chains/2,
+	compute_chains/3,
 	chains_discard_terminating_non_terminating/3,
 	chains_discard_infeasible_prefixes/4,
 	chains_update_with_discarded_loops/4,
@@ -132,7 +143,6 @@ The main "data types" used in CoFloCo are the following:
 	loops_strengthen_with_loop_invs/5
 	]).
 
-
 :- use_module(ranking_functions,[
 	find_loops_ranking_functions/3,
 	prove_phases_termination/4
@@ -141,16 +151,13 @@ The main "data types" used in CoFloCo are the following:
 
 :- use_module('bound_computation/bounds_main',[
 	cr_compute_bounds/4,
-	compute_closed_bound/1,
-	compute_single_closed_bound/3
+	compute_closed_bounds/2
 	]).
-:- use_module('bound_computation/conditional_bounds',[compute_conditional_bounds/1]).			  
 
 :- use_module('IO/output',[
 	init_output/0,
 	print_header/3,
 	print_or_log/2,
-	print_results/2,
 	print_sccs/1,
 	print_partially_evaluated_sccs/1,
 	print_equations_refinement/1,
@@ -161,12 +168,8 @@ The main "data types" used in CoFloCo are the following:
 	print_changes_map/2,
 	
 	print_help/0,
-	print_closed_results/2,
 	print_chains/1,
-	print_single_closed_result/2,
-	print_competition_result/1,
-	print_conditional_upper_bounds/1,
-	print_conditional_lower_bounds/1,
+	print_chains_graph/1,
 	print_stats/0,
 	print_log/0,
 	print_help/0
@@ -188,8 +191,8 @@ The main "data types" used in CoFloCo are the following:
 	cr_get_loops/2,
 	cr_set_loops/3,
 	cr_set_chains/3,
+	cr_set_back_invs/3,
 	cr_get_forward_invariant/2,
-	cr_strengthen_with_CE_invs/4,
 	cr_IOvars/2,
 	
 	crs_get_cr/3,
@@ -197,7 +200,8 @@ The main "data types" used in CoFloCo are the following:
 	crs_update_cr_forward_invariant/4,
 	crs_update_forward_invariants_with_calls_from_cr/3,
 	crs_update_cr/4,
-	cr_strengthen_with_ce_invs/5]).
+	cr_strengthen_with_ce_invs/5
+	]).
 
 :-use_module('utils/cofloco_utils',[tuple/3]).
 
@@ -207,11 +211,13 @@ The main "data types" used in CoFloCo are the following:
 	profiling_start_timer/1,
 	profiling_get_info/3,
 	profiling_stop_timer/2,
-	profiling_stop_timer_acum/2]).
+	profiling_stop_timer_acum/2
+	]).
 	
 :- use_module(stdlib(counters),[
 	counter_get_value/2,
-	counter_initialize/2]).
+	counter_initialize/2
+	]).
 	
 :-use_module(stdlib(polyhedra_ppl),[ppl_my_initialize/0]).
 
@@ -225,7 +231,7 @@ The main "data types" used in CoFloCo are the following:
 cofloco_shell_main:-
         current_prolog_flag(argv, Args),
 	   (Args=[_|_]->
-	    catch(cofloco_query(Args),E,(print_message(error, E),halt))
+	    catch(cofloco_query(Args,_),E,(print_message(error, E),halt))
 	   ;
 	    print_help
 	   ),
@@ -233,7 +239,7 @@ cofloco_shell_main:-
 cofloco_bin_main:-
         current_prolog_flag(argv, [_|Args]),
 	   (Args=[_|_]->
-	    catch(cofloco_query(Args),E,(print_message(error, E),halt))
+	    catch(cofloco_query(Args,_),E,(print_message(error, E),halt))
 	   ;
 	    print_help
 	   ),
@@ -250,24 +256,24 @@ cofloco_bin_main:-
 
 %! cofloco_query(+Eqs:list(cost_equation),+Params:list(atom)) is det
 % perform the main analysis on the equations Eqs with the parameters Params
-cofloco_query(Eqs,Params):-
+cofloco_query(Eqs,Params,CRSE2):-
 	cofloco_query_part1(Params),
 	store_cost_equations(Eqs,CRSE),
-	cofloco_query_part2(CRSE).
+	cofloco_query_part2(CRSE,CRSE2).
 
 	
 %! cofloco_query(+Params:list(atom)) is det
 % Obtains the input file, read the cost equations, preprocess the cost equations,
 % perform the main analysis and print results
-cofloco_query(Params):-
+cofloco_query(Params,CRSE2):-
 	cofloco_query_part1(Params),
 	(get_param(input,[File])->
 		(read_cost_equations(File,CRSE)->
 			true
 			;
 			throw(error('Failed to parse input file'))
-		),	
-		cofloco_query_part2(CRSE)
+		),		
+		cofloco_query_part2(CRSE,CRSE2)
 	;
 		(get_param(help,[])->
 		   print_help
@@ -284,17 +290,17 @@ cofloco_query_part1(Params):-
 	init_timers,
 	profiling_start_timer(analysis).
 
-cofloco_query_part2(CRSE):-
+cofloco_query_part2(CRSE,CRSE3):-
 	get_param(incremental,[]),!,
 	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
 	preprocess_cost_equations(CRSE,SCCs,Ignored_crs,CRSE2),
 	conditional_call((get_param(v,[N]),N>0),print_header('Incremental solution of Cost Relations~n',[],1)),
-	incremental_refinement_bounds(CRSE2,SCCs,Ignored_crs),
+	incremental_refinement_bounds(CRSE2,SCCs,Ignored_crs,CRSE3),
 	profiling_stop_timer(analysis,_T_analysis),
 	print_stats,
 	print_log.
 
-cofloco_query_part2(CRSE):-
+cofloco_query_part2(CRSE,CRSE4):-
 	conditional_call((get_param(v,[N]),N>0),print_header('Preprocessing Cost Relations~n',[],1)),
 	preprocess_cost_equations(CRSE,SCCs,Ignored_crs,CRSE2),
 	conditional_call((get_param(v,[N]),N>0),print_header('Control-Flow Refinement of Cost Relations~n',[],1)),
@@ -303,7 +309,7 @@ cofloco_query_part2(CRSE):-
 			true
 			;
 			conditional_call((get_param(v,[N]),N>0),print_header('Computing Bounds~n',[],1)),
-			bounds(CRSE3,SCCs,Ignored_crs),
+			bounds(CRSE3,SCCs,Ignored_crs,CRSE4),
 			profiling_stop_timer(analysis,_T_analysis),
 			print_stats
 	),
@@ -380,7 +386,8 @@ top_down_refinement_scc(CR,CR3):-
 	profiling_start_timer(unfold),
 	(get_param(compress_chains,[N_compress])->true;N_compress=0),
 	compute_loops(CR,N_compress,Loops),
-	compute_chains(Loops,Chains),
+	compute_chains(Loops,Chains,_Graph),
+	%print_chains_graph(Graph),
 	compute_phase_loops(Loops,Chains,Chains_annotated),
 	profiling_stop_timer_acum(unfold,_),
 	cr_get_forward_invariant(CR,Initial_fwd_inv),
@@ -399,7 +406,7 @@ top_down_refinement_scc(CR,CR3):-
 %  *  Find ranking functions and prove termination of the chains
 %  *  Remove impossible chains
 %  *  Compute forward and backwards invariants
-bottom_up_refinement_scc(CR,CRS,CR7) :-
+bottom_up_refinement_scc(CR,CRS,CR8) :-
 	cr_IOvars(CR,IOvars),
 	profiling_start_timer(unfold),
 	cr_specialize(CR,CRS,CR2),
@@ -409,7 +416,8 @@ bottom_up_refinement_scc(CR,CRS,CR7) :-
 	
 	print_loops(Loops),
 	
-	compute_chains(Loops,Chains),
+	compute_chains(Loops,Chains,Graph),
+	print_chains_graph(Graph),
 	chains_annotate_termination(Chains,Loops,Chain4print),
 	print_chains(Chain4print),
 	compute_phase_loops(Loops,Chains,Chains_annotated),
@@ -474,20 +482,21 @@ bottom_up_refinement_scc(CR,CRS,CR7) :-
 	chains_update_with_discarded_loops(Chains7,Discarded_loops2,Chains8,Changes_map4),
 	print_changes_map('infeasible loops because of summary strengthening',Changes_map4),
 	back_invs_update_with_changed_chains(Backward_invs3,Changes_map4,Backward_invs4),
+	cr_set_back_invs(CR4,Backward_invs4,CR5),
 	
 	
-	cr_set_loops(CR4,Loops4,CR5),
+	cr_set_loops(CR5,Loops4,CR6),
 	chains_annotate_termination(Chains8,Loops4,Chains9),
 	compute_phases_transitive_closures(Chains9,Loops4,Chains10),
 	print_chains(Chains10),
-	cr_set_chains(CR5,Chains10,CR6),
+	cr_set_chains(CR6,Chains10,CR7),
 	(get_param(compress_chains,[Compress_param])->
 		true
 		;
 		Compress_param=0
 	),
 	cr_compute_external_execution_patterns(Chains10,Backward_invs4,Compress_param,External_patterns),
-	cr_set_external_patterns(CR6,External_patterns,CR7),
+	cr_set_external_patterns(CR7,External_patterns,CR8),
 	print_external_patterns(External_patterns).
 	
 	%profiling_start_timer(inv_transitive),
@@ -497,11 +506,10 @@ bottom_up_refinement_scc(CR,CRS,CR7) :-
 	
 %! upper_bounds is det
 % compute upper bounds for all SCC and a closed upper bounds for the entry SCC
-bounds(CRSE,SCCs,Ignored_crs):-
+bounds(CRSE,SCCs,Ignored_crs,CRSE3):-
     profiling_start_timer(ubs),
-    bottom_up_bounds(SCCs,CRSE,Ignored_crs,CRSE2), 
-    CRSE=crse(Entries,_CRS),
-    maplist(\Entry^(Entry=entry(Head,_Cs),compute_closed_bound_scc(Head,CRSE2)),Entries),
+    bottom_up_bounds(SCCs,CRSE,Ignored_crs,CRSE2),
+    compute_closed_bounds(CRSE2,CRSE3), 
     profiling_stop_timer_acum(ubs,_).
    
 %! bottom_up_upper_bounds(+SCC_N:int,+Max_SCC_N:int) is det
@@ -514,41 +522,15 @@ bottom_up_bounds([],CRSE,_Ignored_crs,CRSE).
 
 bottom_up_bounds([SCC|SCCs],CRSE,Ignored_crs,CRSE_final):-
 	scc_get_cover_points(SCC,[F/A]),\+contains_sl(Ignored_crs,F/A),!,
-	functor(Head,F,A),
 	(SCCs=[]-> Last=true;Last=false),
 	CRSE=crse(Entries,CRS),
 	cr_compute_bounds(F,CRS,Last,CRS2),
 	CRSE2=crse(Entries,CRS2),
-	copy_term(Head,Head_aux),
-	conditional_call((get_param(v,[N]),N>1),
-		  print_results(Head_aux,CRS2)
-		 ),
 	bottom_up_bounds(SCCs,CRSE2,Ignored_crs,CRSE_final).
 
-bottom_up_bounds([_SCC|SCCs],CRSE,Ignored_crs):-
-	bottom_up_bounds(SCCs,CRSE,Ignored_crs).
+bottom_up_bounds([_SCC|SCCs],CRSE,Ignored_crs,CRSE_final):-
+	bottom_up_bounds(SCCs,CRSE,Ignored_crs,CRSE_final).
 
-
-
-compute_closed_bound_scc(Head) :-	
-	copy_term(Head,Head_aux),
-	profiling_start_timer(solver),
-	compute_closed_bound(Head),
-	profiling_stop_timer_acum(solver,_),
-	conditional_call((get_param(v,[N]),N>0),	
-		 print_closed_results(Head,2)
-		),	
-	((get_param(conditional_ubs,[]); get_param(conditional_lbs,[]))->
-	   compute_conditional_bounds(Head_aux),
-	   ((get_param(compute_ubs,[]),get_param(conditional_ubs,[]))->print_conditional_upper_bounds(Head_aux);true),
-	   ((get_param(compute_lbs,[]),get_param(conditional_lbs,[]))->print_conditional_lower_bounds(Head_aux);true)
-	   ;
-	   (get_param(compute_ubs,[])->
-	     compute_single_closed_bound(Head_aux,2,Exp),
-	     print_single_closed_result(Head_aux,Exp),
-	     print_competition_result(Exp)
-	     ; true)
-	).
 	
 % compute the refinement and upper bound one cost relation (SCC) at a time
 incremental_refinement_bounds(CRSE,SCCs,Ignored_crs):-

@@ -58,173 +58,175 @@ These constraints are useful in most cases and that allows us to simplify the re
 */
 
 :- module(phase_solver,[
-				compute_multiple_rec_phase_cost/6,
-				compute_phase_cost/6,
-				init_phase_solver/0,
-				phase_type/1,
-				used_pending_constraint/3,
-				save_used_pending_constraint/3,
-				enriched_loop/4,
-				current_chain_prefix/1,
-				type_of_loop/2,
-		        empty_pending/1,
-		        save_pending_list/6,
-		        extract_pending/6,
-		        union_pending/3]).
+	compute_phase_bounds/3,
+	%compute_multiple_rec_phase_cost/7,
+	state_get_property/3,
+	state_get_one_pending/3,
+	state_save_new_fconstrs/4,
+	state_save_new_iconstrs/3,
+	state_save_pending_list/7,
+	state_get_used_set/2,
+	state_get_used_constr/2,
+	state_get_candidate_result/3,
+	state_save_candidate_result/3,
+	type_of_loop/2
+	]).
 
 :- use_module(phase_common).
-:- use_module(phase_inductive_sum_strategy,[
-	init_inductive_sum_strategy/0,
-	inductive_sum_strategy/8
-	]).			
-:- use_module(phase_basic_product_strategy,[
-	basic_product_strategy/6
-	]).	
-:- use_module(phase_triangular_strategy,[triangular_strategy/8]).	
-:- use_module(phase_max_min_strategy,[max_min_strategy/7]).	
+:- use_module(phase_inductive_sum_strategy,[inductive_sum_strategy/8]).			
+:- use_module(phase_basic_product_strategy,[basic_product_strategy/8]).	
+:- use_module(phase_triangular_strategy,[triangular_strategy/7]).	
+:- use_module(phase_max_min_strategy,[max_min_strategy/8]).	
 
-	
-
-:- use_module('../cost_equation_solver',[get_loop_cost/5]).
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).					      
-:- use_module('../../db',[
-			   phase_loop/5,
-			   get_input_output_vars/3,
-		       loop_ph/6]).
+:- use_module('../../refinement/chains',[
+	phase_get_property/3,
+	phase_get_rfs/2,
+	phase_add_property/4,
+	phase_get_pattern/2,
+	is_multiple_phase/2
+	]).	
+
+:- use_module('../../refinement/loops',[
+	loops_get_head/2,
+	loops_get_list_fresh_with_id/3,
+	loop_get_cost/2,
+	loops_get_loop/3,
+	loop_head/2,
+	loop_calls/2,
+	loop_ioVars/2
+	]).				
 
 :- use_module('../../IO/params',[get_param/2]).		
 :- use_module('../../IO/output',[
 	print_or_log/2,
 	print_header/3,
-	print_pending_set/2,
-	print_loops_costs/3,
+	print_phase_solving_state/1,
 	print_selected_pending_constraint/3,
-	print_new_phase_constraints/3]).		
-:- use_module('../../ranking_functions',[ranking_function/4]).	  		
-:-use_module('../../refinement/invariants',[
-				  partial_backward_invariant/5,
-			      phase_transitive_star_closure/5,
-			      forward_invariant/4,		      
-			      get_context_insensitive_backward_invariant/3,
-		      	  get_context_insensitive_forward_invariant/3]).			
-
-	
+	print_phase_computation_changes/1
+	]).		
+  		
 :- use_module('../../utils/cofloco_utils',[
-			tuple/3,
-			zip_with_op/3,
-			ground_copy/2,
-			bagof_no_fail/3]).	
+	tuple/3,
+	zip_with_op/3,
+	ground_copy/2,
+	bagof_no_fail/3
+	]).	
+	
 :- use_module('../../utils/cost_structures',[
-			cstr_extend_variables_names/3,
-			cstr_simplify/2,
-			cstr_sort_iconstrs/4,
-			new_itvar/1,
-			get_loop_itvar/2,
-			is_ub_bconstr/1,
-			astrexp_new/2,
-			pstrexp_pair_empty/1,
-			pstrexp_pair_add/3,
-			cstr_propagate_sums/4,
-			fconstr_new/4,
-			iconstr_new/4,
-			cstr_empty/1,
-			cstr_join/3]).			
+	cstr_extend_variables_names/3,
+	cstr_simplify/2,
+	cstr_sort_iconstrs/2,
+	cstr_add_fconstrs/3,
+	cstr_add_iconstrs/3,
+	
+	new_itvar/1,
+	get_loop_itvar/2,
+			
+	is_ub_bconstr/1,
+	is_constant_bconstr/1,
+			
+	astrexp_new/2,
+	pstrexp_pair_empty/1,
+	pstrexp_pair_add/3,
+	cstr_propagate_sums/4,
+	fconstr_new/4,
+	iconstr_new/4,
+	cstr_empty/1,
+	cstr_join/3
+	]).			
 
 :- use_module('../../utils/polyhedra_optimizations',[
-		nad_is_bottom/1,
-		nad_normalize_polyhedron/2 ]).			
+	nad_is_bottom/1,
+	nad_normalize_polyhedron/2
+	]).			
 
 :- use_module(stdlib(numeric_abstract_domains),[
-			nad_maximize/3,
-			nad_project/3,
-			nad_list_lub/2,
-			nad_glb/3]).
+	nad_maximize/3,
+	nad_project/3,
+	nad_list_lub/2,
+	nad_glb/3
+	]).
 :- use_module(stdlib(linear_expression),[
-			integrate_le/3,
-			write_le/2,
-			multiply_le/3,
-			semi_normalize_le/3,
-			subtract_le/3,
-			negate_le/2]).							
-:- use_module(stdlib(fraction),[inverse_fr/2,greater_fr/2,geq_fr/2,divide_fr/3,negate_fr/2,multiply_fr/3,subtract_fr/3]).
-:- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_stop_timer_acum/2]).
-:- use_module(stdlib(counters),[counter_increase/3]).
-:- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4]).
+	integrate_le/3,
+	write_le/2,
+	multiply_le/3,
+	semi_normalize_le/3,
+	subtract_le/3,
+	negate_le/2,
+	parse_le_fast/2
+	]).							
+:- use_module(stdlib(fraction),[
+	inverse_fr/2,
+	greater_fr/2,
+	geq_fr/2,
+	divide_fr/3,
+	negate_fr/2,
+	multiply_fr/3,
+	subtract_fr/3
+	]).
+
+
+:- use_module(stdlib(utils),[
+	ut_flat_list/2,
+	ut_split_at_pos/4
+	]).
 :- use_module(stdlib(set_list)).
 :- use_module(stdlib(list_map)).
 :- use_module(stdlib(multimap)).
-:-use_module(library(apply_macros)).
-:-use_module(library(lists)).
 
-%! phase_cost(Phase:phase,Head:term,Calls:list(term_,Cost:cstr)
-% store the cost structure of a phase given a local invariant
-% for cacheing purposes
-:- dynamic  phase_cost/4.
+:- use_module(library(apply_macros)).
+:- use_module(library(lists)).
 
 
-:- dynamic  phase_type/1.
+compute_phase_bounds(chains(Phases,Chains),Loops,chains(Phases2,Chains)):-
+	maplist(compute_phase_bound(Loops),Phases,Phases2).
 
-%! init_phase_solver is det
-% clear all the intermediate results
-init_phase_solver:-
-	retractall(phase_cost(_,_,_,_)).
-
-	
-%! compute_phase_cost(+Phase:phase,+Head:term,+Calls:list(term),+Chain_prefix:chain_prefix,+Chain_rest:chain,-Cost:cstr) is det
-% The cacheing case
-compute_phase_cost(Head,Calls,Phase,_Chain_prefix,_Chain_rest,Cost):-
-	get_param(context_sensitive,[Sensitivity]),Sensitivity=<1,
-	phase_cost(Phase,Head,Calls,Cost),!,
-	(get_param(debug,[])->
-	 	print_header('Found solution for phase  ~p in the cache ~n',[Phase],4)
-	 	;true),
-	counter_increase(compressed_phases1,1,_).
-	
-
-compute_phase_cost(Head,[Call],Phase,Chain_prefix,Chain_rest,Cost_final):-
-	% depending on the context sensitivity we obtain invariants 
-	% 1) valid for all chains (so the phase cost is computed once)
-	% 2) valid only for the current chain	
-	get_param(context_sensitive,[Sensitivity]),
-	(Sensitivity =< 1 ->
-		get_context_insensitive_backward_invariant(Head,Phase,Backward_invariant),
-		get_context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
-	    Forward_hash=0,
-	    (get_param(debug,[])->
-	 		print_header('Computing cost of phase ~p ~n',[Phase],4)
-	 		;true),
-	 	init_solving_phase([Phase,no_chain],Phase)	
-	;
-		forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_invariant),
-		partial_backward_invariant(Chain_rest,Head,(Forward_hash,Forward_invariant),_,Backward_invariant),
+compute_phase_bound(Loops,Phase,Phase2):-
+	phase_get_pattern(Phase,Phase_pattern),
+	%multiple phase
+	(is_multiple_phase(Phase_pattern,Loops)->
+		Phase2=Phase
+		;
 		(get_param(debug,[])->
-	 		print_header('Computing cost of phase ~p with suffix ~p and prefix ~p ~n',[Phase,Chain_rest,Chain_prefix],4)
-	 		;true),
-	 	init_solving_phase(Chain_prefix,Phase)
-	),
-	assert(phase_type(single)),
-	%invariant applicable on the calls
-	nad_glb(Forward_invariant,Backward_invariant,Total_inv),
-	save_enriched_loops(Head,Total_inv,Phase,Phase_feasible),
-	
+	 		print_header('Computing cost of phase ~p ~n',[Phase_pattern],4)
+	 		;
+	 		true
+		),
+		%non-iterative phase
+		(number(Phase_pattern)->
+			loops_get_loop(Loops,Phase_pattern,Loop),
+			loop_head(Loop,Head),
+			loop_calls(Loop,Calls),
+			loop_get_cost(Loop,Cost)
+		;
+		%linear phase
+			loops_get_head(Loops,Head),
+			copy_term(Head,Call),
+			Calls=[Call],
+			loops_get_list_fresh_with_id(Loops,Phase_pattern,Phase_loops),
+	    	compute_phase_cost(Head,Call,Phase,Phase_loops,Cost)
+	    ),
+	    phase_add_property(Phase,cost,cost(Head,Calls,Cost),Phase2)
+	 ).
+
+
+
+compute_phase_cost(Head,Call,Phase,Phase_loops,Cost_final):-
+	state_empty(Empty_state),
+	state_set_property(Empty_state,phase_type,single,State1),
+	state_set_property(State1,phase,Phase,State2),
     %get the cost of each iterative component of the phase	
-	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost(Head,(Forward_hash,Forward_invariant,Backward_invariant)),Phase_vars,Phase_feasible,Costs),
-	print_loops_costs(Phase_feasible,Phase_vars,Costs),
-	profiling_stop_timer_acum(equation_cost,_),
-	add_n_elem_constraints(Head,Call,Phase,Phase_feasible),
-	compute_phase_cost_generic(Head,loop_vars(Head,[Call]),Phase_feasible,Phase_vars,Costs,Cost_final),!,
-	assertz(phase_cost(Phase,Head,[Call],Cost_final)).
+	maplist(loop_get_cost_and_vars,Phase_loops,Costs,Loop_vars),
 	
-compute_multiple_rec_phase_cost(Head,Phase,_Chain_prefix,Chain_rest,_Costs_prev,Cost):-
-	get_param(context_sensitive,[Sensitivity]),Sensitivity=<1,
-	phase_cost(Chain_rest,Head,[],Cost),!,
-	(get_param(debug,[])->
-	 	print_header('Found solution for phase  ~p in the cache ~n',[Phase],4)
-	 	;true),
-	counter_increase(compressed_phases1,1,_).
-		
-compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Costs_tails_n,Cost_final):-
+	compute_phase_cost_generic(State2,loop_vars(Head,[Call]),Phase_loops,Loop_vars,Costs,Cost_final).
+	
+loop_get_cost_and_vars((_Id,Loop),Cost,loop_vars(Head,Calls)):-
+	loop_get_cost(Loop,Cost),
+	loop_head(Loop,Head),
+	loop_calls(Loop,Calls).
+/*
+compute_multiple_rec_phase_cost(Head,IOvars,Phase,Chain_prefix,Chain_rest,Costs_tails_n,Cost_final):-
 	% the multiple recursion phase case and the linear case
 	(
 	Chain_rest=[multiple(Phase,Tails_n)],
@@ -236,23 +238,7 @@ compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Costs_tails_n
 	Phase_4_inv=Phase,
 	Linear_multiple='linear'
 	),
-	get_param(context_sensitive,[Sensitivity]),
-	(Sensitivity =< 1 ->
-		get_context_insensitive_backward_invariant(Head,Phase_4_inv,Backward_invariant),
-		get_context_insensitive_forward_invariant(Head,Phase,Forward_invariant),
-		Forward_hash=0,
-		(get_param(debug,[])->
-			print_header('Computing cost of chain ~p with ~p recursion~n',[Chain_rest,Linear_multiple],4)
-	    	;true),
-	    init_solving_phase([Phase,no_chain],Phase)		
-	  ;  
-	    forward_invariant(Head,(Chain_prefix,_),Forward_hash,Forward_invariant),
-	    partial_backward_invariant(Chain_rest,Head,(Forward_hash,Forward_invariant),_,Backward_invariant),
-	    (get_param(debug,[])->
-			print_header('Computing cost of chain ~p with ~p recursion with prefix ~p ~n',[Chain_rest,Linear_multiple,Chain_prefix],4)
-	    	;true),
-	    init_solving_phase(Chain_prefix,Phase)
-	),
+	init_solving_phase(Phase),
 	%if the phase is non-terminating, we have to remove the dummy tail
 	(Tails_n=[[]|Tails]->
 	   	Costs_tails_n=[_|Costs_tails],
@@ -268,8 +254,8 @@ compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Costs_tails_n
 	
 	%get the cost of each iterative component of the phase
 	profiling_start_timer(equation_cost),
-	maplist(get_equation_loop_cost(Head,(Forward_hash,Forward_invariant,Backward_invariant)),Phase_vars_loops,Phase_feasible,Costs_loops),
-	print_loops_costs(Phase_feasible,Phase_vars_loops,Costs_loops),
+	maplist(get_equation_loop_cost(Head,IOvars,(Forward_hash,Forward_invariant,Backward_invariant)),Phase_vars_loops,Phase_feasible,Costs_loops),
+	
 	profiling_stop_timer_acum(equation_cost,_),
 	
 	%for the tails
@@ -281,255 +267,82 @@ compute_multiple_rec_phase_cost(Head,Phase,Chain_prefix,Chain_rest,Costs_tails_n
 	append(Phase_feasible,Tails_feasible,Loops_tails_feasible),
 	append(Phase_vars_loops,Phase_vars_tails,Phase_vars),
 	append(Costs_loops,Cost_tails_feasible,Costs),
-	compute_phase_cost_generic(Head,loop_vars(Head,[]),Loops_tails_feasible,Phase_vars,Costs,Cost_final),!,
+	compute_phase_cost_generic(Head,IOvars,loop_vars(Head,[]),Loops_tails_feasible,Phase_vars,Costs,Cost_final),!,
 	assertz(phase_cost(Chain_rest,Head,[],Cost_final)).
-	
-compute_phase_cost_generic(Head,Result_vars,Phase,Phase_vars,Costs,Cost_final):-
-	maplist(cstr_propagate_sums,Phase,Costs,Costs_propagated2,Max_min_pairs_Sums_pairs),
+*/
+compute_phase_cost_generic(State,Final_vars,Phase_loops,Loop_vars,Costs,Cost_final):-
+	maplist(tuple,Loop_ids,_,Phase_loops),
+	maplist(cstr_propagate_sums,Loop_ids,Costs,Costs_propagated2,Max_min_pairs_Sums_pairs),
+	%new cost structure
 	cstr_empty(Empty_cstr),
-	foldl(cstr_join,Costs_propagated2,Empty_cstr,cost([],[],Iconstrs,Bases,Base)),
+	foldl(cstr_join,Costs_propagated2,Empty_cstr,New_cost_initial),	
+	state_set_property(State,new_cost,costWvars(Final_vars,New_cost_initial),State2),
+	%add constraints from the ranking functions
+	cond_add_n_elem_constraints(State2,State3),
+
+	generate_initial_pending(Phase_loops,Loop_vars,Max_min_pairs_Sums_pairs,Pending),
+	state_set_pending(State3,Pending,State4),
+	%main predicate
+	
+	compute_all_pending(Phase_loops,State4,State5),
+	state_get_property(State5,new_cost,costWvars(Final_vars,New_cost)),
+	
+	(get_param(debug,[])->
+	 		print_header('Simplifying cost structure  ~n',[],4)
+	 		;
+	 		true),		
+	cstr_sort_iconstrs(New_cost,Ncost_sorted),		
+	cstr_simplify(Ncost_sorted,Cost_final).
+
+
+generate_initial_pending(Phase_loops,Phase_vars,Max_min_pairs_Sums_pairs,Pending2):-
 	%unpack result of propagation
 	maplist(tuple,Max_mins,Sums,Max_min_pairs_Sums_pairs),
 	%we add pending sums for the number of iterations of each loop as they will be needed in most occasions anyway
 	% this way, we can always assume they are computed
-	maplist(get_it_sum_constraint(ub),Phase,It_cons_max), 
+	maplist(tuple,Loop_ids,_,Phase_loops),
+	maplist(get_it_sum_constraint(ub),Loop_ids,It_cons_max), 
 	maplist(append,It_cons_max,Sums,Sums1),
 	(get_param(compute_lbs,[])->
-    	maplist(get_it_sum_constraint(lb),Phase,It_cons_min),
+    	maplist(get_it_sum_constraint(lb),Loop_ids,It_cons_min),
     	maplist(append,It_cons_min,Sums1,Sums2)
     	;
     	 Sums2=Sums1
      ),
-	%main predicate
-	compute_sums_and_max_min_in_phase(Head,Phase,Phase_vars,Max_mins,Sums2),
-	%collect stored results
-	collect_phase_results(Result_vars,Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs),
-	reverse(New_iconstrs,New_iconstrs2),
-	(get_param(debug,[])->
-	 		print_header('Sorting generated constraints of phase ~p ~n',[Phase],4)
-	 		;true),
-	cstr_sort_iconstrs(Final_ub_fconstrs,Final_lb_fconstrs,New_iconstrs2,New_iconstrs_sorted),
-	append(New_iconstrs_sorted,Iconstrs,Iconstrs_final),
-	(get_param(debug,[])->
-	 		print_header('Simplifying cost structure of phase ~p ~n',[Phase],4)
-	 		;true),
-	cstr_simplify(cost(Final_ub_fconstrs,Final_lb_fconstrs,Iconstrs_final,Bases,Base),Cost_final).
-
-
-%! compute_sums_and_max_min_in_phase(Head:term,Call:term,Phase:phase,Maxs:list(fconstrs),Mins:list(fconstrs),Max_sums:list(fconstrs),Min_sums:list(fconstrs))
-% store all the pending computations in Pending structure and compute them incrementally
-% the results are stored in the database and collected later
-compute_sums_and_max_min_in_phase(Head,Phase,Phase_vars,Max_mins,Sums):-
-	empty_pending(Empty_pending),
-	length(Phase,N),
+	length(Phase_loops,N),
 	%this is completely heuristic
 	Max_pending is 2*N+2,
-	assertz(max_pending_depth(Max_pending)),
+	pending_empty(Max_pending,Empty_pending),
 	%we start from depth 0
-	assertz(current_pending_depth(0)),
-	maplist(transform_max_min2_head(Head),Phase_vars,Phase,Max_mins,Max_mins_head),
-	foldl(save_pending_list(max_min,Head),Phase,Max_mins_head,Empty_pending,Pending1),
-	foldl(save_pending_list(sum),Phase_vars,Phase,Sums,Pending1,Pending2),
-	retract(current_pending_depth(0)),
-	print_pending_set(Head,Pending2),
-	compute_all_pending(Phase,Pending2),
-	retract(max_pending_depth(Max_pending)).
+	
+	foldl(save_pending_list(max_min,0),Phase_vars,Loop_ids,Max_mins,Empty_pending,Pending1),
+	foldl(save_pending_list(sum,0),Phase_vars,Loop_ids,Sums2,Pending1,Pending2).
+
+	
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 get_tail_phase_vars(Head,_,loop_vars(Head,[])).
 
-init_solving_phase(Chain_prefix,Phase):-
-	init_inductive_sum_strategy,
-	retractall(phase_type(_)),
-	retractall(enriched_loop(_,_,_,_)),
-	retractall(current_chain_prefix(_)),
-	retractall(current_phase(_)),
-	retractall(used_term(_,_,_,_,_,_)),
-	retractall(max_min_found(_,_,_,_,_)),
-	retractall(sum_found(_,_,_,_,_,_,_,_)),
-	retractall(used_pending_constraint(_,_,_)),
-	assertz(current_chain_prefix(Chain_prefix)),
-	assertz(current_phase(Phase)).
-
-	
-get_equation_loop_cost(Head,(Forward_hash,Forward_inv,Back_inv),loop_vars(Head,Calls),Eq_id,Cost2):-
-	loop_ph(Head,(Eq_id,_),Calls,_,_,_),
-	foldl(get_call_inv,Calls,(Head,Back_inv,Forward_inv),(Head,_,Total_inv)),
-	get_loop_cost(Head,Calls,(Forward_hash,Total_inv),Eq_id,Cost),
-	cstr_extend_variables_names(Cost,it(Eq_id),Cost2).
-	
-
-get_it_sum_constraint(ub,Loop,[bound(ub,[]+1,[Loop_name])]):-
+get_it_sum_constraint(ub,Loop,[bound(ub,[]+1,[Loop_name])]):-!,
 	get_loop_itvar(Loop,Loop_name).
 get_it_sum_constraint(lb,Loop,[bound(lb,[]+1,[Loop_name])]):-
 	get_loop_itvar(Loop,Loop_name).
 		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% auxiliary dynamic predicates
-
-%recording the resulting cost of the phase and recovering
-
-%! new_phase_fconstr(Head_Call:term,Fconstr)
-% temporary storage of final constraints for the phase Phase
-:-dynamic new_phase_fconstr/2.
-
-%! new_phase_iconstr(Head_Call:term,Iconstr)
-% temporary storage of intermediate constraint
-:-dynamic new_phase_iconstr/2.
-
-
-save_new_phase_fconstr(Loop_vars,bound(Op,Exp,Bounded)):-
-	from_list_sl(Bounded,Bounded_set),
-	assertz(new_phase_fconstr(Loop_vars,bound(Op,Exp,Bounded_set))).
-save_new_phase_iconstr(Loop_vars,bound(Op,Exp,Bounded)):-
-	from_list_sl(Bounded,Bounded_set),
-	assertz(new_phase_iconstr(Loop_vars,bound(Op,Exp,Bounded_set))).
-	
-collect_phase_results(Loop_vars,Ub_fconstrs,Lb_fconstrs,Iconstrs_total):-
-	Loop_vars=loop_vars(Head,Calls),
-	(Calls=[]->
-		bagof_no_fail(Top,Calls2^(new_phase_fconstr(loop_vars(Head,Calls2),Top)),Fconstrs),
-		bagof_no_fail(Aux,Calls2^(new_phase_iconstr(loop_vars(Head,Calls2),Aux)),Iconstrs)
-		;
-		bagof_no_fail(Top,(new_phase_fconstr(Loop_vars,Top)),Fconstrs),
-		bagof_no_fail(Aux,(new_phase_iconstr(Loop_vars,Aux)),Iconstrs)
-	),
-	bagof_no_fail(Top,(new_phase_fconstr(Head,Top)),Fconstrs2),
-	append(Fconstrs,Fconstrs2,Fconstrs_total),
-	partition(is_ub_bconstr,Fconstrs_total,Ub_fconstrs,Lb_fconstrs),
-	
-	bagof_no_fail(Aux,(new_phase_iconstr(Head,Aux)),Iconstrs2),
-	append(Iconstrs,Iconstrs2,Iconstrs_total),
-	retractall(new_phase_fconstr(_,_)),
-	retractall(new_phase_iconstr(_,_)).
-	
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%temporary information that we want available during the computation of the phase cost
-
-%! enriched_loop(Loop,Head,Calls,Cs_normalized)
-% the loop enriched with the forward invariant
-:-dynamic enriched_loop/4.
-
-save_enriched_loops(Head,Total_inv,Phase,Phase_feasible):-
-	maplist(save_enriched_loop(Head,Total_inv),Phase,Phase_feasible_aux),
-	partition(is_wrapped_no,Phase_feasible_aux,Excluded,Phase_feasible),
-	((get_param(debug,[]), Excluded\=[])->
-			maplist(zip_with_op(no),Excluded_print,Excluded),
-		   	print_or_log(' * The following loops are unfeasible in this instance of the phase ~p : ~p ~n',[Phase,Excluded_print])	   	
-		   	;true).
-
-
-save_enriched_tails(Head,Total_inv,Tails,Tails_feasible,Costs_tails,Cost_tails_feasible):-
-	maplist(save_enriched_tail(Head,Total_inv),Tails,Tails_feasible_aux),
-	maplist(tuple,Tails_feasible_aux,Costs_tails,Pairs_feasible_aux),
-	partition(is_wrapped_no_pair,Pairs_feasible_aux,Pair_excluded,Pairs_feasible),
-	maplist(tuple,Tails_feasible,Cost_tails_feasible,Pairs_feasible),
-	((get_param(debug,[]), Pair_excluded\=[])->
-			maplist(tuple,Excluded,_,Pair_excluded),
-			maplist(zip_with_op(no),Excluded_print,Excluded),
-		   	print_or_log(' * The following chains are unfeasible as continuations of this chain: ~p ~n',[Excluded_print])	   	
-		   	;true).
-
-is_wrapped_no(no(_)).
-is_wrapped_no_pair((no(_),_)).	
-
-save_enriched_loop(Head,Inv,Loop,Loop_feasible):-
-	loop_ph(Head,(Loop,_),Calls,Cs,_,_),
-	%we apply the invariants on the recursive calls
-	foldl(get_call_inv,Calls,(Head,Inv,Inv),(Head,_,Total_inv)),
-	append(Total_inv,Cs,Total_cs),
-	nad_normalize_polyhedron(Total_cs,Cs_normalized),
-	(nad_is_bottom(Cs_normalized)->
-		Loop_feasible=no(Loop)
-	;
-		assertz(enriched_loop(Loop,Head,Calls,Cs_normalized)),
-		Loop_feasible=Loop
-	).
-save_enriched_tail(Head,Inv,Chain,Chain_feasible):-
-	(partial_backward_invariant(Chain,Head,_,Cs,_)
-	 ;
-	  Chain=[Loop],
-	  loop_ph(Head,(Loop,_),[],Cs,_,_)
-	),
-	append(Inv,Cs,Total_cs),
-	nad_normalize_polyhedron(Total_cs,Cs_normalized),
-	(nad_is_bottom(Cs_normalized)->
-		Chain_feasible=no(Chain)
-	;
-		assertz(enriched_loop(Chain,Head,[],Cs_normalized)),
-		Chain_feasible=Chain
-	).
-
-get_extra_tail_inv(Head,Extra_tail_inv):-
-	findall(loop(Head,Calls,Cs),
-		enriched_loop(_Loop,Head,Calls,Cs),Loops),
-	foldl(get_tail_inv(Head),Loops,[1=0],Extra_tail_inv).
-
-get_tail_inv(Head,loop(Head,Calls,Cs),Inv_accum,Inv):-
-	foldl(get_path_inv(Head,Cs),Calls,Inv_accum,Inv).
-get_path_inv(Head,Cs,Call,Inv_accum,Inv):-
-	Call=..[_|CVars],
-	nad_project(CVars,Cs,Cs_projected),
-	copy_term((Call,Cs_projected),(Head,Cs_projected_head)),
-	nad_list_lub([Cs_projected_head,Inv_accum],Inv).
-
-
-
-get_call_inv(Call,(Head,Inv_0,Inv),(Head,Inv_0,Total_inv)):-
-	copy_term((Head,Inv_0),(Call,Inv2)),
-	nad_glb(Inv,Inv2,Total_inv).
-%! max_pending_depth(N:int)
-% maximum number or 'recursive' definitions of cost 
-% it depends on the number of loops in the phase and could be adjusted
-:-dynamic max_pending_depth/1.
-
-%! current_pending_depth(N:int)
-% how many recursive calls we have so far for a given expression
-:-dynamic current_pending_depth/1.
-
-%! current_chain_prefix(Chain_prefix:chain_prefix)
-% the chain to which the phase being computed belongs
-% used to 
-:- dynamic  current_chain_prefix/1.
-
-%! current_phase(Phase:list(loop_id))
-% the phase whose cost we are currently computing
-:- dynamic  current_phase/1.
-
-%! used_pending_constraint(Loop:loop_id,Loop_vars:loop_vars,Constr:fconstr)
-:-dynamic used_pending_constraint/3.
-save_used_pending_constraint(Loop,Loop_vars,Constr):-
-	used_pending_constraint(Loop,Loop_vars,Constr2),
-	Constr2==Constr,!.
-save_used_pending_constraint(Loop,Loop_vars,Constr):-
-	assertz(used_pending_constraint(Loop,Loop_vars,Constr)).
-	
-
-transform_max_min2_head(Head,loop_vars(Head,Calls),Loop,Maxs_mins,Maxs_mins_head):-
-	get_input_output_vars(Head,Vars_head,_),
-	enriched_loop(Loop,Head,Calls,Cs),
-	foldl(transform_max_min2_head_1(Vars_head,Cs),Maxs_mins,[],Maxs_mins_head).
-	
-transform_max_min2_head_1(Vars_head,Cs,bound(Op,Lin_exp,Bounded),Fconstrs,[bound(Op,Lin_exp_head,Bounded)|Fconstrs]):-
-	get_constr_op(Max_min,Op),
-	max_min_linear_expression_all(Lin_exp, Vars_head, Cs,Max_min, Maxs_mins_head),
-	member(Lin_exp_head,Maxs_mins_head),!.
-transform_max_min2_head_1(_Vars_head,_Cs,_,Fconstrs,Fconstrs).
-
-
-
-	
 %! compute_all_pending(Phase:phase,Pending:pending_constrs)
 % the main loop of the computation:
 % compute one pending element at a time unil there are no more pending elements
-compute_all_pending(Phase,Pending):-
-	compute_pending(Phase,Pending,Pending_out),
-	print_pending_set(_Head,Pending_out),
-	compute_all_pending(Phase,Pending_out).
 
-compute_all_pending(_,_).
+	
+compute_all_pending(Phase_loops,State,State3):-
+	print_phase_solving_state(State),
+	(compute_pending(Phase_loops,State,State2)->
+		compute_all_pending(Phase_loops,State2,State3)
+		;
+		State3=State
+	).
+
 
 %! compute_pending(Head:term,Call:term,Phase:phase,Pending:pending_constrs,Pending_out:pending_constrs)
 % extract one pending constraint from Pending and compute it
@@ -538,98 +351,108 @@ compute_all_pending(_,_).
 %
 % The result of computing a pending element is a set of final constraints (New_fconstrs) and intermediate constraints (New_iconstrs)
 % that are stored in the database
-compute_pending(Phase,Pending,Pending_out):-
-	get_one_pending(Pending,Type,Loop_vars,(Depth,Constr),Pending1),
-	%(get_param(debug,[])->print_pending_info(Head,Call,Type,Lin_exp,Pending1);true),
-	assertz(current_pending_depth(Depth)),
+compute_pending(Phase_loops,State,State3):-
+	state_get_one_pending(State,pending(Type,Loop_id,Depth,Loop_vars,Constr),State2),
 	print_selected_pending_constraint(Loop_vars,Type,Constr),
-	compute_pending_element(Type,Loop_vars,Phase,Constr,New_fconstrs,New_iconstrs,Pending1,Pending_out),	
-	retract(current_pending_depth(Depth)),
-	print_new_phase_constraints(Loop_vars,New_fconstrs,New_iconstrs),
-	maplist(save_new_phase_fconstr(Loop_vars),New_fconstrs),
-	maplist(save_new_phase_iconstr(Loop_vars),New_iconstrs).
+	compute_pending_element(Type,Loop_id,Depth,Loop_vars,Constr,Phase_loops,State2,State3).
 
 %case distinction according to what we have to compute
 
-compute_pending_element(sum(Loop),Loop_vars,Phase,Constr,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	save_used_pending_constraint(Loop,Loop_vars,Constr),
-	compute_sum(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out).
+compute_pending_element(sum,Loop_id,Depth,Loop_vars,Constr,Phase_loops,State,State2):-
+	compute_sum(Loop_id,Depth,Loop_vars,Constr,Phase_loops,State,State2).
 
-compute_pending_element(max_min,Head,Phase,Constr,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	compute_max_min(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out).	
+compute_pending_element(max_min,Loop_id,Depth,Loop_vars,Constr,Phase_loops,State,State2):-
+	compute_max_min(Loop_id,Depth,Loop_vars,Constr,Phase_loops,State,State2).
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %trivial case where we have 0
-compute_sum(Constr,_Loop_vars,_Loop,_Phase,[Constr],[],Pending,Pending):-
-	Constr=bound(_,[]+0,_),!.
+compute_sum(_Loop_id,_Depth,Loop_vars,Constr,_Phase_loops,State,State2):-
+	Constr=bound(_,[]+0,_),!,
+	state_save_new_fconstrs(State,Loop_vars,[Constr],State2).
+	
+
 
 % Stored solution
-compute_sum(Constr,Loop_vars,Loop,Phase,Fconstrs,Iconstrs,Pending,Pending):-
-	sum_cacheing_strategy(Constr,Loop_vars,Loop,Phase,Fconstrs,Iconstrs),
+compute_sum(Loop_id,_Depth,Loop_vars,Constr,_Phase_loops,State,State3):-
+	state_get_found(State,pattern(sum,Constr,Loop_vars,Loop_id),result(Fconstrs,Iconstrs)),
+	state_save_new_fconstrs(State,Loop_vars,Fconstrs,State2),
+	state_save_new_iconstrs(State2,Iconstrs,State3),
 	(get_param(debug,[])->print_or_log('   - Found a solution using cacheing ~n',[]);true).
 
 			
 %triangular strategy
 % valid for minsums of expressions that are not constant	
-compute_sum(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-
-	phase_type(single),
-	Constr=bound(lb,_,_),
-	triangular_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out),
-	save_sum_found(Constr,Loop_vars,Loop,New_fconstrs,New_iconstrs).	
+compute_sum(Loop_id,_Depth,Loop_vars,Constr,Phase_loops,State,State3):-
+	state_get_property(State,phase_type,single),
+	\+is_ub_bconstr(Constr),
+	triangular_strategy(Constr,Loop_vars,Loop_id,Phase_loops,State,State2,Changes),
+	print_phase_computation_changes(Changes),
+	state_save_found(State2,found(sum,Constr,Loop_vars,Loop_id,Changes),State3).
 	
-
 %Inductive strategy
-compute_sum(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs2,Pending,Pending_out):-
-	inductive_sum_strategy(Constr,Loop_vars,Loop,Phase,New_fconstrs,New_iconstrs,Pending,Pending_aux),
+compute_sum(Loop_id,Depth,Loop_vars,Constr,Phase_loops,State,State4):-
+	inductive_sum_strategy(Constr,Depth,Loop_vars,Loop_id,Phase_loops,State,State2,Changes),
+	Changes\=[],
+	print_phase_computation_changes(Changes),
 	% this is an heuristic
 	% if we are computing a minsum or we have created some intermediate constraints, we apply the basic product strategy as well
 	(
 	(Constr\=bound(_,[]+_,_),%not constant
-	(New_iconstrs\=[]; Constr=bound(lb,_,_)))->%computing lower bounds or there are parts that can still fail
-	basic_product_strategy(Constr,Loop_vars,Loop,Iconstr_extra,Pending_aux,Pending_out),
-	New_iconstrs2=[Iconstr_extra|New_iconstrs]
+	((member(new_iconstrs(New_iconstrs),Changes),New_iconstrs\=[]); \+is_ub_bconstr(Constr))
+		)->%computing lower bounds or there are parts that can still fail
+		basic_product_strategy(Constr,Depth,Loop_vars,Loop_id,Phase_loops,State2,State3,Changes2),
+		print_phase_computation_changes(Changes2)
 	;
-	Pending_aux=Pending_out,
-	New_iconstrs2=New_iconstrs
+		State3=State2
 	),
-	save_sum_found(Constr,Loop_vars,Loop,New_fconstrs,New_iconstrs2).
+	state_save_found(State3,found(sum,Constr,Loop_vars,Loop_id,Changes),State4).
+
 
 %Basic Product strategy
-compute_sum(Constr,Loop_vars,Loop,_Phase,[],[Iconstr],Pending,Pending_out):-
-	Constr\=bound(_,[]+1,_),!,
-	basic_product_strategy(Constr,Loop_vars,Loop,Iconstr,Pending,Pending_out),
-	save_sum_found(Constr,Loop_vars,Loop,[],[Iconstr]).
+compute_sum(Loop_id,Depth,Loop_vars,Constr,Phase_loops,State,State3):-
+	\+is_constant_bconstr(Constr),!,
+	basic_product_strategy(Constr,Depth,Loop_vars,Loop_id,Phase_loops,State,State2,Changes),
+	print_phase_computation_changes(Changes),
+	state_save_found(State2,found(sum,Constr,Loop_vars,Loop_id,Changes),State3).
+
 	
-compute_sum(_Constr,_Loop_vars,_Loop,_Phase,[],[],Pending,Pending):-
+compute_sum(_Loop_id,_Depth,_Loop_vars,_Constr,_Phase_loops,State,State):-
 	(get_param(debug,[])->print_or_log('   - No strategy succeeded ~n',[]);true).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 % a constant does not need to be maximized/minimized
-compute_max_min(Constr,_,_Phase,[Constr],[],Pending,Pending):-
-	Constr=bound(_,[]+_C,_),!.
+compute_max_min(_Loop_id,_Depth,Loop_vars,Constr,_Phase_loops,State,State2):-
+	is_constant_bconstr(Constr),!,
+	state_save_new_fconstrs(State,Loop_vars,[Constr],State2).
+	
 
-compute_max_min(Constr,Head,Phase,New_fconstrs,New_iconstrs,Pending,Pending):-
-	max_min_cacheing_strategy(Constr,Head,Phase,New_fconstrs,New_iconstrs),
+
+
+compute_max_min(Loop_id,_Depth,Loop_vars,Constr,_Phase_loops,State,State3):-
+	state_get_found(State,pattern(maxmin,Constr,Loop_vars,Loop_id),result(Fconstrs,Iconstrs)),
+	state_save_new_fconstrs(State,Loop_vars,Fconstrs,State2),
+	state_save_new_iconstrs(State2,Iconstrs,State3),	
 	(get_param(debug,[])->print_or_log('   - Found a solution using cacheing ~n',[]);true).	
 
 
-%use transitive invariant
-compute_max_min(Constr,Head,Phase,New_fconstrs,[],Pending,Pending):-
-	transitive_invariant_strategy(Constr,Head,New_fconstrs),
-	(get_param(debug,[])->print_or_log('   - Found a solution using transitive invariants ~n',[]);true),	
-	save_max_min_found(Constr,Head,Phase).
 
-%use  increments and resets procedure	
-compute_max_min(Constr,Head,Phase,Fconstrs,Iconstrs,Pending,Pending_out):-
-	max_min_strategy(Constr,Head,Phase,Fconstrs,Iconstrs,Pending,Pending_out),
-    save_max_min_found(Constr,Head,Phase).
+
+compute_max_min(Loop_id,Depth,Loop_vars,Constr,Phase_loops,State,State3):-	
+	max_min_strategy(Constr,Depth,Loop_vars,Loop_id,Phase_loops,State,State2,Changes),
+	print_phase_computation_changes(Changes),
+	state_save_found(State2,found(maxmin,Constr,Loop_vars,Loop_id),State3).
+	
+
+
  
 %failed    
-compute_max_min(Constr,Head,Phase,[],[],Pending,Pending):-
-	save_max_min_found(Constr,Head,Phase),
+compute_max_min(Loop_id,_Depth,Loop_vars,Constr,_Phase_loops,State,State2):-
+	state_save_found(State,found(maxmin,Constr,Loop_vars,Loop_id),State2),
 	(get_param(debug,[])->print_or_log('   - No strategy succeeded ~n',[]);true).
 
 
@@ -641,28 +464,36 @@ compute_max_min(Constr,Head,Phase,[],[],Pending,Pending):-
 
 %! add_general_ranking_functions(Head:term,Call:term,Phase:phase) is det
 % add final constraints using the already computed ranking functions
-add_n_elem_constraints(Head,Call,Phase,Phase_feasible):-
+
+cond_add_n_elem_constraints(State,State2):-
+	state_get_property(State,phase_type,single),!,
+	state_get_property(State,phase,Phase),
+	state_get_property(State,new_cost,costWvars(loop_vars(Head,[Call]),New_cost)),
+	
 	get_param(n_candidates,[Max]),
-	current_chain_prefix(Chain_prefix),
-	get_ranking_functions_constraints(Max,Head,Call,Phase,Phase_feasible,Chain_prefix,Ub_fconstrs),
-	maplist(save_new_phase_fconstr(loop_vars(Head,[Call])),Ub_fconstrs),
+	get_ranking_functions_constraints(Max,Head,Call,Phase,Ub_fconstrs),
+	cstr_add_fconstrs(New_cost,Ub_fconstrs,New_cost2),
 	(get_param(compute_lbs,[])->
-	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Phase_feasible,Chain_prefix,Lb_fconstrs),
-	   maplist(save_new_phase_fconstr(loop_vars(Head,[Call])),Lb_fconstrs)
+	   get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Lb_fconstrs),
+	   cstr_add_fconstrs(New_cost2,Lb_fconstrs,New_cost3)
 	   ;
-	   true
-	 ).
+	   New_cost3=New_cost2
+	 ),
+	 state_set_property(State,new_cost,costWvars(loop_vars(Head,[Call]),New_cost3),State2).
+	 
+cond_add_n_elem_constraints(State,State).
+	
 %! get_ranking_functions_constraints(Max:int,Head:term,Call:term,Phase:phase,Chain:chain,Fconstrs:list(fconstr))
 % generate at most Max upper bound final constraints from the ranking functions
 % -the ranking function itself
 % -the difference between the ranking function at the beginning and at the end of the phase
-get_ranking_functions_constraints(Max,Head,Call,Phase,Phase_feasible,Chain,Fconstrs):-
-	bagof_no_fail(Rf,
-		ranking_function(Head,Chain,Phase,Rf)
-	  ,Rfs),
-	ut_split_at_pos(Rfs,Max,Rfs_selected,_),
+get_ranking_functions_constraints(Max,Head,Call,Phase,Fconstrs):-
+	phase_get_rfs(Phase,ranking_functions(Head,Rfs)),
+	maplist(parse_le_fast,Rfs,Rfs_le),
+	ut_split_at_pos(Rfs_le,Max,Rfs_selected,_),
 	maplist(get_difference_version(Head,Call),Rfs_selected,Rfs_diff),
-	maplist(get_loop_itvar,Phase_feasible,Bounded),
+	phase_get_pattern(Phase,Phase_pattern),
+	maplist(get_loop_itvar,Phase_pattern,Bounded),
 	append(Rfs_selected,Rfs_diff,Rfs_total),
 	maplist(fconstr_new(Bounded,ub),Rfs_total,Fconstrs).
 	
@@ -670,23 +501,31 @@ get_ranking_functions_constraints(Max,Head,Call,Phase,Phase_feasible,Chain,Fcons
 % generate at most Max lower bound final constraints from the ranking functions
 % -the difference between the initial and the final value of the rf divided by the maximum decrease
 % per iteration is a good lb candidate 
-get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Phase_feasible,Chain,Fconstrs):-
-	bagof_no_fail(Df,
-		get_lower_bound_val(Head,Call,Chain,Phase,Df)
-	,Dfs),
+get_ranking_functions_lower_constraints(Max,Head,Call,Phase,Fconstrs):-
+	phase_get_rfs(Phase,ranking_functions(Head,Rfs)),
+	maplist(parse_le_fast,Rfs,Rfs_le),
+	phase_get_property(Phase,phase_loop,phase_loop(Head,Call,Cs)),
+	conditional_maplist(get_lower_bound_val(Head,Call,Cs),Rfs_le,Dfs),
+	phase_get_pattern(Phase,Phase_pattern),
 	ut_split_at_pos(Dfs,Max,Dfs_selected,_),
-	maplist(get_loop_itvar,Phase_feasible,Bounded),
+	maplist(get_loop_itvar,Phase_pattern,Bounded),
 	maplist(fconstr_new(Bounded,lb),Dfs_selected,Fconstrs).
-	   
-get_lower_bound_val(Head,Call,Chain,Phase,LB):-
-	ranking_function(Head,Chain,Phase,Rf),
+
+conditional_maplist(_Pred,[],[]):-!.
+conditional_maplist(Pred,[X|Xs],[Y|Ys]):-
+	call(Pred,X,Y),!,
+	conditional_maplist(Pred,Xs,Ys).
+	
+conditional_maplist(Pred,[_X|Xs],Ys):-
+	conditional_maplist(Pred,Xs,Ys).
+	
+get_lower_bound_val(Head,Call,Cs,Rf,LB):-
 	copy_term((Head,Rf),(Call,Rf1)),
 	subtract_le(Rf,Rf1,Rf_diff),
 	integrate_le(Rf_diff,Den,Rf_diff_nat),
 	write_le(Rf_diff_nat,Rf_diff_nat_print),
-	phase_loop(Phase,_,Head,Call,Phi),
 	Constraint= (Den* D = Rf_diff_nat_print),
-	Cs_1 = [ Constraint | Phi],
+	Cs_1 = [ Constraint | Cs],
 	% maximum decrease
 	nad_maximize(Cs_1,[D],[Delta]),
 	inverse_fr(Delta,Delta_inv),
@@ -695,32 +534,217 @@ get_lower_bound_val(Head,Call,Chain,Phase,LB):-
 
 	
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Transitive invariants
-transitive_invariant_strategy(bound(Op,Lin_exp,Bounded),Head,New_fconstrs):-
-	get_constr_op(Max_min,Op),
-	current_phase(Phase),
-	phase_transitive_star_closure(Phase,_,Head_total,Head,Cs_star_trans),
-	phase_loop(Phase,_,Head,_Call,Cs),
-	ut_flat_list([Cs_star_trans,Cs],Context),
-	get_input_output_vars(Head_total,Vars_of_Interest,_),
-	max_min_linear_expression_all(Lin_exp, Vars_of_Interest, Context,Max_min, Maxs_out),
-	Head_total=Head,
-	maplist(fconstr_new(Bounded,Op),Maxs_out,New_fconstrs),
-	New_fconstrs\=[],!.
+
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Predicates to handle the pending_constrs data structure
+
+%state has pending, used, new_cost and cached solved candidates
+% and phase_type and phase
+state_empty(state(Initial3)):-
+	empty_lm(Empty),
+	used_empty(Empty_used),
+	founds_empty(Founds_empty),
+	candidate_results_empty(Empty_can_res),
+	insert_lm(Empty,used,Empty_used,Initial),
+	insert_lm(Initial,candidate_results,Empty_can_res,Initial2),
+	insert_lm(Initial2,founds,Founds_empty,Initial3).
+
+state_set_property(state(Map),Key,Val,state(Map2)):-
+	insert_lm(Map,Key,Val,Map2).
+state_get_property(state(Map),Key,Val):-
+	lookup_lm(Map,Key,Val).	
+	
+state_set_pending(State,Pending,State2):-
+	state_set_property(State,pending,Pending,State2).
+	
+state_get_one_pending(State,Pending,State3):-
+	state_get_property(State,pending,Pending_set),
+	pending_extract_one(Pending_set,Pending,Pending_set2),
+	state_set_property(State,pending,Pending_set2,State2),
+	
+	Pending=pending(Type,Loop,_,Head_call,Constr),
+	ground_copy(used(Type,Loop,Head_call,Constr),Used_ground),
+	state_get_property(State2,used,Used_set),
+	used_add(Used_set,Used_ground,Used_set2),
+	state_set_property(State2,used,Used_set2,State3).
+
+
+		
+state_save_new_fconstrs(State,Loop_vars,Constrs,State2):-
+	state_get_property(State,new_cost,costWvars(Cost_vars,Cost)),	
+	(Cost_vars=Loop_vars
+	 ; 
+	Cost_vars=loop_vars(Head,_),
+	Loop_vars=loop_vars(Head,_)
+	),
+	cstr_add_fconstrs(Cost,Constrs,Cost2),
+	state_set_property(State,new_cost,costWvars(Cost_vars,Cost2),State2).	
+	
+state_save_new_iconstrs(State,Constrs,State2):-
+	state_get_property(State,new_cost,costWvars(Cost_vars,Cost)),	
+	cstr_add_iconstrs(Cost,Constrs,Cost2),
+	state_set_property(State,new_cost,costWvars(Cost_vars,Cost2),State2).	
+
+state_get_used_set(State,Used):-
+	state_get_property(State,used,Used).
+	
+state_get_used_constr(State,Used_elem):-
+	state_get_used_set(State,Used_set),
+	used_get(Used_set,Used_elem).
+
+state_save_pending_list(State,Type,Depth,Loop_vars,Loop_id,Constrs,State2):-
+	state_get_property(State,pending,Pending),
+	save_pending_list(Type,Depth,Loop_vars,Loop_id,Constrs,Pending,Pending2),
+	state_set_property(State,pending,Pending2,State2).
 	
 	
+state_get_candidate_result(State,Candidate,Candidate_result):-
+	state_get_property(State,candidate_results,Candidate_results),
+	candidate_results_get(Candidate_results,Candidate,Candidate_result).
+	
+state_save_candidate_result(State,Candidate_result,State2):-
+	state_get_property(State,candidate_results,Candidate_results),
+	candidate_results_add(Candidate_results,Candidate_result,Candidate_results2),
+	state_set_property(State,candidate_results,Candidate_results2,State2).
+
+
+state_get_found(State,Found,Found_result):-
+	state_get_property(State,founds,Founds),
+	founds_get(Founds,Found,Found_result).
+	
+state_save_found(State,Found,State2):-
+	state_get_property(State,founds,Founds),
+	founds_add(Founds,Found,Founds2),
+	state_set_property(State,founds,Founds2,State2).
+	
+
+founds_empty(founds([])).
+
+founds_add(founds(Map),found(sum,bound(Op,Lin_exp,Bounded),Loop_vars,Loop_id,Changes),founds(Map2)):-	
+	foldl(change_collect_fconstrs(Loop_vars),Changes,[],Fconstrs),
+	foldl(change_collect_iconstrs,Changes,[],Iconstrs),
+	from_list_sl(Bounded,Bounded_set),
+	substitute_bounded_by_var(Iconstrs,Bounded_set,Var,Iconstrs1),
+	substitute_bounded_by_var(Fconstrs,Bounded_set,Var,Fconstrs1),
+	semi_normalize_le(Lin_exp,Coeff,Lin_exp_normalized),
+	ground_copy((Loop_vars,Lin_exp_normalized),(_,Lin_exp_norm_ground)),	
+	insert_lm(Map,(sum,Loop_id,Lin_exp_norm_ground,Op),(Loop_vars,Coeff,Var,Fconstrs1,Iconstrs1),Map2).
+	
+
+founds_add(founds(Map),found(maxmin,bound(Op,Lin_exp,[Itvar]),Loop_vars,Loop_id),founds(Map2)):-	
+	normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)),
+	ground_copy((Loop_vars,Lin_exp_normalized),(_,Lin_exp_normalized_ground)),	
+	insert_lm(Map,(maxmin,Loop_id,Lin_exp_normalized_ground,Op),(Coeff,Constant,Itvar),Map2).
+
+
+founds_get(founds(Map),pattern(sum,bound(Op,Lin_exp,Bounded),Loop_vars,Loop_id),result(Fconstrs1,[New_iconstr|Iconstrs1])):-
+	semi_normalize_le(Lin_exp,Coeff2,Lin_exp_normalized2),
+	ground_copy((Loop_vars,Lin_exp_normalized2),(_,Lin_exp_norm_ground)),
+	lookup_lm(Map,(sum,Loop_id,Lin_exp_norm_ground,Op),Record),
+	copy_term(Record,(Loop_vars,Coeff,Aux_itvar,Fconstrs1,Iconstrs1)),
+	divide_fr(Coeff2,Coeff,Coeff_final),
+	new_itvar(Aux_itvar),
+	astrexp_new(add([mult([Aux_itvar,Coeff_final])])-add([]),Astrexp),
+	iconstr_new(Astrexp,Op,Bounded,New_iconstr).
+
+found_get(founds(Map),pattern(maxmin,bound(Op,Lin_exp,Bounded),Loop_vars,Loop_id),result([],[Iconstr])):-
+	normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)),
+	ground_copy((Loop_vars,Lin_exp_normalized),(_,Lin_exp_normalized_ground)),	
+	lookup_lm(Map,(maxmin,Loop_id,Lin_exp_normalized_ground,Op),(Coeff2,Constant2,Itvar)),
+	
+	divide_fr(Coeff,Coeff2,New_coeff),
+	multiply_fr(New_coeff,Constant2,Constant3),
+	subtract_fr(Constant,Constant3,Final_constant),
+	(greater_fr(Final_constant,0)->
+		   astrexp_new(add([mult([Itvar,New_coeff]),mult([Final_constant])])-add([]),Astrexp)
+		   ;
+		   astrexp_new(add([mult([Itvar,New_coeff])])-add([mult([-1,Final_constant])]),Astrexp)
+	),
+	iconstr_new(Astrexp,Op,Bounded,Iconstr).
+
+
+normalize_max_min(Lin_exp,([]+0,1,Constant)):-
+	Lin_exp=[]+Constant,!.
+	
+normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)):-
+	Lin_exp=Coeffs+Constant,
+	Lin_exp_wo_constant=Coeffs+0,
+	semi_normalize_le(Lin_exp_wo_constant,Coeff,Lin_exp_normalized).
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+candidate_results_empty(candidate_results(Map)):-
+	empty_lm(Map).
+	
+candidate_results_get(candidate_results(Map),candidate(Loop_vars,Linexp,Op),Candidate_result):-
+	Loop_vars=loop_vars(Head,_Calls),
+	ground_copy((Head,Linexp),(_,Linexp_gr)),
+	lookup_lm(Map,(Linexp_gr,Op),Candidate_result).
+
+candidate_results_add(candidate_results(Map),candidate_result(Linexp,Op,Loop_vars,Classification),candidate_results(Map2)):-
+	Loop_vars=loop_vars(Head,_Calls),
+	ground_copy((Head,Linexp),(_,Linexp_gr)),
+	insert_lm(Map,(Linexp_gr,Op),candidate_result(Linexp,Op,Loop_vars,Classification),Map2).	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+used_empty(used_set([])).
+used_add(used_set(Set),Used,used_set(Set2)):-
+	insert_sl(Set,Used,Set2).
+
+used_get(used_set(Set),Used_elem):-
+	member(Elem,Set),
+	varnumbers(Elem,Used_elem).
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%		
+pending_empty(Max_depth,pending_set(Max_depth,[])).
+
+%! save_pending_list(Type:flag,Loop:loop_id,Fconstrs:list(fconstr),Pending:pending_constrs,Pending_out:pending_constrs)
+% add the final constraints Fconstrs to the pending constrs Pending
+% They are added with Depth+1 where Depth is the current Depth
+% If Depth is above the limit, the constraints are not added and will be ignored
+% Type in {max_min,level,sum}
+save_pending_list(Type,Depth,Loop_vars,Loop,Fconstrs,Pending,Pending_out):-
+	foldl(save_pending(Type,Loop,Depth,Loop_vars),Fconstrs,Pending,Pending_out).
+
+
+%!union_pending(Pending1:pending_constrs,Pending2:pending_constrs,Pending3:pending_constrs)
+% join Pending1 and Pending2 into Pending3
+pending_union(pending_set(Max_depth,Set1),pending_set(Max_depth,Set2),pending_set(Max_depth,Set3)):-
+	union_sl(Set1,Set2,Set3).
+	
+
+%! save_pending(Type:flag,Loop:loop_id,Depth:int,Fconstr:fconstr,Pending:pending_constrs,Pending_out:pending_constrs)
+% add Fconstr to Pending with flag Type, Loop and Depth
+save_pending(Type,Loop,Depth,Head_call,Constr,pending_set(Max_depth,Set),pending_set(Max_depth,Set2)):-
+	(Depth=< Max_depth->
+		insert_sl(Set,pending(Type,Loop,Depth,Head_call,Constr),Set2)
+		;
+		Set2=Set
+	).
+	
+%! get_one_pending(Pending:pending_constrs,Type:term,Elem:(int,nlinexp,list(itvar)),Pending_out:pending_constrs) is semidet
+% get one pending constraint from Pending
+% it fails if Pending is empty
+pending_get_one(pending_set(Max_depth,Set),Pending,pending_set(Max_depth,Set1)):-
+	Set=[Pending|Set1].
+
+% Similar to the previous predicate but specifying the Loop and whether it is maxsum or minsum that
+% we want to obtain
+pending_extract_one(pending_set(Max_depth,Set),Pending,pending_set(Max_depth,Set1)):-
+	select(Pending,Set,Set1).
+
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+type_of_loop([_|_],'Chain-Tail'):-!.
+type_of_loop(N,'Loop'):-number(N).		
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Cacheing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %cacheing computation of sums, maxs and mins
 
-%FIXME simplify this
-%! sum_found(Loop:loop_id,Lin_exp_norm_ground:alinexp_ground,Max_min:flag,Loop_vars:loop_vars,Coeff,Aux_itvar:Var,Fconstrs:list(fconstr),IConstrs:list(iconstr))
-%  a sum has been found for the linear expression Lin_exp_norm_ground*Coeff and it corresponds to the constraints Fconstrs and IConstrs
-% one can use this sum by simply unifying Aux_itvar with the itvar that we want to bound
-:-dynamic sum_found/8.
+
 
 
 %! save_sum_found(Head:term,Call:term,Loop:loop_id,Lin_exp:alinexp,Max_min:flag,Bounded:list(itvar),Fconstrs:list(fconstr),Iconstrs:list(iconstr))
@@ -730,13 +754,17 @@ transitive_invariant_strategy(bound(Op,Lin_exp,Bounded),Head,New_fconstrs):-
 %
 % we normalize the linear expression so any multiple of the original constraint 
 % can reuse the stored result
-save_sum_found(bound(Op,Lin_exp,Bounded),Loop_vars,Loop,Fconstrs,Iconstrs):-	
-	from_list_sl(Bounded,Bounded_set),
-	substitute_bounded_by_var(Iconstrs,Bounded_set,Var,Iconstrs1),
-	substitute_bounded_by_var(Fconstrs,Bounded_set,Var,Fconstrs1),
-	semi_normalize_le(Lin_exp,Coeff,Lin_exp_normalized),
-	ground_copy((Loop_vars,Lin_exp_normalized),(_,Lin_exp_norm_ground)),
-	assertz(sum_found(Loop,Lin_exp_norm_ground,Op,Loop_vars,Coeff,Var,Fconstrs1,Iconstrs1)).
+
+
+
+change_collect_fconstrs(Loop_vars,new_fconstrs(Loop_vars,Fconstrs),Accum,Accum2):-!,
+	append(Fconstrs,Accum,Accum2).
+change_collect_fconstrs(_Loop_vars,_,Accum,Accum).
+
+change_collect_iconstrs(new_iconstrs(Iconstrs),Accum,Accum2):-!,
+	append(Iconstrs,Accum,Accum2).
+change_collect_iconstrs(_,Accum,Accum).
+
 	
 substitute_bounded_by_var([],_,_,[]).
 substitute_bounded_by_var([bound(Op,Exp,Bounded1)|Constrs],Bounded_set,Var,[bound(Op,Exp,[Var|Bounded2_set])|Constrs2]):-
@@ -748,14 +776,7 @@ substitute_bounded_by_var([bound(Op,Exp,Bounded1)|Constrs],Bounded_set,Var,[boun
 substitute_bounded_by_var([_|Constrs],Bounded_set,Var,Constrs2):-
 	substitute_bounded_by_var(Constrs,Bounded_set,Var,Constrs2).	
 
-sum_cacheing_strategy(bound(Op,Lin_exp,Bounded),Loop_vars,Loop,_Phase,Fconstrs1,[New_iconstr|Iconstrs1]):-
-	semi_normalize_le(Lin_exp,Coeff2,Lin_exp_normalized2),
-	ground_copy((Loop_vars,Lin_exp_normalized2),(_,Lin_exp_norm_ground)),
-	sum_found(Loop,Lin_exp_norm_ground,Op,Loop_vars,Coeff,Aux_itvar,Fconstrs1,Iconstrs1),!,
-	divide_fr(Coeff2,Coeff,Coeff_final),
-	new_itvar(Aux_itvar),
-	astrexp_new(add([mult([Aux_itvar,Coeff_final])])-add([]),Astrexp),
-	iconstr_new(Astrexp,Op,Bounded,New_iconstr).
+
 	
 %FIXME simplify this
 %! max_min_found(Head:term,Phase:phase,(Lin_exp_normalized2,Coeff2,Constant2),Max_min:flag,Res:?)
@@ -769,120 +790,4 @@ sum_cacheing_strategy(bound(Op,Lin_exp,Bounded),Loop_vars,Loop,_Phase,Fconstrs1,
 % we normalize the linear expression to be able to reuse the result in more cases:
 % any multiple plus any constant
 
-save_max_min_found(bound(Op,Lin_exp,[Itvar]),Head,Phase):-
-	normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)),
-	assertz(max_min_found(Head,Phase,(Lin_exp_normalized,Coeff,Constant),Op,Itvar)).
 
-normalize_max_min(Lin_exp,([]+0,1,Constant)):-
-	Lin_exp=[]+Constant,!.
-	
-normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)):-
-	Lin_exp=Coeffs+Constant,
-	Lin_exp_wo_constant=Coeffs+0,
-	semi_normalize_le(Lin_exp_wo_constant,Coeff,Lin_exp_normalized).
-
-max_min_cacheing_strategy(bound(Op,Lin_exp,Bounded),Head,Phase,[],[Iconstr]):-	
-	max_min_found(Head,Phase,(Lin_exp_normalized2,Coeff2,Constant2),Op,Itvar),
-	normalize_max_min(Lin_exp,(Lin_exp_normalized,Coeff,Constant)),
-	% there is a linear expression that has been computed and is a multiple of the one we are computing
-	Lin_exp_normalized2==Lin_exp_normalized,!,
-	
-	divide_fr(Coeff,Coeff2,New_coeff),
-	multiply_fr(New_coeff,Constant2,Constant3),
-	subtract_fr(Constant,Constant3,Final_constant),
-	(greater_fr(Final_constant,0)->
-		   astrexp_new(add([mult([Itvar,New_coeff]),mult([Final_constant])])-add([]),Astrexp)
-		   ;
-		   astrexp_new(add([mult([Itvar,New_coeff])])-add([mult([-1,Final_constant])]),Astrexp)
-	),
-	iconstr_new(Astrexp,Op,Bounded,Iconstr).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Predicates to handle the pending_constrs data structure
-
-empty_pending(pending(_,[],[],[])).
-
-%! save_pending_list(Type:flag,Loop:loop_id,Fconstrs:list(fconstr),Pending:pending_constrs,Pending_out:pending_constrs)
-% add the final constraints Fconstrs to the pending constrs Pending
-% They are added with Depth+1 where Depth is the current Depth
-% If Depth is above the limit, the constraints are not added and will be ignored
-% Type in {max_min,level,sum}
-save_pending_list(Type,Loop_vars,Loop,Fconstrs,Pending,Pending_out):-
-	current_pending_depth(Depth),
-	max_pending_depth(Max_depth),Depth<Max_depth,!,
-	Depth_new is Depth+1,
-	foldl(save_pending(Type,Loop,Depth_new,Loop_vars),Fconstrs,Pending,Pending_out).
-save_pending_list(_Type,_,_Loop,_Fconstrs,Pending,Pending).
-
-%!union_pending(Pending1:pending_constrs,Pending2:pending_constrs,Pending3:pending_constrs)
-% join Pending1 and Pending2 into Pending3
-union_pending(pending(Head,Max_min1,Level1,Sums1),pending(Head,Max_min2,Level2,Sums2),pending(Head,Max_min3,Level3,Sums3)):-
-	union_sl(Max_min1,Max_min2,Max_min3),
-	union_sl(Level1,Level2,Level3),
-	join_pending_sums(Sums1,Sums2,Sums3).
-	
-
-join_pending_sums(Sum,[],Sum):-!.
-join_pending_sums([],Sum,Sum):-!.
-join_pending_sums([(Loop,(Head_call,Set1))|Sums1],[(Loop,(Head_call,Set2))|Sums2],[(Loop,(Head_call,Set_union))|Sums_union]):-!,
-	union_sl(Set1,Set2,Set_union),
-	join_pending_sums(Sums1,Sums2,Sums_union).
-	
-join_pending_sums([(Loop1,Elem1)|Sums1],[(Loop2,Elem2)|Sums2],[(Loop1,Elem1)|Sums_union]):-
-	Loop1@<Loop2,!,
-	join_pending_sums(Sums1,[(Loop2,Elem2)|Sums2],Sums_union).
-join_pending_sums([(Loop1,Elem1)|Sums1],[(Loop2,Elem2)|Sums2],[(Loop2,Elem2)|Sums_union]):-
-	Loop1@>Loop2,
-	join_pending_sums([(Loop1,Elem1)|Sums1],Sums2,Sums_union).	
-
-%! save_pending(Type:flag,Loop:loop_id,Depth:int,Fconstr:fconstr,Pending:pending_constrs,Pending_out:pending_constrs)
-% add Fconstr to Pending with flag Type, Loop and Depth
-save_pending(max_min,_,Depth,Head_call,Constr,Pending,Pending_out):-
-	Pending=pending(Head_call,Maxs_mins,Levels,Sums),
-	insert_sl(Maxs_mins,(Depth,Constr),Maxs_mins1),
-	Pending_out=pending(Head_call,Maxs_mins1,Levels,Sums).
-save_pending(level,_,Depth,Head_call,Constr,Pending,Pending_out):-
-	Pending=pending(Head_call,Maxs_mins,Levels,Sums),
-	insert_sl(Levels,(Depth,Constr),Levels1),
-	Pending_out=pending(Head_call,Maxs_mins,Levels1,Sums).
-	
-save_pending(sum,Loop,Depth,Head_call,Constr,Pending,Pending_out):-
-	Pending=pending(Head,Maxs_mins,Levels,Sums),
-	(lookup_lm(Sums,Loop,(Head_call,Sum_set))->
-		true
-		;
-		empty_sl(Sum_set)
-	),	
-	insert_sl(Sum_set,(Depth,Constr),Sum_set1),
-	insert_lm(Sums,Loop,(Head_call,Sum_set1),Sums1),
-	Pending_out=pending(Head,Maxs_mins,Levels,Sums1).	
-
-
-%! get_one_pending(Pending:pending_constrs,Type:term,Elem:(int,nlinexp,list(itvar)),Pending_out:pending_constrs) is semidet
-% get one pending constraint from Pending
-% it fails if Pending is empty
-get_one_pending(pending(Head,[Element|Maxs_mins],Levels,Sums),max_min,Head,Element,pending(Head,Maxs_mins,Levels,Sums)):-!.
-get_one_pending(pending(Head,[],[Element|Levels],Sums),level,Head,Element,pending(Head,[],Levels,Sums)):-!.
-get_one_pending(pending(Head,[],[],[(Loop,(Head_call,Multimap))|Sums]),sum(Loop),Head_call,Element,pending(Head,[],[],Sums_out)):-
-	get_one_pending_1(Multimap,Element,Multimap1),
-	(Multimap1=[]->
-		Sums_out=Sums
-	;
-		Sums_out=[(Loop,(Head_call,Multimap1))|Sums]
-	).
-get_one_pending_1([Element|Multimap],Element,Multimap).
-
-% Similar to the previous predicate but specifying the Loop and whether it is maxsum or minsum that
-% we want to obtain
-extract_pending(Loop,sum,pending(Head,Maxs_mins,Levels,Sums),Head_call,Element,pending(Head,Maxs_mins,Levels,Sums1)):-
-	lookup_lm(Sums,Loop,(Head_call,Elements)),
-	select(Element,Elements,Elements1),
-	(Elements1=[]->
-		delete_lm(Sums,Loop,Sums1)
-		;
-		insert_lm(Sums,Loop,(Head_call,Elements1),Sums1)
-	).
-	
-
-type_of_loop([_|_],'Chain-Tail'):-!.
-type_of_loop(N,'Loop'):-number(N).		

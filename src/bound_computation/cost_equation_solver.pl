@@ -23,100 +23,129 @@ the input variables and the variables of the recursive call (if there is one)
 */
 
 
-:- module(cost_equation_solver,[get_loop_cost/5,init_cost_equation_solver/0]).
+:- module(cost_equation_solver,[
+	compute_ce_bounds/3,
+	compute_loop_bounds/3]).
 
 :- use_module(constraints_maximization,[
-			max_min_fconstrs_in_cost_equation/6,
-			max_min_linear_expression_all/5]).
+	max_min_fconstrs_in_cost_equation/6,
+	max_min_linear_expression_all/5]).
+	
 :- use_module('../IO/params',[get_param/2]).
-:- use_module('../IO/output',[print_warning_in_error_stream/2,
+:- use_module('../IO/output',[
+	print_warning_in_error_stream/2,
 	print_header/3]).
-:- use_module('../db',[eq_ph/8,
-			     loop_ph/6,
-			     upper_bound/4,
-			     external_upper_bound/3,
-			     get_input_output_vars/3]).
 
-:- use_module('../utils/cofloco_utils',[tuple/3,ground_copy/2]).
-:- use_module('../utils/cost_structures',[cstr_extend_variables_names/3,
-			cstr_empty/1,
-			cstr_simplify/2,
-			cstr_or_compress/2,
-			max_min_ub_lb/2,
-			bconstr_accum_bounded_set/3]).
+:- use_module('../utils/crs',[
+	ce_rec_calls/2,
+	ce_get_cost/2,
+	ce_set_cost/3,
+	ce_head/2,
+	ce_set_cost/3,	
+		
+	cr_apply_all_ce_with_id/3,
+	cr_get_ce_by_id_fresh/3,
+	cr_IOvars/2,
+	cr_get_external_patterns/2,
+	
+	crs_get_cr/3
+	]).
+:- use_module('../refinement/loops',[
+	loop_calls/2,
+	loop_head/2,
+	loop_get_CEs/2,
+	loops_apply_to_each_loop/3,
+	loop_set_cost/3
+	]).	
+:- use_module('../refinement/unfolding',[
+   external_patterns_head/2,
+   external_patterns_get_external_pattern/3,
+   external_pattern_cost/2
+   ]).		
+
+:- use_module('../utils/cofloco_utils',[ground_copy/2]).
+:- use_module('../utils/cost_structures',[
+	cstr_extend_variables_names/3,
+	cstr_empty/1,
+	cstr_simplify/2,
+	cstr_or_compress/2,
+	max_min_ub_lb/2,
+	bconstr_accum_bounded_set/3]).
 
 
 :- use_module(stdlib(fraction),[sum_fr/3]).
 :- use_module(stdlib(linear_expression),[write_le/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list)).
-:- use_module(stdlib(numeric_abstract_domains),[nad_glb/3,nad_consistent_constraints/1]).
+
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
-%! equation_cost(Head:term,Call:term,Forward_inv_hash:(int,polyhedron),Eq_id:equation_id,Cost:cstr)
-% store the cost structure of a cost equation application given a local invariant
-% for cacheing purposes
-:- dynamic loop_cost/5.
 
-%! init_cost_equation_solver
-% clear all the stored intermediate results
-init_cost_equation_solver:-
-	retractall(loop_cost(_,_,_,_,_)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+compute_loop_bounds(Loops,CR,Loops2):-
+	loops_apply_to_each_loop(cost_equation_solver:get_loop_cost(CR),Loops,Loops2).
 
-%! get_loop_cost(+Head:term,+Calls:list(term),+Forward_inv_hash:(int,polyhedron),+Loop_id:loop_id,-Cost:cstr) is det
-%  Given a loop id (Eq_id) , it accesses the definition and computes the cost of an individual loop application
-% a loop corresponds to one or more cost equations that behave the same way with respect to the recursive call
-get_loop_cost(Head,Calls,(Forward_inv_hash,Total_inv),Loop_id,Cost):-
-	loop_cost(Head,Calls,(Forward_inv_hash,Total_inv2),Loop_id,Cost),
-	Total_inv==Total_inv2,!.
-
-get_loop_cost(Head,Calls,(Forward_inv_hash,Total_inv),Loop_id,Final_cost):-
-    loop_ph(Head,(Loop_id,_),Calls,_Inv,Eqs,_),
-    maplist(get_equation_cost(Head,Calls,Total_inv),Eqs,Costs),
+get_loop_cost(CR,Loop,Loop2):-
+	loop_get_CEs(Loop,Eqs),
+	loop_head(Loop,Head),
+	loop_calls(Loop,Calls),
+    maplist(cr_get_ce_cost(CR,Head,Calls),Eqs,Costs),
     cstr_or_compress(Costs,Final_cost),
-    assert(loop_cost(Head,Calls,(Forward_inv_hash,Total_inv),Loop_id,Final_cost)).
+    loop_set_cost(Loop,Final_cost,Loop2).
     
-%! get_equation_cost(+Head:term,+Calls:list(term),+Forward_inv:polyhedron,+Eq_id:eq_id,-Cost:cstr) is det
-%  * each call in the equation is substituted by its cost structure
-%  * the final constraints of the cost expressions are combined and the costs added 
- get_equation_cost(Head,Calls,Total_inv,Eq_id,Cost):-
-    eq_ph(Head,(Eq_id,_),Basic_cost, Base_calls,Calls,_,Phi,_),
-	nad_glb(Total_inv,Phi,Phi1),
-	(nad_consistent_constraints(Phi1)->
-		foldl(accumulate_calls(Eq_id),Base_calls,(Basic_cost,1),(cost(Ub_fconstrs_list,Lb_fconstrs_list,Iconstrs,Bases,Base),_)),
+cr_get_ce_cost(CR,Head,Calls,CE_id,Cost):-
+	cr_get_ce_by_id_fresh(CR,CE_id,CE),
+	%unify the corresponing variables
+	ce_head(CE,Head),
+	ce_rec_calls(CE,Calls),
+	ce_get_cost(CE,Cost).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+compute_ce_bounds(CR,CRS,CR2):-
+	cr_IOvars(CR,IOvars),
+	cr_apply_all_ce_with_id(cost_equation_solver:get_equation_cost(CRS,IOvars),CR,CR2).
+
+get_equation_cost(CRS,IOvars,(Id,Eq),(Id,Eq2)):-
+		Eq=eq_ref(Head,Basic_cost, Base_calls,Rec_Calls,_,Cs,_),
+
+		foldl(accumulate_calls(Id,CRS),Base_calls,(Basic_cost,1),(cost(Ub_fconstrs_list,Lb_fconstrs_list,Iconstrs,Bases,Base),_)),
 		% we reverse the calls in case we want to combine cost structures incrementally
 		% this is not done now but it would allow us to detect which calls make us lose precision
 		%reverse(Base_calls,Base_calls_inv),
-		max_min_fconstrs_in_cost_equation(Ub_fconstrs_list,Base_calls,Phi1,(Head,Calls),New_Ub_fconstrs,New_iconstrs1),
+		max_min_fconstrs_in_cost_equation(Ub_fconstrs_list,Base_calls,Cs,(Head,Rec_Calls,IOvars),New_Ub_fconstrs,New_iconstrs1),
 		%for finding interesting examples
-		get_lost_fconstrs_expressable_as_outputs(Eq_id,Ub_fconstrs_list,New_Ub_fconstrs,Base_calls,Phi),
-		max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Phi1,(Head,Calls),New_Lb_fconstrs,New_iconstrs2),
+		%get_lost_fconstrs_expressable_as_outputs(Id,Ub_fconstrs_list,New_Ub_fconstrs,Base_calls,Phi),
+		max_min_fconstrs_in_cost_equation(Lb_fconstrs_list,Base_calls,Cs,(Head,Rec_Calls,IOvars),New_Lb_fconstrs,New_iconstrs2),
 		ut_flat_list([New_iconstrs1,New_iconstrs2,Iconstrs],New_iconstrs),
-		(get_param(debug,[])->print_header('Simplifying cost structure of CE ~p ~n',[Eq_id],4);true),
-		cstr_simplify(cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),Cost)
-	;
-		cstr_empty(Cost)
-	).
 	
-accumulate_calls(Eq_id,(Call,chain(Chain)),(cost(Ub_fconsts1,Lb_fconsts1,Iconstrs1,Bases1,Base1),N),(cost([Ub_fconsts2|Ub_fconsts1],[Lb_fconsts2|Lb_fconsts1],[Iconstrs2|Iconstrs1],Bases,Base),N1)) :-
+		(get_param(debug,[])->print_header('Simplifying cost structure of CE ~p ~n',[Id],4);true),
+		Cost_complex=cost(New_Ub_fconstrs,New_Lb_fconstrs,New_iconstrs,Bases,Base),
+		cstr_simplify(Cost_complex,Cost),
+		
+		ce_set_cost(Eq,Cost,Eq2).
+
+	
+accumulate_calls(Eq_id,CRS,Pattern:Call,(cost(Ub_fconsts1,Lb_fconsts1,Iconstrs1,Bases1,Base1),N),(cost([Ub_fconsts2|Ub_fconsts1],[Lb_fconsts2|Lb_fconsts1],[Iconstrs2|Iconstrs1],Bases,Base),N1)) :-
     N1 is N+1,
-    upper_bound(Call,Chain,_Hash,Cost_call),
+    
+    functor(Call,Name_call,_),
+    crs_get_cr(CRS,Name_call,CR),
+    cr_get_external_patterns(CR,External_patterns),
+    copy_term(External_patterns,External_patterns_fresh),
+    external_patterns_head(External_patterns_fresh,Call),
+    external_patterns_get_external_pattern(External_patterns_fresh,Pattern,External_pattern),
+    external_pattern_cost(External_pattern,Cost_call),
+    
     % we extend the names of the intermediate variables to ensure they are unique
     cstr_extend_variables_names(Cost_call,eq(Eq_id,N),cost(Ub_fconsts2,Lb_fconsts2,Iconstrs2,Bases2,Base2)),
     sum_fr(Base1,Base2,Base),
     append(Bases2,Bases1,Bases).
 
-accumulate_calls(Eq_id,(Call,external_pattern(Id)),(cost(Ub_fconsts1,Lb_fconsts1,Iconstrs1,Bases1,Base1),N),(cost([Ub_fconsts2|Ub_fconsts1],[Lb_fconsts2|Lb_fconsts1],[Iconstrs2|Iconstrs1],Bases,Base),N1)) :-
-    N1 is N+1,
-    external_upper_bound(Call,Id,Cost_call),
-    % we extend the names of the intermediate variables to ensure they are unique
-    cstr_extend_variables_names(Cost_call,eq(Eq_id,N),cost(Ub_fconsts2,Lb_fconsts2,Iconstrs2,Bases2,Base2)),
-    sum_fr(Base1,Base2,Base),
-    append(Bases2,Bases1,Bases).   
+
     
+/*
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,5 +204,5 @@ get_fconstrs_expressable_with_vars([bound(Op,Lin_exp,_Bounded)|Fconstrs],Out_var
 get_fconstrs_expressable_with_vars([_|Fconstrs],Out_vars,Phi,Lin_exps):-
 	get_fconstrs_expressable_with_vars(Fconstrs,Out_vars,Phi,Lin_exps).
 
-
+*/
 

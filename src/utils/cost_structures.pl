@@ -87,15 +87,19 @@
 		fconstr_new/4,
 		fconstr_new_inv/4,
 		iconstr_new/4,
+		is_constant_bconstr/1,
 		bconstr_get_bounded/2,
 		bconstr_annotate_bounded/2,
 		bconstr_accum_bounded_set/3,
 		astrexp_new/2,
 		pstrexp_pair_add/3,
 		pstrexp_pair_empty/1,
-		cstr_empty/1,
 		astrexp_to_cexpr/2,
 		basic_cost_to_astrexp/4,
+		
+		cstr_empty/1,
+		cstr_add_fconstrs/3,
+		cstr_add_iconstrs/3,
 		cstr_from_cexpr/2,
 		cstr_get_itvars/2,
 		cstr_get_unbounded_itvars/2,
@@ -105,7 +109,7 @@
 		cstr_join/3,
 		cstr_or_compress/2,
 		cstr_simplify/2,
-		cstr_sort_iconstrs/4,
+		cstr_sort_iconstrs/2,
 		cstr_simplify_for_solving/5]).
 		
 		
@@ -172,7 +176,9 @@
 
 init_cost_structures:-
 	retractall(short_db(_,_,_)),
-	retractall(short_db_no_list(_,_,_)).
+	retractall(short_db_no_list(_,_,_)),
+	counter_initialize(aux_vars,0),
+	counter_initialize(short_terms,0).
 	
 opposite_ub_lb(ub,lb).
 opposite_ub_lb(lb,ub).
@@ -249,9 +255,13 @@ fconstr_lose_negative_constant(bound(Op,Coeffs+Cnt,Bounded),bound(Op,Coeffs+0,Bo
 	leq_fr(Cnt,0),!.
 fconstr_lose_negative_constant(bound(Op,Coeffs+Cnt,Bounded),bound(Op,Coeffs+Cnt,Bounded)).
 
+
+fconstr_is_trivial(bound(lb,[]+0,_)).
+
 %! iconstr_new(Astrexp:astrexp,Bounded:list(itvar),Op:op,Iconstr:iconstr) is det
 % create a new intermediate constraint
-iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp,Bounded_set)):-
+iconstr_new(Astrexp,Op,Bounded,bound(Op,Astrexp_fresh,Bounded_set)):-
+	copy_term(Astrexp,Astrexp_fresh),
 	from_list_sl(Bounded,Bounded_set).
 
 
@@ -371,6 +381,13 @@ cstr_infinite(cost([],[],[],[(Name,1)],0)):-
 	new_itvar(Name).
 
 
+cstr_add_fconstrs(cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant),Fconstrs,cost(Ub_fcons2,Lb_fcons2,Itcons,BSummands,BConstant)):-
+	partition(is_ub_bconstr,Fconstrs,Ub_fconsN,Lb_fconsN),
+	union_sl(Ub_fcons,Ub_fconsN,Ub_fcons2),
+	union_sl(Lb_fcons,Lb_fconsN,Lb_fcons2).
+	
+cstr_add_iconstrs(cost(Ub_fcons,Lb_fcons,Itcons,BSummands,BConstant),Iconstrs,cost(Ub_fcons,Lb_fcons,Itcons2,BSummands,BConstant)):-
+	append(Iconstrs,Itcons,Itcons2).
 
 %! cstr_from_cexpr(Cexp:cexp,Cstr:cstr) is det
 % generate a cost structure from a cost expression
@@ -473,8 +490,9 @@ cstr_simplify_1(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Max_min_both,
 		Ub_fcons=Ub_fcons_aux2,
 		Itcons=Itcons_aux
 	),
+	exclude(fconstr_is_trivial,Lb_fcons,Lb_fcons2),
 	fconstr_join_equal_expressions(Ub_fcons_aux2,Ub_fcons2,Extra_itcons1),
-	fconstr_join_equal_expressions(Lb_fcons,Lb_fcons2,Extra_itcons2),
+	fconstr_join_equal_expressions(Lb_fcons2,Lb_fcons3,Extra_itcons2),
 	ut_flat_list([Extra_itcons1,Extra_itcons2,Itcons_aux],Itcons2),!,
 	(get_param(solve_fast,[])->
 		Itcons2=Itcons3
@@ -482,7 +500,7 @@ cstr_simplify_1(cost(Ub_fcons,Lb_fcons,Itcons,Bsummands,BConstant),Max_min_both,
 		cstr_simplify_multiple_variables_constrs(Itcons2,Itcons3)
 	),
 	from_list_sl(Bsummands,Bsummands2),
-	join_equivalent_itvars(cost(Ub_fcons2,Lb_fcons2,Itcons3,Bsummands2,BConstant),Cstr_aux2),
+	join_equivalent_itvars(cost(Ub_fcons2,Lb_fcons3,Itcons3,Bsummands2,BConstant),Cstr_aux2),
 	cstr_remove_undefined(Cstr_aux2,Cstr_aux3),
 	cstr_propagate_zeroes(Cstr_aux3,Cstr_aux4),
 	cstr_remove_useless_constrs(Cstr_aux4,Max_min_both,Cstr_final),!.
@@ -950,7 +968,8 @@ zero_summand(mult(Factors)):-
 %
 % even with that, it is possible that the cycle is not resolve, in which case we discard the remaining constraints
 % FIXME: improve this
-cstr_sort_iconstrs(Ub_fconstrs,Lb_fconstrs,Iconstrs,Iconstrs2):-
+cstr_sort_iconstrs(cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,Summands,Cnt),
+					cost(Ub_fconstrs,Lb_fconstrs,Iconstrs2,Summands,Cnt)):-
 	foldl(bconstr_accum_bounded_set,Ub_fconstrs,[],Ub_Bounded_set),
 	foldl(bconstr_accum_bounded_set,Lb_fconstrs,[],Lb_Bounded_set),
 	%create pairs int:iconstr
@@ -958,9 +977,10 @@ cstr_sort_iconstrs(Ub_fconstrs,Lb_fconstrs,Iconstrs,Iconstrs2):-
 	% create dependency graph between iconstr pairs (using predecessors)
 	compute_iconstr_predecessor_graph(Iconstrs_num,Iconstrs_num,[],Pred_graph),
 	%sort the iconstrs according to their dependencies
+	%trace,
 	get_topological_sorting(Pred_graph,(Ub_Bounded_set,Lb_Bounded_set),(Ub_Bounded_set,Lb_Bounded_set),Iconstrs2).
 
-iconstrList_assign_ids(_N,[],[]).
+iconstrList_assign_ids(_N,[],[]):-!.
 iconstrList_assign_ids(N,[Iconstr|Iconstrs],[N:Iconstr|Iconstrs_num]):-
 	N1 is N+1,
 	iconstrList_assign_ids(N1,Iconstrs,Iconstrs_num).
@@ -1188,7 +1208,9 @@ fconstr_extend_name(Prefix,bound(Op,Expression,Bounded),bound(Op,Expression,Boun
 	maplist(itvar_extend_name(Prefix),Bounded,Bounded2),
 	from_list_sl(Bounded2,Bounded_set).
 	
-astrexp_extend_name(Prefix,exp(Index,Index_neg,Exp,Exp_neg),exp(Index2,Index_neg2,Exp,Exp_neg)):-
+astrexp_extend_name(Prefix,Aexptr,exp(Index2,Index_neg2,Exp,Exp_neg)):-
+	%get fresh variables
+	copy_term(Aexptr,exp(Index,Index_neg,Exp,Exp_neg)),
 	maplist(bfactor_extend_name(Prefix),Index,Index2),
 	maplist(bfactor_extend_name(Prefix),Index_neg,Index_neg2).	
 	
@@ -1260,16 +1282,17 @@ generate_initial_sum_map(Loop,(Name,Val),(Name2,Val),Map,Map1):-
 put_in_list(X,[X]).
 	
 
-get_maxs_mins(Max_min_set,bound(ub,Exp,Bounded),Bconstrs,Bconstrs2):-
+get_maxs_mins(Max_min_set,bound(ub,Exp,Bounded),Bconstrs,Bconstrs2):-!,
 	include(contains_sl(Max_min_set),Bounded,Non_summatories),
 	maplist(put_in_list,Non_summatories,Unitary_bounded),
-	maplist(iconstr_new(Exp,ub),Unitary_bounded,New_bounds),
+	maplist(fconstr_new_inv(Exp,ub),Unitary_bounded,New_bounds),
 	append(New_bounds,Bconstrs,Bconstrs2).
 	
 	
 get_maxs_mins(Max_min_set,bound(lb,Exp,[One_Bounded]),Bconstrs,Bconstrs2):-
 	contains_sl(Max_min_set,One_Bounded),!,
-	Bconstrs2=[bound(lb,Exp,[One_Bounded])|Bconstrs].
+	fconstr_new_inv(Exp,lb,[One_Bounded],New_constr),
+	Bconstrs2=[New_constr|Bconstrs].
 
 get_maxs_mins(_Max_min_set,bound(lb,_Exp,_Bounded),Bconstrs,Bconstrs).
 %	(include(contains_sl(Max_set),Bounded,Bounded)->
@@ -1362,14 +1385,16 @@ update_sum_map(Index,Loop,Expr,Expr2,Index_final,Sum_map,Sum_map2):-
 get_missing((_Name,Var),Set,Set1):-
 	remove_sl(Set,Var,Set1).
 	
-substitute_by_new_name([],_,Sum_map,[],Sum_map).
+substitute_by_new_name([],_,Sum_map,[],Sum_map):-!.
 substitute_by_new_name([(Name,Var)|Index_sum],Loop,Sum_map,[(New_name,Var)|Index_sum_substituted],Sum_map3):-
 %	contains_sl(Max_map,Name),!,
-	(lookup_lm(Sum_map,Name,New_name),Sum_map2=Sum_map
+	(
+		lookup_lm(Sum_map,Name,New_name),Sum_map2=Sum_map
 	;
-	itvar_extend_name(sum(Loop),Name,New_name),
-%	new_itvar(New_name),
-	insert_lm(Sum_map,Name,New_name,Sum_map2)),
+		itvar_extend_name(sum(Loop),Name,New_name),
+		%	new_itvar(New_name),
+		insert_lm(Sum_map,Name,New_name,Sum_map2)
+	),!,
 	substitute_by_new_name(Index_sum,Loop,Sum_map2,Index_sum_substituted,Sum_map3).
 	
 update_max_set(Index,Expr,Index_max,Max_set,Max_set2):-

@@ -23,65 +23,71 @@ This module prints the results of the analysis
 
 
 :- module(output,[
-		  init_output/0,
-          print_help/0,
-          print_header/3,
-          print_or_log/2,
-          print_or_log_nl/0,
-          print_warning/2,
-          print_warning_in_error_stream/2,
-          interesting_example_warning/2,
-		  print_chains/1,
-		  print_sccs/1,
-		  print_merging_cover_points/3,
-		%  print_new_scc/2,
-		  print_partially_evaluated_sccs/1,
-		  print_equations_refinement/1,
-		  print_loops/1,
-		  print_external_patterns/1,
-		  print_ranking_functions/1,
-		  print_termination_arguments/1,
-		  print_changes_map/2,
-		  
-		  print_pending_set/2,
-		  print_selected_pending_constraint/3,
-		  print_new_phase_constraints/3,
-		  print_product_strategy_message/3,
-		  print_candidate_in_phase/3,
-		  write_lin_exp_in_phase/3,
-		  print_removed_redundant_constr_message/2,
-		  print_joined_itvar_sets_message/1,
-		  print_cycle_in_cstr_warning/0,
-		  print_changed_to_chain_method_warning/1,
-		  print_removed_possibly_redundant_cstrs/1,
-		  print_removed_unresolved_cstrs_cycle/1, 
-		  print_results/2,
-		  print_phase_cost/4,
-		  print_loops_costs/3,
-		  print_single_closed_result/2,
-		  print_competition_result/1,
-		  print_log/0,
-		  print_conditional_upper_bounds/1,
-		  print_conditional_lower_bounds/1,
-		  print_closed_results/2,
-		  print_cost_structure/1,
-		  print_aux_exp/1,
-		  print_itvars_renaming/1,
-		  print_stats/0]).
+	init_output/0,
+    print_help/0,
+    print_header/3,
+    print_or_log/2,
+    print_or_log_nl/0,
+    print_warning/2,
+    print_warning_in_error_stream/2,
+    interesting_example_warning/2,
+	print_chains/1,
+	print_chains_graph/1,
+	print_sccs/1,
+	print_merging_cover_points/3,
+	%  print_new_scc/2,
+	print_partially_evaluated_sccs/1,
+	print_equations_refinement/1,
+	print_loops/1,
+	print_external_patterns/1,
+	print_ranking_functions/2,
+	print_termination_arguments/1,
+	print_changes_map/2,
+	
+	print_phase_solving_state/1,	
+	print_selected_pending_constraint/3,
+	
+	print_phase_computation_changes/1,
+	print_product_strategy_message/3,
+	print_candidate_in_phase/3,
+	write_lin_exp_in_phase/3,
+	print_removed_redundant_constr_message/2,
+	print_joined_itvar_sets_message/1,
+	print_cycle_in_cstr_warning/0,
+	print_changed_to_chain_method_warning/1,
+	print_removed_possibly_redundant_cstrs/1,
+	print_removed_unresolved_cstrs_cycle/1, 
+	
+	print_ce_bounds/1,
+	print_loop_bounds/1,
+	print_phase_bounds/1,
+	print_chain_bounds/1,
+	print_external_patterns_bounds/1,
+	
+%	print_phase_cost/4,
+%	print_loops_costs/3,
+	print_chains_closed_bounds/2,
+	print_single_closed_result/1,
+	print_competition_result/1,
+	print_log/0,
+	print_piecewise_bounds/2,
+	print_cost_structure/1,
+	print_aux_exp/1,
+	print_itvars_renaming/1,
+	print_stats/0
+	]).
 
-:- use_module('../db',[ground_equation_header/1,
-						upper_bound/4,
-						closed_upper_bound_print/3,
-						closed_lower_bound_print/3,
-						conditional_upper_bound/3,
-						conditional_lower_bound/3,
-						non_terminating_chain/3]).
+:- use_module('../db',[
+	ground_equation_header/1
+	]).
 :- use_module('../pre_processing/SCCs',[scc_get_cover_points/2]).
-:- use_module('../refinement/invariants',[]).
+:- use_module('../refinement/invariants',[back_invs_get/3]).
 :- use_module('../refinement/loops',[
 	loop_head/2,
+	loop_calls/2,
 	loop_get_CEs/2,
 	loop_get_rfs/2,
+	loop_get_cost/2,	
 	
 	loops_get_head/2,
 	loops_get_ids/2,
@@ -91,44 +97,64 @@ This module prints the results of the analysis
 
 :- use_module('../refinement/chains',[
 	phase_get_pattern/2,
+	phase_get_cost/2,
 	phase_is_iterative/1,
 	phase_get_rfs/2,
 	phase_get_termination/2,
 	chain_get_pattern/2,
-	chain_get_property/3
+	chain_get_property/3,
+	chain_get_cost/2,
+	chain_get_closed_upper_bound/2,
+	chain_get_closed_lower_bound/2
 	]).
 :- use_module('../bound_computation/phase_solver/phase_solver',[type_of_loop/2]).
 
 :- use_module('../utils/crs',[
+	ce_head/2,
+	ce_rec_calls/2,
+	ce_get_cost/2,
 	ce_get_refined/2,
 	cr_nameArity/2,
-	cr_get_ceList_with_id/2]).
+	cr_get_ceList_with_id/2
+	]).
 			
-:- use_module('../utils/cost_expressions',[get_asymptotic_class_name/2]).
+:- use_module('../utils/cost_expressions',[
+	get_asymptotic_class_name/2,
+	cexpr_simplify/3
+	]).
 :- use_module('../utils/cofloco_utils',[
-			constraint_to_coeffs_rep/2,
-			write_sum/2,
-			tuple/3,
-			ground_copy/2]).
+	constraint_to_coeffs_rep/2,
+	write_sum/2,
+	tuple/3,
+	ground_copy/2
+	]).
 
 :- use_module('../utils/cost_structures',[
 	cstr_get_itvars/2,
 	cstr_get_unbounded_itvars/2,
 	itvar_recover_long_name/2,
-	astrexp_to_cexpr/2]).
-
+	astrexp_to_cexpr/2
+	]).
+:- use_module('../utils/structured_cost_expression',[
+	strexp_simplify_max_min/2,
+	strexp_to_cost_expression/2
+	]).
 
 :- use_module('../IO/params',[
 	parameter_dictionary/3,
 	get_param/2,
-	param_description/2]).
+	param_description/2
+	]).
 
 :- use_module(stdlib(linear_expression),[write_le/2]).
 :- use_module(stdlib(profiling),[profiling_get_info/3]).
 :- use_module(stdlib(counters),[counter_get_value/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 :- use_module(stdlib(set_list),[contains_sl/2]).
-:- use_module(stdlib(list_map),[map_values_lm/3]).
+:- use_module(stdlib(list_map),[
+	map_values_lm/3,
+	values_lm/2
+	]).
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
 
 :-use_module(library(apply_macros)).
@@ -180,31 +206,31 @@ ansi_print_or_log(Options,String,Args):-
 ansi_print_or_log(Options,String,Args):-
 	ansi_format_aux(Options,String,Args).
 	
-ansi_format_aux(Options,Format,Args):-current_prolog_flag(dialect,swi),ansi_format(Options,Format,Args).
+ansi_format_aux(Options,Format,Args):-current_prolog_flag(dialect,swi),!,ansi_format(Options,Format,Args).
 ansi_format_aux(_,Format,Args):-current_prolog_flag(dialect,yap),format(Format,Args).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
-print_header(Text,Arguments,1):-
+print_header(Text,Arguments,1):-!,
 	print_or_log_nl,
 	ansi_print_or_log([bold],Text,Arguments),
 	print_or_log('=====================================~n',[]).
-print_header(Text,Arguments,2):-
+print_header(Text,Arguments,2):-!,
 	print_or_log_nl,
 	ansi_print_or_log([bold],Text,Arguments),
 	print_or_log('-------------------------------------~n',[]).
-print_header(Text,Arguments,3):-
+print_header(Text,Arguments,3):-!,
 	print_or_log_nl,
 	ansi_print_or_log([bold],'###~p',[' ']),
 	ansi_print_or_log([bold],Text,Arguments).
-print_header(Text,Arguments,4):-
+print_header(Text,Arguments,4):-!,
 	print_or_log_nl,
 	ansi_print_or_log([bold],'####~p',[' ']),
 	ansi_print_or_log([bold],Text,Arguments).	
-print_header(Text,Arguments,5):-
+print_header(Text,Arguments,5):-!,
 	print_or_log_nl,
 	ansi_print_or_log([bold],'#####~p',[' ']),
 	ansi_print_or_log([bold],Text,Arguments).	
-print_header(Text,Arguments,6):-
+print_header(Text,Arguments,6):-!,
 	print_or_log_nl,
 	ansi_print_or_log([bold],'######~p',[' ']),
 	ansi_print_or_log([bold],Text,Arguments).		
@@ -389,7 +415,7 @@ print_external_patterns(External_patterns):-
 	maplist(print_external_pattern,Ex_patt_map),
 	print_or_log_nl.
 
-print_external_pattern_refinement(_).
+print_external_patterns(_).
 	
 print_external_pattern((Pattern,external_pattern(Properties))):-
 	print_or_log('* ~p : ~p ~n',[Pattern,Properties]).
@@ -405,7 +431,7 @@ print_ranking_functions(Loops,Chains):-
 	print_complete_ranking_functions(Chains),
 	print_header('Partial ranking functions of CR ~p ~n',[Head_print],4),
 	print_partial_ranking_functions(Loops),print_or_log_nl.
-print_ranking_functions(_Head).
+print_ranking_functions(_,_).
 
 print_complete_ranking_functions(chains(Phases,_)):-
 	include(phase_is_iterative,Phases,Iterative_phases),
@@ -486,7 +512,11 @@ print_chain(Chain):-
 	   ansi_print_or_log([],'~p~n',[Chain_pattern])
 	).
 
+print_chains_graph(un_graph(_,_,Matrix)):-
+	Matrix=..[_|Lines],
+	maplist(writeln,Lines).
 
+	
 print_changes_map(Reason,Map):-
 	get_param(v,[X]),X > 2,
 	Map\=[],!,
@@ -503,41 +533,28 @@ print_change((Original,New)):-
 	).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+print_phase_solving_state(state(StateMap)):-
+	values_lm(StateMap,Values),
+	maplist(print_state_elem,Values).
 
-print_pending_set(Head,Pending):-
-	get_param(debug,[]),!,
-	copy_term((Head,Pending),(Head_gr,pending(Head_gr,Maxs_mins,Level_sums,Sums))),
-    (pending(Head_gr,Maxs_mins,Level_sums,Sums)\=pending(_,[],[],[])->
-		ground_header(Head_gr),
-		print_header('Pending set ~p~n',[Head_gr],5),
-		(Maxs_mins\=[]->
-			maplist(tuple,_,Maxs_mins_cs,Maxs_mins),
-			maplist(write_top_exp,Maxs_mins_cs,Max_mins_p),
-			print_or_log('* Pmax/min: ~p~n',[Max_mins_p])
-			;true),
-		(Level_sums\=[]->	
-			maplist(tuple,_,Level_sums_cs,Level_sums),
-			maplist(write_top_exp,Level_sums_cs,Level_sums_p),
-			print_or_log('* Plevel-sum: ~p~n',[Level_sums_p])
-			;true
-		),
-		(Sums\=[]->
-		maplist(print_pending_sum,Sums);
-		true)
-	;
+print_state_elem(pending_set(_,Set)):-!,
+	(Set=[]->
 		print_header('Empy Pending set: Done ~n',[],5)
+	;
+		print_header('Pending set~n',[],5),
+		maplist(print_pending_constr,Set)
 	).
 	
-print_pending_set(_,_).	
+print_state_elem(_Elem).
+	
+print_pending_constr(pending(Type,Loop,_Depth,Loop_vars,Constr)):-
+	copy_term((Loop_vars,Constr),(loop_vars(Head_gr,Calls_gr),Constr_gr)),
+	ground_header(Head_gr),
+	ground_rec_calls(Calls_gr,1),
+	write_top_exp(Constr_gr,Constr_print),
+	print_or_log('* ~p in loop ~p: ~p~n',[Type,Loop,Constr_print]).
+	
 
-
-print_pending_sum((Loop,loop_vars(Head,Calls),Sums)):-
-	ground_header(Head),
-	ground_rec_calls(Calls,1),
-	maplist(tuple,_,Sums_cs,Sums),
-	maplist(write_top_exp,Sums_cs,Sums_p),
-	type_of_loop(Loop,Loop_type),
-	print_or_log('* Psum in ~p ~p: ~p~n',[Loop_type,Loop,Sums_p]).
 
 print_selected_pending_constraint(Loop_vars,sum(Loop),Constr):-
 	get_param(debug,[]),!,
@@ -557,25 +574,29 @@ print_selected_pending_constraint(Head,Type,Constr):-
 	
 print_selected_pending_constraint(_,_,_).
 
-print_new_phase_constraints(loop_vars(Head,Calls),Fconstrs,Iconstrs):-
-	get_param(debug,[]),!,
-	copy_term((loop_vars(Head,Calls),Fconstrs,Iconstrs),(loop_vars(Head_gr,Calls_gr),Fconstrs_gr,Iconstrs_gr)),
+
+print_phase_computation_changes(Changes):-
+	maplist(print_phase_computation_change,Changes).
+print_phase_computation_change(new_fconstrs(Loop_vars,Fconstrs)):-!,
+	(Fconstrs=[]->
+		true
+	;
+	copy_term((Loop_vars,Fconstrs),(loop_vars(Head_gr,Calls_gr),Fconstrs_gr)),
 	ground_header(Head_gr),
 	ground_rec_calls(Calls_gr,1),
 	maplist(write_top_exp,Fconstrs_gr,Fconstrs_print),
-	maplist(write_aux_exp,Iconstrs_gr,Iconstrs_print),
-	append(Iconstrs_print,Fconstrs_print,All_constrs),
-	print_or_log(' * Adding constraints: ~p ~n',[All_constrs]).
-print_new_phase_constraints(Head,Fconstrs,Iconstrs):-
-	get_param(debug,[]),!,
-	copy_term((Head,Fconstrs,Iconstrs),(Head_gr,Fconstrs_gr,Iconstrs_gr)),
-	ground_header(Head_gr),
-	maplist(write_top_exp,Fconstrs_gr,Fconstrs_print),
-	maplist(write_aux_exp,Iconstrs_gr,Iconstrs_print),
-	append(Iconstrs_print,Fconstrs_print,All_constrs),
-	print_or_log(' * Adding constraints:~p ~n',[All_constrs]).	
+	print_or_log(' * Adding final constraints: ~p ~n',[Fconstrs_print])
+	).
 	
-print_new_phase_constraints(_,_,_).
+print_phase_computation_change(new_iconstrs(Iconstrs)):-!,
+	copy_term(Iconstrs,Iconstrs_p),
+	(Iconstrs_p=[]->
+		true
+	;
+		maplist(write_aux_exp,Iconstrs_p,Iconstrs_print),
+		print_or_log(' * Adding non-final constraints: ~p ~n',[Iconstrs_print])
+	).
+	
 
 print_product_strategy_message(Head,Type,Fconstrs):-
 	get_param(debug,[]),!,
@@ -608,38 +629,55 @@ write_lin_exp_in_phase(Loop_vars,Exp,Exp_print):-
 	write_le(Exp_gr,Exp_print).
 
 
-print_loops_costs(Phase_feasible,Phase_vars,Costs):-
-	get_param(v,[X]),X > 2,!,
-	print_header('Cost of loops ~p ~n',[Phase_feasible],4),
-	maplist(print_loop_cost,Phase_feasible,Phase_vars,Costs).
-print_loops_costs(_,_,_).
-
-print_loop_cost(Loop,loop_vars(Head,Calls),Cost):-
-	get_param(v,[X]),X > 2,
-	copy_term((Head,Calls,Cost),(Headp,Callsp,Costp)),
-	ground_header(Headp),
-	(
-		Callsp==[]
-		;
-		ground_rec_calls(Callsp,1)
-	),
-	print_or_log('~n * loop ~p:~p -> ~p ~n',[Loop,Headp,Callsp]),
-	print_cost_structure(Costp).
+print_ce_bounds(CR):-
+	cr_get_ceList_with_id(CR,List),
+	maplist(print_ce_bound,List).
+	
+print_ce_bound((Id,CE)):-
+	ce_head(CE,Head),
+	ce_rec_calls(CE,Calls),
+	ce_get_cost(CE,Cost),
+	print_cost_structure_w_name('CE',Id,Head,Cost,Calls).
 
 
-print_phase_cost(Phase,Head,Calls,Cost):-
-	get_param(v,[X]),X > 2,
-	copy_term((Head,Calls,Cost),(Headp,Callsp,Costp)),
-	ground_header(Headp),
-	(
-		Callsp==[]
-		;
-		ground_rec_calls(Callsp,1)
-	),
-	print_header('Cost of phase ~p:~p -> ~p ~n',[Phase,Headp,Callsp],4),
-	print_cost_structure(Costp).
 
-print_phase_cost(_,_,_,_).
+print_loop_bounds(Loops):-
+	loops_get_list_with_id(Loops,Loop_list),
+	maplist(print_loop_bound,Loop_list).
+
+print_loop_bound((Id,Loop)):-
+	loop_head(Loop,Head),
+	loop_calls(Loop,Calls),
+	loop_get_cost(Loop,Cost),
+	print_cost_structure_w_name('Loop',Id,Head,Cost,Calls).
+	
+print_phase_bounds(chains(Phases,_)):-
+	maplist(print_phase_bound,Phases).
+
+print_phase_bound(Phase):-
+	phase_get_pattern(Phase,Phase_patt),
+	phase_get_cost(Phase,cost(Head,Calls,Cost)),
+	print_cost_structure_w_name('Phase',Phase_patt,Head,Cost,Calls).
+
+print_chain_bounds(chains(_,Chains)):-
+	maplist(print_chain_bound,Chains).
+
+print_chain_bound(Chain):-
+	chain_get_pattern(Chain,Chain_patt),
+	chain_get_cost(Chain,cost(Head,Cost)),
+	print_cost_structure_w_name('Chain',Chain_patt,Head,Cost).
+			
+%TODO
+print_external_patterns_bounds(_).
+			
+print_cost_structure_w_name(Type,Id,Head,Cost):-
+	print_cost_structure_w_name(Type,Id,Head,Cost,[]).		
+print_cost_structure_w_name(Type,Id,Head,Cost,Calls):-
+	copy_term((Head,Calls,Cost),(Head_gr,Calls_gr,Cost_gr)),
+	ground_header(Head_gr),
+	ground_rec_calls(Calls_gr,1),
+	print_header('Cost of ~p ~p ~n',[Type,Id],3),
+	print_cost_structure(Cost_gr).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -649,9 +687,6 @@ print_changed_to_chain_method_warning(Lost):-
 	print_warning('Some Itvars are unbounded ~p ~nChanging solving method to compute the cost of the chain directly ~n',[Lost]).
 	
 print_changed_to_chain_method_warning(_).	
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -699,28 +734,6 @@ print_joined_itvar_sets_message(_).
 print_joined_itvar_set([First|Rest]):-
 	print_or_log(' * Joined equivalent variables ~p into ~p~n',[[First|Rest],First]).
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%! print_results(+Entry:term,+RefCnt:int) is det
-% print the chains, invariants and uppuer bounds of SCC Entry in the refinement phase RefCnt
-print_results(Entry,RefCnt):-
-	ground_header(Entry),
-	print_header('Cost of chains of ~p:~n',[Entry],4),
-	print_results_1(Entry,RefCnt).
-print_results_1(Entry,RefCnt):-
-	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
-	maplist(pretty_print_constr,EPat,EPat_pretty),
- 	upper_bound(Entry,Chain,_,CExp),
- 	print_or_log('* Chain ',[]),
-	print_chain_simple(Chain),
-	print_or_log(': ',[]),
-	print_cost_structure(CExp),
-	%print_cost_structure(CExp),
-	print_or_log('~n  with precondition: ~p ~n~n',[EPat_pretty]),
- 	fail.
-print_results_1(_Entry,_).
-
-	
 
 gen_mult_bases((A,B),A*B).
 
@@ -807,116 +820,94 @@ get_itvar_renaming(New, Old >> New ):-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%! print_closed_results(+Entry:term,+RefCnt:int) is det
-% print the chains, invariants and closed upper bounds of SCC Entry in the refinement phase RefCnt	
-print_closed_results(Entry,RefCnt):-
-	copy_term(Entry,Entry_ground),
-	ground_header(Entry_ground),
-	print_header('Closed-form bounds of ~p: ~n',[Entry_ground],2),
-	print_closed_results_1(Entry,RefCnt).
+print_chains_closed_bounds(chains(_,Chains),Back_invs):-
+	print_header('Closed bounds: ~n',[],3),
+	maplist(print_chain_closed_bound(Back_invs),Chains).
 
-print_closed_results_1(Entry,RefCnt):-
-	backward_invariant(Entry,(Chain,RefCnt),_,EPat),
-	maplist(pretty_print_constr,EPat,EPat_pretty),
+print_chain_closed_bound(Back_invs,Chain):-
+	chain_get_pattern(Chain,Chain_patt),
+	back_invs_get(Back_invs,Chain_patt,inv(Head,_,Summary)),	
+	maplist(pretty_print_constr,Summary,Summary_pretty),
 	(get_param(compute_ubs,[])->
- 	    closed_upper_bound_print(Entry,Chain,CExp),
- 	    get_asymptotic_class_name(CExp,Asym_class)
+		chain_get_closed_upper_bound(Chain,closed_bound(Head,UbExp)),
+ 	    closed_bound_print(UbExp,Summary,Ub_simple),
+ 	    get_asymptotic_class_name(Ub_simple,Asym_class)
  	    ;
  	    true
  	 ),
  	(get_param(compute_lbs,[])->
- 		closed_lower_bound_print(Entry,Chain,CExp_lb),
-		get_asymptotic_class_name(CExp_lb,Asym_class1)
+ 		chain_get_closed_lower_bound(Chain,closed_bound(Head,LbExp)),
+ 		closed_bound_print(LbExp,Summary,Lb_simple),
+		get_asymptotic_class_name(Lb_simple,Asym_class1)
 		;
 		true
 	),
-	ground_header(Entry),
-	print_or_log('* Chain ',[]),
-	print_chain_simple(Chain),
-	print_or_log(' with precondition: ~p ~n',[EPat_pretty]),
+	copy_term((Head,Summary_pretty,Ub_simple,Lb_simple),(Head_p,Summary_p,Ub_p,Lb_p)),
+	ground_header(Head_p),
+	print_or_log('* Chain ~p ',[Chain_patt]),
+	print_or_log(' with precondition: ~p ~n',[Summary_p]),
 	(get_param(compute_ubs,[])->
-	print_or_log('    - Upper bound: ~p ~n',[CExp]),
+	print_or_log('    - Upper bound: ~p ~n',[Ub_p]),
 	print_or_log('    - Complexity: ~p ~n',[Asym_class]);true),
 	(get_param(compute_lbs,[])->
-	print_or_log('    - Lower bound: ~p ~n',[CExp_lb]),
-	print_or_log('    - Complexity: ~p~n ',[Asym_class1]);true),
- 	fail.
-print_closed_results_1(_Entry,_).
-
+	print_or_log('    - Lower bound: ~p ~n',[Lb_p]),
+	print_or_log('    - Complexity: ~p~n ',[Asym_class1]);true).
+	
+	
+closed_bound_print(Cost_max_min,Summary,UB1):-
+	strexp_simplify_max_min(Cost_max_min,Cost_max_min_simple),
+	strexp_to_cost_expression(Cost_max_min_simple,UB),
+	cexpr_simplify(UB,Summary,UB1),!.
+	
+	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %! print_single_closed_result(+Entry:term,+Expr:cost_expression) is det
 % print the given upper bound Expr and its asymptotic bound
-print_single_closed_result(Entry,Expr):-
-	copy_term((Entry,Expr),(Entry2,Expr2)),
+print_single_closed_result(single_bound(Head,Expr)):-
+	copy_term((Head,Expr),(Head_p,Expr_p)),
 	get_asymptotic_class_name(Expr,Asym_class),
-	ground_header(Entry2),
-	print_header('Maximum cost of ~p: ',[Entry2],3),
-	print_or_log('~p ~n',[Expr2]),
+	ground_header(Head_p),
+	print_header('Maximum cost of ~p: ',[Head_p],3),
+	print_or_log('~p ~n',[Expr_p]),
 	print_or_log('Asymptotic class: ~p ~n',[Asym_class]).
 
 %! print_conditional_upper_bounds(+Head:term) is det
 % print the conditional upper bounds
-print_conditional_upper_bounds(Head):-
-	copy_term(Head,Head2),
-	ground_header(Head2),
-	print_header('Partitioned upper bound of ~p: ~n',[Head2],3),
-	print_conditional_upper_bound(Head),
-	print_maximum_upper_bound(Head).
-
-print_conditional_upper_bound(Head):-
-	conditional_upper_bound(Head,Cost,[Cond1|Conditions]),
-	maplist(maplist(pretty_print_constr),[Cond1|Conditions],[Cond1_pretty|Conditions_pretty]),
+print_piecewise_bounds(Op,Piecewise_bounds):-
+	copy_term(Piecewise_bounds,piecewise_bound(Head,Segments)),
 	ground_header(Head),
-	print_or_log('* ~p ~n if ~p~n',[Cost,Cond1_pretty]),
-	maplist(print_partition_condition,Conditions_pretty),
-	fail.
-print_conditional_upper_bound(_).	
+	print_header('Piecewise ~p bound of ~p: ~n',[Op,Head],3),
+	maplist(print_segment(Op),Segments),
+	print_maximum_bound(Op,Segments).
 
-%! print_conditional_lower_bounds(+Head:term) is det
-% print the conditional lower bounds
-print_conditional_lower_bounds(Head):-
-	copy_term(Head,Head2),
-	ground_header(Head2),
-	print_header('Partitioned lower bound of ~p: ~n',[Head2],3),
-	print_conditional_lower_bound(Head),
-	print_maximum_lower_bound(Head).
 
-print_conditional_lower_bound(Head):-
-	conditional_lower_bound(Head,Cost,[Cond1|Conditions]),
+print_segment(Op,((UB,LB),[Cond1|Conditions])):-
+	(Op=upper->
+		Bound=UB
+		;
+		Bound=LB
+	),
 	maplist(maplist(pretty_print_constr),[Cond1|Conditions],[Cond1_pretty|Conditions_pretty]),
-	ground_header(Head),
-	print_or_log('* ~p ~n if ~p~n',[Cost,Cond1_pretty]),
-	maplist(print_partition_condition,Conditions_pretty),
-	fail.
-print_conditional_lower_bound(_).
+	print_or_log('* ~p ~n if ~p~n',[Bound,Cond1_pretty]),
+	maplist(print_partition_condition,Conditions_pretty).
 
-
-print_maximum_upper_bound(Head):-
-	copy_term(Head,Head2),
-	bagof(Cost,
-		Conds^conditional_upper_bound(Head2,Cost,Conds),
-		Costs),
-	get_asymptotic_class_name(max(Costs),Asym_class),
-	ground_header(Head2),
-	print_or_log('Possible upper bounds : ~p~n',[Costs]),
-	print_or_log('Maximum upper bound complexity: ~p~n',[Asym_class]).
-
-print_maximum_lower_bound(Head):-
-	copy_term(Head,Head2),
-	bagof(Cost,
-		Conds^conditional_lower_bound(Head2,Cost,Conds),
-		Costs),
-	get_asymptotic_class_name(max(Costs),Asym_class),
-	ground_header(Head2),
-	print_or_log('Possible lower bounds : ~p~n',[Costs]),
-	print_or_log('Maximum lower bound complexity: ~p~n',[Asym_class]).
 
 print_partition_condition(Cond):-
 	print_or_log(' or ~p~n',[Cond]).
 	
-	
+print_maximum_bound(Op,Segments):-
+	maplist(\Segment^UB^LB^(Segment=((UB,LB),_)),Segments,UBs,LBs),
+	(Op=upper->
+		Costs=UBs
+		;
+		Costs=LBs
+	),
+	get_asymptotic_class_name(max(Costs),Asym_class),
+	print_or_log('Possible ~p bounds : ~p~n',[Op,Costs]),
+	print_or_log('Maximum ~p bound complexity: ~p~n',[Op,Asym_class]).
+
 	
 ground_header(Head):-
    ground_equation_header(Head),!.
@@ -948,7 +939,7 @@ prime_name(N,Name,Namep):-N>1,!,
 
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-print_competition_result(Expr):-
+print_competition_result(single_bound(Expr)):-
 	get_param(competition,[]),!,
 	get_asymptotic_class_name(Expr,Asym_class),
 	(Asym_class=infinity->
@@ -957,8 +948,18 @@ print_competition_result(Expr):-
 		get_complexity_competition_name(Asym_class,Asym_class_comp),
 		format('WORST_CASE(?,O(~p))  ~n',[Asym_class_comp])
 	).
-print_competition_result(_Expr).
+print_competition_result(piecewise_bound(_Head,Segments)):-
+	get_param(competition,[]),!,
+	maplist(\Segment^UB^(Segment=((UB,_),_)),Segments,UBs),
+	get_asymptotic_class_name(max(UBs),Asym_class),
+	(Asym_class=infinity->
+		format('MAYBE~n',[])
+			;
+		get_complexity_competition_name(Asym_class,Asym_class_comp),
+		format('WORST_CASE(?,O(~p))  ~n',[Asym_class_comp])
+	).
 
+print_competition_result(_).
 
 get_complexity_competition_name(n,n^1):-!.
 get_complexity_competition_name(constant,1):-!.

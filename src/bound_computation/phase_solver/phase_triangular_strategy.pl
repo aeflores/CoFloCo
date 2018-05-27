@@ -25,43 +25,60 @@ incremented/decremented by a constant value in each iteration.
 
 
 :- module(phase_triangular_strategy,[
-		triangular_strategy/8
+		triangular_strategy/7
 	]).
 	
 :- use_module(phase_common).
 :- use_module(phase_inductive_sum_strategy,[find_minsum_constraint/8]).
-:- use_module(phase_solver,[			
-				enriched_loop/4,
-		        save_pending_list/6]).
-:- use_module('../../db',[get_input_output_vars/3]).			        
+:- use_module(phase_solver,[
+	state_save_new_fconstrs/4,
+	state_save_new_iconstrs/3
+	]).
+:- use_module('../../refinement/loops',[
+	loop_head/2,
+	loop_calls/2,
+	loop_constraints/2,
+	loop_get_property/3
+]).			        
 :- use_module('../constraints_maximization',[max_min_linear_expression_all/5]).		
 :- use_module('../../IO/params',[get_param/2]).	
 :- use_module('../../IO/output',[print_or_log/2]).			
 :- use_module('../../utils/cost_structures',[
-			new_itvar/1,
-			get_loop_itvar/2,
-			astrexp_new/2,
-			fconstr_new/4,
-			iconstr_new/4]).			
-:- use_module(stdlib(numeric_abstract_domains),[nad_maximize/3,nad_entails/3]).
+	new_itvar/1,
+	get_loop_itvar/2,
+	astrexp_new/2,
+	fconstr_new/4,
+	iconstr_new/4
+	]).			
+:- use_module(stdlib(numeric_abstract_domains),[
+	nad_maximize/3,
+	nad_entails/3
+	]).
 :- use_module(stdlib(linear_expression),[negate_le/2]).				
-:- use_module(stdlib(fraction),[greater_fr/2,multiply_fr/3]).
+:- use_module(stdlib(fraction),[
+	greater_fr/2,
+	multiply_fr/3
+	]).
 :- use_module(stdlib(fraction_list),[max_frl/2]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
+:- use_module(stdlib(list_map),[lookup_lm/3,delete_lm/3]).
 :- use_module(library(apply_macros)).
 :- use_module(library(lists)).	
 	
 %triangular strategy
 % valid for minsums of expressions that are not constant	
 
-triangular_strategy(bound(lb,Lin_exp,Bounded_ini),loop_vars(Head,[Call]),Loop,Phase,New_fconstrs,New_iconstrs,Pending,Pending_out):-	
+
+triangular_strategy(bound(lb,Lin_exp,Bounded_ini),loop_vars(Head,[Call]),Loop_id,Phase_loops,State,State4,Changes):-	
 	Lin_exp\=[]+_,
-	enriched_loop(Loop,Head,[Call],Cs),
+	lookup_lm(Phase_loops,Loop_id,Loop),
+	Loop=loop(Head,[Call],Cs,_),
 	%obtain an expressions only in terms of the initial variables of the loop
-	(is_input_head_expression(Head,Lin_exp)->
+	loop_get_property(Loop,ioVars,IOvars),
+	(is_input_head_expression(Head,IOvars,Lin_exp)->
 		Exp=Lin_exp
 	;
-	 get_input_output_vars(Head,Input_vars_head,_),
+	 IOvars=ioVars(Head,Input_vars_head,_),
 	 max_min_linear_expression_all(Lin_exp, Input_vars_head, Cs,min, Mins),
 	 member(Exp,Mins)
 	),
@@ -76,11 +93,12 @@ triangular_strategy(bound(lb,Lin_exp,Bounded_ini),loop_vars(Head,[Call]),Loop,Ph
 	(greater_fr(0,Delta),Dir=neg)
 	),	
 	%check the effect of other loops, 
-	delete(Phase,Loop,Phase_rest),
-	check_loops_triangle_minsum(Phase_rest,Dir,Head,Call,Pending,Exp,Included_loops,Bounded,Increments,Pending_out),
+	delete_lm(Phase_loops,Loop_id,Phase_loops_rest),
+
+	check_loops_triangle_minsum(Phase_loops_rest,Dir,Head,Call,State,Exp,Included_loops,Bounded,Increments,State2),
 	append(Bounded_ini,Bounded,Bounded_vars),
 	% generate an intermediate constraint that is the sum of all the iterations of the Included_loops
-	get_it_sum_aux([Loop|Included_loops],Aux_all_iter_iconstr,All_iterations_name),
+	get_it_sum_aux([Loop_id|Included_loops],Aux_all_iter_iconstr,All_iterations_name),
 	%obtain the minimum initial value of the expression taking the Other_loops into account
 	new_itvar(Initial_name),
 	fconstr_new([Initial_name],lb,Exp,FConstr_ini),
@@ -102,7 +120,12 @@ triangular_strategy(bound(lb,Lin_exp,Bounded_ini),loop_vars(Head,[Call]),Loop,Ph
 	),
 	iconstr_new(Astrexp,lb,Bounded_vars,Main_iconstr),
 	ut_flat_list([[FConstr_ini],New_fconstrs2],New_fconstrs),!,
-	ut_flat_list([Aux_all_iter_iconstr,Main_iconstr],New_iconstrs),!.
+	ut_flat_list([Aux_all_iter_iconstr,Main_iconstr],New_iconstrs),!,
+	
+	state_save_new_fconstrs(State2,loop_vars(Head,[Call]),New_fconstrs,State3),
+	state_save_new_iconstrs(State3,New_iconstrs,State4),
+	Changes=[new_fconstrs(loop_vars(Head,[Call]),New_fconstrs),new_iconstrs(New_iconstrs)].
+
 	
 	
 	
@@ -132,19 +155,20 @@ get_it_sum_aux(Involved_loops,Iconstrs,All_iterations_var):-
 %
 % We include loops that increment or decrement Exp by a constant and contain a pending constraint bounded by Exp
 % we put the rest of the loops in Other_loops
-check_loops_triangle_minsum([],_Pos_neg,_Head,_Call,Pending,_Exp,[],[],[],Pending).
-check_loops_triangle_minsum([Loop|Loops],Pos_neg,Head,Call,Pending,Exp,[Loop|Included_loops],Bounded_total,[Increment|Increments],Pending_out):-
-	check_loop_triangle_minsum(Loop,Pos_neg,Head,Call,Pending,Exp,Bounded,Increment,Pending_aux),!,
-	check_loops_triangle_minsum(Loops,Pos_neg,Head,Call,Pending_aux,Exp,Included_loops,Bounded_aux,Increments,Pending_out),
+check_loops_triangle_minsum([],_Pos_neg,_Head,_Call,State,_Exp,[],[],[],State).
+check_loops_triangle_minsum([Loop|Loops],Pos_neg,Head,Call,State,Exp,[Loop_id|Included_loops],Bounded_total,[Increment|Increments],State_out):-
+	check_loop_triangle_minsum(Loop,Pos_neg,Head,Call,State,Exp,Bounded,Increment,State_aux),!,
+	Loop=(Loop_id,_),
+	check_loops_triangle_minsum(Loops,Pos_neg,Head,Call,State_aux,Exp,Included_loops,Bounded_aux,Increments,State_out),
 	append(Bounded,Bounded_aux,Bounded_total).
 
-check_loops_triangle_minsum([Loop|Loops],Pos_neg,Head,Call,Pending,Exp,[Loop|Included_loops],Bounded,Increments,Pending_out):-
+check_loops_triangle_minsum([Loop|Loops],Pos_neg,Head,Call,Pending,Exp,Included_loops,Bounded,Increments,Pending_out):-
 	check_loop_triangle_no_change(Loop,Head,Call,Exp),!,
 	check_loops_triangle_minsum(Loops,Pos_neg,Head,Call,Pending,Exp,Included_loops,Bounded,Increments,Pending_out).
 
 	
-check_loop_triangle_minsum(Loop,Pos_neg,Head,Call,Pending,Exp,Bounded,Delta,Pending1):-	
-	enriched_loop(Loop,Head,[Call],Cs),
+check_loop_triangle_minsum((Loop_id,Loop),Pos_neg,Head,Call,State,Exp,Bounded,Delta,State1):-	
+	Loop=loop(Head,[Call],Cs,_),
 	get_difference_version(Head,Call,Exp,Exp_diff),	
 	le_print_int(Exp_diff,Exp_diff_int,Exp_diff_denominator),
 	nad_maximize([Exp_diff_int=Exp_diff_denominator*D|Cs],[D],[Delta]),
@@ -153,11 +177,11 @@ check_loop_triangle_minsum(Loop,Pos_neg,Head,Call,Pending,Exp,Bounded,Delta,Pend
 	;
 		greater_fr(0,Delta)
 	),
-	find_minsum_constraint(Loop,Head,[Call],Cs,Exp,Bounded,Pending,Pending1),!,
-	(get_param(debug,[])->print_or_log('Loop ~p is triangle collaborative with ~p ~n',[Loop,Delta]);true).
+	find_minsum_constraint(Loop_id,Head,[Call],Cs,Exp,Bounded,State,State1),!,
+	(get_param(debug,[])->print_or_log('Loop ~p is triangle collaborative with ~p ~n',[Loop_id,Delta]);true).
 
-check_loop_triangle_no_change(Loop,Head,Call,Exp):-	
-	enriched_loop(Loop,Head,[Call],Cs),
+check_loop_triangle_no_change((_,Loop),Head,Call,Exp):-	
+	Loop=loop(Head,[Call],Cs,_),
 	term_variables((Head,Call),Vars),	
 	get_difference_version(Head,Call,Exp,Exp_diff),	
 	le_print_int(Exp_diff,Exp_diff_int,_Exp_diff_denominator),

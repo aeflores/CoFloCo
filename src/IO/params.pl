@@ -122,7 +122,7 @@ set_competition_params:-
 %  parse a given list of Params and store the parsed values so they can be accesed form any part of the code
 parse_params([]):-!.
 parse_params([Param|Rest]):-
-	parameter_dictionary(Param,Internal_repr,ArgsOpts),!,
+	parameter_dictionary(Param,Internal_repr,ArgsOpts),
 	process_args(ArgsOpts,Rest,Args,New_rest),
 	(Args==[no]->
 	  retractall(param(Internal_repr,[]))
@@ -133,7 +133,7 @@ parse_params([Param|Rest]):-
 	add_param(Internal_repr,Args)
 	)
 	),
-	parse_params(New_rest).
+	parse_params(New_rest),!.
 parse_params([Bad_param|_Rest]):-
 	throw(illegal_argument(Bad_param)).
 

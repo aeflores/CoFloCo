@@ -41,52 +41,73 @@ However, for each SCC there is a special base case that will allow us to represe
 
 
 :- module(chains,[
-				phase_add_property/4,
-				phase_get_property/3,
-				phase_set_cost/3,
-				phase_get_cost/2,	
-				phase_get_pattern/2,
-				phase_get_rfs/2,
-				phase_get_termination/2,
-				phase_get_phase_loop/2,
-				phase_set_transitive_closure/3,
-				phase_get_transitive_closure/2,
-				phase_is_iterative/1,
+	phase_add_property/4,
+	phase_get_property/3,
+	phase_set_cost/3,
+	phase_get_cost/2,	
+	phase_get_pattern/2,
+	phase_get_rfs/2,
+	phase_get_termination/2,
+	phase_get_termination_flag/2,
+	phase_get_phase_loop/2,
+	phase_set_transitive_closure/3,
+	phase_get_transitive_closure/2,
+	phase_is_iterative/1,
+	is_multiple_phase/2,
 					
-				chain_get_pattern/2,
-				chain_get_property/3,
-				chains_get_chain/3,
-				chain_set_cost/3,
-				chain_get_cost/2,
-				
-				compute_chains/2,
-				chains_discard_infeasible_prefixes/4,
-				chains_discard_infeasible/4,
-				chains_discard_infeasible_combinations/5,
-				chains_update_with_discarded_loops/4,
-				chains_discard_terminating_non_terminating/4,
-				chains_annotate_termination/3
-				]).
+	chain_get_pattern/2,
+	chain_get_property/3,
+	chains_get_chain/3,
+	chain_set_cost/3,
+	chain_get_cost/2,
+	chain_set_closed_upper_bound/3,
+	chain_set_closed_lower_bound/3,
+	chain_get_closed_upper_bound/2,
+	chain_get_closed_lower_bound/2,
+			
+	compute_chains/3,
+	chains_discard_infeasible_prefixes/4,
+	chains_discard_infeasible/4,
+	chains_discard_infeasible_combinations/5,
+	chains_update_with_discarded_loops/4,
+	chains_discard_terminating_non_terminating/3,
+	chains_annotate_termination/3
+	]).
 
 
 :- use_module('../utils/polyhedra_optimizations',[nad_consistent_constraints_group/2]).
 :- use_module('../utils/scc_tarjan_lazy',[scc_lazy_tarjan/2]).
-:- use_module(invariants,[back_invs_get/3,
-						  fwd_invs_get/3]).
+:- use_module(invariants,[
+	back_invs_get/3,
+	fwd_invs_get/3
+	]).
 
-:- use_module(loops,[loop_is_multiple/1,
-					loop_is_base_case/1,
-					loop_get_property/3,
-					loops_range/2,
-					loops_get_list/3,
-					loops_get_ids/2,
-					loops_get_loop_fresh/3,
-					loops_get_loop/3]).
-:- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_glb/3]).
-:- use_module(stdlib(profiling),[profiling_start_timer/1,profiling_get_info/3,
-				 profiling_stop_timer/2,profiling_stop_timer_acum/2]).
-:-use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2,difference_sl/3]).
-:-use_module(stdlib(list_map),[empty_lm/1,lookup_lm/3,insert_lm/4]).
+:- use_module(loops,[
+	loop_is_multiple/1,
+	loop_is_base_case/1,
+	loop_get_property/3,
+	loops_range/2,
+	loops_get_list/3,
+	loops_get_ids/2,
+	loops_get_loop_fresh/3,
+	loops_get_loop/3
+	]).
+:- use_module(stdlib(numeric_abstract_domains),[
+	nad_consistent_constraints/1,
+	nad_glb/3
+	]).
+
+:-use_module(stdlib(set_list),[
+	from_list_sl/2,
+	contains_sl/2,
+	difference_sl/3
+	]).
+	
+:-use_module(stdlib(list_map),[
+	empty_lm/1,
+	lookup_lm/3,
+	insert_lm/4
+	]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -139,7 +160,11 @@ phase_get_rfs(Phase,Rfs):-
 phase_get_rfs(_,ranking_functions(_,[])).		
 
 phase_get_termination(Phase,Term_arg):-
-	phase_get_property(Phase,termination,Term_arg).		
+	phase_get_property(Phase,termination,Term_arg).	
+
+phase_get_termination_flag(Phase,Term_flag):-
+	phase_get_termination(Phase,Term_arg),
+	functor(Term_arg,Term_flag,_).
 		
 phase_get_phase_loop(Phase,Phase_loop):-
 	phase_get_property(Phase,phase_loop,Phase_loop).
@@ -293,7 +318,19 @@ chain_set_cost(Chain,Cost,Chain2):-
 	
 chain_get_cost(Chain,Cost):-
 	chain_get_property(Chain,cost,Cost).
+
+chain_set_closed_upper_bound(Chain,Cost,Chain2):-
+	chain_add_property(Chain,closed_ub,Cost,Chain2).
+
+chain_get_closed_upper_bound(Chain,Cost):-
+	chain_get_property(Chain,closed_ub,Cost).
 	
+chain_set_closed_lower_bound(Chain,Cost,Chain2):-
+	chain_add_property(Chain,closed_lb,Cost,Chain2).	
+
+chain_get_closed_lower_bound(Chain,Cost):-
+	chain_get_property(Chain,closed_lb,Cost).
+
 	
 chains_annotate_termination(Chains,Loops,Chains_annotated):-
 	Chains=chains(Phases,Chain_list),
@@ -354,7 +391,7 @@ is_multiple_phase(Phase,Loops):-
 	loops_get_loop(Loops,Phase,Loop),
 	loop_is_multiple(Loop).	
 	
-compute_chains(Loops,chains(Phases_annotated,Chains_set)):-
+compute_chains(Loops,chains(Phases_annotated,Chains_set),Graph):-
 	loops_range(Loops,range(I,N)),
 	create_unkown_graph(I,N,Graph),
 	compute_phases(Loops,Graph,Phases),

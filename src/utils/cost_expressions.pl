@@ -419,11 +419,10 @@ get_asymptotic_class(Var,1):-
 
 get_asymptotic_class(inf,inf):-!.
 
-get_asymptotic_class(Const,0):-
-	ground(Const),!.
-get_asymptotic_class(E,1):-
-	is_linear_exp(E),!.
-
+get_asymptotic_class(Num,0):-
+	number(Num),!.
+get_asymptotic_class(Atom,1):-
+	atom(Atom),!.
 
 get_asymptotic_class(nat(E),Class):-
 	get_asymptotic_class(E,Class).
@@ -474,25 +473,52 @@ add_class(N1,N2,N3):-
 
 %! is_linear_exp(Exp:cost_expression) is semidet
 % It succeeds if Exp is a linear cost expression.
- is_linear_exp(V):-
+is_linear_exp(V):-
  	var(V),!.
- is_linear_exp(C):-
+is_linear_exp(A):-
+ 	atom(A),!. 	
+is_linear_exp(C):-
  	number(C),!.
- is_linear_exp(-A):-!,
+is_linear_exp(-A):-!,
  	is_linear_exp(A).
- is_linear_exp(A+B):-!,
+is_linear_exp(A+B):-!,
  	is_linear_exp(A),
  	is_linear_exp(B).
- is_linear_exp(A-B):-!,
+is_linear_exp(A-B):-!,
  	is_linear_exp(A),
  	is_linear_exp(B).
- is_linear_exp(A*B):-!,
+is_linear_exp(A*B):-!,
+ 	(
+ 		is_linear_exp(A),
+ 		is_constant(B)
+ 	;
+ 		is_linear_exp(B),
+ 		is_constant(A)
+ 	).
  	
-    (ground(A);ground(B)),
- 	is_linear_exp(A),
- 	is_linear_exp(B).
+is_linear_exp(A/B):-!,
+    is_constant(B),
+ 	is_linear_exp(A).
  	
- is_linear_exp(A/B):-!,
-    ground(B),
- 	is_linear_exp(A),
- 	is_linear_exp(B).
+
+
+is_constant(N):-
+	var(N),!,fail.	
+is_constant(N):-
+	 number(N),!.
+is_constant(A+B):-
+	 is_constant(A),
+	 is_constant(B).
+is_constant(A-B):-
+	 is_constant(A),
+	 is_constant(B).
+is_constant(A/B):-
+	 is_constant(A),
+	 is_constant(B).	
+is_constant(A*B):-
+	 is_constant(A),
+	 is_constant(B).
+	 
+is_constant(-A):-
+	 is_constant(A).	 	 
+	 

@@ -47,19 +47,21 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 	
 	external_patterns_head/2,
 	external_patterns_get_external_pattern/3,
-	external_patterns_apply_to_each/3]).
+	external_patterns_apply_to_each/3
+	]).
 
 :- use_module(chains,[
 	chain_get_pattern/2,
-	chain_get_property/3]).
+	chain_get_property/3
+	]).
 	
 :- use_module(invariants,[back_invs_get/3]).
 		 					 
 :- use_module('../IO/output',[
-		print_chain_simple/1,
-		print_warning/2,
-		print_or_log/2,
-		print_or_log_nl/0]).
+	print_warning/2,
+	print_or_log/2,
+	print_or_log_nl/0
+	]).
 		
 :- use_module('../IO/params',[get_param/2]).	
 
@@ -70,7 +72,8 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 	cr_head/2,
 	cr_add_eq/5,
 	crs_range/2,
-	crs_get_cr_external_patterns/3]).
+	crs_get_cr_external_patterns/3
+	]).
 	
 :- use_module('../utils/cofloco_utils',[merge_implied_summaries/3]).
 
@@ -79,7 +82,10 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 	slice_relevant_constraints_and_vars/5,
 	group_relevant_vars/4,
 	nad_is_bottom/1,
-	nad_normalize_polyhedron/2]).
+	nad_is_bottom_gr/1,
+	nad_normalize_polyhedron/2,
+	nad_normalize_polyhedron_gr/2
+	]).
 
 :- use_module(stdlib(utils),[ut_split_at_pos/4]).
 :- use_module(stdlib(numeric_abstract_domains),[
@@ -89,17 +95,23 @@ This module allows to propagate the refinement from the outmost SCC to the inner
 	nad_entails/3,
 	nad_list_lub/2,
 	nad_glb/3,
-	nad_project/3]).
+	nad_project/3,
+	
+	nad_glb_gr/3,
+	nad_consistent_constraints_gr/1
+	]).
 	
 :- use_module(stdlib(set_list),[
 	from_list_sl/2,
 	unions_sl/2,
 	union_sl/3,
-	is_subset_sl/2]).
-	
-:- use_module(stdlib(list_map),[from_pairs_lm/2]).	
+	is_subset_sl/2
+	]).
+:- use_module(stdlib(list_map),[
+	lookup_lm/3,
+	from_pairs_lm/2
+	]).	
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).
-
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -122,10 +134,13 @@ cr_specialize(CR,CRS,CR2):-
 
 specialize_ce(CRS,(Id,CE),(CR_accum,Count),(CR,Count2)):-
 	ce_add_property(CE,refined,refined(Id),eq_ref(Head,Cost,Base_calls,_Rec_calls,Total_calls,Cs,Info)),
+	
+	copy_term((eq(Head,Cost,[],Cs,Info),Total_calls),(Eq_ground,Total_calls_gr)),
 	maplist(crs_get_cr_external_patterns_instance(CRS),Base_calls,External_patterns),
+	numbervars((Eq_ground,Total_calls_gr),0,Dim),
 	findall(Eq,
-		specialize_ce_aux(Total_calls,External_patterns,terminating,
-		eq(Head,Cost,[],Cs,Info),Eq),
+		specialize_ce_aux(Total_calls_gr,External_patterns,terminating,
+		Eq_ground,Dim,Eq),
 		Eqs),
 	foldl(\Eq_l^Pair1^Pair2^
 		(
@@ -152,39 +167,42 @@ crs_get_cr_external_patterns_instance(CRS,Head,external_patterns(Head,Patts)):-
 % * R_Calls are the recursive calls of the cost equation that is being unfolded.
 % * New_T_Calls and New_B_Calls are the unfolded calls.
 % * Flag can be 'terminating' or 'non_terminating'
-specialize_ce_aux([],[],Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Eq_new_annotated):-
+specialize_ce_aux([],[],Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Dim,Eq_var):-
 	%get the calls in the right order
-	nad_normalize_polyhedron(Cs,Cs_normalized),
-	\+nad_is_bottom(Cs_normalized),
+	nad_normalize_polyhedron_gr(gr(Dim,Cs),gr(Dim,Cs_normalized)),
+	\+nad_is_bottom_gr(gr(Dim,Cs_normalized)),
 	
 	reverse(Total_calls_rev,Total_calls),
 	partition(is_refined_call,Total_calls,NR_calls,R_calls),
 	Eq_new=eq_ref(Head,Cost,NR_calls,R_calls,Total_calls,Cs_normalized,Info),
-	ce_add_property(Eq_new,termination,Term_flag,Eq_new_annotated).
+	ce_add_property(Eq_new,termination,Term_flag,Eq_new_annotated),
+	varnumbers(Eq_new_annotated,Eq_var).
 	
-specialize_ce_aux([R_call|More],External_patterns,Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Eq_new):-
-	unifiable(R_call,Head,_),
-	specialize_ce_aux(More,External_patterns,Term_flag,eq(Head,Cost,[R_call|Total_calls_rev],Cs,Info),Eq_new).
+specialize_ce_aux([R_call|More],External_patterns,Term_flag,eq(Head,Cost,Total_calls_rev,Cs,Info),Dim,Eq_new):-
+%	unifiable(R_call,Head,_),
+	functor(R_call,F,A),
+	functor(Head,F,A),
+	specialize_ce_aux(More,External_patterns,Term_flag,eq(Head,Cost,[R_call|Total_calls_rev],Cs,Info),Dim,Eq_new).
 
 specialize_ce_aux([Base_call|More],[external_patterns(Base_call,Pattern_map)|MoreB],Term_flag,
-	eq(Head,Cost,Calls_accum,Cs,Info),Eq_new):-
+	eq(Head,Cost,Calls_accum,Cs,Info),Dim,Eq_new):-
 	%here is the choice	
 	member((Id,Ex_patt),Pattern_map),
 	external_pattern_summary(Ex_patt,Cs_patt),
 	external_pattern_termflag(Ex_patt,Term_flag_patt),
-	nad_glb(Cs_patt,Cs,Cs1),
-	Base_call=..[_|Relevant_vars],
-	slice_relevant_constraints_and_vars(Relevant_vars,[],Cs,_,Relevant_Cs),
-	nad_consistent_constraints_group_aux(Relevant_Cs),
+	nad_glb_gr(gr(Dim,Cs_patt),gr(Dim,Cs),gr(Dim,Cs1)),
+	%Base_call=..[_|Relevant_vars],
+	%slice_relevant_constraints_and_vars(Relevant_vars,[],Cs,_,Relevant_Cs),
+	nad_consistent_constraints_gr(gr(Dim,Cs1)),
 
 	or_terminating_flag(Term_flag,Term_flag_patt,Term_flag2),
 	%if the calls are sequential and one does not terminate, we can eliminate further calls
 	(Term_flag2=non_terminating->
 		specialize_ce_aux([],[],Term_flag2,	
-		eq(Head,Cost,[Id:Base_call|Calls_accum],Cs1,Info),Eq_new)
+		eq(Head,Cost,[Id:Base_call|Calls_accum],Cs1,Info),Dim,Eq_new)
 	;
 		specialize_ce_aux(More,MoreB,Term_flag2,	
-		eq(Head,Cost,[Id:Base_call|Calls_accum],Cs1,Info),Eq_new)
+		eq(Head,Cost,[Id:Base_call|Calls_accum],Cs1,Info),Dim,Eq_new)
 	).
 	
 is_refined_call(_Pattern:_Call).	

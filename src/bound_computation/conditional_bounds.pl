@@ -35,7 +35,7 @@ The specific "data types" used in this module are the following:
  
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014,2015,2016 Antonio Flores Montoya
+@copyright Copyright (C) 2014-2018 Antonio Flores Montoya
 
 @license This file is part of CoFloCo. 
     CoFloCo is free software: you can redistribute it and/or modify
@@ -54,33 +54,37 @@ The specific "data types" used in this module are the following:
 
 
 
-:- module(conditional_bounds,[compute_conditional_bounds/1]).
+:- module(conditional_bounds,[compute_conditional_bounds/3]).
 
-:- use_module('../db',[
-		  external_call_pattern/5,
-		  closed_upper_bound/3,
-		  closed_lower_bound/3,
-		  add_conditional_bound/3]).
-
-:-use_module('../refinement/invariants',[backward_invariant/4]).
-:- use_module('../utils/cofloco_utils',[normalize_constraint/2,
-						constraint_to_coeffs_rep/2,
-						tuple/3,
-						sort_with/3,
-						zip_with_op/3,
-						assign_right_vars/3]).
+:- use_module('../utils/cofloco_utils',[
+	normalize_constraint/2,
+	constraint_to_coeffs_rep/2,
+	tuple/3,
+	sort_with/3,
+	zip_with_op/3,
+	assign_right_vars/3
+	]).
 :- use_module('../utils/cost_expressions',[cexpr_simplify/3]).
-:- use_module('../utils/structured_cost_expression',[strexp_simplify_max_min/2,strexp_to_cost_expression/2]).
+:- use_module('../utils/structured_cost_expression',[
+	strexp_simplify_max_min/2,
+	strexp_to_cost_expression/2
+	]).
 :- use_module('../utils/polyhedra_optimizations',[group_relevant_vars/4]).	
 :- use_module('../IO/params',[get_param/2]).					
 :- use_module(stdlib(multimap),[from_pair_list_mm/2]).	
 :- use_module(stdlib(set_list)).
-:- use_module(stdlib(numeric_abstract_domains),[nad_consistent_constraints/1,nad_entails/3,nad_normalize/2,nad_list_lub/2]).
+:- use_module(stdlib(numeric_abstract_domains),[
+	nad_consistent_constraints/1,
+	nad_entails/3,
+	nad_normalize/2,
+	nad_list_lub/2
+	]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).
 
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
+:-use_module(library(lambda)).
 %! compute_conditional_bounds(+Head:term) is det
 % computed the set of conditional bound of Head and store them in the database db.pl
 %
@@ -89,15 +93,12 @@ The specific "data types" used in this module are the following:
 %    that appear in the preconditions.
 %  * Try to simplify the preconditions of the inferred conditional bounds
 %  * If we are debugging, check that all conditional bounds are in fact mutually exclusive
-compute_conditional_bounds(Head):-
-	findall((Head,execution_pattern((Cost,Lb_Cost),Condition)),
-		(
-		backward_invariant(Head,(Chain,_),_,Condition),
-		cond_get_closed_upper_bound(Head,Chain,Cost),
-		cond_get_closed_lower_bound(Head,Chain,Lb_Cost)
-		)
-		,Ex_pats),
-	assign_right_vars(Ex_pats,Head,Ex_pats1),
+compute_conditional_bounds(Head,Execution_patterns,Piecewise_bound):-
+	maplist(Head+\Ex_pat^Ex_pat2^(
+		Ex_pat=execution_pattern(Head,(UB,LB),Inv),
+		Ex_pat2=execution_pattern((UB,LB),Inv)
+		),Execution_patterns,Ex_pats1),
+
     compress_execution_patterns(Ex_pats1,List_pairs),
     maplist(simplify_cost_of_pair,List_pairs,List_pairs1),
 	% group the partitions according to the cost expression
@@ -109,22 +110,13 @@ compute_conditional_bounds(Head):-
 	check_2t2_incompatibility(All_paths)
 	;
 	true),
-	maplist(save_conditional_bound(Head),Multimap_simplified).
-
-
-cond_get_closed_upper_bound(Head,Chain,Cost):-
-	get_param(compute_ubs,[]),!,
-	closed_upper_bound(Head,Chain,Cost).
-cond_get_closed_upper_bound(_Head,_Chain,max([inf])).
+	Piecewise_bound=piecewise_bound(Head,Multimap_simplified).
 	
-cond_get_closed_lower_bound(Head,Chain,Cost):-
-	get_param(compute_lbs,[]),!,
-	closed_lower_bound(Head,Chain,Cost).	
-cond_get_closed_lower_bound(_Head,_Chain,min([add([])])).	
+
+
 	
 simplify_cost_of_pair(([Cost],Prec),((Ub_simple,Lb_simple),Prec)):-!,
 	Cost=(Ub_max_min,Lb_max_min),
-
 	strexp_simplify_max_min(Ub_max_min,Ub_Cost_max_min_simple),
 	strexp_to_cost_expression(Ub_Cost_max_min_simple,Ub),
 	cexpr_simplify(Ub,Prec,Ub_simple),

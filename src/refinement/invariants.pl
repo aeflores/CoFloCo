@@ -485,9 +485,11 @@ get_call_inv(Call,(Head,Inv_0,Inv),(Head,Inv_0,Total_inv)):-
 compute_phases_transitive_closures(chains(Phases,Chains),Loops,chains(Phases2,Chains)):-
 	maplist(compute_phase_transitive_closure(Loops),Phases,Phases2).
 
-compute_phase_transitive_closure(_Loops,Phase,Phase):-
+compute_phase_transitive_closure(_Loops,Phase,Phase2):-
 	phase_get_pattern(Phase,Phase_pattern),
-	number(Phase_pattern),!.
+	number(Phase_pattern),!,
+	phase_get_phase_loop(Phase,phase_loop(Head,Call,Inv_0)),   
+	phase_set_transitive_closure(Phase,inv(Head,Call,[],Inv_0),Phase2).
 
 compute_phase_transitive_closure(Loops,Phase,Phase2):-
 	phase_get_pattern(Phase,Phase_pattern),

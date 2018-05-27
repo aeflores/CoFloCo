@@ -36,56 +36,84 @@ This module uses the following auxiliary cost structures:
 */
 
 :- module(cost_structure_solver,[
-		cstr_maxminimization/5
+	cstr_maxminimization/5,
+	cstr_maxminimization/6
 	]).
 
-:- use_module('../db',[get_input_output_vars/3]).	
 :- use_module(constraints_maximization,[max_min_linear_expression_all/5]).
 :- use_module('../IO/params',[get_param/2]).	
 :- use_module('../utils/cost_structures',[
-		max_min_ub_lb/2,
-		cstr_empty/1,
-		cstr_from_cexpr/2,	
-		new_itvar/1,
-		get_loop_itvar/2,
-		fconstr_new/4,
-		fconstr_new_inv/4,
-		is_ub_bconstr/1,
-		bconstr_get_bounded/2,
-		bconstr_annotate_bounded/2,
-		basic_cost_to_astrexp/4,
-		cstr_join/3,
-		cstr_simplify_for_solving/5]).
+	max_min_ub_lb/2,
+	cstr_empty/1,
+	cstr_from_cexpr/2,	
+	new_itvar/1,
+	get_loop_itvar/2,
+	fconstr_new/4,
+	fconstr_new_inv/4,
+	is_ub_bconstr/1,
+	bconstr_get_bounded/2,
+	bconstr_annotate_bounded/2,
+	basic_cost_to_astrexp/4,
+	cstr_join/3,
+	cstr_simplify_for_solving/5
+	]).
+	
 :- use_module('../utils/structured_cost_expression',[
-		partial_strexp_estimate_complexity/3,
-		partial_strexp_complexity/3,
-		strexp_to_cost_expression/2,
-		strexp_var_get_multiplied_factors/3,
-		strexp_is_zero/1,
-		strexp_simplify_max_min/2,
-		strexp_transform_summand/2,
-		strexp_var_simplify/2]).		
+	partial_strexp_estimate_complexity/3,
+	partial_strexp_complexity/3,
+	strexp_to_cost_expression/2,
+	strexp_var_get_multiplied_factors/3,
+	strexp_is_zero/1,
+	strexp_simplify_max_min/2,
+	strexp_transform_summand/2,
+	strexp_var_simplify/2
+	]).		
 		
-:- use_module('../utils/cofloco_utils',[sort_with/3,
-		tuple/3,
-		is_rational/1,
-		get_all_pairs/3,
-		assign_right_vars/3]).	
+:- use_module('../utils/cofloco_utils',[
+	sort_with/3,
+	tuple/3,
+	is_rational/1,
+	get_all_pairs/3,
+	assign_right_vars/3
+	]).	
 
 
-:- use_module(stdlib(linear_expression),[parse_le/2,write_le/2,negate_le/2,
+:- use_module(stdlib(linear_expression),[
+	parse_le/2,
+	write_le/2,
+	negate_le/2,
     is_constant_le/1,
 	integrate_le/3,
 	write_le/2,
 	elements_le/2,
-	constant_le/2]).	
+	constant_le/2
+	]).	
 
 :- use_module(stdlib(counters),[counter_increase/3]).	
-:- use_module(stdlib(utils),[ut_flat_list/2,ut_split_at_pos/4,ut_sort/2,ut_var_member/2]).	
-:- use_module(stdlib(multimap),[put_mm/4,values_of_mm/3]).	
-:- use_module(stdlib(list_map),[lookup_lm/3,insert_lm/4]).
+:- use_module(stdlib(utils),[
+	ut_flat_list/2,
+	ut_split_at_pos/4,
+	ut_sort/2,
+	ut_var_member/2
+	]).	
+:- use_module(stdlib(multimap),[
+	put_mm/4,
+	values_of_mm/3
+	]).	
+:- use_module(stdlib(list_map),[
+	lookup_lm/3,
+	insert_lm/4
+	]).
 :- use_module(stdlib(fraction)).
-:- use_module(stdlib(set_list),[difference_sl/3,contains_sl/2,from_list_sl/2,unions_sl/2,union_sl/3,insert_sl/3,intersection_sl/3]).
+:- use_module(stdlib(set_list),[
+	difference_sl/3,
+	contains_sl/2,
+	from_list_sl/2,
+	unions_sl/2,
+	union_sl/3,
+	insert_sl/3,
+	intersection_sl/3
+	]).
 
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
@@ -94,8 +122,12 @@ This module uses the following auxiliary cost structures:
 % where max_min is 'max' or 'min' and equal to Max_min
 % solve a cost structure Cost_long into the maximum or minimum of a list of strexp
 cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
+	Head=..[_|Vars],
+	cstr_maxminimization(Cost_long,Max_min,Head,Inv,ioVars(Head,Vars,[]),Cost_max_min).
+	
+cstr_maxminimization(Cost_long,Max_min,Head,Inv,IOvars,Cost_max_min):-
 	max_min_ub_lb(Max_min,Op),
-	get_input_output_vars(Head,IVars,_OVars),
+	copy_term(IOvars,ioVars(Head,IVars,_)),
 	express_in_terms_of_vars(IVars,Inv,Cost_long,Cost_input_vars),
 	cstr_simplify_for_solving(Cost_input_vars,IVars,Inv,Max_min,cost(Ub_fconstrs,Lb_fconstrs,Iconstrs,BSummands,BConstant)),
 	basic_cost_to_astrexp(BSummands,BConstant,Max_min,Exp_cost),
@@ -124,7 +156,7 @@ cstr_maxminimization(Cost_long,Max_min,Head,Inv,Cost_max_min):-
 
 
 %this predicate should never fail
-cstr_maxminimization(Cost_long,Max_min,Head,_Inv,_Cost_max_min):-
+cstr_maxminimization(Cost_long,Max_min,Head,_Inv,_,_Cost_max_min):-
 	throw(maximization_failed(Cost_long,Max_min,Head)).	
 
 express_in_terms_of_vars(IVars,Inv,cost(Ub_fconstrs1,Lb_fconstrs1,Iconstrs,BSummands,BConstant),cost(Ub_fconstrs2,Lb_fconstrs2,Iconstrs,BSummands,BConstant)):-

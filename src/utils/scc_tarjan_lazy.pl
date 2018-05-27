@@ -66,7 +66,7 @@ lazy_tarjan_N(V,N,Graph,State,DfsNum,DfsLow,Stack,
 
 do_for_each_successor(I,V,N,Graph,State,DfsNum,DfsLow,Stack,
 		N_final,Stack2,SCCs_accum,SCCs):-
-		get_next_successor(I,V,Graph,W),!,
+		get_next_nonpopped_successor(I,V,Graph,State,DfsLow,W),!,
 		arg(W,State,W_state),
 		(W_state==popped->
 			SCCs_accum2=SCCs_accum,
@@ -88,13 +88,23 @@ do_for_each_successor(_,_,N,_Graph,_State,_DfsNum,_DfsLow,Stack,
 		N,Stack,SCCs,SCCs).
 
 
-get_next_successor(Index,V,Graph,Index):-
+get_next_nonpopped_successor(Index,V,Graph,State,DfsLow,Index):-
+	arg(Index,State,Index_state),
+	Index_state\==popped,
+	(
+	var(Index_state)
+	; 
+	nonvar(Index_state),
+	arg(V,DfsLow,Old_v_low),
+	arg(Index,DfsLow,Ret),
+	Ret<Old_v_low
+	),
 	edge(Graph,V,Index),!.
-get_next_successor(Index,V,Graph,D):-
+get_next_nonpopped_successor(Index,V,Graph,State,DfsLow,D):-
 	Index1 is Index+1,
 	graph_size(Graph,Size),
 	Index1 =< Size,
-	get_next_successor(Index1,V,Graph,D).
+	get_next_nonpopped_successor(Index1,V,Graph,State,DfsLow,D).
 	
 
 pop_scc([],_State,[],[]).

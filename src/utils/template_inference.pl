@@ -6,7 +6,7 @@ It uses linear programming to infer linear expressions that satisfy a property g
     
 @author Antonio Flores Montoya
 
-@copyright Copyright (C) 2014,2015 Antonio Flores Montoya
+@copyright Copyright (C) 2014-2018 Antonio Flores Montoya
 
 @license This file is part of CoFloCo. 
     CoFloCo is free software: you can redistribute it and/or modify
@@ -25,44 +25,47 @@ It uses linear programming to infer linear expressions that satisfy a property g
 
 
 :- module(template_inference,[
-	difference_constraint_farkas_ub/5,
-	difference_constraint_farkas_ub_leaf/6,
-	difference_constraint_farkas_lb/5,
+	difference_constraint_farkas_ub/6,
+	difference_constraint_farkas_ub_leaf/7,
+	difference_constraint_farkas_lb/6,
 	max_min_linear_expression_list_all/6
-	%difference_constraint_farkas_multiple_ub/5,
-	%farkas_leaf_ub_candidate/4
 	]).
-
-:- use_module('../db',[get_input_output_vars/3]).	
+	
 :- use_module('cofloco_utils',[
-			sort_with/3,
-			write_le_internal/2,	
-			normalize_constraint/2,
-			write_sum/2]).
-:- use_module('polyhedra_optimizations',[
-			nad_normalize_polyhedron/2]).			
+	sort_with/3,
+	write_le_internal/2,	
+	normalize_constraint/2,
+	write_sum/2
+	]).
+:- use_module('polyhedra_optimizations',[nad_normalize_polyhedron/2]).			
 			
-:- use_module(stdlib(polyhedra_ppl),[
-    get_generators/4,ppl_maximize_with_point/5,ppl_minimize_with_point/5
-]).
+:- use_module(stdlib(polyhedra_ppl),[get_generators/4]).
 
-:- use_module(stdlib(numeric_abstract_domains),[nad_project/3,nad_minimize/3,nad_maximize/3,
-						nad_consistent_constraints/1,
-						nad_entails/3, nad_lub/6,nad_list_lub/2,
-						nad_widen/5, nad_false/1,
-						nad_all_ranking_functions_PR/4,
-						nad_glb/3,
-						nad_list_glb/2]).
-:- use_module(stdlib(set_list),[from_list_sl/2,contains_sl/2,difference_sl/3]).		
+:- use_module(stdlib(numeric_abstract_domains),[
+	nad_project/3,
+	nad_consistent_constraints/1,
+	nad_entails/3, 
+	nad_glb/3,
+	nad_list_glb/2
+	]).
+:- use_module(stdlib(set_list),[
+	from_list_sl/2,
+	contains_sl/2,
+	difference_sl/3
+	]).		
+	
 :- use_module(stdlib(list_map),[lookup_lm/3]).						
 :- use_module(stdlib(fraction),[
 	leq_fr/2,
 	negate_fr/2,
 	multiply_fr/3,
 	sum_fr/3,
-	subtract_fr/3]).	
+	subtract_fr/3
+	]).	
+	
 :- use_module(stdlib(fraction_list), [naturalize_frl/3]).
 :- use_module(stdlib(utils),[ut_flat_list/2]).   
+
 :- use_module(stdlib(linear_expression), [
 	parse_le_fast/2,
 	parse_le/2,
@@ -72,12 +75,13 @@ It uses linear programming to infer linear expressions that satisfy a property g
 	write_le/2,
 	subtract_le/3,
 	is_constant_le/1,
-	integrate_le/3]).
+	integrate_le/3
+	]).
 :-use_module(library(apply_macros)).
 :-use_module(library(lists)).
 
 	
-difference_constraint_farkas_ub_leaf(Head,Calls,Phi,Lin_exp,(Calls2,Phi2),Lin_exp_list):-
+difference_constraint_farkas_ub_leaf(Head,Calls,IOvars,Phi,Lin_exp,(Calls2,Phi2),Lin_exp_list):-
 	%get_input_output_vars(Head,Ivars,_),
 	Head=..[_F|EVars],
 	term_variables(Calls2,CVars),
@@ -87,14 +91,14 @@ difference_constraint_farkas_ub_leaf(Head,Calls,Phi,Lin_exp,(Calls2,Phi2),Lin_ex
 	get_negated_unknowns(Calls2,Eparams,Cparams,Extra_cs),
 	append(Extra_cs,Cone12,Cone12_complete),
 	nad_project([Cnt_param|Eparams],[N_calls2p*Cnt_param=Cnt_param_p|Cone12_complete],Cone12_projected),
-	difference_constraint_farkas_ub_with_extra_cone(Head,Calls,Phi,Lin_exp,(Eparams,Cnt_param,Cone12_projected),Lin_exp_list).
+	difference_constraint_farkas_ub_with_extra_cone(Head,Calls,IOvars,Phi,Lin_exp,(Eparams,Cnt_param,Cone12_projected),Lin_exp_list).
 	
-difference_constraint_farkas_ub(Head,Calls,Phi,Lin_exp,Lin_exp_list):-
-	difference_constraint_farkas_ub_with_extra_cone(Head,Calls,Phi,Lin_exp,(_,_,[]),Lin_exp_list).
+difference_constraint_farkas_ub(Head,Calls,IOvars,Phi,Lin_exp,Lin_exp_list):-
+	difference_constraint_farkas_ub_with_extra_cone(Head,Calls,IOvars,Phi,Lin_exp,(_,_,[]),Lin_exp_list).
 
 % this is the generic predicate for upper bound candidates
-difference_constraint_farkas_ub_with_extra_cone(Head,Calls,Phi,Lin_exp,(Eparams,Cnt_param,Cone3),Lin_exp_list):-
-	get_input_output_vars(Head,Ivars,_),
+difference_constraint_farkas_ub_with_extra_cone(Head,Calls,IOvars,Phi,Lin_exp,(Eparams,Cnt_param,Cone3),Lin_exp_list):-
+	copy_term(IOvars,ioVars(Head,Ivars,_)),
 	Head=..[F|EVars],
 	term_variables(Calls,CVars),
 	length(Calls,N_calls),
@@ -124,7 +128,7 @@ difference_constraint_farkas_ub_with_extra_cone(Head,Calls,Phi,Lin_exp,(Eparams,
 	  	Ys12=[]
 	),
 	Head_params=..[F|Eparams],
-	get_input_output_vars(Head_params,IEparams,OEparams),
+	copy_term(IOvars,ioVars(Head_params,IEparams,OEparams)),
 	maplist('='(0),OEparams),
 	maplist('='(0),Cparams2),
 	nad_glb(Cone1,Cone2,Cone_joint),
@@ -143,10 +147,10 @@ difference_constraint_farkas_ub_with_extra_cone(Head,Calls,Phi,Lin_exp,(Eparams,
 	%extract the linear expressions from the points
 	%copy_term((Head_params,Generators),(Head,Generators_copy)),	
 	copy_term((IEparams,Generators),(Ivars,Generators_copy)),	
-	get_expressions_from_points(Generators_copy,Lin_exp_list).
+	get_expressions_from_points(Generators_copy,Lin_exp_list),!.
  
- difference_constraint_farkas_lb(Head,Calls,Phi,Lin_exp,Lin_exp_list_final):-
-	get_input_output_vars(Head,Ivars,_),
+ difference_constraint_farkas_lb(Head,Calls,IOvars,Phi,Lin_exp,Lin_exp_list_final):-
+	copy_term(IOvars,ioVars(Head,Ivars,_)),
 	Head=..[F|EVars],
 	term_variables(Calls,CVars),
 	length(Calls,N_calls),
@@ -168,7 +172,7 @@ difference_constraint_farkas_ub_with_extra_cone(Head,Calls,Phi,Lin_exp,(Eparams,
 	  	Ys12=[]
 	),
 	Head_params=..[F|Eparams],
-	get_input_output_vars(Head_params,IEparams,OEparams),
+	copy_term(IOvars,ioVars(Head_params,IEparams,OEparams)),
 	maplist('='(0),OEparams),
 	ut_flat_list([Cnt_param_p,Cnt_param2,Ys11,Ys12],Extra_params),
 	%ut_flat_list([IEparams,Cparams,Cnt_param,Extra_params],All_vars),
