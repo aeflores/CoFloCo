@@ -47,7 +47,7 @@ read_file(File) :-
    		phrase_from_file(parse_koat(cfg(Entry,Rules)), File)
    	),
    maplist(save_defined_rule,Rules),
-   maplist(filter_undefined_rule,Rules,Rules2),
+   maplist(adjust_tick_cost,Rules,Rules2),
    put_entry_rules_first(Rules2,Entry,Rules3),
    (option(to_file(New_file))->
    		tell(New_file),
@@ -65,10 +65,10 @@ put_entry_rules_first(Rules,Entry,Rules2):-
 	partition(is_entry_rule(Entry),Rules,Entry_rules,Others),
 	append(Entry_rules,Others,Rules2).
 
-is_entry_rule(F,e(Term,_,_,_)):-
+is_entry_rule(F,eq(Term,_,_,_)):-
 	functor(Term,F,_).
 	
-save_defined_rule(e(Origin,_,_,_)):-
+save_defined_rule(eq(Origin,_,_,_)):-
 	functor(Origin,Name,Arity),
 	(rule_exist(Name,Arity)->
 	    true
@@ -76,18 +76,13 @@ save_defined_rule(e(Origin,_,_,_)):-
 	   assert(rule_exist(Name,Arity))
 	).
 
-filter_undefined_rule(e(Origin,[D1,D2],_,Cons),e(Origin,DRest,Cost,Cons)):-
+adjust_tick_cost(eq(Origin,_,[D1,D2],Cons),eq(Origin,Cost,[D2],Cons)):-
 	option(tick_cost),
-	D1=eval_tick_start(Cost),
-	include(defined_rule,[D1,D2],[DRest]),!.
+	compound_name_arguments(D1,eval_tick_start,[[Cost],[]]).
 
-filter_undefined_rule(e(Origin,[D1,D2],Cost,Cons),e(Origin,DRest,Cost,Cons)):-
-	include(defined_rule,[D1,D2],[DRest]),!.
+adjust_tick_cost(eq(Origin,Cost,Calls,Cons),eq(Origin,Cost,Calls,Cons)).
 
-filter_undefined_rule(e(Origin,Dest,Cost,Cons),e(Origin,Dest,Cost,Cons)):-
-	Dest\=[_|_],!.
-filter_undefined_rule(e(Origin,Dest,Cost,Cons),_):-
-	throw(invalid_rule(e(Origin,Dest,Cost,Cons))).
+
 
 defined_rule(Rule):-
 	functor(Rule,Name,Arity),
@@ -131,19 +126,19 @@ rules([Rule|Rules])-->
     rules(Rules).
 rules([])-->[].
 
-rule(e(Origin,Dest,0,Cons))-->{option(tick_cost)},
+rule(eq(Origin,0,Dest,Cons))-->{option(tick_cost)},
      spaces,
      location(Origin),
      spaces,
      "->",spaces,
      rule_second_part(Dest,Cons).
-rule(e(Origin,Dest,1,Cons))-->spaces,
+rule(eq(Origin,1,Dest,Cons))-->spaces,
      location(Origin),
      spaces,
      "->",spaces,
      rule_second_part(Dest,Cons).
 
-rule_second_part(Dest,Cons)-->
+rule_second_part([Dest],Cons)-->
      "Com_1(",spaces,
      location(Dest),spaces,
      ")",spaces,
@@ -157,7 +152,7 @@ rule_second_part([Dest,Dest2],Cons)-->
      maybe_constraints(Cons).
 
 location(Loc) -->
-     loc_name(Name),"(",maybe_var_names_comma(Vars),")",{Loc=..[Name|Vars]}.
+     loc_name(Name),"(",maybe_var_names_comma(Vars),")",{compound_name_arguments(Loc,Name,[Vars:[]])}.
 
 maybe_var_names_comma(Vars)-->var_names_comma(Vars).
 maybe_var_names_comma([])-->[].

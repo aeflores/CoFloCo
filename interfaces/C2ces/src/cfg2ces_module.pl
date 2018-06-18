@@ -23,7 +23,7 @@
 :- dynamic reentry/2.
 :- dynamic cfg_edge/2.
 :- dynamic cfg_edge_rev/2.
-:- dynamic pcfg_edge/4.
+:- dynamic pcfg_edge/5.
 :- dynamic cfg_nodes/1.
 :- dynamic cfg_entry/1.
 :- dynamic node_in_loop/2.
@@ -48,7 +48,7 @@ init_db :-
 	retractall(reentry(_,_)),
 	retractall(cfg_edge(_,_)),
 	retractall(cfg_edge_rev(_,_)),
-	retractall(pcfg_edge(_,_,_,_)),
+	retractall(pcfg_edge(_,_,_,_,_)),
 	retractall(cfg_nodes(_)),
 	retractall(cfg_entry(_)),
 	retractall(node_in_loop(_,_)),
@@ -110,22 +110,31 @@ process_args([X|_Args]):-!,
 	
 cfg2ces_1(F) :-
 	(F=stdin->
-		read_term(CFG,[variable_names(Bindings)])
+		read_cfgs(stdin,CFGs)	
 	;
 	open(F,read,S),
-	read_term(S,CFG,[variable_names(Bindings)]),
+	read_cfgs_from_stream(S,CFGs),
 	close(S)
 	),
 	(option(to_file(File))->
 		tell(File),
-		cfg2ces_2(CFG,Bindings),
+		maplist(cfg2ces_2,CFGs),
 		told
 	;
-		cfg2ces_2(CFG,Bindings)
+		maplist(cfg2ces_2,CFGs)
 	),
 	!.
-
-cfg2ces_2(CFG,Bindings) :-
+read_cfgs_from_stream(S,CFGs) :-
+	read_term(S,CFG,[variable_names(Bindings)]),
+	( 
+	  CFG == end_of_file -> 
+	    CFGs = []
+	;
+	    CFGs = [(CFG,Bindings)|CFGs_aux],
+	    read_cfgs_from_stream(S,CFGs_aux)
+	).
+	
+cfg2ces_2((CFG,Bindings)) :-
 	init_db,
 	set_prolog_flag(print_write_options,[quoted(false),numbervars(true)]),
 	assert_cfg_into_db(CFG,Bindings),
@@ -160,8 +169,8 @@ cfg2ces_2(CFG,Bindings) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Preparing the database of rules
 assert_cfg_into_db(cfg(Edges),Bindings) :-
-	Edges=[e(StartNode,_,_,_)|_],
-	StartNode=..[Start_name|_],
+	Edges=[eq(StartNode,_Cost,_Calls,_Cs)|_],
+	functor(StartNode,Start_name,_),
 	assert(cfg_entry(Start_name)),
 	assert_cfg_into_db_1(Edges,Bindings,Nodes_1),
 	sort(Nodes_1,Nodes),
@@ -169,13 +178,14 @@ assert_cfg_into_db(cfg(Edges),Bindings) :-
 
 
 assert_cfg_into_db_1([],_,[]).
-assert_cfg_into_db_1([e(Head,Call,C,Cs)|Es],Bindings,[S,T|Ns]) :-
-	Head =.. [S|Vs],
-	Call =.. [T|PVs],
+assert_cfg_into_db_1([eq(Head,Cost,Calls,Cs)|Es],Bindings,[S,T|Ns]) :-
+	append(External_calls,[Call],Calls),
+	Head =.. [S,Vs],
+	Call =.. [T,PVs],
 	save_ground_name(S,Vs,Bindings),
 	assert(cfg_edge(S,T)),
 	assert(cfg_edge_rev(T,S)),
-	assert(pcfg_edge(S,T,C,cons(Vs,PVs,Cs))), 
+	assert(pcfg_edge(S,T,Cost,External_calls,cons(Vs,PVs,Cs))), 
 	assert_cfg_into_db_1(Es,Bindings,Ns).
 
 save_ground_name(Name,_Vars,_Bindings):-
@@ -449,34 +459,11 @@ remove_preds(Pred_set,(Node,Set),(Node,Set2)):-
 	difference_sl(Set,Pred_set,Set2).
 	
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% add base cases for the leafs of the cfg
-add_leafs:-
-	cfg_nodes(Nodes),
-	include(is_leaf,Nodes,Leafs),
-	include(traversed,Leafs,Reachable_leafs),
-	maplist(add_leaf,Reachable_leafs).
 
-add_leaf(Leaf):-
-	cfg_edge_rev(Leaf,Caller),
-	
-	eq(_Id,Head,_,Calls,_),
-	functor(Head,Caller,_),
-	member(Call,Calls),
-	functor(Call,Leaf,N_leaf),!,
-	
-	length(Vars,N_leaf),
-	Head_leaf=..[Leaf|Vars],
-	save_equation(Head_leaf,0,[],[]).
-	
-	
-is_leaf(Node):-
-	\+cfg_edge(Node,_).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% extract loops
-
 
 extract_loop(H):-
 	(option(add_outs)->cond_add_abort_edge(H);true),
@@ -502,8 +489,8 @@ cond_add_abort_edge(_).
 add_abort_edge(Loop_header):-
 	cond_add_exit_location(Exit_location),
 	%get the head vars from any edge
-	pcfg_edge(Loop_header,_,_,cons(Head_vars,_,_)),
-	assertz(pcfg_edge(Loop_header,Exit_location,0,cons(Head_vars,[],[]))),
+	pcfg_edge(Loop_header,_,_,_,cons(Head_vars,_,_)),
+	assertz(pcfg_edge(Loop_header,Exit_location,0,[],cons(Head_vars,[]:[],[]))),
 	%add all the other information predicates
 	assertz(cfg_edge(Loop_header,Exit_location)),
 	assertz(cfg_edge_rev(Exit_location,Loop_header)).
@@ -521,19 +508,19 @@ cond_add_exit_location(exit_location):-
 	assertz(node_in_loop(exit_location,nil)).
 	
 transform_edges_from(Node):-
-	retract(pcfg_edge(Node,Dest,C,Cons)),
+	retract(pcfg_edge(Node,Dest,Cost,Calls,Cons)),
 	(is_in_node(Node,Dest)->
-	 transform_in_node(Node,Dest,C,Cons)
+	 transform_in_node(Node,Dest,Cost,Calls,Cons)
 	 ;
 	 (is_out_node(Node,Dest)->
-	     transform_out_node(Node,Dest,C,Cons)
+	     transform_out_node(Node,Dest,Cost,Calls,Cons)
 	   ;
-	     transform_normal_node(Node,Dest,C,Cons)
+	     transform_normal_node(Node,Dest,Cost,Calls,Cons)
 	   )
 	),fail.
 transform_edges_from(_Node).
 
-transform_in_node(Node,Dest,C,cons(Head_vars,Call_vars,Cs)):-
+transform_in_node(Node,Dest,Cost,Calls,cons(Hd_ivs:Hd_ovs,Call_ivs:Call_ovs,Cs)):-
 	node_in_loop(Node,Origin_loop),
 	loop_has_new_vars(Origin_loop,N_extra_vs_origin_loop),
 	node_in_loop(Dest,Dest_loop),
@@ -542,21 +529,22 @@ transform_in_node(Node,Dest,C,cons(Head_vars,Call_vars,Cs)):-
 	
 	%now create new head for the node
 	length([Flag2|Origin_loop_extra_vars],N_extra_vs_origin_loop),
-	append(Head_vars,[Flag2|Origin_loop_extra_vars],Head_vars_new),
-	Head=..[Node|Head_vars_new],
+	append([Flag2|Origin_loop_extra_vars],Hd_ovs,Hd_ovs_new),
+	Head=..[Node,Hd_ivs:Hd_ovs_new],
 	
 	%create the extra out vars
 	length([Flag|Out_vars],N_extra_vs_dest_loop),
 	%create call to the modified inner loop
-	append(Call_vars,[Flag|Out_vars],Call_vars_total),	
-	Call_dest=..[Dest|Call_vars_total],
+	append([Flag|Out_vars],Call_ovs,Call_ovs_new),	
+	Call_dest=..[Dest,Call_ivs:Call_ovs_new],
 	
 	% create call to loop_cont
-	create_cont_list(Dest_loop,Origin_loop,	[Flag|Out_vars],[Flag2|Origin_loop_extra_vars],Cont_calls),
-	(option(loop_cost_model)->C2=0;C2=C),
-	save_equation(Head,C2,[Call_dest|Cont_calls],Cs),!.
+	create_cont_list(Dest_loop,Origin_loop,	[Flag|Out_vars],Hd_ovs_new,Cont_calls),
+	(option(loop_cost_model)->C2=0;C2=Cost),
+	append(Calls,[Call_dest|Cont_calls],Total_calls),
+	save_equation(Head,C2,Total_calls,Cs),!.
 	
-transform_in_node(Node,Dest,_,_):-
+transform_in_node(Node,Dest,_,_,_):-
 	throw(failed_to_transform_in_edge(Node,Dest)).
 	
 create_cont_list(Dest_loop,Origin_loop,	[Flag|Out_vars],Final_out_vars,Cont_calls):-
@@ -564,19 +552,17 @@ create_cont_list(Dest_loop,Origin_loop,	[Flag|Out_vars],Final_out_vars,Cont_call
 	atom_concat(Dest_loop,Loop_cont_suffix,LoopCont_Node),
 	node_in_loop(LoopCont_Node,Cont_node_loop),
 	(Cont_node_loop=Origin_loop->
-		append([Flag|Out_vars],Final_out_vars,Loop_cont_vars),
-		Loop_cont=..[LoopCont_Node|Loop_cont_vars],
+		Loop_cont=..[LoopCont_Node,[Flag|Out_vars]:Final_out_vars],
 		Cont_calls=[Loop_cont]
 		;
 		loop_has_new_vars(Cont_node_loop,N_extra_cont_loop),
 		length([Flag2|Origin_loop_extra_vars],N_extra_cont_loop),
-		append([Flag|Out_vars],[Flag2|Origin_loop_extra_vars],Loop_cont_vars),
-		Loop_cont=..[LoopCont_Node|Loop_cont_vars],
+		Loop_cont=..[LoopCont_Node,[Flag|Out_vars]:[Flag2|Origin_loop_extra_vars]],
 		create_cont_list(Cont_node_loop,Origin_loop,[Flag2|Origin_loop_extra_vars],Final_out_vars,Cont_calls2),
 		Cont_calls=[Loop_cont|Cont_calls2]
 	).
 
-transform_out_node(Node,Dest,C,cons(Head_vars,Call_vars,Cs)):-
+transform_out_node(Node,Dest,Cost,Calls,cons(Hd_ivs:Hd_ovs,Call_ivs:Call_ovs,Cs)):-
 	node_in_loop(Node,Origin_loop),
 	(option(continuation_style),pred_set(Origin_loop,[Father_loop])
 		;
@@ -588,29 +574,33 @@ transform_out_node(Node,Dest,C,cons(Head_vars,Call_vars,Cs)):-
 	%extra vars for the base case
 	length(Extra_vars_base_case,N_extra_vs_origin_loop),
 	%instantiate extra vars for base case
-	append([Exit_id|Call_vars],_,Extra_vars_base_case),
+	append([Exit_id|Call_ivs],_,Extra_vars_base_case),
+	Hd_ovs=Call_ovs,
 	%build the base case
-	append(Head_vars,Extra_vars_base_case,Head_vars_new),
-	Head_base=..[Node|Head_vars_new],
+	append(Extra_vars_base_case,Hd_ovs,Hd_ovs_new),
+	Head_base=..[Node,Hd_ivs:Hd_ovs_new],
 	
-	(option(loop_cost_model)->C2=0;C2=C),
-	save_equation(Head_base,C2,[],Cs),
+	(option(loop_cost_model)->C2=0;C2=Cost),
+	save_equation(Head_base,C2,Calls,Cs),
 	
 	%build the loop_cont edge! not equation
 	loop_cont_name(Loop_cont_suffix),
 	atom_concat(Origin_loop,Loop_cont_suffix,LoopCont_node),
 	%generate new call vars of the right length
-	length(Call_vars,N_call_vars),
-	length(New_call_vars,N_call_vars),
+	length(Call_ivs,N_call_vars),
+	length(New_call_ivs,N_call_vars),
 	% generate head vars for the cont_loop node
 	length(Head_loop_cont_vars,N_extra_vs_origin_loop),
-	append([Exit_id|New_call_vars],_,Head_loop_cont_vars),
+	append([Exit_id|New_call_ivs],_,Head_loop_cont_vars),
+	length(Call_ovs,N_ovs),
+	length(New_ovs,N_ovs),
+
 	store_loop_cont_node_in_loop(LoopCont_node,Father_loop),
 	assert(cfg_edge(LoopCont_node,Dest)),
 	assert(cfg_edge_rev(Dest,LoopCont_node)),
-	assert(pcfg_edge(LoopCont_node,Dest,0,cons(Head_loop_cont_vars,New_call_vars,Cs))),!.
+	assert(pcfg_edge(LoopCont_node,Dest,0,[],cons(Head_loop_cont_vars:New_ovs,New_call_ivs:New_ovs,Cs))),!.
 
-transform_out_node(Node,Dest,_,_):-
+transform_out_node(Node,Dest,_,_,_):-
 	throw(failed_to_transform_out_edge(Node,Dest)).
 	
 	
@@ -619,14 +609,14 @@ store_loop_cont_node_in_loop(Node,Loop):-
 store_loop_cont_node_in_loop(Node,Loop):-
 	assert(node_in_loop(Node,Loop)).
 
-transform_normal_node(Node,Dest,C,cons(Head_vars,Call_vars,Cs)):-
+transform_normal_node(Node,Dest,C,Calls,cons(Hd_ivs:Hd_ovs,Call_ivs:Call_ovs,Cs)):-
 	node_in_loop(Node,Loop),
 	loop_has_new_vars(Loop,N),
 	length(New_vars,N),
-	append(Head_vars,New_vars,Head_vars_new),
-	append(Call_vars,New_vars,Call_vars_new),
-	Head=..[Node|Head_vars_new],
-	Call=..[Dest|Call_vars_new],
+	append(New_vars,Hd_ovs,Hd_ovs_new),
+	append(New_vars,Call_ovs,Call_ovs_new),
+	Head=..[Node,Hd_ivs:Hd_ovs_new],
+	Call=..[Dest,Call_ivs:Call_ovs_new],
 	
 	(option(loop_cost_model)->
 		(Dest=Loop->
@@ -635,11 +625,39 @@ transform_normal_node(Node,Dest,C,cons(Head_vars,Call_vars,Cs)):-
 			C2=0
 		)
 		;C2=C),
-	save_equation(Head,C2,[Call],Cs),!.
+	append(Calls,[Call],Total_calls),
+	save_equation(Head,C2,Total_calls,Cs),!.
 
-transform_normal_node(Node,Dest,_,_):-
+transform_normal_node(Node,Dest,_,_,_):-
 	throw(failed_to_transform_normal_edge(Node,Dest)).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% add base cases for the leafs of the cfg
+add_leafs:-
+	cfg_nodes(Nodes),
+	include(is_leaf,Nodes,Leafs),
+	include(traversed,Leafs,Reachable_leafs),
+	maplist(add_leaf,Reachable_leafs).
+
+add_leaf(Leaf):-
+	cfg_edge_rev(Leaf,Caller),
+	
+	eq(_Id,Head,_,Calls,_),
+	functor(Head,Caller,_),
+	last(Calls,Call),
+	functor(Call,Leaf,_),!,
+	compound_name_arguments(Call,Leaf,[Ivs:Ovs]),!,
+	get_fresh_copy(Ivs,Ivs_fresh),
+	get_fresh_copy(Ovs,Ovs_fresh),
+	Head_leaf=..[Leaf,Ivs_fresh:Ovs_fresh],
+	save_equation(Head_leaf,0,[],[]).
+	
+get_fresh_copy(Ls,Ls_fresh):-
+	length(Ls,N),
+	length(Ls_fresh,N),!.
+	
+is_leaf(Node):-
+	\+cfg_edge(Node,_).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 get_extra_loop_vars(nil):-
@@ -652,8 +670,8 @@ get_extra_loop_vars(H):-
 		 node_in_loop(Node,H),
 		 cfg_edge(Node,Dest),
 		 is_out_node(Node,Dest),
-		 pcfg_edge(Node,Dest,_,cons(_,V_out,_)),
-		 length(V_out,N)
+		 pcfg_edge(Node,Dest,_,_,cons(_,V_in:_,_)),
+		 length(V_in,N)
 		)
 	,Nodes),
 	sort(Nodes,Nodes1),
@@ -820,12 +838,10 @@ remove_ovars(Loop_header,Matches):-
 remove_ovars_loop_eq(Outs,Id):-
 	retract(eq(Id,Head,Cost,Calls,Cs)),
 	remove_ovars_head(Outs,Head,Head2),
-	(   Calls=[Call],
-		remove_ovars_head(Outs,Call,Call2),
-		Calls2=[Call2]
-	;   Calls=[Other,Call],
-		remove_ovars_head(Outs,Call,Call2),
-		Calls2=[Other,Call2]
+	( 
+		append(Others,[Call],Calls),
+	  	remove_ovars_head(Outs,Call,Call2),
+	  	append(Others,[Call2],Calls2)
 	;
 		Calls=[],
 		Calls2=[]
@@ -833,11 +849,9 @@ remove_ovars_loop_eq(Outs,Id):-
 	assert(eq(Id,Head2,Cost,Calls2,Cs)).
 		
 remove_ovars_head(Outs,Head,Head2):-
-	functor(Head,F,_),
-	get_head_input_output(Head,In,[Exit|Out]),
-	remove_elems(Outs,1,Out,Out2),
-	append(In,[Exit|Out2],Vars2),
-	Head2=..[F|Vars2].
+	compound_name_arguments(Head,F,[In:[Exit|Out]]),
+	remove_elems(Outs,1,Out,Outs2),
+	compound_name_arguments(Head2,F,[In:[Exit|Outs2]]).
 	
 remove_elems([],_Index,Outs,Outs).
 remove_elems([Index|Ns],Index,[_Out|Outs],Outs2):-!,
@@ -852,6 +866,7 @@ remove_elems([N|Ns],Index,[Out|Outs],[Out|Outs2]):-
 
 
 remove_ovars_in_calling_eq(Matches,Outs,Id):-
+	throw(exception('this has to be fixed')),
 	retract(eq(Id,Head,Cost,Calls,Cs)),
 	Calls=[Call_loop,Call_cont],
 	remove_ovars_head(Outs,Call_loop,Call_loop2),
@@ -872,9 +887,9 @@ get_vars_substitutions(Call,(Out_pos,In_pos),(Out_var,In_var)):-
 	nth1(In_pos,Ins,In_var).
 
 apply_substitutions((Out_var,In_var),Head,Head2):-
-	Head=..[F|Vars],
-	maplist(substitute((Out_var,In_var)),Vars,Vars2),
-	Head2=..[F|Vars2].
+	compound_name_arguments(Head,F,[In:Out]),
+	maplist(substitute((Out_var,In_var)),Out,Out2),
+	compound_name_arguments(Head2,F,[In:Out2]).
 substitute((A,B),C,B):-
 	A==C,!.
 substitute(_,C,C).
@@ -896,7 +911,7 @@ get_CE_unused_ivars(Initial_set,Id,Set):-
 	term_variables(Cs,Used),
 	from_list_sl(Used,Used_set),
 	get_used_vars_calls(Calls,Initial_set,Used_set,Used2),
-	get_head_significant_vars(Head,_,Vars),
+	get_head_significant_ivars(Head,_,Vars),
 	exclude(used_vars(Used2,Vars),Initial_set,Set).
 
 used_vars(Used,Args,N):-
@@ -907,18 +922,18 @@ get_used_vars_calls([],_,Used,Used).
 
 % this is a recursive call, we ignore the indices where the ivar appears
 get_used_vars_calls([Call],Initial,Used,Used2):-
-	get_head_significant_vars(Call,_,Vars),
+	get_head_significant_ivars(Call,_,Vars),
 	exclude_index(Initial,1,Vars,Vars2),
 	term_variables(Vars2,Vs),
 	from_list_sl(Vs,Vs_set),
 	union_sl(Used,Vs_set,Used2).
 
 % all the variables in the first call and the second call is recursive, it is reduced to the previous case	
-get_used_vars_calls([Call,Cont],Initial,Used,Used2):-	
+get_used_vars_calls([Call,Cont|Rest],Initial,Used,Used2):-	
 	term_variables(Call,Vars),
 	from_list_sl(Vars,Vars_set),
 	union_sl(Vars_set,Used,Used1),
-	get_used_vars_calls([Cont],Initial,Used1,Used2).
+	get_used_vars_calls([Cont|Rest],Initial,Used1,Used2).
 	
 exclude_index([],_N,Vs,Vs).
 exclude_index([N|Ns],N,[_V|Vs],Vs2):-
@@ -940,6 +955,7 @@ remove_ivars(Loop_header,In):-
 
 
 remove_ivars_in_calling_eq(In,Id):-
+	throw(exception('this has to be fixed')),
 	retract(eq(Id,Head,Cost,Calls,Cs)),
 	Calls=[Call_loop,Call_cont],
 	remove_ivars_head(In,Call_loop,Call_loop2),
@@ -950,12 +966,10 @@ remove_ivars_loop_eq(Ins,Id):-
 	retract(eq(Id,Head,Cost,Calls,Cs)),
 	adapt_ground_term(Head,Ins),
 	remove_ivars_head(Ins,Head,Head2),
-	(   Calls=[Call],
-		remove_ivars_head(Ins,Call,Call2),
-		Calls2=[Call2]
-	;   Calls=[Other,Call],
-		remove_ivars_head(Ins,Call,Call2),
-		Calls2=[Other,Call2]
+	(   
+		append(Others,[Call],Calls),
+	  	remove_ivars_head(Ins,Call,Call2),
+	  	append(Others,[Call2],Calls2)
 	;
 		Calls=[],
 		Calls2=[]
@@ -965,19 +979,22 @@ remove_ivars_loop_eq(Ins,Id):-
 
 
 remove_ivars_head(Ins,Head,Head2):-
-	get_head_significant_vars(Head,Prefix,Vars),
+	%get_head_significant_vars(Head,Prefix,Vars),
 	functor(Head,Name,_),
-	remove_elems(Ins,1,Vars,Vars2),
-	append(Prefix,Vars2,Vars_final),
-	Head2=..[Name|Vars_final].
+	compound_name_arguments(Head,Name,[In:Out]),
+	remove_elems(Ins,1,In,In2),
+	%append(Prefix,Vars2,Vars_final),
+	compound_name_arguments(Head2,Name,[In2:Out]).
+	%Head2=..[Name|Vars_final].
 	
 adapt_ground_term(Head,Ins):-
+	compound_name_arguments(Head,Name,[In:Out]),
 	get_head_input_output(Head,In,_),
 	functor(Head,Name,_),
-	(retract(ground_term(Name,In,N))->
+	(retract(ground_term(Name,[In:Out],N))->
 		remove_ivars_head(Ins,Head,Head2),
-		get_head_input_output(Head2,In2,_),
-		assert(ground_term(Name,In2,N))
+		compound_name_arguments(Head2,Name,[In2:Out2]),
+		assert(ground_term(Name,[In2:Out2],N))
 	;
 		true
 	).
@@ -985,50 +1002,64 @@ adapt_ground_term(Head,Ins):-
 % Print cost relations
 
 print_io_vars:-
-	setof((F,N),
-	 C^Call^Cs^Head^Id^(
+	setof((F,In_n,Out_n),
+	 C^Call^Cs^Head^Id^In^Out^(
 	  	eq(Id,Head,C,Call,Cs),
-	  	functor(Head,F,N)
+	  	compound_name_arguments(Head,F,[In:Out]),
+	  	length(In,In_n),
+	  	length(Out,Out_n)
 	  	),Heads),
 	maplist(print_io_vars_1,Heads).
-print_io_vars_1((Name,N)):-
-	functor(Head,Name,N),
-	get_head_input_output(Head,Input_vars,Out_vars),
-	(ground_term(Name,Input_vars,Numvar_ini)->
+print_io_vars_1((Name,In_n,Out_n)):-
+	length(In,In_n),
+	length(Out,Out_n),
+	append(In,Out,Vars),
+	Head=..[Name|Vars],
+	(ground_term(Name,In:Out,Numvar_ini)->
 		true
 	;
 		Numvar_ini=0
 	),
 	numbervars(Head,Numvar_ini,_),
-	format('~p.~n',[input_output_vars(Head,Input_vars,Out_vars)]),!.
+	format('~p.~n',[input_output_vars(Head,In,Out)]),!.
 print_io_vars_1(_).	
 
 print_eqs:-
 	cfg_entry(Entry),
-	eq(Id,Head,C,Call,Cs),
+	eq(Id,Head,C,Calls,Cs),
 	Head=..[Entry|_],!,
 	retract(eq(Id,_,_,_,_)),
-	Head=..[Name|Vars],
-	(ground_term(Name,Input_vars,Numvar_ini)->
-	  append(Input_vars,_,Vars)
+	Head=..[Name,Ivs:Ovs],
+	(ground_term(Name,Ivs2:Ovs2,Numvar_ini)->
+	  append(Ivs2,_,Ivs),
+	  append(Ovs2,_,Ovs)
 	; 
          Numvar_ini=0),
-	numbervars(eq(Head,C,Call,Cs),Numvar_ini,_),
-	format('~p.~n',[eq(Head,C,Call,Cs)]),
+	numbervars(eq(Head,C,Calls,Cs),Numvar_ini,_),
+	print_eq(eq(Head,C,Calls,Cs)),
 	print_eqs_1.
 	
 print_eqs_1:-
-	retract(eq(_Id,Head,C,Call,Cs)),	
-	Head=..[Name|Vars],
-	(ground_term(Name,Input_vars,Numvar_ini)->
-	  append(Input_vars,_,Vars)
+	retract(eq(_Id,Head,C,Calls,Cs)),	
+	Head=..[Name,Ivs:Ovs],
+	(ground_term(Name,Ivs2:Ovs2,Numvar_ini)->
+	  append(Ivs2,_,Ivs),
+	  append(Ovs2,_,Ovs)
 	; 
       Numvar_ini=0),
-	numbervars(eq(Head,C,Call,Cs),Numvar_ini,_),
-	format('~p.~n',[eq(Head,C,Call,Cs)]),
+	numbervars(eq(Head,C,Calls,Cs),Numvar_ini,_),
+	print_eq(eq(Head,C,Calls,Cs)),
 	fail.
 print_eqs_1.
 
+print_eq(eq(Head,C,Calls,Cs)):-
+	maplist(join_io_vars,[Head|Calls],[Head2|Calls2]),
+	format('~p.~n',[eq(Head2,C,Calls2,Cs)]).
+	
+join_io_vars(Head,Head2):-
+	compound_name_arguments(Head,F,[In:Out]),
+	append(In,Out,Vars),
+	compound_name_arguments(Head2,F,Vars).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Draw graphs
 draw_ces_graph(File):-
@@ -1105,7 +1136,7 @@ draw_loop(File_Handler,Header):-
 draw_loop(_,_).
 
 draw_edges(File_Handler):-
-	pcfg_edge(O,D,Cost,cons(_Head_vars,_Call_vars,_Cs)),
+	pcfg_edge(O,D,Cost,_,cons(_Head_vars,_Call_vars,_Cs)),
 	short_name(O,O_name),
 	short_name(D,D_name),
 	draw_edge(File_Handler,O_name,D_name,Cost,''),
@@ -1199,26 +1230,10 @@ get_eqs_in_loop_split(Loop_header,Non_rec_eqs,Rec_eqs):-
 	
 	
 get_head_input_output(Head,In,Out):-
-	functor(Head,Name,N_total),
-	Head=..[_|Vars],
-	node_in_loop(Name,Loop_header),
-	loop_has_new_vars(Loop_header,N_extra),
-	(removed_n_outs(Loop_header,N_removed);N_removed=0),
-	N_extra2 is N_extra-N_removed,
-	N_in is N_total-N_extra2,
-	ut_split_at_pos(Vars,N_in,In,Out).
+	compound_name_arguments(Head,_Name,[In:Out]).
 
 % loop cont terms have an extra variable at the beginning to identify the exit
 % which has to be ignored for the slicing
-get_head_significant_vars(Head,Prefix,Vars1):-
-	Head=..[Name|Vars],
-	(is_loop_cont(Name)->
-		Vars=[First|Vars1],
-		Prefix=[First]
-		;
-		Prefix=[],
-		Vars=Vars1
-	).
 get_head_significant_ivars(Head,In1):-
 	get_head_input_output(Head,In,_),
 	functor(Head,Name,_),
