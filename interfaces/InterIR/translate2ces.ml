@@ -31,7 +31,7 @@ type nonflatconstr=
 type call=
   { cname: string;
     cargs: expr list;
-    crets: string list   
+    crets: expr list
   }
              
 type rule=
@@ -89,10 +89,12 @@ let print_constr oc constr=
                                print_relop oc relop;
                                print_expr oc rexpr
                                
-let print_head oc {cname; cargs}=  print_name oc cname;
-                                Printf.fprintf oc "(";
-                                print_with_comma print_expr oc  cargs;
-                                Printf.fprintf oc ")"  
+let print_head oc {cname; cargs; crets}=  print_name oc cname;
+                                          Printf.fprintf oc "(";
+                                          print_list print_expr oc cargs;
+                                          Printf.fprintf oc ":";
+                                          print_list print_expr oc crets;
+                                          Printf.fprintf oc ")"
 let print_rule oc { head; calls; constraints;cost}=
   Printf.fprintf oc "eq(";
   print_head oc head;
@@ -134,19 +136,29 @@ let create_initial_map  args=
   List.fold_left add_initial MM.empty args
 
 let get_map_val map var=
-  let index=MM.find var map in
-  if(index=0) then
+  if(MM.mem var map) then
+    (
+    let index=MM.find var map in
+    if(index=0) then
+      var
+    else
+      var^"_v"^(string_of_int index)
+    )else
     var
-  else
-    var^"_v"^(string_of_int index)
-               
+
 let increment_map_val map var=
-  let index=MM.find var map in
-  MM.add  var (index+1) map
+  if(MM.mem var map) then
+    let index=MM.find var map in
+    MM.add  var (index+1) map
+  else
+    MM.add  var 0 map
 
 let increment_map_and_return map var=
-  let index=MM.find var map in
-  ((MM.add var (index+1)) map, Var(var^"_v"^(string_of_int (index+1))))
+  if(MM.mem var map) then
+    let index=MM.find var map in
+    ((MM.add var (index+1)) map, Var(var^"_v"^(string_of_int (index+1))))
+  else
+    ((MM.add var 0) map, Var(var))
     
 let get_var (name,_) =name
 let get_var_expr (name,_) =Var(name)
@@ -257,8 +269,7 @@ let  accum_constraints glos (map,calls,constraints,cost) inst=
                    )
   | InterIR.Call(rets,f,args) ->let map1,ret_vars=List.fold_right get_left_side_ls  rets (map,[]) in
                         let icall_args=(List.map (get_rexpr map) args)@ (List.map (get_variable map) glos) in
-                        let call_args= icall_args@ ret_vars in
-                        (map1,calls@[{cname=f;cargs=call_args}],constraints,cost)
+                        (map1,calls@[{cname=f;cargs=icall_args;crets=ret_vars}],constraints,cost)
   | InterIR.Tick(r) ->match get_rexpr map r with
                  Constant(n) ->(map,calls,constraints,cost+n)
                | _ ->raise (InterIR.Unexpected_value "Found non-constant tick")
@@ -267,58 +278,59 @@ let  accum_constraints glos (map,calls,constraints,cost) inst=
 let get_block_if_name funname n=
   "if_"^funname^(string_of_int n)
                   
-let create_call map fname args=
+let create_internal_call map fname args rets=
   let call_args=List.map (fun x-> Var(get_map_val map x)) args in
-  {cname=fname;cargs=call_args}
+  {cname=fname;cargs=call_args;crets=rets}
 
 let generate_rule head call constrs=
   {head=head;calls=[call];constraints=constrs;cost=0}
     
-let create_if funname ifname args dest bcond map=
+let create_if funname ifname args rets dest bcond map=
   let pos_constrs,neg_constrs=match bcond with
       Some(cond) ->(get_cond_constr map cond false,get_cond_constr map cond true)
     | None -> ([[]],[[]])
   in
-  let if_head= {cname=ifname;cargs=args} in
+  let if_head= {cname=ifname;cargs=args;crets=rets} in
   match dest with
-    [if_dest;else_dest] ->let call1={cname=get_block_name funname if_dest;cargs=args} in
-                          let call2={cname=get_block_name funname else_dest;cargs=args} in
+    [if_dest;else_dest] ->let call1={cname=get_block_name funname if_dest;cargs=args;crets=rets} in
+                          let call2={cname=get_block_name funname else_dest;cargs=args;crets=rets} in
                           (List.map (generate_rule if_head call1) pos_constrs) @ (List.map (generate_rule if_head call2) neg_constrs)
                          
   |  _ ->[]
   
-let extend_ret name=name^"_final"
-let get_ret_assignments map var=
-  Constr(Var(get_map_val map var),EQ,Var(extend_ret var))
+
         
-let accum_block_rules args glos funname (rules,n) { InterIR.bpreds ; InterIR.binsts ; InterIR.btype  ; InterIR.bcond }=
+let accum_block_rules args rets glos funname (rules,n) { InterIR.bpreds ; InterIR.binsts ; InterIR.btype  ; InterIR.bcond }=
   let initial_map=create_initial_map args in
   let block_name=get_block_name funname n in
-  let head= {cname=block_name;cargs=List.map (fun x ->Var(x)) args} in
+  let args_exprs=List.map (fun x ->Var(x)) args in
+  let rets_exprs=List.map (fun x ->Var(x)) rets in
+  let head= {cname=block_name;cargs=args_exprs;crets=rets_exprs} in
   let final_map,calls,constraints,cost=List.fold_left (accum_constraints glos) (initial_map,[],[],0) binsts in
   match btype with
     InterIR.Branch(dest)->  if (List.length dest)> 1 then
                       let block_if_name=get_block_if_name funname n in
-                      let if_rules = create_if funname block_if_name (List.map (fun x ->Var(x)) args) dest bcond initial_map in
-                      let if_call= create_call final_map block_if_name args in
+                      let if_rules = create_if funname block_if_name args_exprs rets_exprs dest bcond initial_map in
+                      let if_call= create_internal_call final_map block_if_name args rets_exprs in
                       ((({head;calls=(calls@[if_call]);constraints;cost} :: if_rules)@ rules),n+1)
                     else
                       let block_name=get_block_name funname (List.hd dest) in
-                      let block_call= create_call final_map block_name args in
+                      let block_call= create_internal_call final_map block_name args rets_exprs in
                       (({head;calls=(calls@[block_call]);constraints;cost} :: rules),n+1)
-  | InterIR.Return(vars) ->let cs=List.map (get_ret_assignments final_map) (List.map get_var vars) in    
-     ({head;calls;constraints=cs@constraints;cost}:: rules, n+1)
+  | InterIR.Return(vars) ->({head;calls;constraints=constraints;cost}:: rules, n+1)
 let get_expr name=Var(name)
 
 let generate_cfg oc glos { InterIR.funname ; InterIR.fargs  ; InterIR.flocs ; InterIR.fbody  ; InterIR.frets } =
   Printf.fprintf oc "%s%s\n cfg(\n" "%" funname;
-  let ret_vars=List.map extend_ret (List.map get_var frets) in
+  let ret_vars=List.map get_var frets in
   let head_args=(List.map get_var (fargs @ glos))  in
-  let ext_args=(List.map get_var  (fargs @ flocs @ glos ))  in
+  let flocs_wo_rets= List.filter (fun x ->not (List.mem x frets)) flocs in
+  let ext_args=(List.map get_var  (fargs @ flocs_wo_rets @ glos ))  in
   let first_block_name=get_block_name funname 0 in
-  let head={cname=funname;cargs=(List.map get_expr head_args);crets=ret_vars} in
-  let first_call={cname=first_block_name;cargs=(List.map get_expr ext_args);crets=ret_vars} in
-  let (rules,_)=(List.fold_left (accum_block_rules ext_args glos funname) ([{head;calls=[first_call];constraints=[];cost=0}],0) (Array.to_list fbody)) in
+  let rets_exprs=List.map (fun x ->Var(x)) ret_vars in
+  let head={cname=funname;cargs=(List.map get_expr head_args);crets=rets_exprs} in
+  let first_call={cname=first_block_name;cargs=(List.map get_expr ext_args);crets=rets_exprs} in
+  let (rules,_)=(List.fold_left (accum_block_rules ext_args ret_vars glos funname) ([{head;calls=[first_call];constraints=[];cost=0}],0) (Array.to_list fbody)) in
   print_list print_rule oc  (List.rev rules);
   Printf.fprintf oc ").\n\n"    
 

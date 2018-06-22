@@ -187,6 +187,9 @@ assert_cfg_into_db_1([eq(Head,Cost,Calls,Cs)|Es],Bindings,[S,T|Ns]) :-
 	assert(cfg_edge_rev(T,S)),
 	assert(pcfg_edge(S,T,Cost,External_calls,cons(Vs,PVs,Cs))), 
 	assert_cfg_into_db_1(Es,Bindings,Ns).
+%FIXME take care of leafs
+assert_cfg_into_db_1([eq(_Head,_Cost,[],[])|Es],Bindings,Ns) :-
+	assert_cfg_into_db_1(Es,Bindings,Ns).
 
 save_ground_name(Name,_Vars,_Bindings):-
 	ground_term(Name,_,_),!.
