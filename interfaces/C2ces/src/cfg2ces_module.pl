@@ -1016,15 +1016,23 @@ print_io_vars:-
 print_io_vars_1((Name,In_n,Out_n)):-
 	length(In,In_n),
 	length(Out,Out_n),
-	append(In,Out,Vars),
-	Head=..[Name|Vars],
 	(ground_term(Name,In:Out,Numvar_ini)->
 		true
 	;
 		Numvar_ini=0
 	),
+	(cfg_entry(Name) ->
+		append(Out_short,[_],Out)
+		;
+		Out_short=Out
+	),
+	append(In,Out_short,Vars),
+	Head=..[Name|Vars],
 	numbervars(Head,Numvar_ini,_),
-	format('~p.~n',[input_output_vars(Head,In,Out)]),!.
+	format('input_output_vars(',[]),
+	print_head(Head),
+	format(',~p,~p).~n',[In,Out_short]),!.
+
 print_io_vars_1(_).	
 
 print_eqs:-
@@ -1035,21 +1043,24 @@ print_eqs:-
 	Head=..[Name,Ivs:Ovs],
 	(ground_term(Name,Ivs2:Ovs2,Numvar_ini)->
 	  append(Ivs2,_,Ivs),
-	  append(Ovs2,_,Ovs)
+	  append(_,Ovs2,Ovs)
 	; 
          Numvar_ini=0),
-	numbervars(eq(Head,C,Calls,Cs),Numvar_ini,_),
-	print_eq(eq(Head,C,Calls,Cs)),
+    append(Ovs_short,[_],Ovs),
+    Head2=..[Name,Ivs:Ovs_short],
+	numbervars(eq(Head2,C,Calls,Cs),Numvar_ini,_),
+	print_eq(eq(Head2,C,Calls,Cs)),
 	print_eqs_1.
 	
 print_eqs_1:-
-	retract(eq(_Id,Head,C,Calls,Cs)),	
+	retract(eq(_Id,Head,C,Calls,Cs)),
 	Head=..[Name,Ivs:Ovs],
 	(ground_term(Name,Ivs2:Ovs2,Numvar_ini)->
 	  append(Ivs2,_,Ivs),
-	  append(Ovs2,_,Ovs)
+	  append(_,Ovs2,Ovs)
 	; 
-      Numvar_ini=0),
+          Numvar_ini=0
+        ),
 	numbervars(eq(Head,C,Calls,Cs),Numvar_ini,_),
 	print_eq(eq(Head,C,Calls,Cs)),
 	fail.
@@ -1057,7 +1068,32 @@ print_eqs_1.
 
 print_eq(eq(Head,C,Calls,Cs)):-
 	maplist(join_io_vars,[Head|Calls],[Head2|Calls2]),
-	format('~p.~n',[eq(Head2,C,Calls2,Cs)]).
+	format('eq(',[]),
+	print_head(Head2),
+	format(',~p,',[C]),
+	print_list(print_head,Calls2),
+	format(',~p).~n',[Cs]).
+
+print_head(Head):-
+	Head=..[H|Vars],
+	write_term(H,[quoted(true)]),
+	format('(',[]),
+	print_list_1(write,Vars),
+	format(')',[]).
+
+print_list(Pred,Xs):-
+	format('[',[]),
+	print_list_1(Pred,Xs),
+	format(']',[]).
+
+print_list_1(_Pred,[]).
+print_list_1(Pred,[X]):-
+	call(Pred,X).
+
+print_list_1(Pred,[X,Y|Xs]):-
+	call(Pred,X),
+	format(',',[]),
+	print_list_1(Pred,[Y|Xs]).
 	
 join_io_vars(Head,Head2):-
 	compound_name_arguments(Head,F,[In:Out]),
