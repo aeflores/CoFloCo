@@ -22,16 +22,24 @@ The main techniques used in CoFloCo are described in the papers:
  * [Antonio Flores-Montoya: Upper and Lower Amortized Cost Bounds of Programs Expressed as Cost Relations. FM 2016](https://www.informatik.tu-darmstadt.de/fileadmin/user_upload/Group_SE/Publications/FM2016_extended.pdf) 
  * [Antonio Flores-Montoya: Cost Analysis of Programs Based on the Refinement of Cost Relations. PhD thesis](http://tuprints.ulb.tu-darmstadt.de/6746/) 
 
-Using Vagrant
+Using Docker
 -------------
 
-You can use CoFloCo without installing any of the dependencies using 
-[Vagrant](https://www.vagrantup.com).  Vagrant will start a
-Linux virtual machine and install the needed dependencies.  In the
-`CoFloCo/` directory, run the command `vagrant up` to provision and
-start a VM, then `vagrant ssh` to connect.
+There is a CoFloco docker image that you can use to run CoFloCo:
+```
+docker pull afloresmontoya/cofloco
+```
 
-Within the VM, this directory is accessible in the directory `/vagrant`.
+Once you have pulled the image, you can run:
+```
+docker run -it afloresmontoya/cofloco
+```
+
+and execute CoFloCo inside it, e.g.:
+```
+cofloco -i examples/testing/ex1.ces
+```
+
 
 Requirements:
 --------------
@@ -46,47 +54,11 @@ Requirements:
  * [Parma Polyhedra Library (PPL)](http://bugseng.com/products/ppl): CoFloCo uses the latest version available at the moment (1.2)  
 
 
-Complete Installation
+Installation
 --------------
- * Install SWI-Prolog or YAP and the GMP library
- 
- * CoFloCo requires the Parma Polyhedra Library (PPL) with the SWI-Prolog interface
-   or YAP-Prolog installed (Depending on which prolog system you are using).
-   The distributions that are available with apt-get (linux) or port (mac) do not include these 
-   interfaces at the moment.
 
-   For convenience, the binary of PPL for Linux x64 and SWI-Prolog 7.4.2 is included in  `src/lib/`. If you have this system, you can use CoFloCo with SWI-Prolog 7.4.2 without compiling and installing the library. 
-   Just make sure the make sure the libraries are found by cofloco before you execute it:
-    
-     `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./src/lib/`
-   
-   If you want to use your own installation of PPL (say you have a mac of a different prolog), you can download the sources from
-   the official page http://bugseng.com/products/ppl/download.
-   In the directory of ppl execute:
-   
-      `./configure --enable-interfaces=swi_prolog,yap_prolog`
-
-      `make`
-
-      `sudo make install`
-   
-	Some extra options might be necessary depending on your system. PPL provides documentation on how to configure and compile in different systems.
-
-    Note: According to our experience, using a sparse representation for polyhedra generally results in better performance. To compile PPL with this option, you have to change the following line in Polyhedron_defs.hh:
-
-     `static const Representation default_con_sys_repr = DENSE;`
-
-   to become
-
-     `static const Representation default_con_sys_repr = SPARSE;`
-   
-   
- * Once installed all the requirements, you can call CoFloCo with the script "cofloco" in the main directory: 
-   
-     `./cofloco -i examples/EXAMPLE_FILE`
-
-or 
-     `./cofloco_yap -i examples/EXAMPLE_FILE`
+To install CoFloCo and its dependencies in your machine, you can follow the steps documented in
+the docker file `Dockerfile`.
 
 
 Usage information
