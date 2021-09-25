@@ -11,6 +11,9 @@ CoFloCo is intended to be used as a backend. Here are some systems that use CoFl
  * [CoFloCo+llvm2kittel](http://cofloco.se.informatik.tu-darmstadt.de/web-interface/clients/web/):
    A web interface to analyze programs written in C with the help of [llvm2kittel](https://github.com/s-falke/llvm2kittel) and [easyinterface](https://github.com/abstools/easyinterface).
 
+   NOTE: Unfortunately this web interface is down and it is not coming back up for the time being. If you are interesed in how to
+   analyze programs with llvm2kittel, you might want to take a look at https://github.com/aeflores/easyinterface/blob/master/server/bin/cofloco. However, llvm2kittel is not maintained much and it might not work with recent versions of LLVM (it did work with LLVM 3.8).
+
  * [Saco](http://costa.ls.fi.upm.es/saco/web/): Saco contains multiple static analyses for concurrent programs written in the ABS language. 
    CoFloCo can be selected as an alternative backend to PUBS for the resource analysis.
 
